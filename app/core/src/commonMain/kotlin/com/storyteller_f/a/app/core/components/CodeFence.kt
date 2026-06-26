@@ -19,7 +19,8 @@ import kotlin.collections.get
 fun CustomCodeFence(
     modal: MarkdownComponentModel,
     mediaList: Map<String, FileInfo>,
-    refBlock: @Composable (MarkdownComponentModel) -> Unit
+    refBlock: @Composable (MarkdownComponentModel) -> Unit,
+    onClick: (FileInfo) -> Unit
 ) {
     val lang = remember(modal.node, modal.content) {
         getLang(modal.node, modal.content)
@@ -29,7 +30,7 @@ fun CustomCodeFence(
 
         lang == "math" -> LatexBlock(modal)
 
-        lang == "object" -> ObjectBlock(modal, mediaList)
+        lang == "object" -> ObjectBlock(modal, mediaList, onClick)
 
         else -> HighlightCodeBlock(modal)
     }
@@ -38,14 +39,15 @@ fun CustomCodeFence(
 @Composable
 fun ObjectBlock(
     modal: MarkdownComponentModel,
-    mediaList: Map<String, FileInfo>
+    mediaList: Map<String, FileInfo>,
+    onClick: (FileInfo) -> Unit
 ) {
     val obj = remember(modal.node, modal.content) {
         val c = readCodeFence(modal.node, modal.content)
         commonJson.decodeFromString<MarkdownObject>(c)
     }
     if (obj.contentType.isNullOrBlank()) {
-        FileObjectBlock(obj, modal, mediaList)
+        FileObjectBlock(obj, modal, mediaList, onClick)
     } else {
         CustomObjectBlock(obj, modal, mediaList)
     }
@@ -55,7 +57,8 @@ fun ObjectBlock(
 private fun FileObjectBlock(
     obj: MarkdownObject,
     modal: MarkdownComponentModel,
-    mediaMap: Map<String, FileInfo>
+    mediaMap: Map<String, FileInfo>,
+    onClick: (FileInfo) -> Unit
 ) {
     val mediaInfo = mediaMap[obj.name] ?: return HighlightCodeBlock(modal)
     val url = mediaInfo.url
@@ -65,7 +68,7 @@ private fun FileObjectBlock(
         return
     }
     if (contentType == FileInfo.PDF_CONTENT_TYPE) {
-        PdfViewBlock(url)
+        PdfViewBlock(mediaInfo, onClick)
         return
     }
     if (!contentType.startsWith("audio") && !contentType.startsWith("video/")) {

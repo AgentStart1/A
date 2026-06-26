@@ -60,6 +60,6 @@ fun TopicContentView(
         mediaMap.mapValues { it.value.dimension }.toImmutableMap()
     }
     CustomMarkdown(plain, isEmbed, imageTransformer, dimensionMap, {
-        CustomCodeFence(it, mediaMap, refBlock)
+        CustomCodeFence(it, mediaMap, refBlock, onClick)
     })
 }
