@@ -603,6 +603,38 @@ The `app/composeApp` browser bundle disables resolution of unused `events`, `fs`
 
 Navigation tests compare `NavBackStack.toList()` with the expected history, because wrapper object equality is not the cross-platform contract for the stack contents.
 
+Wasm root and nested page stacks use `BindBrowserNavigation` from `client/composeCore`.
+A document owns one history controller per client (`app` or `panel`); nested ids live below
+that root, such as `app/signin` and `panel/login`. Each History API entry contains serialized
+route keys and their history positions, preserving browser Forward after an app Back action.
+The current URL and unrelated history state are preserved. Refresh restores the current entry;
+editor drafts and authentication state are not stored in navigation history. Root Back exits to
+the previous document without removing the last app route. Dialog dismissal remains owned by
+the platform Escape/back dispatcher and must not create page-history entries.
+
+Route JSON uses array polymorphism so destination payload fields such as `type` do not conflict
+with a class discriminator. This format belongs only to navigation history, not business JSON.
+The [navigation3-browser v1.1.0 POC](https://github.com/terrakok/navigation3-browser/tree/v1.1.0)
+offers single-stack chronological navigation or nested hierarchical navigation without Forward;
+the shared controller supports nested stacks and Forward together, while app Back traverses
+existing history positions instead of appending another state.
+Ancestor positions follow the latest complete descendant snapshot, so app Back preserves the
+previous page's selected nested tab. File navigation shares one back stack and one pager across
+rail/bottom layouts; browser restoration cancels obsolete drags without publishing another route.
+
+Focused navigation verification (Chrome, Edge and Firefox, both clients):
+
+```bash
+./gradlew :client:composeCore:jvmTest --tests '*BrowserNavigationTest' -Pserver.flavor=dev -Pserver.buildType=debug --console=plain
+./gradlew :app:wasmAppium:appiumTest --tests '*BrowserNavigationTest' :panel:wasmAppium:appiumTest --tests '*BrowserNavigationTest' -x buildTestDockerImage -Pserver.flavor=dev -Pserver.buildType=debug --console=plain
+```
+
+These browser cases exercise the real guest login pages without a backend. The image-build
+exclusion applies only to this filter; authenticated E2E still requires its full container topology.
+They verify root and nested Back/Forward, app Back without duplicate entries, refresh, modal
+Escape dismissal, and leaving/re-entering the document at the root boundary. Raw artifacts remain
+under each runner's `build/test-results/appiumTest`; static viewers are under `build/reports/appiumTest`.
+
 Appium runners pass their target and platform helpers to the typed `AppiumTestBase`
 constructor. Shared test flows extend that base and obtain both helpers and the JUnit test name
 from it; concrete test methods only supply scenario options, such as `privateRoom = true`.

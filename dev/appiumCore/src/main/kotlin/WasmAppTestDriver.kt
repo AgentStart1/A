@@ -337,9 +337,14 @@ class WasmAppTestDriver(
         assertNotVisible(textLocator(text), timeoutSeconds)
 
     override suspend fun dismissDialog() {
+        pressEscape()
+        wait.until { browser.findElements(descriptionLocator("dialog")).none(::isOnScreen) }
+    }
+
+    /** Sends the browser client's ordinary Escape navigation action to the focused renderer. */
+    fun pressEscape() {
         focusComposeCanvas()
         Actions(browser).sendKeys(Keys.ESCAPE).perform()
-        wait.until { browser.findElements(descriptionLocator("dialog")).none(::isOnScreen) }
         waitForUiCommit()
     }
 

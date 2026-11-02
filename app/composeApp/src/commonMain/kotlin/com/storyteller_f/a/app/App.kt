@@ -83,6 +83,7 @@ import com.storyteller_f.a.client.compose_core.components.RemoteMediaItem
 import com.storyteller_f.a.client.compose_core.components.Sonner
 import com.storyteller_f.a.client.compose_core.components.VideoViewFilled
 import com.storyteller_f.a.client.compose_core.components.rememberIsInPipMode
+import com.storyteller_f.a.client.compose_core.utils.BindBrowserNavigation
 import com.storyteller_f.a.client.compose_core.utils.addPlatformImageDecoders
 import com.storyteller_f.a.client.compose_core.utils.buildSessionHistoryFactory
 import com.storyteller_f.a.client.compose_core.utils.createSigninCookies
@@ -224,6 +225,7 @@ fun AppInternal(mediaPlaySession: MediaPlaySession?) {
             }
         }
     val backStack = rememberNavBackStack(config, HomeScreen)
+    BindBrowserNavigation(backStack, config.serializersModule, "app")
     val appNav =
         remember {
             object : AppNavFactory {
@@ -260,6 +262,7 @@ private fun MainPage(appNav: AppNavFactory, backStack: NavBackStack<NavKey>) {
         Box(modifier = Modifier.fillMaxSize().signinActivity(LocalSessionManager.current)) {
             NavDisplay(
                 backStack = backStack,
+                onBack = { appNav.newAppNav().back() },
                 entryDecorators =
                 listOf(
                     rememberSaveableStateHolderNavEntryDecorator(),

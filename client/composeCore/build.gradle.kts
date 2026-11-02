@@ -101,6 +101,7 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation(libs.bundles.ktor.client)
             // ui
+            implementation(libs.jetbrains.navigation3.ui)
             implementation(libs.material3.window.size)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.androidx.paging.common)
