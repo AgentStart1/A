@@ -7,12 +7,13 @@ package com.storyteller_f.a.panel
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
+import com.storyteller_f.a.client.compose_core.utils.WasmFontGate
 import kotlinx.browser.document
 import kotlinx.browser.localStorage
 import kotlinx.browser.window
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.collectLatest
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.configureWebResources
@@ -26,20 +27,23 @@ fun main() {
         }
     }
     ComposeViewport {
-        val httpUrl = wasmQueryParameter("appiumHttpUrl") ?: getWasmPanelServerUrl()
-        val panelUiViewModel = remember(httpUrl) { PanelUIViewModel(MainScope(), httpUrl) }
-        LaunchedEffect(panelUiViewModel) {
-            if (window.location.search.contains("appium=true")) {
-                panelUiViewModel.instance.collectLatest { instance ->
-                    localStorage.setItem(
-                        "appium.session_ready",
-                        (instance is IPanelAccountInstance.Regular).toString(),
-                    )
+        WasmFontGate {
+            val appScope = rememberCoroutineScope()
+            val httpUrl = wasmQueryParameter("appiumHttpUrl") ?: getWasmPanelServerUrl()
+            val panelUiViewModel = remember(httpUrl) { PanelUIViewModel(appScope, httpUrl) }
+            LaunchedEffect(panelUiViewModel) {
+                if (window.location.search.contains("appium=true")) {
+                    panelUiViewModel.instance.collectLatest { instance ->
+                        localStorage.setItem(
+                            "appium.session_ready",
+                            (instance is IPanelAccountInstance.Regular).toString(),
+                        )
+                    }
                 }
             }
-        }
-        CompositionLocalProvider(LocalPanelUiViewModel provides panelUiViewModel) {
-            App()
+            CompositionLocalProvider(LocalPanelUiViewModel provides panelUiViewModel) {
+                App()
+            }
         }
     }
 }

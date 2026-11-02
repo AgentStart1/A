@@ -201,7 +201,7 @@ keccak@3.0.4:
     readable-stream "^3.6.0"
 
 "local-font-access@file:../../client/composeCore/local-font-access":
-  version "1.0.0"
+  version "1.1.1"
 
 mediabunny@1.62.1:
   version "1.62.1"

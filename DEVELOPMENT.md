@@ -2100,3 +2100,42 @@ Android video preserves the Media3 controller default visibility timing. E2E rev
 Media3 progress accessibility events can keep UiAutomator non-idle until auto-hide, so searching for Pause after an idle wait misses the visible controller. The Android animated-media interaction scope temporarily disables only waitForIdleTimeout, restores its exact previous value even on failure, and keeps the explicit pause-state assertion and normal assertion deadlines. This follows the upstream [UiAutomator idle-wait contract](https://github.com/appium/appium-uiautomator2-driver#poor-elements-interaction-performance); it does not disable animations or broaden element visibility.
 
 Android video uses a page-owned Media3 PlayerView through AndroidView. Navigation and PiP transitions may recreate its Surface and briefly display black; this transient behavior is accepted without introducing an activity-root overlay or manual viewport ownership. The view detaches its MediaController on final release. Playback state and commands remain in MediaPlayerService. PiP acceptance still verifies decoded RGB frames before entry, after the small window settles and after restoration, including a second entry; persistent black output remains a failure. Previous acceptance of the removed root-surface implementation does not establish acceptance of this page-owned implementation. Track reproduction and upstream ownership in [issue #117](https://github.com/storytellerF/A/issues/117).
+
+
+### Wasm startup font choice
+
+App and panel share the native HTML font gate in client/composeCore/local-font-access. It uses
+browser system CSS fonts so the choice and permission instructions are readable before Compose
+fallback downloads. Only the Noto SC application font is removed; the Material Symbols icon font remains.
+Compose 1.12.2 downloads missing-character Noto subsets from Google Fonts on demand.
+
+The origin-local `a.preferSystemFonts` preference is absent, `false` or `true`. Supported browsers
+require an explicit first choice. `false` mounts normal content with Compose defaults. `true` is
+intent only: local-fonts permission, a matching installed CJK face, font bytes and successful Compose
+resolver preloading are required before business content mounts. Skia decoding is checked explicitly because
+Compose blocking-font preloading can silently fall back to the default typeface on decode failure.
+A permission reset also invalidates fonts waiting for Compose confirmation. Denial, missing fonts and decode
+errors keep the gate visible with an explicit downloaded-font exit. Permission revocation unmounts
+business content. API-unsupported browsers enter the default path without overwriting saved intent.
+A browser that still requires user activation after reload shows the explicit font-load button.
+Preferences and permissions are separate for app and panel origins; no local font bytes are persisted.
+If preference storage is blocked, the explicit choice remains valid for the current page visit.
+
+Existing business E2E fixtures set `a.preferSystemFonts=false` on the static same-origin bootstrap
+page after clearing storage and before loading Wasm. This is the normal product preference, not a
+test-mode bypass. Browser navigation and standalone semantics tests use the same preparation.
+The font gate scenarios deliberately start with an empty preference and cover all three browsers;
+Chromium grant/deny fixtures control the real browser permission and use real installed fonts.
+The granted-path test requires an installed CJK font from the production preference list, such as
+Microsoft YaHei on Windows or Noto Sans CJK SC on Linux. Firefox verifies the unsupported path.
+Keep selector text English through the existing explicit test locale. Test the gate state owner
+with `:client:composeCore:testFontGateRuntime`; app/panel FontGateTest classes include
+real font-gate startup, persistence, pending/denied/granted access and revocation scenarios.
+`BrowserFontPreloadTest` calls the production Wasm decoder/preloader to reject empty and invalid font
+bytes. Run it with `:client:composeCore:wasmJsBrowserTest --tests "*BrowserFontPreloadTest*"` and the
+normal flavor/build-type properties; direct Gradle browser runs require `CHROME_BIN`.
+
+Build regular `assemble` and Wasm Appium development distributions in separate Gradle invocations.
+Kotlin's development and production CompileSync tasks share the generated npm package directory;
+requesting both Webpack modes in one graph triggers Gradle implicit-dependency validation.
+Finish all runtime compilation before starting the browser suites.

@@ -5,137 +5,114 @@
 package com.storyteller_f.a.client.compose_core.utils
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.platform.LoadedFont
-import com.storyteller_f.a.client.compose_core.Res
 import com.storyteller_f.shared.commonJson
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.await
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
-import org.jetbrains.compose.resources.MissingResourceException
+import org.jetbrains.skia.Data
+import org.jetbrains.skia.FontMgr
+import org.jetbrains.skia.impl.use
 import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.JsException
-import kotlin.js.JsString
-import kotlin.js.Promise
 
 actual fun loadFontFromLocal(path: String): FontFamily? = null
 
-@OptIn(ExperimentalWasmJsInterop::class)
-@JsModule("local-font-access")
-private external object LocalFontAccess {
-    fun isSupported(): Boolean
-
-    fun loadPreferredFontJsonAfterUserActivation(): Promise<JsString>
-
-    fun cancelLocalFontQuery()
-}
-
-/**
- * Loads a browser-local CJK font after user activation when permitted, with a bundled font as fallback.
- */
-@Composable
-@OptIn(ExperimentalTextApi::class)
-@Suppress("LibraryEntitiesShouldNotBePublic")
-actual fun rememberPlatformDefaultFontFamily(): FontFamily? {
-    val fallbackFont = rememberBundledFallbackFont()
-    val localFont = rememberPreferredLocalFont()
-    val selectedFont = localFont ?: fallbackFont
-    return remember(selectedFont) {
-        selectedFont?.toFontFamily()
-    }
-}
+private val LocalPlatformFont = staticCompositionLocalOf<FontFamily?> { null }
 
 @Composable
-private fun rememberBundledFallbackFont(): FontBinary? {
-    var fallbackFont by remember { mutableStateOf<FontBinary?>(null) }
+actual fun rememberPlatformDefaultFontFamily(): FontFamily? = LocalPlatformFont.current
 
-    LaunchedEffect(Unit) {
-        try {
-            fallbackFont =
-                FontBinary(
-                    identity = FALLBACK_FONT_IDENTITY,
-                    bytes = Res.readBytes(FALLBACK_FONT_RESOURCE),
-                )
-        } catch (exception: CancellationException) {
-            throw exception
-        } catch (exception: MissingResourceException) {
-            Napier.w(exception) { "Unable to load the bundled Wasm CJK fallback font." }
-        }
-    }
-    return fallbackFont
-}
-
+/** Does not compose business content until the user opts out or an authorized font is preloaded. */
 @Composable
-@OptIn(ExperimentalEncodingApi::class, ExperimentalWasmJsInterop::class)
-private fun rememberPreferredLocalFont(): FontBinary? {
-    var localFont by remember { mutableStateOf<FontBinary?>(null) }
-    LaunchedEffect(Unit) {
-        if (LocalFontAccess.isSupported()) {
-            localFont = loadPreferredLocalFont()
-        }
-    }
-
+@OptIn(ExperimentalWasmJsInterop::class, ExperimentalTextApi::class)
+fun WasmFontGate(content: @Composable () -> Unit) {
+    var state by remember { mutableStateOf<FontGateState>(FontGateState.Blocked) }
+    val resolver = LocalFontFamilyResolver.current
     DisposableEffect(Unit) {
-        onDispose {
-            LocalFontAccess.cancelLocalFontQuery()
+        startFontGate { json ->
+            state =
+                when (val snapshot = commonJson.decodeFromString<FontGateSnapshot>(json.toString())) {
+                    FontGateSnapshot.Blocked -> FontGateState.Blocked
+                    FontGateSnapshot.Default -> FontGateState.Ready(null)
+                    is FontGateSnapshot.Font -> FontGateState.Pending(snapshot)
+                }
+        }
+        onDispose { stopFontGate() }
+    }
+    LaunchedEffect(state) {
+        val pending = state as? FontGateState.Pending ?: return@LaunchedEffect
+        try {
+            val font = pending.snapshot
+            val bytes = Base64.decode(font.base64)
+            val family = preloadBrowserFont(font.identity, bytes, resolver)
+            currentCoroutineContext().ensureActive()
+            if (confirmFont(font.requestId)) state = FontGateState.Ready(family)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            Napier.w(failure) { "Unable to preload the selected browser-local font." }
+            rejectFont(pending.snapshot.requestId)
+        } catch (failure: JsException) {
+            Napier.w { "Browser failed to preload the selected local font: ${failure.message}" }
+            rejectFont(pending.snapshot.requestId)
         }
     }
-    return localFont
-}
-
-@OptIn(ExperimentalEncodingApi::class, ExperimentalWasmJsInterop::class)
-private suspend fun loadPreferredLocalFont(): FontBinary? {
-    val fontQuery = LocalFontAccess.loadPreferredFontJsonAfterUserActivation()
-    return try {
-        val selectedFont =
-            commonJson.decodeFromString<LocalFontBinaryMetadata?>(
-                fontQuery.await().toString(),
-            )
-        selectedFont?.toFontBinary()
-    } catch (exception: CancellationException) {
-        throw exception
-    } catch (exception: SerializationException) {
-        logLocalFontFailure(exception)
-        null
-    } catch (exception: IllegalArgumentException) {
-        logLocalFontFailure(exception)
-        null
-    } catch (exception: JsException) {
-        logLocalFontFailure(exception)
-        null
+    val ready = state as? FontGateState.Ready
+    if (ready != null) {
+        CompositionLocalProvider(LocalPlatformFont provides ready.family, content = content)
     }
 }
 
-@OptIn(ExperimentalTextApi::class)
-private fun FontBinary.toFontFamily(): FontFamily = FontFamily(toLoadedFont())
+internal suspend fun preloadBrowserFont(
+    identity: String,
+    bytes: ByteArray,
+    resolver: FontFamily.Resolver,
+): FontFamily {
+    // Compose can silently replace a failed blocking LoadedFont with its default typeface.
+    // Validate with the same Skia decoder before treating resolver preloading as acceptance.
+    Data.makeFromBytes(bytes).use { data ->
+        requireNotNull(FontMgr.default.makeFromData(data)) { "Unable to decode browser-local font bytes." }.close()
+    }
+    val family = FontFamily(LoadedFont(identity, { bytes }, FontWeight.Normal, FontStyle.Normal))
+    resolver.preload(family)
+    return family
+}
 
-@OptIn(ExperimentalTextApi::class)
-private fun FontBinary.toLoadedFont() = LoadedFont(identity, { bytes }, FontWeight.Normal, FontStyle.Normal)
-
-@OptIn(ExperimentalEncodingApi::class)
-private fun LocalFontBinaryMetadata.toFontBinary(): FontBinary = FontBinary(identity, Base64.decode(base64))
-
-private fun logLocalFontFailure(exception: Throwable) {
-    Napier.w(exception) { "Unable to load a local CJK font; using the bundled fallback." }
+private sealed interface FontGateState {
+    data object Blocked : FontGateState
+    data class Pending(val snapshot: FontGateSnapshot.Font) : FontGateState
+    data class Ready(val family: FontFamily?) : FontGateState
 }
 
 @Serializable
-private data class LocalFontBinaryMetadata(val identity: String, val base64: String)
+private sealed interface FontGateSnapshot {
+    @Serializable
+    @SerialName("blocked")
+    data object Blocked : FontGateSnapshot
 
-private data class FontBinary(val identity: String, val bytes: ByteArray)
+    @Serializable
+    @SerialName("default")
+    data object Default : FontGateSnapshot
 
-private const val FALLBACK_FONT_IDENTITY = "NotoSansSC-Regular"
-private const val FALLBACK_FONT_RESOURCE = "files/fonts/noto_sans_sc_regular.otf"
+    @Serializable
+    @SerialName("font")
+    data class Font(val requestId: Int, val identity: String, val base64: String) : FontGateSnapshot
+}

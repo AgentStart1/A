@@ -9,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
 import com.storyteller_f.a.app.App
@@ -25,10 +26,10 @@ import com.storyteller_f.a.client.compose_core.components.LocalMediaPlaySession
 import com.storyteller_f.a.client.compose_core.components.LocalMediaPlayerService
 import com.storyteller_f.a.client.compose_core.components.MediaPlayerService
 import com.storyteller_f.a.client.compose_core.components.RemoteMediaItem
+import com.storyteller_f.a.client.compose_core.utils.WasmFontGate
 import kotlinx.browser.document
 import kotlinx.browser.localStorage
 import kotlinx.browser.window
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.collectLatest
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.configureWebResources
@@ -42,36 +43,39 @@ fun main() {
         }
     }
     ComposeViewport(document.body!!) {
-        val httpUrl = wasmQueryParameter("appiumHttpUrl") ?: getWasmServerUrl()
-        val wsUrl = wasmQueryParameter("appiumWsUrl") ?: getWasmWsServerUrl()
-        val uiViewModel = remember(httpUrl, wsUrl) { UIViewModel(MainScope(), wsUrl, httpUrl) }
-        val account by uiViewModel.instance.collectAsState()
-        val fileProvider =
-            remember(uiViewModel, account) {
-                val uploader =
-                    UploaderImpl(
-                        uiViewModel,
-                        SimpleTaskRegister(account.accountScope),
-                        retainSelectedFiles = true,
-                        // Fetch consumes the request body before transmission; report acknowledged chunks instead.
-                        persistTransportProgress = false,
-                    )
-                object : ClientFileProvider {
-                    override suspend fun getDownloader(): Downloader? = null
-                    override suspend fun getUploader() = uploader
+        WasmFontGate {
+            val appScope = rememberCoroutineScope()
+            val httpUrl = wasmQueryParameter("appiumHttpUrl") ?: getWasmServerUrl()
+            val wsUrl = wasmQueryParameter("appiumWsUrl") ?: getWasmWsServerUrl()
+            val uiViewModel = remember(httpUrl, wsUrl) { UIViewModel(appScope, wsUrl, httpUrl) }
+            val account by uiViewModel.instance.collectAsState()
+            val fileProvider =
+                remember(uiViewModel, account) {
+                    val uploader =
+                        UploaderImpl(
+                            uiViewModel,
+                            SimpleTaskRegister(account.accountScope),
+                            retainSelectedFiles = true,
+                            // Fetch consumes the request body before transmission; report acknowledged chunks instead.
+                            persistTransportProgress = false,
+                        )
+                    object : ClientFileProvider {
+                        override suspend fun getDownloader(): Downloader? = null
+                        override suspend fun getUploader() = uploader
+                    }
+                }
+            LaunchedEffect(uiViewModel) {
+                if (window.location.search.contains("appium=true")) {
+                    publishAppiumSessionReady(uiViewModel)
                 }
             }
-        LaunchedEffect(uiViewModel) {
-            if (window.location.search.contains("appium=true")) {
-                publishAppiumSessionReady(uiViewModel)
+            CompositionLocalProvider(
+                LocalUiViewModel provides uiViewModel,
+                LocalClientFileProvider provides fileProvider,
+                LocalMediaPlayerService provides WasmMediaPlayerService,
+            ) {
+                App()
             }
-        }
-        CompositionLocalProvider(
-            LocalUiViewModel provides uiViewModel,
-            LocalClientFileProvider provides fileProvider,
-            LocalMediaPlayerService provides WasmMediaPlayerService,
-        ) {
-            App()
         }
     }
 }
