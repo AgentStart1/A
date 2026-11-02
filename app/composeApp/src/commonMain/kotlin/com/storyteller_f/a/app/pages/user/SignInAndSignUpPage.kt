@@ -15,6 +15,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -27,6 +28,8 @@ import com.storyteller_f.a.app.LocalAppNavFactory
 import com.storyteller_f.a.app.Res
 import com.storyteller_f.a.app.back_to_pre_page
 import com.storyteller_f.a.app.utils.appPlatform
+import com.storyteller_f.a.client.compose_core.utils.BindBrowserNavigation
+import com.storyteller_f.a.client.compose_core.utils.appiumSemantics
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -60,6 +63,7 @@ fun SignInAndSignUpPage() {
                 }
         }
     val backStack = rememberNavBackStack(config, SignIn)
+    BindBrowserNavigation(backStack, config.serializersModule, "app/signin")
     val nav =
         remember {
             buildSignInAndSignUpNav(backStack)
@@ -68,12 +72,19 @@ fun SignInAndSignUpPage() {
     Surface {
         Column {
             if (!appPlatform.hasNativeBack) {
-                IconButton({
+                val backDescription = stringResource(Res.string.back_to_pre_page)
+                val goBack: () -> Unit = {
                     if (backStack.size > 1) {
+                        backStack.removeLastOrNull()
+                    } else {
                         appNavFactory.newAppNav().back()
                     }
-                }) {
-                    Icon(Icons.AutoMirrored.Default.ArrowBack, stringResource(Res.string.back_to_pre_page))
+                }
+                IconButton(
+                    onClick = goBack,
+                    modifier = Modifier.appiumSemantics(description = backDescription, onClick = goBack),
+                ) {
+                    Icon(Icons.AutoMirrored.Default.ArrowBack, backDescription)
                 }
             }
             SignInNavDisplay(backStack, nav)

@@ -9,16 +9,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Done
@@ -34,12 +30,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -54,15 +47,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
-import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import androidx.navigation3.ui.NavDisplay
 import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.savedstate.serialization.SavedStateConfiguration
 import com.storyteller_f.a.app.LocalAppNavFactory
 import com.storyteller_f.a.app.LocalClientFileProvider
 import com.storyteller_f.a.app.LocalGlobalDialog
@@ -76,8 +62,6 @@ import com.storyteller_f.a.app.pages.search.CustomSearchBar
 import com.storyteller_f.a.app.pages.search.SearchScope
 import com.storyteller_f.a.app.pages.topic.PlatformClientFile
 import com.storyteller_f.a.client.compose_core.components.BaseSheet
-import com.storyteller_f.a.client.compose_core.components.CustomBottomNav
-import com.storyteller_f.a.client.compose_core.components.CustomRailNav
 import com.storyteller_f.a.client.compose_core.components.FileIcon
 import com.storyteller_f.a.client.compose_core.components.InfoTable
 import com.storyteller_f.a.client.compose_core.components.NavRoute
@@ -86,7 +70,6 @@ import com.storyteller_f.a.client.compose_core.components.StateView
 import com.storyteller_f.a.client.compose_core.components.bottomAppending
 import com.storyteller_f.a.client.compose_core.components.pagingItems
 import com.storyteller_f.a.client.compose_core.components.topPrepend
-import com.storyteller_f.a.client.compose_core.utils.CurrentWindowSizeClass
 import com.storyteller_f.a.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.result.CustomResult
 import com.storyteller_f.shared.model.FileInfo
@@ -100,23 +83,35 @@ import com.storyteller_f.storage.DownloadStatus
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.openFilePicker
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.polymorphic
-import kotlinx.serialization.modules.subclass
 import nl.jacobras.humanreadable.HumanReadable
 import kotlin.math.pow
 import kotlin.math.round
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FileExplorerPage(mediaTarget: ObjectTuple) {
-    val size = CurrentWindowSizeClass()
-    when (size.widthSizeClass) {
-        WindowWidthSizeClass.Compact -> FileExplorerCompatPageInternal(mediaTarget)
-        else -> FileExplorerNonCompatPageInternal(mediaTarget)
+    val backStack = rememberFileExplorerBackStack()
+    var showQuota by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
+    FileExplorerNavigation(
+        backStack = backStack,
+        routes = fileNavRoutes(mediaTarget),
+        search = {
+            CustomSearchBar(
+                scope = SearchScope.UploadedFiles(mediaTarget.objectId, mediaTarget.objectType),
+                leadingIcon = {},
+            )
+        },
+        floatingActionButton = { FileExplorerFab(backStack.last()) { showQuota = true } },
+    ) { route ->
+        when (route) {
+            FileExplorerRoute.Uploaded -> UploadedPage(mediaTarget)
+            FileExplorerRoute.UploadRecord -> UploadRecordPage(mediaTarget)
+            FileExplorerRoute.DownloadRecord -> DownloadRecordPage()
+        }
     }
+    QuotaSheet(showQuota, sheetState, { showQuota = false }, mediaTarget)
 }
 
 @Composable
@@ -130,59 +125,6 @@ private fun fileNavRoutes(mediaTarget: ObjectTuple): List<NavRoute> {
         list.add(NavRoute("/download-record", Icons.Filled.Download, "Download"))
     }
     return list
-}
-
-@Suppress("UnusedMaterial3ScaffoldPaddingParameter")
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FileExplorerCompatPageInternal(mediaTarget: ObjectTuple) {
-    val navRoutes = fileNavRoutes(mediaTarget)
-    val pagerState = rememberPagerState { navRoutes.size }
-    var showQuota by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
-    Scaffold(floatingActionButton = {
-        when (pagerState.currentPage) {
-            0 -> {
-                FloatingActionButton({ showQuota = true }) {
-                    Icon(Icons.Filled.Info, "quota info")
-                }
-            }
-
-            1 -> {
-                UploadFileActionButton()
-            }
-        }
-    }, bottomBar = {
-        val scope = rememberCoroutineScope()
-        CustomBottomNav(navRoutes[pagerState.currentPage].path, navRoutes) { path ->
-            scope.launch {
-                pagerState.animateScrollToPage(navRoutes.indexOfFirst { it.path == path })
-            }
-        }
-    }) {
-        Column {
-            CustomSearchBar(
-                scope = SearchScope.UploadedFiles(mediaTarget.objectId, mediaTarget.objectType),
-                leadingIcon = {},
-            )
-            FileExplorerPager(pagerState, mediaTarget, PaddingValues(0.dp))
-        }
-    }
-    QuotaSheet(showQuota, sheetState, { showQuota = false }, mediaTarget)
-}
-
-@Composable
-private fun FileExplorerPager(pagerState: PagerState, mediaTarget: ObjectTuple, paddingValues: PaddingValues) {
-    HorizontalPager(
-        pagerState,
-        modifier = Modifier.padding(top = paddingValues.calculateTopPadding()),
-    ) { index ->
-        when (index) {
-            0 -> UploadedPage(mediaTarget)
-            1 -> UploadRecordPage(mediaTarget)
-            else -> DownloadRecordPage()
-        }
-    }
 }
 
 @Serializable
@@ -203,39 +145,6 @@ sealed interface FileExplorerRoute : NavKey {
     }
 }
 
-@Suppress("UnusedMaterial3ScaffoldPaddingParameter")
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FileExplorerNonCompatPageInternal(mediaTarget: ObjectTuple) {
-    val navRoutes = fileNavRoutes(mediaTarget)
-    val config =
-        remember {
-            SavedStateConfiguration {
-                serializersModule =
-                    SerializersModule {
-                        polymorphic(NavKey::class) {
-                            subclass(FileExplorerRoute.Uploaded::class)
-                            subclass(FileExplorerRoute.UploadRecord::class)
-                            subclass(FileExplorerRoute.DownloadRecord::class)
-                        }
-                    }
-            }
-        }
-    val backStack = rememberNavBackStack(config, FileExplorerRoute.Uploaded)
-    val current = backStack.last()
-    var showQuota by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
-    Scaffold(floatingActionButton = {
-        FileExplorerFab(current, showQuota = { showQuota = true })
-    }) {
-        Row {
-            FileExplorerRailNav(backStack, current, navRoutes)
-            FileExplorerNonCompatContent(mediaTarget, backStack)
-        }
-    }
-    QuotaSheet(showQuota, sheetState, { showQuota = false }, mediaTarget)
-}
-
 @Composable
 private fun FileExplorerFab(current: NavKey, showQuota: () -> Unit) {
     when (current) {
@@ -246,59 +155,6 @@ private fun FileExplorerFab(current: NavKey, showQuota: () -> Unit) {
         FileExplorerRoute.UploadRecord -> {
             UploadFileActionButton()
         }
-    }
-}
-
-@Composable
-private fun FileExplorerRailNav(backStack: NavBackStack<NavKey>, current: NavKey, navRoutes: List<NavRoute>) {
-    CustomRailNav(current.toString(), navRoutes) { path ->
-        val target =
-            when (path) {
-                "/upload-record" -> FileExplorerRoute.UploadRecord
-                "/download-record" -> FileExplorerRoute.DownloadRecord
-                else -> FileExplorerRoute.Uploaded
-            }
-        if (backStack.last() != target) {
-            val i = backStack.indexOf(target)
-            if (i >= 0) {
-                repeat(backStack.size - i - 1) {
-                    backStack.removeLastOrNull()
-                }
-            } else {
-                backStack.add(target)
-            }
-        }
-    }
-}
-
-@Composable
-private fun RowScope.FileExplorerNonCompatContent(mediaTarget: ObjectTuple, backStack: NavBackStack<NavKey>) {
-    Column(modifier = Modifier.weight(1f)) {
-        CustomSearchBar(
-            scope = SearchScope.UploadedFiles(mediaTarget.objectId, mediaTarget.objectType),
-            leadingIcon = {},
-        )
-
-        NavDisplay(
-            backStack,
-            entryDecorators =
-            listOf(
-                rememberSaveableStateHolderNavEntryDecorator(),
-                rememberViewModelStoreNavEntryDecorator(),
-            ),
-            entryProvider =
-            entryProvider {
-                entry<FileExplorerRoute.Uploaded> {
-                    UploadedPage(mediaTarget)
-                }
-                entry<FileExplorerRoute.UploadRecord> {
-                    UploadRecordPage(mediaTarget)
-                }
-                entry<FileExplorerRoute.DownloadRecord> {
-                    DownloadRecordPage()
-                }
-            },
-        )
     }
 }
 

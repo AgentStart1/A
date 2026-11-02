@@ -654,3 +654,13 @@
 - Track fixture release with a per-command process lease registered before launch, not by catching selected exception types. Require all leases to be released before deletion, including when caller failure and cleanup failure occur together. Verify Shell compatibility entries as original bytes/executables and keep their LF rules in `.gitattributes`.
 
 - Finalize process termination and control-pipe closure under one exception-priority boundary. Attempt all cleanup steps, preserve the original caller failure, retain every cleanup error, and test real disconnected buffered pipes rather than only BytesIO stubs.
+
+- Bind Wasm page stacks through the shared browser-history controller, using root-scoped nested IDs.
+  App Back must traverse existing History API entries so browser Forward remains usable; preserve the
+  last root route, current URL, and unrelated history state. Keep modal dismissal in the platform
+  dispatcher and keep drafts/credentials out of navigation history.
+  Use discriminator-safe route encoding because destination payloads can contain a `type` field.
+
+- Parent navigation return positions must follow the latest descendant snapshot. Keep responsive
+  file navigation and its pager mounted across rail/bottom layouts; browser restores must not be
+  echoed back as new pager navigation. Verify resizing and history restoration during a drag.

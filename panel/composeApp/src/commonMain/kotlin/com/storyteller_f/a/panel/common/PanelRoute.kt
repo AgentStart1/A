@@ -35,6 +35,7 @@ import androidx.savedstate.serialization.SavedStateConfiguration
 import com.storyteller_f.a.client.compose_core.components.CenterBox
 import com.storyteller_f.a.client.compose_core.components.SignInButton
 import com.storyteller_f.a.client.compose_core.components.safeArea
+import com.storyteller_f.a.client.compose_core.utils.BindBrowserNavigation
 import com.storyteller_f.a.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.a.panel.LocalPanelNav
 import com.storyteller_f.a.panel.LocalPanelUiViewModel
@@ -291,7 +292,7 @@ private class DefaultPanelNav(
     }
 
     override fun back() {
-        backStack.removeLastOrNull()
+        if (backStack.size > 1) backStack.removeLastOrNull()
     }
 
     override fun open() {
@@ -438,6 +439,7 @@ fun PanelLoginPage(back: () -> Unit) {
             }
         }
     val backStack = rememberNavBackStack(config, LoginSelectScreen)
+    BindBrowserNavigation(backStack, config.serializersModule, "panel/login")
     Scaffold { paddingValues ->
         val direction = LocalLayoutDirection.current
         Box(Modifier.safeArea(paddingValues, direction)) {

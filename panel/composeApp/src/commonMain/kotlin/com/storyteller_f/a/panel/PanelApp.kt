@@ -83,6 +83,7 @@ import com.storyteller_f.a.client.compose_core.components.GlobalDialog
 import com.storyteller_f.a.client.compose_core.components.GlobalDialogContext
 import com.storyteller_f.a.client.compose_core.components.GlobalTaskContext
 import com.storyteller_f.a.client.compose_core.components.request
+import com.storyteller_f.a.client.compose_core.utils.BindBrowserNavigation
 import com.storyteller_f.a.client.compose_core.utils.CurrentWindowSizeClass
 import com.storyteller_f.a.client.compose_core.utils.SessionHistoryManager
 import com.storyteller_f.a.client.compose_core.utils.addPlatformImageDecoders
@@ -177,6 +178,7 @@ fun App() {
             }
         }
     val backStack = rememberNavBackStack(config, PanelOverviewScreen)
+    BindBrowserNavigation(backStack, config.serializersModule, "panel")
 
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -256,6 +258,7 @@ private fun mainPanelPage(backStack: NavBackStack<NavKey>, nav: PanelNav) {
             rememberListDetailSceneStrategy<NavKey>(directive = directive)
         NavDisplay(
             backStack = backStack,
+            onBack = { nav.back() },
             entryDecorators =
             listOf(
                 rememberSaveableStateHolderNavEntryDecorator(),

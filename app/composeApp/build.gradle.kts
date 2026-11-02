@@ -460,7 +460,11 @@ tasks.register<Test>("adaptiveUiTest") {
     val hostTest = tasks.named<Test>("jvmTest").get()
     testClassesDirs = hostTest.testClassesDirs
     classpath = hostTest.classpath
-    include("device_based/HomeAdaptiveUiTest*", "device_based/RoomPagingUiTest*")
+    include(
+        "device_based/HomeAdaptiveUiTest*",
+        "device_based/RoomPagingUiTest*",
+        "device_based/FileExplorerNavigationUiTest*",
+    )
     systemProperty("java.io.tmpdir", layout.buildDirectory.get().asFile.absolutePath)
     maxParallelForks = 1
 }
