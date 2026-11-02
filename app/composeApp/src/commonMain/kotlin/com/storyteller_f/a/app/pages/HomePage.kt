@@ -46,6 +46,7 @@ import com.storyteller_f.a.app.LocalUiViewModel
 import com.storyteller_f.a.app.Res
 import com.storyteller_f.a.app.common.getUnreadMessageCountViewModel
 import com.storyteller_f.a.app.communities
+import com.storyteller_f.a.app.components.SignInRequiredContent
 import com.storyteller_f.a.app.home_start_destination_communities
 import com.storyteller_f.a.app.home_start_destination_rooms
 import com.storyteller_f.a.app.home_start_destination_world
@@ -59,9 +60,7 @@ import com.storyteller_f.a.app.source_repository
 import com.storyteller_f.a.app.utils.rememberStringPreference
 import com.storyteller_f.a.app.world
 import com.storyteller_f.a.client.compose_core.components.ButtonNav
-import com.storyteller_f.a.client.compose_core.components.CenterBox
 import com.storyteller_f.a.client.compose_core.components.NavRoute
-import com.storyteller_f.a.client.compose_core.components.SignInButton
 import com.storyteller_f.a.client.compose_core.utils.appiumSemantics
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -195,19 +194,15 @@ private fun HomeSection(page: Int, selectSection: (Int) -> Unit) {
 }
 
 @Composable
-private fun UserHost(content: @Composable () -> Unit) {
+internal fun UserHost(content: @Composable () -> Unit) {
     val uiViewModel = LocalUiViewModel.current
     val session by uiViewModel.instance.collectAsState()
     val appNavFactory = LocalAppNavFactory.current
-    if (session !is IAccountInstance.None) {
-        content()
-    } else {
-        CenterBox {
-            SignInButton {
-                appNavFactory.newAppNav().gotoSignIn()
-            }
-        }
-    }
+    SignInRequiredContent(
+        isSignedIn = session !is IAccountInstance.None,
+        onSignIn = { appNavFactory.newAppNav().gotoSignIn() },
+        content = content,
+    )
 }
 
 @Composable

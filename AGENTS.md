@@ -664,3 +664,7 @@
 - Parent navigation return positions must follow the latest descendant snapshot. Keep responsive
   file navigation and its pager mounted across rail/bottom layouts; browser restores must not be
   echoed back as new pager navigation. Verify resizing and history restoration during a drag.
+
+- Gate authenticated file previews before creating their detail ViewModels, including restored routes.
+  Navigation actions must check the current session at click time so sign-in and sign-out take effect.
+  Protected-action prompts share one sign-in confirmation; explicit sign-in buttons navigate directly.

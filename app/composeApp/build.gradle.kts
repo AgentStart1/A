@@ -464,6 +464,7 @@ tasks.register<Test>("adaptiveUiTest") {
         "device_based/HomeAdaptiveUiTest*",
         "device_based/RoomPagingUiTest*",
         "device_based/FileExplorerNavigationUiTest*",
+        "device_based/SignInPromptUiTest*",
     )
     systemProperty("java.io.tmpdir", layout.buildDirectory.get().asFile.absolutePath)
     maxParallelForks = 1

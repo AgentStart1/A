@@ -95,7 +95,6 @@ import com.storyteller_f.a.app.files_title
 import com.storyteller_f.a.app.input_is_empty
 import com.storyteller_f.a.app.join_room
 import com.storyteller_f.a.app.join_room_prompt
-import com.storyteller_f.a.app.need_sign_in
 import com.storyteller_f.a.app.open_in_full
 import com.storyteller_f.a.app.pages.DetailReadingColumn
 import com.storyteller_f.a.app.pages.community.CommunityRefCell
@@ -593,10 +592,9 @@ private fun InputGroupSuffix(
     mediaTarget: ObjectTuple,
     gotoCompose: () -> Unit,
 ) {
-    val scope = rememberCoroutineScope()
     val uIViewModel = LocalUiViewModel.current
     val instance by uIViewModel.instance.collectAsState()
-    val alertDialogController = rememberAlertDialogController()
+    val appNavFactory = LocalAppNavFactory.current
     val alreadySignIn = instance !is IAccountInstance.None
     var showSheet by remember {
         mutableStateOf(false)
@@ -606,9 +604,7 @@ private fun InputGroupSuffix(
         if (alreadySignIn) {
             gotoCompose()
         } else {
-            scope.launch {
-                alertDialogController.showTitle(getString(Res.string.need_sign_in))
-            }
+            appNavFactory.newAppNav().requestSignIn()
         }
     }) {
         Icon(Icons.Default.OpenInFull, stringResource(Res.string.open_in_full))
@@ -617,9 +613,7 @@ private fun InputGroupSuffix(
         if (alreadySignIn) {
             showSheet = true
         } else {
-            scope.launch {
-                alertDialogController.showTitle(getString(Res.string.need_sign_in))
-            }
+            appNavFactory.newAppNav().requestSignIn()
         }
     }) {
         Icon(Icons.Filled.PermMedia, contentDescription = null)
@@ -634,10 +628,6 @@ private fun InputGroupSuffix(
         },
     ) {
         showSheet = false
-    }
-    CustomAlertDialog(alertDialogController, {
-        alertDialogController.close()
-    }) {
     }
 }
 

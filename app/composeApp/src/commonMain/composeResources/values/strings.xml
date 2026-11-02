@@ -103,7 +103,8 @@
     <string name="exclamation_mark">!</string>
     <string name="clear_input">clear input</string>
     <string name="open_in_full">open in full</string>
-    <string name="need_sign_in">need sign in</string>
+    <string name="need_sign_in">Sign in to continue</string>
+    <string name="sign_in_required_message">Sign in to preview attachments and take part in conversations. You can also keep browsing public content without signing in.</string>
     <string name="aid_display">aid: %1$s</string>
     <string name="settings_title">Settings</string>
     <string name="files_title">Files</string>

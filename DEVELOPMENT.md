@@ -196,6 +196,14 @@ files are not preview destinations. The topic attachment action precedes an inli
 large video cannot hide its full-page entry below the current viewport. Native uploaded-file rows
 merge the filename and visible metadata into one actionable accessibility label.
 
+Full-page uploaded-file previews require sign-in because their file-detail endpoint is protected.
+The shared navigation action checks the current session when clicked. Guests see the same sign-in
+confirmation used by room and interaction actions; only confirmation opens sign-in, and cancellation
+keeps the source topic and browser history unchanged. Restored or directly reached preview entries
+show a sign-in button before creating their file-detail ViewModel. This explicit button opens sign-in
+directly without another confirmation. `FilePreviewNavigationTest` and `SignInPromptUiTest` cover these
+paths, session changes and returning to the source topic.
+
 Browser audio playback requires an available default output device. The media host rejects a
 zero-channel destination before awaiting AudioContext.resume, reports a visible playback failure
 and releases the decoder/context. Keep E2E playback-progress assertions: trusted input and allowed
