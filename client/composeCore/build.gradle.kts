@@ -12,7 +12,6 @@ plugins {
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.serialization)
-    id("noto-wasm-font")
     id("wasm-browser-test-interop")
 }
 
@@ -193,10 +192,6 @@ compose.resources {
     publicResClass = false
     packageOfResClass = "com.storyteller_f.a.client.compose_core"
     generateResClass = auto
-    customDirectory(
-        sourceSetName = "wasmJsMain",
-        directoryProvider = layout.dir(tasks.named("downloadNotoWasmFont").map { it.outputs.files.singleFile }),
-    )
 }
 
 // Platform integration is explicit; ordinary JVM checks remain portable.
@@ -230,3 +225,13 @@ tasks.register<Test>("macosProtectedStoreTest") {
 tasks.named("wasmJsBrowserTest") {
     inputs.dir(layout.projectDirectory.dir("karma.config.d"))
 }
+
+val testFontGateRuntime =
+    tasks.register<Exec>("testFontGateRuntime") {
+        group = "verification"
+        description = "Verify Wasm font preference, authorization and cancellation transitions."
+        inputs.dir("local-font-access")
+        commandLine("node", "--test", "local-font-access/fontGateHost.test.mjs")
+    }
+
+tasks.named("check") { dependsOn(testFontGateRuntime) }

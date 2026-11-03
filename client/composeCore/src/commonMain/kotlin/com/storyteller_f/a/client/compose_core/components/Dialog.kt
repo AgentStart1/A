@@ -15,6 +15,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -64,6 +65,7 @@ data class CustomAlertDialogState(
     val message: String,
     val positiveButton: String = "Yes",
     val enableCopy: Boolean = false,
+    val negativeButton: String? = null,
 )
 
 @Composable
@@ -79,10 +81,10 @@ fun CustomAlertDialogInternal(dialogState: CustomAlertDialogState?, dismiss: () 
         dismiss()
     }, title = {
         dialogState.title?.let {
-            Text(it)
+            Text(it, Modifier.appiumSemantics(text = it))
         }
     }, text = {
-        Text(dialogState.message)
+        Text(dialogState.message, Modifier.appiumSemantics(text = dialogState.message))
     }, confirmButton = {
         if (dialogState.enableCopy) {
             val clipboardManager = LocalClipboard.current
@@ -105,6 +107,12 @@ fun CustomAlertDialogInternal(dialogState: CustomAlertDialogState?, dismiss: () 
                 modifier = Modifier.appiumSemantics(text = dialogState.positiveButton, onClick = confirm),
             ) {
                 Text(dialogState.positiveButton)
+            }
+        }
+    }, dismissButton = {
+        dialogState.negativeButton?.let { label ->
+            TextButton(dismiss, Modifier.appiumSemantics(text = label, onClick = dismiss)) {
+                Text(label)
             }
         }
     })

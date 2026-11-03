@@ -13,7 +13,7 @@ class AppNavigationBackTest {
     @Test
     fun retainHomeWhenBackingFromRoot() {
         val backStack = NavBackStack<NavKey>(HomeScreen)
-        val nav = newAppNav(backStack)
+        val nav = newAppNav(backStack, isSignedIn = { false }, onSignInRequired = {})
         repeat(2) { nav.back() }
         assertEquals(listOf(HomeScreen), backStack.toList())
     }
@@ -21,7 +21,7 @@ class AppNavigationBackTest {
     @Test
     fun removeDetailWhenBacking() {
         val backStack = NavBackStack<NavKey>(HomeScreen, RoomScreen(1))
-        val nav = newAppNav(backStack)
+        val nav = newAppNav(backStack, isSignedIn = { false }, onSignInRequired = {})
         nav.back()
         nav.back()
         assertEquals(listOf(HomeScreen), backStack.toList())

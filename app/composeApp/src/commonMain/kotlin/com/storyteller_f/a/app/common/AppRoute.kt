@@ -14,6 +14,7 @@ import androidx.navigation3.runtime.entryProvider
 import com.storyteller_f.a.app.LocalUserInfo
 import com.storyteller_f.a.app.pages.HomePage
 import com.storyteller_f.a.app.pages.PreferencePage
+import com.storyteller_f.a.app.pages.UserHost
 import com.storyteller_f.a.app.pages.community.CommunityComposePage
 import com.storyteller_f.a.app.pages.community.CommunityPage
 import com.storyteller_f.a.app.pages.community.CommunitySettingPage
@@ -236,6 +237,8 @@ interface AppNav {
 
     fun gotoSignIn()
 
+    fun requestSignIn()
+
     fun gotoCall(roomId: PrimaryKey)
 
     fun gotoRoom(roomId: PrimaryKey, showDialog: Boolean)
@@ -310,10 +313,16 @@ interface AppNavFactory {
 
 // AppNav intentionally exposes one method per destination.
 @Suppress("TooManyFunctions")
-private class DefaultAppNav(override val backStack: NavBackStack<NavKey>) : AppNav {
+private class DefaultAppNav(
+    override val backStack: NavBackStack<NavKey>,
+    private val isSignedIn: () -> Boolean,
+    private val onSignInRequired: () -> Unit,
+) : AppNav {
     override fun gotoSignIn() {
         backStack.add(SignSessionScreen)
     }
+
+    override fun requestSignIn() = onSignInRequired()
 
     override fun gotoCall(roomId: PrimaryKey) {
         backStack.add(RtcCallScreen(roomId))
@@ -413,7 +422,11 @@ private class DefaultAppNav(override val backStack: NavBackStack<NavKey>) : AppN
     }
 
     override fun gotoMedia(info: FileInfo) {
-        backStack.add(FileInfoScreen(info.id))
+        if (isSignedIn()) {
+            backStack.add(FileInfoScreen(info.id))
+        } else {
+            requestSignIn()
+        }
     }
 
     override fun gotoLocalImage(url: String) {
@@ -490,7 +503,11 @@ private class DefaultAppNav(override val backStack: NavBackStack<NavKey>) : AppN
     }
 }
 
-internal fun newAppNav(backStack: NavBackStack<NavKey>): AppNav = DefaultAppNav(backStack)
+internal fun newAppNav(
+    backStack: NavBackStack<NavKey>,
+    isSignedIn: () -> Boolean,
+    onSignInRequired: () -> Unit,
+): AppNav = DefaultAppNav(backStack, isSignedIn, onSignInRequired)
 
 @OptIn(ExperimentalResourceApi::class)
 fun rootEntryProvider(nav: AppNav) =
@@ -503,7 +520,7 @@ fun rootEntryProvider(nav: AppNav) =
             com.storyteller_f.a.app.pages.AboutLibrariesPage()
         }
         entry<FileInfoScreen> {
-            FileViewPage(FileViewData.Regular(it.fileId))
+            UserHost { FileViewPage(FileViewData.Regular(it.fileId)) }
         }
 
         entry<LocalImageScreen> {

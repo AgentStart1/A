@@ -19,6 +19,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -53,6 +54,7 @@ import com.storyteller_f.a.app.common.newAppNav
 import com.storyteller_f.a.app.common.processEvent
 import com.storyteller_f.a.app.common.rootEntryProvider
 import com.storyteller_f.a.app.common.toRoute
+import com.storyteller_f.a.app.components.SignInPrompt
 import com.storyteller_f.a.app.pages.file.FileExplorerPage
 import com.storyteller_f.a.app.pages.file.FileViewPage
 import com.storyteller_f.a.app.pages.room.RoomPage
@@ -226,10 +228,17 @@ fun AppInternal(mediaPlaySession: MediaPlaySession?) {
         }
     val backStack = rememberNavBackStack(config, HomeScreen)
     BindBrowserNavigation(backStack, config.serializersModule, "app")
+    val sessionManager = LocalSessionManager.current
+    val signInPromptShown = remember(backStack.lastOrNull(), sessionManager) { mutableStateOf(false) }
     val appNav =
-        remember {
+        remember(backStack, sessionManager, signInPromptShown) {
             object : AppNavFactory {
-                val appNav = newAppNav(backStack)
+                val appNav =
+                    newAppNav(
+                        backStack,
+                        isSignedIn = { sessionManager.currentIsAlreadySignUp },
+                        onSignInRequired = { signInPromptShown.value = true },
+                    )
                 override fun newAppNav() = appNav
             }
         }
@@ -242,6 +251,9 @@ fun AppInternal(mediaPlaySession: MediaPlaySession?) {
         } else {
             AudioViewFilled(remoteMediaItem)
         }
+    }
+    SignInPrompt(signInPromptShown.value, { signInPromptShown.value = false }) {
+        appNav.newAppNav().gotoSignIn()
     }
 }
 
@@ -731,6 +743,7 @@ private fun createAppNavFactoryForBubble(): AppNavFactory =
                     get() = throw UnsupportedOperationException("Bubble navigation does not expose a back stack")
 
                 override fun gotoSignIn() = Unit
+                override fun requestSignIn() = Unit
 
                 override fun gotoCall(roomId: PrimaryKey) = Unit
 

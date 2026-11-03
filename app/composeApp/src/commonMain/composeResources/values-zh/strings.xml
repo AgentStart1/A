@@ -18,6 +18,8 @@
     <string name="private_key">私钥</string>
     <string name="go_to_sign_up">前往注册</string>
     <string name="go_to_sign_in">前往登录</string>
+    <string name="need_sign_in">登录后继续</string>
+    <string name="sign_in_required_message">登录后即可预览附件和参与互动。也可以暂不登录，继续浏览公开内容。</string>
     <string name="start_sign_up">开始注册</string>
     <string name="start_sign_in">开始登录</string>
     <string name="sign_in_subtitle">使用历史会话或私钥访问账号。</string>

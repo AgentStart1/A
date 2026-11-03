@@ -212,6 +212,7 @@ class WasmAppiumHelper(
             """.trimIndent(),
             session?.let(::buildInjectedSessionJson),
         )
+        preferDownloadedFonts(browser)
     }
 }
 

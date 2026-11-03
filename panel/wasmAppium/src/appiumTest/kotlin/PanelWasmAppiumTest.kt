@@ -66,6 +66,8 @@ class PanelWasmAppiumTest(private val browserType: WasmBrowser) :
                 ),
             ).use { server ->
                 browserType.withBrowser(Dimension(500, 800), beforeClose = server::collectCoverage) { browser ->
+                    browser.get(server.bootstrapUrl)
+                    preferDownloadedFonts(browser)
                     browser.get("${server.url}?appium=true")
                     captureFailure(ArtifactCollectionError::CollectionFailed) {
                         WebDriverWait(browser, Duration.ofSeconds(30)).until(

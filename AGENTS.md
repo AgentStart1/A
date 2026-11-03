@@ -664,3 +664,18 @@
 - Parent navigation return positions must follow the latest descendant snapshot. Keep responsive
   file navigation and its pager mounted across rail/bottom layouts; browser restores must not be
   echoed back as new pager navigation. Verify resizing and history restoration during a drag.
+
+- Gate authenticated file previews before creating their detail ViewModels, including restored routes.
+  Navigation actions must check the current session at click time so sign-in and sign-out take effect.
+  Protected-action prompts share one sign-in confirmation; explicit sign-in buttons navigate directly.
+
+- Compose blocking-font preloading can silently fall back after decoding errors. Strictly decode browser-local
+  font bytes before accepting preload completion, and invalidate pending confirmation when permission resets.
+
+- Wasm font preference is intent, not permission. Mount business content only after explicit opt-out
+  or successful authorized font preloading. Keep the startup gate readable with native HTML fonts.
+  Prepare ordinary browser E2E font preferences on the static same-origin bootstrap after clearing
+  storage; font-flow tests must exercise the gate itself without a test-mode bypass.
+
+- Build production Wasm distributions and Appium development distributions in separate Gradle
+  invocations; their CompileSync tasks share generated npm package directories.

@@ -48,7 +48,7 @@ class HomeStartDestinationTest {
         ).zip(listOf(CommunityScreen(2, false), RoomScreen(2, false), TopicScreen(2), UserScreen(2)))
             .forEach { (navigate, destination) ->
                 val backStack = NavBackStack<NavKey>(HomeScreen)
-                val nav = newAppNav(backStack)
+                val nav = newAppNav(backStack, isSignedIn = { false }, onSignInRequired = {})
                 navigate(nav)
                 assertEquals(listOf(HomeScreen, destination), backStack.toList())
                 nav.back()
@@ -60,7 +60,7 @@ class HomeStartDestinationTest {
     fun detailNavigationPreservesBackHistory() {
         val backStack = NavBackStack<NavKey>(HomeScreen, RoomScreen(1))
 
-        newAppNav(backStack).gotoTopic(2)
+        newAppNav(backStack, isSignedIn = { false }, onSignInRequired = {}).gotoTopic(2)
 
         assertEquals(
             listOf(HomeScreen, RoomScreen(1), TopicScreen(2)),
@@ -71,7 +71,7 @@ class HomeStartDestinationTest {
     @Test
     fun rootBackKeepsHome() {
         val backStack = NavBackStack<NavKey>(HomeScreen)
-        newAppNav(backStack).back()
+        newAppNav(backStack, isSignedIn = { false }, onSignInRequired = {}).back()
         assertEquals(listOf(HomeScreen), backStack.toList())
     }
 }
