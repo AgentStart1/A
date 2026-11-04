@@ -50,7 +50,7 @@ internal class CommunityFontDownload(
     private val onLoaded: suspend (String) -> Unit = {},
 ) {
     suspend fun load(file: FileInfo, retry: Boolean = false): CommunityFontBundle {
-        require(file.size in 1..64L * 1024 * 1024) { "Unsupported font size" }
+        require(file.size in 1..MAX_FONT_SOURCE_BYTES) { "Unsupported font size" }
         val registered = downloader.download(file, retry)
         val record =
             if (registered.isTerminal()) {
@@ -89,7 +89,7 @@ private suspend fun readFontBundle(
     files: DownloadFileStore,
 ): CommunityFontBundle {
     check(files.size(record.path) == file.size) { "Font cache is missing or incomplete" }
-    var remaining = 64L * 1024 * 1024
+    var remaining = MAX_FONT_DECODED_BYTES
     val faces =
         if (file.isDownloadArchive()) {
             val entries =

@@ -712,3 +712,7 @@
   earlier admissions and waits for cleanup before later work runs. Merge repeated resume intents
   without dropping an explicit resume behind an ordinary registration. Handle ordinary failures at
   the owned request boundary; distinguish explicit operation pause from caller/account cancellation.
+
+- Font preset ZIPs must contain a single family. Preserve available regular/bold/italic faces,
+  exclude Condensed, and use sourceName to share raw downloads across separately filtered outputs.
+  Recheck author-controlled Markdown weight support before removing or restoring extra weights.

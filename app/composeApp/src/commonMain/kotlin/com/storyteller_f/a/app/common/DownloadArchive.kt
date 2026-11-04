@@ -19,6 +19,7 @@ import no.synth.kmpzip.zip.ZipFile
 import kotlin.uuid.Uuid
 
 internal const val MAX_BROWSER_ARCHIVE_BYTES = 64L * 1024 * 1024
+internal const val MAX_BROWSER_ARCHIVE_EXPANDED_BYTES = 80L * 1024 * 1024
 private const val MAX_BROWSER_ARCHIVE_ENTRIES = 2048
 
 /** Browser ZIP decoding is bounded; ordinary non-archive downloads can be streamed without this limit. */
@@ -30,7 +31,7 @@ internal suspend fun DownloadFileStore.extractBrowserArchive(path: String) {
             require(entries.size <= MAX_BROWSER_ARCHIVE_ENTRIES) { "Too many archive entries" }
             val names = entries.map { safeArchiveName(it.name) }
             require(names.map { it.lowercase() }.distinct().size == names.size) { "Duplicate archive paths" }
-            var remaining = MAX_BROWSER_ARCHIVE_BYTES
+            var remaining = MAX_BROWSER_ARCHIVE_EXPANDED_BYTES
             entries.zip(names).map { (entry, name) ->
                 require(entry.size in 0..remaining) { "Archive exceeds the decoded size limit" }
                 val content =

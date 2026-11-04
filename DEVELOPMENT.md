@@ -2230,9 +2230,9 @@ workers are terminated after each operation. Worker errors fail processing witho
 extraction fallback. Local npm sources are inputs to Wasm installation and webpack tasks; regenerate
 only `kotlin-js-store/wasm/yarn.lock` after dependency changes.
 
-Browser ZIP processing permits at most 2048 file entries and 64 MiB each of source and expanded data;
+Browser ZIP processing permits at most 2048 file entries, 64 MiB of source data and 80 MiB of expanded data;
 native ZIP processing keeps its streaming implementation. Ordinary non-archive downloads stream
-to storage without that ZIP limit. Font bundles accept at most 18 faces and 64 MiB. Account-session
+to storage without that ZIP limit. Font bundles accept at most 18 faces, a 64 MiB source and 80 MiB of decoded faces. Account-session
 decoded bundles retain at most 12 files and 128 MiB; browser font retention tracks up to 12 successfully loaded OPFS
 versions with separate 128 MiB source and expanded-data budgets. Retention applies only to
 font entries, not general downloads. System-font permission bytes remain separate.
@@ -2263,3 +2263,28 @@ A launcher retry while a relaunched browser remains alive can otherwise remove a
 Use `FIREFOX_BIN` and `-Pkotlin.js.browser.karma.browsers=firefox-headless` to add Firefox to the
 browser tests; keep the shared loader configuration intact.
 UI tests verify glyph metrics, defaults for invalid fonts and draft/cursor retention during loading.
+
+### Font preset download filters
+
+The `*.download.yaml` files in `deploy/dev-data/medias/files` select one font family per
+output ZIP. `NotoSans.zip` contains only `NotoSansNerdFont`; separate configurations
+cover Sans Propo, SansM (regular/Mono/Propo),
+Mono (regular/Mono/Propo), Serif and Serif Propo. Condensed faces remain excluded.
+Each family includes its available Regular, Bold, Italic and BoldItalic faces. MapleMono
+is packaged as `MapleMono-NF-CN.zip` with the same four-style selection. A missing upstream
+style is not manufactured. Existing mixed Noto or three-style MapleMono uploads are separate
+objects; import the new outputs and migrate community font references rather than overwriting
+existing objects behind unchanged database metadata.
+
+`name` selects the output filename. Optional `sourceName` selects the shared raw download
+cache filename; it defaults to `name`. All Noto outputs reuse `download/Noto.zip` while
+retaining independent files under `download/processed`. Register each configuration path
+in the font provider's file preset to import the separate outputs. Keep environment-specific
+preset account information outside the repository.
+
+The current Compose Markdown renderer does not interpret HTML/CSS `font-weight`;
+inline emphasis selects italic/bold, while heading weights come from application typography.
+The preset packages omit Medium and other optional weights. Add their matching faces if
+HTML weight support or another author-controlled weight mechanism is introduced.
+The 80 MiB decoded limit accommodates MapleMono's four normal/bold/italic faces while
+keeping the source limit at 64 MiB and the account font-byte cache at 128 MiB.

@@ -193,6 +193,75 @@ class AddPresetTest {
         assertFalse(isDownloadConfigPath("a/b/xxx.txt"))
     }
 
+    @Test
+    fun sharedSourceKeepsFilteredFontFamiliesIndependent() =
+        runTest {
+            setLogPath()
+            val parent = File("build/test-font-config").apply { mkdirs() }
+            val tempDir = createTempDirectory(parent.toPath(), "shared-source-").toFile()
+            val sourceZip = File(tempDir, "source.zip")
+            writeZip(
+                sourceZip,
+                mapOf(
+                    "NotoSansNerdFont-Regular.ttf" to "sans",
+                    "NotoSansNerdFont-BoldItalic.ttf" to "sans-bold-italic",
+                    "NotoSansNerdFont-Medium.ttf" to "medium",
+                    "NotoSansCondensedNerdFont-Regular.ttf" to "condensed",
+                    "NotoSerifNerdFont-Regular.ttf" to "serif",
+                    "NotoSerifNerdFont-Italic.ttf" to "serif-italic",
+                ),
+            )
+            val hash = sha256File(sourceZip)
+            val server = HttpServer.create(InetSocketAddress(0), 0)
+            val requestCount = AtomicInteger()
+            try {
+                server.createBundleContext(sourceZip, requestCount)
+                server.start()
+                val names = listOf("Sans", "Serif")
+                names.forEach { family ->
+                    writeFamilyDownloadConfig(tempDir, family, server.address.port, hash)
+                }
+                HttpClient(OkHttp).use { client ->
+                    val sans = downloadPresetFileIfNeed("Sans.download.yaml", tempDir, client)
+                    val serif = downloadPresetFileIfNeed("Serif.download.yaml", tempDir, client)
+                    assertNotNull(sans)
+                    assertNotNull(serif)
+                    ZipFile(sans).use { zip ->
+                        assertEquals(
+                            setOf("NotoSansNerdFont-Regular.ttf", "NotoSansNerdFont-BoldItalic.ttf"),
+                            zip.entries().asSequence().map { it.name }.toSet(),
+                        )
+                    }
+                    ZipFile(serif).use { zip ->
+                        assertEquals(
+                            setOf("NotoSerifNerdFont-Regular.ttf", "NotoSerifNerdFont-Italic.ttf"),
+                            zip.entries().asSequence().map { it.name }.toSet(),
+                        )
+                    }
+                    assertEquals(1, requestCount.get())
+                    assertEquals(hash, sha256File(File(tempDir, "download/Noto.zip")))
+                }
+            } finally {
+                server.stop(0)
+                tempDir.deleteRecursively()
+            }
+        }
+
+    private fun writeFamilyDownloadConfig(tempDir: File, family: String, port: Int, hash: String) {
+        File(tempDir, "$family.download.yaml").writeText(
+            """
+            name: $family.zip
+            sourceName: Noto.zip
+            link: http://localhost:$port/bundle.zip
+            hash: sha256:$hash
+            excludeArchiveEntries:
+              - "*Condensed*.ttf"
+            includeArchiveEntries:
+              - "Noto${family}NerdFont-{Regular,Bold,Italic,BoldItalic}.ttf"
+            """.trimIndent(),
+        )
+    }
+
     private fun writeZip(target: File, contentByPath: Map<String, String>) {
         setLogPath()
         target.parentFile?.mkdirs()

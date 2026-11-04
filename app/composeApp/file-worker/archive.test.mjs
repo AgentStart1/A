@@ -4,10 +4,10 @@ import assert from 'node:assert/strict';
 import { ZipWriter, Uint8ArrayReader, Uint8ArrayWriter } from '@zip.js/zip.js/lib/zip-core-native.js';
 import { extractArchive } from './archive.mjs';
 
-async function zip(entries) {
+async function zip(entries, level = 0) {
   const writer = new ZipWriter(new Uint8ArrayWriter(), {useWebWorkers: false});
   for (const [name, bytes] of entries) {
-    await writer.add(name, new Uint8ArrayReader(bytes), {level: 0});
+    await writer.add(name, new Uint8ArrayReader(bytes), {level});
   }
   return writer.close();
 }
@@ -82,9 +82,21 @@ test('oversized entry metadata is rejected before allocating an output file', as
   const bytes = await zip([['Regular.ttf', new Uint8Array([1])]]);
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   for (let offset = 0; offset < bytes.length - 46; offset++) {
-    if (view.getUint32(offset, true) === 0x02014b50) view.setUint32(offset + 24, 64 * 1024 * 1024 + 1, true);
+    if (view.getUint32(offset, true) === 0x02014b50) view.setUint32(offset + 24, 80 * 1024 * 1024 + 1, true);
   }
   const target = storage(bytes);
   await assert.rejects(extractArchive(source, generation, new AbortController().signal), /decoded size limit/);
   assert.equal(target.files.size, 1);
+});
+
+test('expanded font data above 64 MiB fits the bounded 80 MiB budget', async () => {
+  const data = new Uint8Array(68 * 1024 * 1024).fill(65);
+  const target = storage(await zip([['Regular.ttf', data]], 1));
+  const entries = await extractArchive(source, generation, new AbortController().signal);
+  assert.deepEqual(entries, [{path: generation + '/Regular.ttf', size: data.byteLength}]);
+  const output = target.files.get(entries[0].path);
+  assert.equal(output.byteLength, data.byteLength);
+  assert.equal(output[0], 65);
+  assert.equal(output[output.byteLength - 1], 65);
+  assert.equal(target.open, 0);
 });

@@ -3,7 +3,8 @@ import { BlobReader, ZipReader, configure } from '@zip.js/zip.js/lib/zip-core-na
 import { archiveName, cacheFile, cacheParts } from './paths.mjs';
 
 configure({useWebWorkers: false, chunkSize: 64 * 1024});
-const MAX_BYTES = 64 * 1024 * 1024;
+const MAX_SOURCE_BYTES = 64 * 1024 * 1024;
+const MAX_EXPANDED_BYTES = 80 * 1024 * 1024;
 const MAX_ENTRIES = 2048;
 
 // The caller owns the generation and publishes its manifest only after this returns.
@@ -13,7 +14,7 @@ export async function extractArchive(path, directory, signal) {
   if (!directory.startsWith(path + '.extract-')) throw new Error('Invalid extraction generation');
   signal.throwIfAborted();
   const source = await (await cacheFile(path)).getFile();
-  if (source.size > MAX_BYTES) throw new Error('Archive exceeds the source size limit');
+  if (source.size > MAX_SOURCE_BYTES) throw new Error('Archive exceeds the source size limit');
   const reader = new ZipReader(new BlobReader(source), {
     useWebWorkers: false, checkSignature: true, strictness: 'strict',
   });
@@ -34,11 +35,11 @@ export async function extractArchive(path, directory, signal) {
         throw new Error('Invalid archive entry size');
       }
       total += entry.uncompressedSize;
-      if (total > MAX_BYTES) throw new Error('Archive exceeds the decoded size limit');
+      if (total > MAX_EXPANDED_BYTES) throw new Error('Archive exceeds the decoded size limit');
       entries.push({entry, path: directory + '/' + name});
     }
     const output = [];
-    let remaining = MAX_BYTES;
+    let remaining = MAX_EXPANDED_BYTES;
     for (const {entry, path: target} of entries) {
       signal.throwIfAborted();
       const handle = await cacheFile(target, true);

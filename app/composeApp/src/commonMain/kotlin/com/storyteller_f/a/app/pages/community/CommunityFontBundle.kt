@@ -27,18 +27,19 @@ internal class CommunityFontBundle(val identity: String, faces: List<CommunityFo
     val byteCount = faces.sumOf { it.bytes.size.toLong() }
 }
 
-private const val MAX_FONT_BYTES = 64L * 1024 * 1024
+internal const val MAX_FONT_SOURCE_BYTES = 64L * 1024 * 1024
+internal const val MAX_FONT_DECODED_BYTES = 80L * 1024 * 1024
 private const val MAX_FONT_FACES = 18
 
 /** ZIP families retain Regular/Bold/etc names; standalone font files are regular faces. No disk IO. */
 internal fun decodeCommunityFont(identity: String, fileName: String, bytes: ByteArray): CommunityFontBundle {
-    require(bytes.isNotEmpty() && bytes.size <= MAX_FONT_BYTES) { "Unsupported font size" }
+    require(bytes.isNotEmpty() && bytes.size <= MAX_FONT_SOURCE_BYTES) { "Unsupported font size" }
     val faces =
         if (isZip(bytes)) {
             ZipFile(bytes).use { archive ->
                 val entries = archive.entries.filter { !it.isDirectory && isFontName(it.name) }
                 require(entries.size in 1..MAX_FONT_FACES) { "Font archive has no usable family or too many faces" }
-                var remaining = MAX_FONT_BYTES
+                var remaining = MAX_FONT_DECODED_BYTES
                 entries.map { entry ->
                     require(entry.size in 1..remaining) { "Font archive exceeds the decoded size limit" }
                     val data = archive.getInputStream(entry).asSource().buffered().use { it.readFontBytes(remaining) }
