@@ -47,6 +47,7 @@ private suspend fun runNavigationBrowser(
             }.use {
                 val driver = WasmAppTestDriver(browser, report.directory, profile.resolve("downloads"))
                 browser.get(server.bootstrapUrl)
+                preferDownloadedFonts(browser)
                 browser.get("${server.url}?appium=true")
                 openLoginInput(browser, driver, panel)
                 when (scenario) {
