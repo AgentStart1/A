@@ -47,10 +47,13 @@
 - **Tests**: Write tests whenever possible. Client-side non-UI tests go under `src/headlessTest/kotlin`. Compose tests should follow https://kotlinlang.org/docs/multiplatform/compose-test.html. End-to-end tests use `scripts/test_scripts/build-and-test.sh --e2e`, which runs the Appium runner modules' explicit `appiumTest` tasks and CLI E2E tasks; no Gradle property is required.
 
 ## Static Checks
-- After code changes, run `./gradlew assemble --console=plain` to check for compilation errors.
+- After code changes, compile the affected modules and platform source sets with scoped Gradle tasks. Include downstream consumers when changing shared or protocol types; see DEVELOPMENT.md's Build verification section for task selection.
+- For repository-wide compilation validation, use the existing `compileAllNoRelease` task.
+- Do not use root `assemble` as a routine compilation check: it also builds unrelated modules and release artifacts, including Wasm production linking and optimization. Run artifact/release tasks only when explicitly requested or needed to verify affected packaging, optimization, signing or distribution behavior.
+- When an Android artifact is needed for ordinary development or tests, select the affected Debug variant; do not build Benchmark/Release variants by default.
 - After compilation checks, run `./gradlew detekt --console=plain` for static code style checks.
   - On Windows, run this through Git Bash.
-- Detekt allows function names up to 50 characters. Appium and CLI E2E source sets are exempt from function naming and length rules so backtick test names can remain behavior-descriptive. Keep production function names concise even when the configured limit permits longer names.
+- Detekt limits production function names to 50 characters. Test source sets (`src/test` and `src/*Test`) are exempt from the maximum function-name length so test names can describe behavior completely. Preserve the separately configured naming-style checks and keep production function names concise.
 
 ## Tests
 - Actively test affected modules.

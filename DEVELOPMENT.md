@@ -1,5 +1,38 @@
 # Development
 
+## Build verification
+
+Routine code validation compiles the affected modules and platform source sets, then runs
+Detekt and the relevant tests. Root `assemble` is a full artifact build, not a compile-only
+check: it can include unrelated modules, Android Benchmark/Release packaging and Wasm
+production linking/Binaryen optimization. Use those tasks when a requested artifact or an
+affected packaging, optimization, signing or distribution contract needs verification.
+
+For repository-wide compilation validation, use the existing `compileAllNoRelease` task:
+
+```sh
+./gradlew compileAllNoRelease -Pserver.flavor=dev -Pserver.buildType=dev --console=plain
+```
+
+It excludes executable, Release, Benchmark and test compilation variants. Prefer narrower
+module tasks when the change does not need a repository-wide check.
+
+For shared application Kotlin changes, run the following on one line:
+
+```sh
+./gradlew :app:composeApp:compileKotlinJvm :app:composeApp:compileAndroidMain :app:composeApp:compileKotlinWasmJs -Pserver.flavor=dev -Pserver.buildType=dev --console=plain
+```
+
+Use the corresponding `:panel:composeApp` tasks for panel changes and `:module:compileKotlin`
+for a JVM backend module. Include affected downstream consumers when changing shared models
+or protocol types. Wasm `compileKotlinWasmJs` checks source compilation without a production
+executable link; runtime/browser behavior still needs the relevant browser tests. If an
+Android APK is required, select the affected `assembleDebug` task. Run production linking,
+release packaging or a full root assembly only for the artifact checks described above.
+
+On Windows, keep compilation/builds, Detekt and screenshot/host UI runs sequential when they
+share Android runtime JARs. Always pass the intended server flavor and build type explicitly.
+
 ## Scenario-specific API projections
 
 Base models (`TopicInfo`, `TitleInfo`, `CommunityInfo`, favorite/subscription/log records and
