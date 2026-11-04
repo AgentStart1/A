@@ -17,6 +17,7 @@ import com.storyteller_f.a.app.IAccountInstance
 import com.storyteller_f.a.app.LocalUiViewModel
 import com.storyteller_f.a.app.UIViewModel
 import com.storyteller_f.a.app.common.Downloader
+import com.storyteller_f.a.app.common.DownloaderImpl
 import com.storyteller_f.a.app.common.SimpleTaskRegister
 import com.storyteller_f.a.app.common.UploaderImpl
 import com.storyteller_f.a.app.getWasmServerUrl
@@ -51,16 +52,18 @@ fun main() {
             val account by uiViewModel.instance.collectAsState()
             val fileProvider =
                 remember(uiViewModel, account) {
+                    val register = SimpleTaskRegister(account.accountScope)
+                    val downloader = DownloaderImpl(uiViewModel, register)
                     val uploader =
                         UploaderImpl(
                             uiViewModel,
-                            SimpleTaskRegister(account.accountScope),
+                            register,
                             retainSelectedFiles = true,
                             // Fetch consumes the request body before transmission; report acknowledged chunks instead.
                             persistTransportProgress = false,
                         )
                     object : ClientFileProvider {
-                        override suspend fun getDownloader(): Downloader? = null
+                        override suspend fun getDownloader(): Downloader = downloader
                         override suspend fun getUploader() = uploader
                     }
                 }

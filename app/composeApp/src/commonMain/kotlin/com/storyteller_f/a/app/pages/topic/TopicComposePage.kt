@@ -27,7 +27,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.Typography
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,7 +39,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.a.app.LocalGlobalDialog
 import com.storyteller_f.a.app.LocalUserInfo
@@ -52,13 +50,13 @@ import com.storyteller_f.a.app.common.getMarkdownMediasViewModel
 import com.storyteller_f.a.app.components.AppTopicContentView
 import com.storyteller_f.a.app.input_is_empty
 import com.storyteller_f.a.app.pages.AdaptiveEditorLayout
-import com.storyteller_f.a.app.pages.community.getFontSettings
+import com.storyteller_f.a.app.pages.community.CommunityTopicContent
 import com.storyteller_f.a.app.pages.room.RoomSendButton
 import com.storyteller_f.a.app.preview
 import com.storyteller_f.a.app.raw
 import com.storyteller_f.a.app.submit
-import com.storyteller_f.a.app.ui.theme.AppTheme
 import com.storyteller_f.a.client.compose_core.components.CustomAlertDialog
+import com.storyteller_f.a.client.compose_core.components.LocalTopicContentFonts
 import com.storyteller_f.a.client.compose_core.components.block.BlockEditor
 import com.storyteller_f.a.client.compose_core.components.block.BlockToolbar
 import com.storyteller_f.a.client.compose_core.components.block.rememberBlockEditorState
@@ -114,25 +112,14 @@ sealed interface TopicComposeData {
 @Composable
 fun TopicComposePage(data: TopicComposeData, backPrePage: () -> Unit) {
     val myInfo = LocalUserInfo.current ?: return
-    val typography = getCommunityTypography(data)
-    AppTheme(
-        typography = typography ?: MaterialTheme.typography,
-    ) {
-        TopicComposeScaffold(data, data.getMediaTarget() ?: myInfo.id ob ObjectType.USER, backPrePage)
-    }
+    TopicComposeScaffold(data, data.getMediaTarget() ?: myInfo.id ob ObjectType.USER, backPrePage)
 }
 
-@Composable
-private fun getCommunityTypography(data: TopicComposeData): Typography? =
-    (data as? TopicComposeData.PublicRoom)?.run {
-        val fontSettings = getFontSettings(communityId)
-        val typography = MaterialTheme.typography
-        val defaultFont = fontSettings.contentFontFamily ?: fontSettings.fallbackFontFamily
-        typography.copy(
-            bodyLarge = typography.bodyLarge.copy(fontFamily = defaultFont ?: typography.bodyLarge.fontFamily),
-            bodyMedium = typography.bodyMedium.copy(fontFamily = defaultFont ?: typography.bodyMedium.fontFamily),
-            bodySmall = typography.bodySmall.copy(fontFamily = defaultFont ?: typography.bodySmall.fontFamily),
-        )
+internal fun composeCommunityId(data: TopicComposeData): PrimaryKey? =
+    when (data) {
+        is TopicComposeData.Community -> data.communityId
+        is TopicComposeData.PublicRoom -> data.communityId
+        is TopicComposeData.PrivateRoom, is TopicComposeData.User -> null
     }
 
 @Composable
@@ -197,7 +184,8 @@ private fun TopicComposeInternal(
     val selected = pagerState.currentPage
     val coroutineScope = rememberCoroutineScope()
 
-    AdaptiveEditorLayout(preview = { PreviewTopicPage(input, mediaTarget) }) { wide ->
+    val communityId = composeCommunityId(data)
+    AdaptiveEditorLayout(preview = { PreviewTopicPage(input, mediaTarget, communityId) }) { wide ->
         LaunchedEffect(wide) {
             if (wide && pagerState.currentPage == 0) pagerState.scrollToPage(1)
         }
@@ -220,9 +208,9 @@ private fun TopicComposeInternal(
         }
         HorizontalPager(pagerState, key = tabs::get, userScrollEnabled = !wide) { index ->
             when {
-                index == 0 && !wide -> PreviewTopicPage(input, mediaTarget)
-                index == 2 -> BlockEditTopicPage(input, updateInput)
-                else -> EditTopicPage(input, data, updateInput)
+                index == 0 && !wide -> PreviewTopicPage(input, mediaTarget, communityId)
+                index == 2 -> CommunityTopicContent(communityId) { BlockEditTopicPage(input, updateInput) }
+                else -> CommunityTopicContent(communityId) { EditTopicPage(input, updateInput) }
             }
         }
     }
@@ -291,13 +279,17 @@ private fun TopicComposeSubmitButton(input: String, data: TopicComposeData, back
 }
 
 @Composable
-fun PreviewTopicPage(input: String, objectTuple: ObjectTuple) {
+fun PreviewTopicPage(input: String, objectTuple: ObjectTuple, communityId: PrimaryKey? = null) {
     val markdownMediasViewModel = getMarkdownMediasViewModel(input, objectTuple)
-    PreviewTopicInternal(markdownMediasViewModel, input)
+    PreviewTopicInternal(markdownMediasViewModel, input, communityId)
 }
 
 @Composable
-private fun PreviewTopicInternal(markdownMediasViewModel: MarkdownMediasViewModel, input: String) {
+private fun PreviewTopicInternal(
+    markdownMediasViewModel: MarkdownMediasViewModel,
+    input: String,
+    communityId: PrimaryKey?,
+) {
     val list by markdownMediasViewModel.handler.data.collectAsState()
     val topicInfo =
         TopicDetail.EMPTY.copy(
@@ -310,15 +302,15 @@ private fun PreviewTopicInternal(markdownMediasViewModel: MarkdownMediasViewMode
         modifier = Modifier.fillMaxSize().navigationBarsPadding().padding(horizontal = 20.dp),
     ) {
         item {
-            AppTopicContentView(topicInfo)
+            AppTopicContentView(topicInfo, communityId = communityId)
         }
     }
 }
 
 @Composable
-fun EditTopicPage(input: String, data: TopicComposeData, updateInput: (String) -> Unit) {
+fun EditTopicPage(input: String, updateInput: (String) -> Unit) {
     Box(modifier = Modifier.navigationBarsPadding()) {
-        val fontFamily = getFontFamily(data)
+        val fontFamily = LocalTopicContentFonts.current.editor
         val textStyle = LocalTextStyle.current
         BasicTextField(
             input,
@@ -373,10 +365,3 @@ fun BlockEditTopicPage(input: String, updateInput: (String) -> Unit) {
         }
     }
 }
-
-@Composable
-private fun getFontFamily(data: TopicComposeData): FontFamily? =
-    (data as? TopicComposeData.PublicRoom)?.communityId?.let {
-        val fontSettings = getFontSettings(it)
-        fontSettings.codeFontFamily ?: fontSettings.contentFontFamily
-    }

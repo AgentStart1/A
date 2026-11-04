@@ -39,6 +39,7 @@ import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -59,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import com.mohamedrejeb.richeditor.model.RichTextState
 import com.mohamedrejeb.richeditor.model.rememberRichTextState
 import com.mohamedrejeb.richeditor.ui.BasicRichTextEditor
+import com.storyteller_f.a.client.compose_core.components.LocalTopicContentFonts
 
 /**
  * 可编辑的 Block 组件
@@ -182,66 +184,69 @@ private fun RowScope.BlockPreview(
     onContentChange: (String) -> Unit,
     onFocusChange: (Boolean) -> Unit,
 ) {
-    Box(modifier = Modifier.weight(1f)) {
-        when (block) {
-            is ContentBlock.Paragraph ->
-                EditableParagraphBlock(
-                    block = block,
-                    isFocused = isFocused,
-                    onContentChange = onContentChange,
-                    onFocusChange = onFocusChange,
-                )
+    val style = LocalTextStyle.current.merge(fontFamily = LocalTopicContentFonts.current.content)
+    ProvideTextStyle(style) {
+        Box(modifier = Modifier.weight(1f)) {
+            when (block) {
+                is ContentBlock.Paragraph ->
+                    EditableParagraphBlock(
+                        block = block,
+                        isFocused = isFocused,
+                        onContentChange = onContentChange,
+                        onFocusChange = onFocusChange,
+                    )
 
-            is ContentBlock.ListItem ->
-                EditableListItemBlock(
-                    block = block,
-                    isFocused = isFocused,
-                    onContentChange = onContentChange,
-                    onFocusChange = onFocusChange,
-                )
+                is ContentBlock.ListItem ->
+                    EditableListItemBlock(
+                        block = block,
+                        isFocused = isFocused,
+                        onContentChange = onContentChange,
+                        onFocusChange = onFocusChange,
+                    )
 
-            is ContentBlock.Quote ->
-                EditableQuoteBlock(
-                    block = block,
-                    isFocused = isFocused,
-                    onContentChange = onContentChange,
-                    onFocusChange = onFocusChange,
-                )
+                is ContentBlock.Quote ->
+                    EditableQuoteBlock(
+                        block = block,
+                        isFocused = isFocused,
+                        onContentChange = onContentChange,
+                        onFocusChange = onFocusChange,
+                    )
 
-            is ContentBlock.CodeBlock ->
-                EditableCodeBlock(
-                    block = block,
-                    isFocused = isFocused,
-                    onContentChange = onContentChange,
-                    onFocusChange = onFocusChange,
-                )
+                is ContentBlock.CodeBlock ->
+                    EditableCodeBlock(
+                        block = block,
+                        isFocused = isFocused,
+                        onContentChange = onContentChange,
+                        onFocusChange = onFocusChange,
+                    )
 
-            is ContentBlock.ImageBlock ->
-                EditableImageBlock(
-                    block = block,
-                    isFocused = isFocused,
-                )
+                is ContentBlock.ImageBlock ->
+                    EditableImageBlock(
+                        block = block,
+                        isFocused = isFocused,
+                    )
 
-            is ContentBlock.ObjectBlock ->
-                EditableObjectBlock(
-                    block = block,
-                    isFocused = isFocused,
-                )
+                is ContentBlock.ObjectBlock ->
+                    EditableObjectBlock(
+                        block = block,
+                        isFocused = isFocused,
+                    )
 
-            is ContentBlock.RefBlock ->
-                EditableRefBlock(
-                    block = block,
-                )
+                is ContentBlock.RefBlock ->
+                    EditableRefBlock(
+                        block = block,
+                    )
 
-            is ContentBlock.MathBlock ->
-                EditableMathBlock(
-                    block = block,
-                    isFocused = isFocused,
-                    onContentChange = onContentChange,
-                    onFocusChange = onFocusChange,
-                )
+                is ContentBlock.MathBlock ->
+                    EditableMathBlock(
+                        block = block,
+                        isFocused = isFocused,
+                        onContentChange = onContentChange,
+                        onFocusChange = onFocusChange,
+                    )
 
-            is ContentBlock.Divider -> DividerBlock()
+                is ContentBlock.Divider -> DividerBlock()
+            }
         }
     }
 }
@@ -278,7 +283,7 @@ fun EditableParagraphBlock(
             5 -> MaterialTheme.typography.titleMedium
             6 -> MaterialTheme.typography.titleSmall
             else -> MaterialTheme.typography.bodyLarge
-        }
+        }.merge(fontFamily = LocalTopicContentFonts.current.content)
 
     if (isFocused) {
         RichEditableParagraphBlock(block, textStyle, onContentChange)
@@ -522,7 +527,7 @@ fun EditableCodeBlock(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 textStyle =
                 LocalTextStyle.current.copy(
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = LocalTopicContentFonts.current.code ?: FontFamily.Monospace,
                     color = LocalContentColor.current,
                 ),
                 decorationBox = { innerTextField ->
@@ -540,7 +545,7 @@ fun EditableCodeBlock(
                 text = block.content,
                 style =
                 LocalTextStyle.current.copy(
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = LocalTopicContentFonts.current.code ?: FontFamily.Monospace,
                     color = LocalContentColor.current,
                 ),
                 modifier = Modifier.clickable { onFocusChange(true) },
@@ -643,7 +648,7 @@ fun EditableMathBlock(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 textStyle =
                 LocalTextStyle.current.copy(
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = LocalTopicContentFonts.current.code ?: FontFamily.Monospace,
                     color = LocalContentColor.current,
                 ),
                 decorationBox = { innerTextField ->
@@ -661,7 +666,7 @@ fun EditableMathBlock(
                 text = block.content,
                 style =
                 LocalTextStyle.current.copy(
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = LocalTopicContentFonts.current.code ?: FontFamily.Monospace,
                     color = LocalContentColor.current,
                 ),
                 modifier = Modifier.clickable { onFocusChange(true) },

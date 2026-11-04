@@ -139,6 +139,11 @@
   resolved "https://registry.yarnpkg.com/@types/dom-webcodecs/-/dom-webcodecs-0.1.13.tgz#d8be5da4f01b20721307b08ad2cca903ccf4f47f"
   integrity sha512-O5hkiFIcjjszPIYyUSyvScyvrBoV3NOEEZx/pMlsu44TKzWNkLVBBxnxJz42in5n3QIolYOcBYFCPZZ0h8SkwQ==
 
+"@zip.js/zip.js@2.24.0":
+  version "2.24.0"
+  resolved "https://registry.yarnpkg.com/@zip.js/zip.js/-/zip.js-2.24.0.tgz#83b2639fc874503deef5a63b3e3f6b90791ca987"
+  integrity sha512-WlaVKzdqBK+RF3bdiXZWbdCnvGB6PdO4IHC1mn/2Yfl3bASgqUNegnU3+PNg61iecwoPfUi5BgLUPqBukXpyWw==
+
 balanced-match@^1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
@@ -150,6 +155,11 @@ brace-expansion@^2.0.1:
   integrity sha512-w5JZcKgdhDOgOwm8H+KgbosopHMuGcl6qbulwjtz3SM7I7P3yW1eAjzMPLrIE+NQ9vjgANKHWeMHnrT0OXW1oA==
   dependencies:
     balanced-match "^1.0.0"
+
+"download-file-worker@file:../../app/composeApp/file-worker":
+  version "0.1.0"
+  dependencies:
+    "@zip.js/zip.js" "2.24.0"
 
 ethereum-cryptography@3.1.0:
   version "3.1.0"

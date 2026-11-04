@@ -31,7 +31,6 @@ import com.storyteller_f.a.client.compose_core.common.SimpleViewModel
 import com.storyteller_f.a.client.compose_core.common.buildPager
 import com.storyteller_f.a.client.compose_core.components.DialogSaveState
 import com.storyteller_f.a.client.compose_core.utils.SavedSession
-import com.storyteller_f.a.client.compose_core.utils.loadFontFromLocal
 import com.storyteller_f.a.client.core.LoadingHandler
 import com.storyteller_f.a.client.core.LoadingState
 import com.storyteller_f.a.client.core.SimpleLoadingHandler
@@ -109,7 +108,6 @@ import com.storyteller_f.shared.utils.extractMarkdownMediaLink
 import com.storyteller_f.storage.ChildAccountStorage
 import com.storyteller_f.storage.CommunityCollection
 import com.storyteller_f.storage.DownloadInfo
-import com.storyteller_f.storage.DownloadStatus
 import com.storyteller_f.storage.FileCollection
 import com.storyteller_f.storage.FileRefCollection
 import com.storyteller_f.storage.MemberCollection
@@ -134,7 +132,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -687,17 +684,6 @@ class DownloadHandler<T>(
 
 class DownloadViewModel(modelStorage: ModelStorage, fileId: PrimaryKey?) : ViewModel() {
     val data = fileId?.let { modelStorage.download.observeDocumentByFileId(it) } ?: MutableStateFlow(null)
-
-    val fontFamily =
-        data.distinctUntilChanged { t1, t2 ->
-            t1?.status == t2?.status
-        }.map {
-            if (it?.status == DownloadStatus.PROCESSED) {
-                loadFontFromLocal(it.path + ".extracted")
-            } else {
-                null
-            }
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 }
 
 class MarkdownMediasViewModel(val sessionManager: UserSessionManager, content: String, objectTuple: ObjectTuple) :

@@ -94,7 +94,6 @@ fun FontSettingsPage(communityId: PrimaryKey) {
                     when (option) {
                         is SettingOption.ContentFont -> fontSettings.copy(contentFontId = media.id)
                         is SettingOption.CodeFont -> fontSettings.copy(codeFontId = media.id)
-                        is SettingOption.FallbackFont -> fontSettings.copy(fallbackFontId = media.id)
                         else -> return@launch
                     }
                 val body = UpdateCommunityBody(fontSettings = newFontSettings)
@@ -123,7 +122,6 @@ private fun FontSettingsInternal(
     val fontSettings = communityInfo.fontSettings?.settings ?: FontSettings()
     val contentFont = communityInfo.fontSettings?.contentFont
     val codeFont = communityInfo.fontSettings?.codeFont
-    val fallbackFont = communityInfo.fontSettings?.fallbackFont
 
     AdaptiveFormLayout(Modifier.padding(paddingValues)) {
         // Content Font
@@ -158,23 +156,6 @@ private fun FontSettingsInternal(
                 }
             },
             onSet = { showDialog(SettingOption.CodeFont(codeFont?.fullName)) },
-        )
-
-        // Fallback Font
-        FontSettingRow(
-            label = "Fallback Font",
-            fontFile = fallbackFont,
-            onReset = {
-                scope.launch {
-                    val newSettings = fontSettings.copy(fallbackFontId = null)
-                    globalDialogController.useResult {
-                        request { updateCommunityInfo(communityId, UpdateCommunityBody(fontSettings = newSettings)) }
-                    }.onSuccess { newInfo ->
-                        globalDialogController.emitEvent(OnCommunityUpdated(newInfo))
-                    }
-                }
-            },
-            onSet = { showDialog(SettingOption.FallbackFont(fallbackFont?.fullName)) },
         )
 
         // Preview JSON

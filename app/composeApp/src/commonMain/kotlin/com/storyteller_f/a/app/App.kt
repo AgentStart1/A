@@ -21,6 +21,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +56,8 @@ import com.storyteller_f.a.app.common.processEvent
 import com.storyteller_f.a.app.common.rootEntryProvider
 import com.storyteller_f.a.app.common.toRoute
 import com.storyteller_f.a.app.components.SignInPrompt
+import com.storyteller_f.a.app.pages.community.LocalCommunityFontStore
+import com.storyteller_f.a.app.pages.community.createCommunityFontStore
 import com.storyteller_f.a.app.pages.file.FileExplorerPage
 import com.storyteller_f.a.app.pages.file.FileViewPage
 import com.storyteller_f.a.app.pages.room.RoomPage
@@ -304,6 +307,11 @@ fun CommonEntry(content: @Composable () -> Unit) {
         val uiViewModel = LocalUiViewModel.current
         val instance by uiViewModel.instance.collectAsState()
         val currentUserSessionManager = instance.sessionManager
+        val fileProvider = LocalClientFileProvider.current
+        val communityFonts =
+            remember(currentUserSessionManager, fileProvider) {
+                createCommunityFontStore(instance, fileProvider)
+            }
         val user by currentUserSessionManager.model.userHandler.data.collectAsState()
 
         val toasterState = rememberToasterState()
@@ -311,6 +319,7 @@ fun CommonEntry(content: @Composable () -> Unit) {
         GlobalDialog(instance.controller)
         CompositionLocalProvider(
             LocalSessionManager provides currentUserSessionManager,
+            LocalCommunityFontStore provides communityFonts,
             LocalClient provides currentUserSessionManager.client,
             LocalToaster provides Sonner(toasterState),
             LocalGlobalDialog provides instance.controller,

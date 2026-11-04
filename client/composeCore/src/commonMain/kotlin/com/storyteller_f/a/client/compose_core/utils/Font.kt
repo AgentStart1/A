@@ -9,8 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontFamily
 
-expect fun loadFontFromLocal(path: String): FontFamily?
-
 /**
  * Remembers the preferred font family for the current platform, or null to use Compose defaults.
  */

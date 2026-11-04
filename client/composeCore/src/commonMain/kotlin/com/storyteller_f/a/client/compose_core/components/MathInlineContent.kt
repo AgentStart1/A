@@ -19,8 +19,12 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -35,6 +39,7 @@ import com.mikepenz.markdown.model.ImageTransformer
 import com.mikepenz.markdown.model.MarkdownColors
 import com.mikepenz.markdown.model.MarkdownTypography
 import com.mikepenz.markdown.utils.getUnescapedTextInNode
+import com.storyteller_f.a.client.compose_core.utils.withDefaultFontFamily
 import com.storyteller_f.shared.model.Dimension
 import com.storyteller_f.shared.utils.readInlineMath
 import kotlinx.collections.immutable.ImmutableMap
@@ -86,11 +91,34 @@ fun imageInlineContent(
 }
 
 @Composable
-fun customMarkdownTypography(colors: MarkdownColors): MarkdownTypography =
-    markdownTypography(
-        code = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, color = colors.text),
-        inlineCode = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace, color = colors.text),
+fun customMarkdownTypography(colors: MarkdownColors): MarkdownTypography {
+    val fonts = LocalTopicContentFonts.current
+    val typography = MaterialTheme.typography.withDefaultFontFamily(fonts.content)
+    return markdownTypography(
+        h1 = typography.displayLarge,
+        h2 = typography.displayMedium,
+        h3 = typography.displaySmall,
+        h4 = typography.headlineMedium,
+        h5 = typography.headlineSmall,
+        h6 = typography.titleLarge,
+        text = typography.bodyLarge,
+        paragraph = typography.bodyLarge,
+        ordered = typography.bodyLarge,
+        bullet = typography.bodyLarge,
+        list = typography.bodyLarge,
+        quote = typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
+        table = typography.bodyLarge,
+        alertTitle = typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+        textLink =
+        TextLinkStyles(
+            style =
+            typography.bodyLarge.copy(fontWeight = FontWeight.Bold, textDecoration = TextDecoration.Underline)
+                .toSpanStyle(),
+        ),
+        code = typography.bodyMedium.copy(fontFamily = fonts.code ?: FontFamily.Monospace, color = colors.text),
+        inlineCode = typography.bodyLarge.copy(fontFamily = fonts.code ?: FontFamily.Monospace, color = colors.text),
     )
+}
 
 @Composable
 fun LatexInlineContent(tex: String, style: TextStyle, backgroundColor: Color? = null) {

@@ -118,4 +118,6 @@
     <string name="preview_unavailable">暂不支持预览此文件类型</string>
     <string name="library_count">%1$d 个开源库</string>
     <string name="download_started">下载已开始</string>
+    <string name="font_loaded">字体已加载</string>
+    <string name="retry_font_loading">重试加载字体</string>
 </resources>

@@ -682,3 +682,33 @@
 
 - Build production Wasm distributions and Appium development distributions in separate Gradle
   invocations; their CompileSync tasks share generated npm package directories.
+
+- Community fonts belong to topic/editor content, not the enclosing application theme. Reuse native
+  Downloader disk caches; Wasm uploaded-font caching is separate from system-font permission access.
+  Community settings expose content/code fonts only; leave missing-glyph fallback to the platform.
+  Key uploaded-font caches by object version rather than expiring signed URLs. Verify real glyph metrics
+  because resolver preload may silently resolve an invalid font to a default.
+- Download records are unique per file. Use file identity rather than second-resolution timestamps for
+  their IDs, so simultaneous downloads cannot replace one another's records.
+- Publish download PROCESSED only after file writers close and complete extraction output is committed.
+  Observe persisted completion instead of adding a second download-completion API. Keep platform storage
+  behind DownloadFileStore and serialize account/file transfer, extraction and reads; browser Web Locks
+  must also cover other tabs/workers. Preserve legacy record IDs when updating existing files.
+- Font cache fills and evictions must not trigger presentation reloads. Publish successful explicit
+  retries as per-file data updates, and retain displayed families independently of cache residency.
+  Expose per-file font flows to content; cancelling a subscriber must not cancel account-owned shared reads.
+
+- Wasm Default dispatching stays on the browser event loop. Keep ZIP processing in the dedicated
+  file worker, pass OPFS paths and manifests rather than Kotlin/Skia objects, and await worker
+  cancellation acknowledgement before deleting unpublished output or releasing download locks.
+- Windows Edge Karma runs must prevent compatibility-layer relaunch so Karma owns the actual
+  browser process; otherwise launcher retries can delete a still-running browser's OPFS profile.
+  Keep browser launcher setup in the shared Wasm test convention and track configuration inputs.
+- Browser Worker cancellation tests must synchronize at observed native OPFS phases (a pending
+  Promise or a completed write), rather than before Worker startup. Keep instrumentation in test-only
+  entries, reuse production protocol/cleanup, and deliver cancellation before releasing a paused write.
+  Retain page-initiated cancellation coverage alongside worker-local cancellation at the pending phase.
+- Download task ownership must include queued requests and pause publication. Pause invalidates
+  earlier admissions and waits for cleanup before later work runs. Merge repeated resume intents
+  without dropping an explicit resume behind an ordinary registration. Handle ordinary failures at
+  the owned request boundary; distinguish explicit operation pause from caller/account cancellation.

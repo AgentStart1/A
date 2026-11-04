@@ -2172,3 +2172,94 @@ Build regular `assemble` and Wasm Appium development distributions in separate G
 Kotlin's development and production CompileSync tasks share the generated npm package directory;
 requesting both Webpack modes in one graph triggers Gradle implicit-dependency validation.
 Finish all runtime compilation before starting the browser suites.
+
+### Community topic fonts
+
+Community font settings apply to topic Markdown and topic editor contents, including direct
+links, community posts, public-room posts, source editing, block editing and preview. Controls,
+author metadata and the surrounding application theme keep their application typography.
+Content and code use separate families; the source editor prefers code, then content.
+Missing or invalid configured families use application typography (Markdown code retains its
+monospace default). Missing glyphs use platform fallback; there is no configurable community
+fallback family. Existing JSON with retired fallback fields remains readable through commonJson's
+unknown-field handling, and subsequent writes omit those fields. Test actual glyph advances
+with the synthetic fixtures rather than treating resolver preload as proof of valid font data.
+
+All platforms share Downloader registration, persisted download states and ZIP processing through
+DownloadFileStore. Android and desktop keep their disk cache; Wasm streams binary data into OPFS.
+Displayed body/code families have independent content lifetimes. Content subscribes to per-file
+font flows with collectAsState; the store coordinates initial reads and targeted reloads. Font status
+rows use the same presentation flow, including explicit retry and validation failure. Unsubscribing
+stops observation without cancelling the account-owned shared read. Font-family construction runs
+upstream on the default dispatcher: Android/JVM use background threads, while Wasm still uses the
+browser event loop. Compose/Skia font objects remain in the page's rendering instance. Ordinary loads return results without broadcasting cache changes. Only a successful explicit retry publishes a per-file
+reload carrying its new bundle; matching views rebuild that family directly, without reloading the
+other family. Cache eviction affects future reuse, not already displayed fonts. Concurrent retries
+share one request; a retry arriving during an ordinary read runs after that read finishes.
+
+Font loading observes the database's terminal status. PROCESSED is saved only after writers close
+and a complete extraction manifest is published; fonts read those extracted files without decoding
+the ZIP again. Account/file locks serialize transfer, extraction and font reads. Browser Web Locks
+also coordinate independent tabs and workers. Failures require an explicit retry.
+
+The task register tracks both executing and queued requests per account/file key. Pause cancels
+all earlier admissions, waits for their cleanup, and publishes PAUSED before later requests run.
+Repeated resume commands merge with other admitted resume commands; an explicit resume behind an
+ordinary registration remains queued so its intent is preserved. Requests are admitted before their
+database lookup, including requests waiting for a file lock. Ordinary request failures are handled at
+the download-owned boundary and cannot cancel the account scope. Registration outcomes carry errors
+as data until the caller boundary, preserving cleanup diagnostics that coroutine cancellation recovery
+could otherwise discard. Failed status writes remain suppressed on the original error. Explicit pause becomes a registration failure for a still-active
+caller, while caller/account cancellation continues to propagate as cancellation.
+
+New records use file IDs; updates preserve existing record IDs and native cache paths. Cache
+identity uses object metadata, so renewed signed URLs do not invalidate unchanged bytes. Missing
+extracted files are rebuilt from the cached ZIP; a missing source triggers a new download. Each
+extraction writes a new directory and publishes its manifest only when complete. Cancellation
+cleans unpublished output. OPFS replaces the previous browser Cache Storage font cache; existing
+browser entries are not reused. Storage denial or quota failures surface as download failures.
+Browser storage can be evicted, so persistent cache availability is never assumed.
+
+Wasm ZIP processing runs in a dedicated module Web Worker from `app/composeApp/file-worker`.
+The worker uses the pinned zip.js native-stream implementation, reads the source directly from OPFS,
+validates paths, duplicate names, declared/actual sizes and CRC, and closes all output writers before
+returning only a file manifest. It never transfers an entire archive through the page's Wasm heap.
+The page publishes the manifest and database completion after the worker succeeds. Cancellation
+waits for worker acknowledgement and closed writers before deleting the unpublished generation;
+workers are terminated after each operation. Worker errors fail processing without a main-thread
+extraction fallback. Local npm sources are inputs to Wasm installation and webpack tasks; regenerate
+only `kotlin-js-store/wasm/yarn.lock` after dependency changes.
+
+Browser ZIP processing permits at most 2048 file entries and 64 MiB each of source and expanded data;
+native ZIP processing keeps its streaming implementation. Ordinary non-archive downloads stream
+to storage without that ZIP limit. Font bundles accept at most 18 faces and 64 MiB. Account-session
+decoded bundles retain at most 12 files and 128 MiB; browser font retention tracks up to 12 successfully loaded OPFS
+versions with separate 128 MiB source and expanded-data budgets. Retention applies only to
+font entries, not general downloads. System-font permission bytes remain separate.
+
+Run `:app:composeApp:jvmTest --tests 'fonts.*'`,
+`:app:composeApp:adaptiveUiTest --tests 'device_based.Community*'` and
+`:app:composeApp:wasmJsBrowserTest --tests '*CommunityFontBrowserTest*'`
+with the normal flavor/build-type properties. JVM tests cover completion ordering, disk cache
+recreation and repair, explicit retry, Range handling, cancellation and real SQLite record identity.
+Browser tests exercise real OPFS binary storage, recreated stores, account/revision separation,
+retention, Web Locks across stores and a worker, cancelled extraction-worker cleanup and real ZIP/font
+decoding. A test-only worker entry instruments the real OPFS stream, pauses after a successful native
+write, and releases that pause only on cancellation. The browser test asserts the real abort completes
+before unpublished output is removed. It reuses the production worker protocol and Kotlin cleanup
+boundary. A second test entry observes the actual native write Promise while it is still pending,
+then invokes the unchanged production cancellation handler within the same Worker microtask phase.
+It verifies native settlement after cancellation, writer closure before deletion, and preservation of
+the source archive. This avoids depending on a page-to-worker round trip to beat native IO completion;
+the page-initiated cancellation path remains separately covered. The pending-state guard rejects
+already-completed writes, with negative Node tests covering immediate and microtask completion.
+Production entry points do not import either test probe. For worker protocol, archive validation and writer-cancellation tests, run
+`npm --prefix app/composeApp/file-worker install --ignore-scripts --package-lock=false` then
+`npm --prefix app/composeApp/file-worker test`. The native ZIP backend requires browser support for
+`DecompressionStream("deflate-raw")`; browser acceptance must include Chrome, Edge and Firefox.
+The shared Karma configuration recognizes an Edge `CHROME_BIN` and prevents Windows compatibility
+relaunch, so Karma retains the actual browser process and can clean its isolated profile after exit.
+A launcher retry while a relaunched browser remains alive can otherwise remove active OPFS data.
+Use `FIREFOX_BIN` and `-Pkotlin.js.browser.karma.browsers=firefox-headless` to add Firefox to the
+browser tests; keep the shared loader configuration intact.
+UI tests verify glyph metrics, defaults for invalid fonts and draft/cursor retention during loading.
