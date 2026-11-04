@@ -7,7 +7,6 @@ package fonts
 import com.storyteller_f.a.app.pages.community.CommunityFontBundle
 import com.storyteller_f.a.app.pages.community.CommunityFontReloaded
 import com.storyteller_f.a.app.pages.community.CommunityFontStore
-import com.storyteller_f.a.app.pages.community.decodeCommunityFont
 import com.storyteller_f.a.app.pages.community.fontFileKey
 import com.storyteller_f.a.app.pages.topic.TopicComposeData
 import com.storyteller_f.a.app.pages.topic.composeCommunityId
@@ -22,13 +21,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDateTime
-import kotlinx.io.Buffer
-import kotlinx.io.readByteArray
-import no.synth.kmpzip.kotlinx.ZipOutputStream
-import no.synth.kmpzip.zip.ZipEntry
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
@@ -177,7 +171,7 @@ class CommunityFontStoreTest {
         runTest {
             val store =
                 CommunityFontStore(this, maxCachedBytes = 1) { file, _ ->
-                    decodeCommunityFont(fontFileKey(file), file.name, CommunityFontTestData.primary)
+                    testFontBundle(fontFileKey(file), file.name, CommunityFontTestData.primary)
                 }
             val events = mutableListOf<CommunityFontReloaded>()
             backgroundScope.launch(start = CoroutineStart.UNDISPATCHED) { store.reloads.collect { events += it } }
@@ -240,7 +234,7 @@ class CommunityFontStoreTest {
                         initialStarted.complete(Unit)
                         releaseInitial.await()
                     }
-                    decodeCommunityFont(
+                    testFontBundle(
                         fontFileKey(file),
                         file.name,
                         if (retry) CommunityFontTestData.code else CommunityFontTestData.primary,
@@ -297,7 +291,7 @@ class CommunityFontStoreTest {
             val store =
                 CommunityFontStore(this) { file, retry ->
                     requests += retry
-                    decodeCommunityFont(fontFileKey(file), file.name, CommunityFontTestData.primary)
+                    testFontBundle(fontFileKey(file), file.name, CommunityFontTestData.primary)
                 }
             val observed = mutableListOf<CommunityFontBundle?>()
             backgroundScope.launch(start = CoroutineStart.UNDISPATCHED) {
@@ -333,24 +327,6 @@ class CommunityFontStoreTest {
         }
 
     @Test
-    fun retainsZipWeightsAndItalicFaces() {
-        val archive = fontZip("family/Regular.ttf", "family/Bold.ttf", "family/Italic.ttf")
-        val fonts = decodeCommunityFont("family", "family.zip", archive).faces
-        assertEquals(listOf(400, 700, 400), fonts.map { it.weight.weight })
-        assertEquals(
-            listOf(false, false, true),
-            fonts.map { it.style == androidx.compose.ui.text.font.FontStyle.Italic },
-        )
-    }
-
-    @Test
-    fun rejectsUnsupportedFilesAndEmptyFontArchives() {
-        assertFailsWith<IllegalArgumentException> { decodeCommunityFont("bad", "bad.txt", byteArrayOf(1)) }
-        assertFailsWith<IllegalArgumentException> { decodeCommunityFont("bad", "bad.ttf", byteArrayOf()) }
-        assertFailsWith<IllegalArgumentException> { decodeCommunityFont("bad", "bad.zip", fontZip("README.txt")) }
-    }
-
-    @Test
     fun cacheIdentityDoesNotExposeTheObjectUrl() {
         val key = fontFileKey(file(1).copy(url = "https://fonts.invalid/font.ttf?token=synthetic"))
         assertEquals(32, key.length)
@@ -370,16 +346,4 @@ class CommunityFontStoreTest {
             name = "Regular.ttf",
             url = "https://fonts.invalid/$id",
         )
-
-    private fun fontZip(vararg names: String): ByteArray {
-        val output = Buffer()
-        ZipOutputStream(output).use { archive ->
-            names.forEach { name ->
-                archive.putNextEntry(ZipEntry(name))
-                archive.write(CommunityFontTestData.primary)
-                archive.closeEntry()
-            }
-        }
-        return output.readByteArray()
-    }
 }

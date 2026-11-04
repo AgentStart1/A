@@ -4,6 +4,8 @@
 
 package fonts
 
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import com.storyteller_f.a.app.common.DownloadFileStore
 import com.storyteller_f.a.app.common.createDownloadFileStore
 import com.storyteller_f.a.app.common.createDownloadRecord
@@ -11,6 +13,7 @@ import com.storyteller_f.a.app.common.extractedFiles
 import com.storyteller_f.a.app.common.getDownloadRevision
 import com.storyteller_f.a.app.common.publishArchive
 import com.storyteller_f.a.app.common.write
+import com.storyteller_f.a.app.pages.community.CommunityFontBundle
 import com.storyteller_f.a.app.pages.community.CommunityFontDownload
 import com.storyteller_f.storage.DownloadStatus
 import io.ktor.client.HttpClient
@@ -19,6 +22,7 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
@@ -315,6 +319,59 @@ class DownloadEngineTest {
                 kotlin.test.assertTrue(chain.flatMap { it.suppressedExceptions }.any { it.message == "cleanup" })
             } finally {
                 disk.delete(root)
+            }
+        }
+
+    @Test
+    fun downloadedArchivePreservesAllFourWeightAndStylePairs() =
+        runTest {
+            val bytes =
+                fontTestZip(
+                    "family/Regular.ttf",
+                    "family/Bold.ttf",
+                    "family/Italic.ttf",
+                    "family/BoldItalic.ttf",
+                )
+            val bundle = downloadFont(bytes, "family.zip")
+            assertEquals(
+                mapOf(
+                    "Regular.ttf" to (FontWeight.Normal to FontStyle.Normal),
+                    "Bold.ttf" to (FontWeight.Bold to FontStyle.Normal),
+                    "Italic.ttf" to (FontWeight.Normal to FontStyle.Italic),
+                    "BoldItalic.ttf" to (FontWeight.Bold to FontStyle.Italic),
+                ),
+                bundle.faces.associate { face ->
+                    val name = face.name.replace('\\', '/').substringAfterLast('/')
+                    name to (face.weight to face.style)
+                },
+            )
+        }
+
+    @Test
+    fun downloadedUnsupportedFontExtensionIsRejected() =
+        runTest {
+            assertFailsWith<IllegalArgumentException> { downloadFont(CommunityFontTestData.primary, "font.txt") }
+        }
+
+    @Test
+    fun emptyFontSourceIsRejected() =
+        runTest {
+            assertFailsWith<IllegalArgumentException> { downloadFont(byteArrayOf(), "Regular.ttf") }
+        }
+
+    @Test
+    fun downloadedArchiveWithoutFontEntriesIsRejected() =
+        runTest {
+            assertFailsWith<IllegalArgumentException> { downloadFont(fontTestZip("README.txt"), "family.zip") }
+        }
+
+    private suspend fun CoroutineScope.downloadFont(bytes: ByteArray, name: String): CommunityFontBundle =
+        HttpClient(MockEngine { respond(bytes) }).use { client ->
+            val fixture = DownloadTestFixture(this, createDownloadFileStore(), client)
+            try {
+                load(fixture, fontFile(bytes, name))
+            } finally {
+                fixture.close()
             }
         }
 

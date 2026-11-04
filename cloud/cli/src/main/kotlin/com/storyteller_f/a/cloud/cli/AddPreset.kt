@@ -1085,9 +1085,3 @@ class AddPreset : Subcommand("add", "add entry") {
         )
     }
 }
-
-suspend fun Backend.applyPreset(presetValue: PresetValue, parentDir: File) {
-    AddPreset().run {
-        applyPresetByValue(presetValue, parentDir)
-    }
-}

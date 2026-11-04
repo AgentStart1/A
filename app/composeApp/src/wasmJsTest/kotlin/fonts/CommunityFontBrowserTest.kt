@@ -23,8 +23,6 @@ import com.storyteller_f.a.app.common.withLock
 import com.storyteller_f.a.app.common.write
 import com.storyteller_f.a.app.pages.community.CommunityFontDownload
 import com.storyteller_f.a.app.pages.community.CommunityFontStore
-import com.storyteller_f.a.app.pages.community.buildCommunityFonts
-import com.storyteller_f.a.app.pages.community.decodeCommunityFont
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -96,7 +94,7 @@ class CommunityFontBrowserTest {
                         recreated.files.extractedFiles(original.path),
                     )
                     assertContentEquals(first.faces.single().bytes, bundle.faces.single().bytes)
-                    val fonts = buildCommunityFonts(bundle, null)
+                    val fonts = buildTestCommunityFonts(bundle, null)
                     val width =
                         TextMeasurer(fonts.resolver ?: createFontFamilyResolver(), Density(1f), LayoutDirection.Ltr)
                             .measure(
@@ -117,9 +115,9 @@ class CommunityFontBrowserTest {
     fun independentlyLoadedFamiliesKeepTheirGlyphMetrics() =
         runTest {
             suspendCancellableCoroutine { continuation -> onWasmReady { continuation.resume(Unit) } }
-            val body = decodeCommunityFont("body", "Regular.ttf", CommunityFontTestData.primary)
-            val code = decodeCommunityFont("code", "Regular.ttf", CommunityFontTestData.code)
-            val fonts = buildCommunityFonts(body, code)
+            val body = testFontBundle("body", "Regular.ttf", CommunityFontTestData.primary)
+            val code = testFontBundle("code", "Regular.ttf", CommunityFontTestData.code)
+            val fonts = buildTestCommunityFonts(body, code)
             val measurer = TextMeasurer(fonts.resolver ?: createFontFamilyResolver(), Density(1f), LayoutDirection.Ltr)
             val text = AnnotatedString("A")
             assertEquals(

@@ -40,12 +40,7 @@ internal data class LoadedCommunityFont(val family: FontFamily?, val resolver: F
 
 internal expect suspend fun buildCommunityFont(bundle: CommunityFontBundle?): LoadedCommunityFont
 
-internal suspend fun buildCommunityFonts(
-    content: CommunityFontBundle?,
-    code: CommunityFontBundle?,
-): CommunityFontPresentation = combineCommunityFonts(buildCommunityFont(content), buildCommunityFont(code))
-
-private fun combineCommunityFonts(body: LoadedCommunityFont, code: LoadedCommunityFont): CommunityFontPresentation =
+internal fun combineCommunityFonts(body: LoadedCommunityFont, code: LoadedCommunityFont): CommunityFontPresentation =
     CommunityFontPresentation(
         TopicContentFonts(body.family, code.family, code.family ?: body.family),
         body.resolver ?: code.resolver,

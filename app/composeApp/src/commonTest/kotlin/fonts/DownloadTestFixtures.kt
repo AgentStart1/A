@@ -11,7 +11,6 @@ import com.storyteller_f.a.app.common.DownloadFileStore
 import com.storyteller_f.a.app.common.Downloader
 import com.storyteller_f.a.app.common.SimpleTaskRegister
 import com.storyteller_f.a.app.pages.community.CommunityFontStore
-import com.storyteller_f.a.app.pages.community.decodeCommunityFont
 import com.storyteller_f.a.app.pages.community.fontFileKey
 import com.storyteller_f.a.client.core.ConstPassHolder
 import com.storyteller_f.a.client.core.UserSessionManager
@@ -82,4 +81,4 @@ internal fun fontFile(bytes: ByteArray, name: String = "Regular.ttf", id: Long =
     FileInfo.EMPTY.copy(id = id, name = name, size = bytes.size.toLong(), url = "https://fonts.invalid/$id")
 
 internal fun createFontStore(scope: CoroutineScope, fetch: suspend (FileInfo) -> ByteArray): CommunityFontStore =
-    CommunityFontStore(scope) { file, _ -> decodeCommunityFont(fontFileKey(file), file.name, fetch(file)) }
+    CommunityFontStore(scope) { file, _ -> testFontBundle(fontFileKey(file), file.name, fetch(file)) }

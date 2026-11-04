@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.sp
 import com.mikepenz.markdown.m3.markdownColor
 import com.storyteller_f.a.app.pages.community.CommunityFontContent
 import com.storyteller_f.a.app.pages.community.CommunityFontStore
-import com.storyteller_f.a.app.pages.community.decodeCommunityFont
 import com.storyteller_f.a.app.pages.community.fontFileKey
 import com.storyteller_f.a.app.pages.topic.EditTopicPage
 import com.storyteller_f.a.client.compose_core.components.LocalTopicContentFonts
@@ -35,6 +34,7 @@ import com.storyteller_f.shared.model.FontSettings
 import com.storyteller_f.shared.model.FontSettingsWithInfo
 import fonts.CommunityFontTestData
 import fonts.createFontStore
+import fonts.testFontBundle
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -166,7 +166,7 @@ class CommunityTopicFontsUiTest {
                     CommunityFontStore(scope, maxCachedBytes = budget) { file, _ ->
                         reads.update { counts -> counts + (file.id to counts.getOrElse(file.id) { 0 } + 1) }
                         val bytes = if (file.id == 1L) CommunityFontTestData.primary else CommunityFontTestData.code
-                        decodeCommunityFont(fontFileKey(file), file.name, bytes)
+                        testFontBundle(fontFileKey(file), file.name, bytes)
                     }
                 val selected = settings(1).copy(settings = FontSettings(1, 2), codeFont = settings(2).contentFont)
                 var fonts = TopicContentFonts()

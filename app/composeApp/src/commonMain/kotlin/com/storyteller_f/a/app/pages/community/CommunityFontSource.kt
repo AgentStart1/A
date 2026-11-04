@@ -20,6 +20,8 @@ import com.storyteller_f.storage.DownloadInfoStorage
 import com.storyteller_f.storage.DownloadStatus
 import kotlinx.coroutines.flow.first
 
+private const val MAX_FONT_FACES = 18
+
 internal expect fun createCommunityFontStore(
     instance: IAccountInstance,
     provider: ClientFileProvider,
@@ -95,7 +97,7 @@ private suspend fun readFontBundle(
             val entries =
                 checkNotNull(files.extractedFiles(record.path)) { "Font extraction is incomplete" }
                     .filter { isFontName(it.path) }
-            require(entries.size in 1..18) { "Font archive has no usable family or too many faces" }
+            require(entries.size in 1..MAX_FONT_FACES) { "Font archive has no usable family or too many faces" }
             entries.map { entry ->
                 require(entry.size in 1..remaining) { "Font family exceeds the decoded size limit" }
                 val bytes = files.read(entry.path, entry.size)

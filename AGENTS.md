@@ -716,3 +716,6 @@
 - Font preset ZIPs must contain a single family. Preserve available regular/bold/italic faces,
   exclude Condensed, and use sourceName to share raw downloads across separately filtered outputs.
   Recheck author-controlled Markdown weight support before removing or restoring extra weights.
+
+- Keep font fixture builders in test source sets. Exercise ZIP loading through the production
+  Downloader/storage/worker pipeline instead of retaining a separate production decoder only for tests.
