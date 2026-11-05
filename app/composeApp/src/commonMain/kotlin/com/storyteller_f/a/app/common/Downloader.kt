@@ -28,6 +28,9 @@ interface Downloader {
     /** Register once or reuse; failed/paused tasks are retried explicitly through [resume]. */
     suspend fun download(fileInfo: FileInfo): DownloadInfo
     fun resume(id: PrimaryKey)
+
+    /** Resume with an updated transport URL only when the supplied file matches the stored revision. */
+    fun resume(fileInfo: FileInfo)
     fun pause(id: PrimaryKey)
 }
 
@@ -67,6 +70,19 @@ class DownloaderImpl internal constructor(
         enqueue(id, retry = true, merge = true) { context.records.getDocumentByFileId(id)?.fileInfo }
     }
 
+    override fun resume(fileInfo: FileInfo) {
+        // A newer URL must survive an earlier resume that is still using an expired URL.
+        enqueue(fileInfo.id, retry = true, merge = false) {
+            context.records.getDocumentByFileId(fileInfo.id)?.fileInfo?.let { current ->
+                if (getDownloadRevision(current) == getDownloadRevision(fileInfo)) {
+                    current.copy(url = fileInfo.url)
+                } else {
+                    current
+                }
+            }
+        }
+    }
+
     private fun enqueue(
         id: PrimaryKey,
         retry: Boolean,
@@ -81,7 +97,7 @@ class DownloaderImpl internal constructor(
                     var request: DownloadSession? = null
                     withDownloadCleanup({ request?.close() }) {
                         register.runTask(key, merge, prepare = { request = context.session() }) {
-                            resolveFile()?.let { executeDownload(it, retry, prepared, checkNotNull(request).session) }
+                            executeDownload(id, retry, prepared, checkNotNull(request).session, resolveFile)
                         }
                     }
                     prepared.complete(Result.success(null))
@@ -104,12 +120,14 @@ class DownloaderImpl internal constructor(
     }
 
     private suspend fun executeDownload(
-        file: FileInfo,
+        id: PrimaryKey,
         retry: Boolean,
         prepared: CompletableDeferred<Result<DownloadInfo?>>,
         session: UserSessionManager,
+        resolveFile: suspend () -> FileInfo?,
     ) {
-        files.withLock(downloadTaskKey(context.namespace, file.id)) {
+        files.withLock(downloadTaskKey(context.namespace, id)) {
+            val file = resolveFile() ?: return@withLock
             withDownloadFinalizer({ failure ->
                 when (failure) {
                     is CancellationException -> {

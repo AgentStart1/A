@@ -42,7 +42,7 @@ class PublicFontGenerationTest {
                             onLoaded = { builds++ },
                         )
                     val store =
-                        CommunityFontStore(backgroundScope, source::observe) { fixture.downloader.resume(it.id) }
+                        CommunityFontStore(backgroundScope, source::observe) { fixture.downloader.resume(it) }
                     backgroundScope.launch { store.observeFont(file).collect {} }
                     val first = assertNotNull(store.load(file))
                     val record = assertNotNull(fixture.records.getDocumentByFileId(file.id))
@@ -78,7 +78,7 @@ class PublicFontGenerationTest {
                             onLoaded = { builds++ },
                         )
                     val store =
-                        CommunityFontStore(backgroundScope, source::observe) { fixture.downloader.resume(it.id) }
+                        CommunityFontStore(backgroundScope, source::observe) { fixture.downloader.resume(it) }
                     backgroundScope.launch { store.observeFont(file).collect {} }
                     val first = assertNotNull(store.load(file))
                     val record = assertNotNull(fixture.records.getDocumentByFileId(file.id))
@@ -116,7 +116,7 @@ class PublicFontGenerationTest {
                             fixture.namespace,
                         )
                     val store =
-                        CommunityFontStore(backgroundScope, source::observe) { fixture.downloader.resume(it.id) }
+                        CommunityFontStore(backgroundScope, source::observe) { fixture.downloader.resume(it) }
                     backgroundScope.launch { store.observeFont(file).collect {} }
                     store.observeFont(file).first { it is CommunityFontState.Failed }
                     fixture.files.write(original.path, CommunityFontTestData.primary)

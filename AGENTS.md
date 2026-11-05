@@ -743,3 +743,6 @@
 
 - Create native ZIP output files exclusively with CREATE_NEW. String-based path normalization cannot
   detect every filesystem alias; never open an existing extraction target with truncation.
+
+- Keep font identity independent of expiring transport URLs. Pass current FileInfo to explicit resume,
+  refresh only matching-revision URLs under the shared file lease, and preserve newer stored revisions.

@@ -496,6 +496,7 @@ class DownloaderTest {
             object : Downloader {
                 override suspend fun download(fileInfo: FileInfo) = record
                 override fun resume(id: Long) = error("Unused")
+                override fun resume(fileInfo: FileInfo) = error("Unused")
                 override fun pause(id: Long) = error("Unused")
             }
         val source = CommunityFontDownload(records, downloader, files, "synthetic")

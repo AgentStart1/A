@@ -49,7 +49,7 @@ internal fun createDownloadedFontStore(
             viewModel.resourceNamespace,
             onLoaded,
         )
-    return CommunityFontStore(viewModel.viewModelScope, source::observe) { viewModel.downloader.resume(it.id) }
+    return CommunityFontStore(viewModel.viewModelScope, source::observe) { viewModel.downloader.resume(it) }
 }
 
 /** Database snapshots select successful generations, never inferred intermediate status events. */

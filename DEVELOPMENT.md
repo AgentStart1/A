@@ -2208,11 +2208,15 @@ the captured account header rejects identity changes instead of silently using a
 Logout can therefore invalidate queued protected reads. Server session revocation still fails protected requests;
 there is no saved-key login, mutation replay or perpetual account session in the shared service.
 
-`download(file)` registers or reuses a task without retrying failed/paused records. `resume(id)` is the
-only retry command and can reuse a complete source archive. Per-server/file task queues serialize
+`download(file)` registers or reuses a task without retrying failed/paused records. `resume(...)` is the
+only retry command and can reuse a complete source archive. The `resume(FileInfo)` overload supplies a renewed
+transport URL for the same stored revision; font retries pass the current `FileInfo` without changing the shared
+font identity. A mismatched revision cannot replace the stored metadata. Resume metadata is resolved under
+the shared file lease, so another task cannot replace the revision between lookup and registration. Per-server/file task queues serialize
 executing and queued requests. Pause cancels earlier admissions, drains native writes/worker cleanup,
 and publishes PAUSED before later requests run. Resume intents merge with other resume admissions;
-an explicit resume behind an ordinary registration remains queued. Registration cancellation propagates
+an explicit resume behind an ordinary registration remains queued. URL-bearing resume requests also remain
+queued so a newer address is not merged into a running expired-address attempt. Registration cancellation propagates
 to its uncompleted admission; already registered work belongs to the application. Failures are isolated
 at the request boundary and cleanup failures remain suppressed on the original error.
 
