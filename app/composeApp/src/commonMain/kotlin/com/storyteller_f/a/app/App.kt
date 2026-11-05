@@ -21,6 +21,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,19 +43,26 @@ import com.dokar.sonner.Toaster
 import com.dokar.sonner.rememberToasterState
 import com.storyteller_f.a.app.common.AppNav
 import com.storyteller_f.a.app.common.AppNavFactory
+import com.storyteller_f.a.app.common.DownloadContext
 import com.storyteller_f.a.app.common.Downloader
+import com.storyteller_f.a.app.common.DownloaderImpl
 import com.storyteller_f.a.app.common.ExternalUriHandler
 import com.storyteller_f.a.app.common.HomeScreen
 import com.storyteller_f.a.app.common.OnTopicCreated
 import com.storyteller_f.a.app.common.RoomScreen
+import com.storyteller_f.a.app.common.SimpleTaskRegister
 import com.storyteller_f.a.app.common.TopicScreen
 import com.storyteller_f.a.app.common.Uploader
 import com.storyteller_f.a.app.common.appNavSerializersModule
+import com.storyteller_f.a.app.common.captureDownloadSession
+import com.storyteller_f.a.app.common.createFileEngine
 import com.storyteller_f.a.app.common.newAppNav
 import com.storyteller_f.a.app.common.processEvent
 import com.storyteller_f.a.app.common.rootEntryProvider
 import com.storyteller_f.a.app.common.toRoute
 import com.storyteller_f.a.app.components.SignInPrompt
+import com.storyteller_f.a.app.pages.community.LocalCommunityFontStore
+import com.storyteller_f.a.app.pages.community.createCommunityFontStore
 import com.storyteller_f.a.app.pages.file.FileExplorerPage
 import com.storyteller_f.a.app.pages.file.FileViewPage
 import com.storyteller_f.a.app.pages.room.RoomPage
@@ -117,6 +125,7 @@ import com.storyteller_f.shared.obj.RoomFrame
 import com.storyteller_f.shared.obj.ob
 import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
+import com.storyteller_f.shared.utils.md5
 import com.storyteller_f.storage.ModelStorage
 import dev.tclement.fonticons.LocalIconFont
 import dev.tclement.fonticons.LocalIconSize
@@ -304,6 +313,10 @@ fun CommonEntry(content: @Composable () -> Unit) {
         val uiViewModel = LocalUiViewModel.current
         val instance by uiViewModel.instance.collectAsState()
         val currentUserSessionManager = instance.sessionManager
+        val communityFonts =
+            remember(uiViewModel) {
+                uiViewModel.communityFonts
+            }
         val user by currentUserSessionManager.model.userHandler.data.collectAsState()
 
         val toasterState = rememberToasterState()
@@ -311,6 +324,7 @@ fun CommonEntry(content: @Composable () -> Unit) {
         GlobalDialog(instance.controller)
         CompositionLocalProvider(
             LocalSessionManager provides currentUserSessionManager,
+            LocalCommunityFontStore provides communityFonts,
             LocalClient provides currentUserSessionManager.client,
             LocalToaster provides Sonner(toasterState),
             LocalGlobalDialog provides instance.controller,
@@ -527,6 +541,17 @@ sealed interface IAccountInstance {
 class UIViewModel(val viewModelScope: CoroutineScope, val wsServerUrl: String, val httpUrl: String) {
     val instance: MutableStateFlow<IAccountInstance>
     val historyManager = buildSessionHistoryFactory("user")
+    internal val resourceNamespace = md5(httpUrl.trimEnd('/'))
+    internal val resourceRecords = getRoomModelStorage("guest").download.forServer(resourceNamespace)
+    internal val resourceFiles = createFileEngine()
+    internal val resourceTasks = SimpleTaskRegister(viewModelScope)
+    val downloader: Downloader =
+        DownloaderImpl(
+            DownloadContext(resourceNamespace, viewModelScope, resourceRecords, ::captureDownloadSession),
+            resourceTasks,
+            resourceFiles,
+        )
+    internal val communityFonts by lazy { createCommunityFontStore(this) }
 
     init {
         val value = IAccountInstance.None(viewModelScope, httpUrl, wsServerUrl)

@@ -1,5 +1,38 @@
 # Development
 
+## Build verification
+
+Routine code validation compiles the affected modules and platform source sets, then runs
+Detekt and the relevant tests. Root `assemble` is a full artifact build, not a compile-only
+check: it can include unrelated modules, Android Benchmark/Release packaging and Wasm
+production linking/Binaryen optimization. Use those tasks when a requested artifact or an
+affected packaging, optimization, signing or distribution contract needs verification.
+
+For repository-wide compilation validation, use the existing `compileAllNoRelease` task:
+
+```sh
+./gradlew compileAllNoRelease -Pserver.flavor=dev -Pserver.buildType=dev --console=plain
+```
+
+It excludes executable, Release, Benchmark and test compilation variants. Prefer narrower
+module tasks when the change does not need a repository-wide check.
+
+For shared application Kotlin changes, run the following on one line:
+
+```sh
+./gradlew :app:composeApp:compileKotlinJvm :app:composeApp:compileAndroidMain :app:composeApp:compileKotlinWasmJs -Pserver.flavor=dev -Pserver.buildType=dev --console=plain
+```
+
+Use the corresponding `:panel:composeApp` tasks for panel changes and `:module:compileKotlin`
+for a JVM backend module. Include affected downstream consumers when changing shared models
+or protocol types. Wasm `compileKotlinWasmJs` checks source compilation without a production
+executable link; runtime/browser behavior still needs the relevant browser tests. If an
+Android APK is required, select the affected `assembleDebug` task. Run production linking,
+release packaging or a full root assembly only for the artifact checks described above.
+
+On Windows, keep compilation/builds, Detekt and screenshot/host UI runs sequential when they
+share Android runtime JARs. Always pass the intended server flavor and build type explicitly.
+
 ## Scenario-specific API projections
 
 Base models (`TopicInfo`, `TitleInfo`, `CommunityInfo`, favorite/subscription/log records and
@@ -2139,3 +2172,193 @@ Build regular `assemble` and Wasm Appium development distributions in separate G
 Kotlin's development and production CompileSync tasks share the generated npm package directory;
 requesting both Webpack modes in one graph triggers Gradle implicit-dependency validation.
 Finish all runtime compilation before starting the browser suites.
+
+### Community topic fonts
+
+Community font settings apply to topic Markdown and topic editor contents, including direct
+links, community posts, public-room posts, source editing, block editing and preview. Controls,
+author metadata and the surrounding application theme keep their application typography.
+Content and code use separate families; the source editor prefers code, then content.
+Missing or invalid configured families use application typography (Markdown code retains its
+monospace default). Missing glyphs use platform fallback; there is no configurable community
+fallback family. Existing JSON with retired fallback fields remains readable through commonJson's
+unknown-field handling, and subsequent writes omit those fields. Test actual glyph advances
+with the synthetic fixtures rather than treating resolver preload as proof of valid font data.
+
+Downloader is an application-owned service for internal resources (currently community fonts).
+Ordinary file downloads open their URL through the platform URI handler. Internal resource records
+and pause/resume controls remain under App downloads in the file explorer. All platform providers return
+the same service. Android foreground notifications observe application task counts without owning those
+tasks. The adaptive UI test process fixes its language/country to English/US for stable selectors and runs after
+the regular JVM suite when both tasks are requested. Font fixtures wait for in-flight native construction
+to finish before deleting files, including after cancellation.
+The guest database stores records in `public-resources-v1:<server-identity>` collections; disk and OPFS
+paths use the matching new namespace plus file ID and metadata revision. Server identity derives from
+the configured HTTP root, independently of the active account. Identical file IDs on different servers
+cannot collide. Legacy account/guest download collections and directories are ignored, without scans,
+migration, deletion or database reset. Room remains version 2; successful processing generations are
+serialized in DownloadEntity.data, with no entity/schema change.
+
+Downloader owns registration, transfer, processing and status publication; FileEngine provides platform
+file IO, archive extraction and leases. Each admission snapshots the initiating Cookie context and
+account identity into a short-lived client owned by that request. Closing or switching accounts does
+not close that client or cancel application tasks. Request completion/cancellation closes it; later
+resume admissions capture the current account. On browsers, HttpOnly cookies remain browser-owned;
+the captured account header rejects identity changes instead of silently using another account.
+Logout can therefore invalidate admitted protected reads. Server session revocation still fails protected requests;
+there is no saved-key login, mutation replay or perpetual account session in the shared service.
+
+`download(file)` registers or reuses a task without retrying failed/paused records. `resume(...)` is the
+only retry command and can reuse a complete source archive. The `resume(FileInfo)` overload supplies a renewed
+transport URL for the same stored revision; font retries pass the current `FileInfo` without changing the shared
+font identity. A mismatched revision cannot replace the stored metadata. Resume metadata is resolved under
+the shared file lease, so another task cannot replace the revision between lookup and registration.
+Admission checks and registration are atomic under the task-registry mutex. While a server/file key is
+preparing, executing or stopping, duplicate download/resume calls return immediately without capturing
+a client or queuing work, even if they supply a different URL. Ignored download calls return null;
+collectors continue observing the existing database task. Different files execute concurrently outside
+the registry mutex. Pause drains native writes/worker cleanup and publishes PAUSED before admission
+reopens. Registration cancellation propagates
+to its uncompleted admission; already registered work belongs to the application. Failures are isolated
+at the request boundary and cleanup failures remain suppressed on the original error.
+
+Font observers combine database snapshots with registry activity, keeping retry controls Loading through
+task cleanup before publishing failure or pause states. They also publish Loading before constructing a selected successful
+generation, including when intermediate database snapshots are skipped. The retry control therefore
+shows progress instead of an actionable failure while the retry is running.
+
+Before an actual network transfer, the downloader checks MinIO/S3 SigV4 X-Amz-Date and X-Amz-Expires.
+Expired or malformed signed expiry is refreshed once through the existing authenticated file-info API,
+with file identity/revision validated before any source bytes are requested. A complete local source needs
+no refresh; URLs without declared SigV4 expiry retain their existing behavior. Refresh failures (including
+guest authentication failures) remain download failures and use application typography without affecting
+post reading. Public community responses can already provide usable font URLs to guests.
+
+PROCESSED and a new monotonically increasing processedGeneration are saved together, only after source
+writers close and extraction succeeds. The shared file lease covers snapshot rechecks, generation
+increments, directory replacement and terminal publication, including across browser tabs/workers.
+Database Flow is a snapshot, not an event log: a consumer may miss all intermediate retry statuses.
+The font source selects revision/path/successful generation, ignores unrelated progress/row changes,
+and uses mapLatest to validate/build under that same file lease after rechecking the database snapshot.
+A failed construction emits a failure state and continues observing; same-version resume success always
+constructs a replacement from its new generation. Duplicate weight/style, metadata and family checks
+remain mandatory on every platform. Extraction completion has no separate manifest.
+
+CommunityFontStore registers one stateIn flow per public file revision. All pages and accounts share
+that upstream validation/construction and receive its built family/resolver. There is no separate
+finished-bundle cache, pending-load cache or reload event bus. WhileSubscribed keeps upstream work for
+a five-second stop grace period and resets replay immediately when stopped. The registry leases entries
+per collector, never evicts active subscribers, and removes/cancels idle entries after that grace period;
+an earlier idle timer cannot evict a newly subscribed entry. Content keeps its displayed family during
+retry processing until a new successful snapshot replaces it. Android/JVM construct on background
+threads and load native files without a full source ByteArray; Wasm construction stays on the browser
+event loop while archive processing stays in its dedicated worker. Skia families preload into their
+family-owned resolver. Unsubscription by one reader does not cancel other readers or download tasks.
+
+Cache identity uses object metadata rather than expiring signed URLs. Missing/empty extraction directories
+are rebuilt from the source; missing sources are downloaded again. Each extraction leaves PROCESSED,
+replaces `<source>.extracted` under the shared file lease, and removes partial output on failure or
+cancellation. Explicit resume rebuilds even nonempty partial extraction. A nonempty directory alone
+never authorizes a font read. Storage denial/quota errors surface as failures and browser cache
+availability is never assumed.
+
+Wasm ZIP processing runs in a dedicated module Web Worker from `app/composeApp/file-worker`.
+The worker uses the pinned zip.js native-stream implementation, reads the source directly from OPFS,
+validates paths, duplicate names, declared/actual sizes and CRC, and closes all output writers before
+returning file metadata in memory. It never transfers an entire archive through the page's Wasm heap.
+The page saves database completion after the worker succeeds; it does not persist that metadata as
+a second completion marker. Cancellation waits for worker acknowledgement and closed writers before
+deleting the partial extraction directory; workers are terminated after each operation. Worker errors fail processing without a main-thread
+extraction fallback. Local npm sources are inputs to Wasm installation and webpack tasks; regenerate
+only `kotlin-js-store/wasm/yarn.lock` after dependency changes.
+
+Browser and native ZIP processing permit at most 128 total entries (including directories),
+64 MiB of source data and 80 MiB of expanded data. Native processing streams with these limits
+and rejects case-insensitive duplicate normalized paths before opening an output file.
+Path components ending in a dot or space are rejected on native platforms to prevent Windows path aliases.
+Native output files are atomically created with CREATE_NEW; existing targets, including DOS short-name aliases,
+fail processing instead of being truncated.
+Both platforms bound actual expanded output, including non-font files, and remove partial extraction directories after rejection.
+Ordinary non-archive downloads stream to storage without that ZIP limit. Font bundles accept at most 18 faces, a 64 MiB source and 80 MiB of decoded faces.
+Before publishing a family on Android, JVM or Wasm, reject duplicate weight/style pairs and compare
+filename-inferred styles with original OpenType OS/2 `usWeightClass` and `fsSelection` (italic/oblique).
+Every face must have the same internal family: prefer Unicode `name` ID 16 (typographic family),
+falling back to ID 1 only when ID 16 is absent. Subfamily names are styles, not family identifiers.
+Name selection is platform-independent: Windows English, neutral Unicode, then a deterministic locale.
+Missing, malformed or ambiguous required metadata fails the whole bundle through the existing font
+failure/default-font path; faces are never deduplicated or skipped. Android reads just the SFNT metadata
+tables from the file; Skia platforms read the original tables during their existing validation parse.
+Collection entries continue to refer to face index zero. Synthetic test fonts explicitly encode their
+weight, slant and typographic family while retaining their distinct glyph advances.
+
+The shared stateIn replay owns the most recently built FontFamily/resolver while subscribed or in
+its stop grace period. Frameworks and live renderers may retain those resources longer. Native backing
+files remain available for another presentation resolver; removing an idle flow must not close framework
+resources still referenced by content. Skia's public loader silently substitutes a system face for invalid
+input, so explicit validation still precedes framework loading (a second parse per construction).
+Wasm LoadedFont retains its byte supplier: these arrays and Skia's native data live with the family,
+without an additional source-byte cache. ByteArray/JS/Skia conversion can still copy data. Browser font
+retention tracks up to 12 successfully loaded OPFS
+versions per server with separate 128 MiB source and expanded-data budgets. Its index lives inside the
+new public server root; legacy retention indexes are never read. Eviction acquires the same server/file
+lease as transfer and construction before deleting a revision. Retention applies only to
+font entries, not general downloads. System-font permission bytes remain separate.
+
+Native Android font loading and invalid-file rejection run on a device with
+`:app:composeApp:connectedAndroidDeviceTest -Pandroid.testInstrumentationRunnerArguments.class=fonts.AndroidCommunityFontTest`.
+Keep the normal flavor/build-type properties and device lease; these tests use the native font engine.
+
+Run `:app:composeApp:jvmTest --tests 'fonts.*'`,
+`:app:composeApp:adaptiveUiTest --tests 'device_based.Community*'` and
+`:app:composeApp:wasmJsBrowserTest --tests '*CommunityFontBrowserTest*'`
+with the normal flavor/build-type properties. Store tests use continuous observation and explicit resume
+in place of the retired load/retry and cache-eviction contracts. JVM tests cover shared construction,
+idle replay release, skipped intermediate snapshots, generation updates, account-client closure,
+server/legacy SQLite collection isolation, completion ordering, disk cache
+recreation and repair, explicit retry, Range handling, cancellation and real SQLite record identity.
+Browser tests exercise real OPFS binary storage, recreated stores, server/revision separation,
+retention, Web Locks across stores and a worker, cancelled extraction-worker cleanup and real ZIP/font
+decoding. A test-only worker entry instruments the real OPFS stream, pauses after a successful native
+write, and releases that pause only on cancellation. The browser test asserts the real abort completes
+before unpublished output is removed. It reuses the production worker protocol and Kotlin cleanup
+boundary. A second test entry observes the actual native write Promise while it is still pending,
+then invokes the unchanged production cancellation handler within the same Worker microtask phase.
+It verifies native settlement after cancellation, writer closure before deletion, and preservation of
+the source archive. This avoids depending on a page-to-worker round trip to beat native IO completion;
+the page-initiated cancellation path remains separately covered. The pending-state guard rejects
+already-completed writes, with negative Node tests covering immediate and microtask completion.
+Production entry points do not import either test probe. For worker protocol, archive validation and writer-cancellation tests, run
+`npm --prefix app/composeApp/file-worker install --ignore-scripts --package-lock=false` then
+`npm --prefix app/composeApp/file-worker test`. The native ZIP backend requires browser support for
+`DecompressionStream("deflate-raw")`; browser acceptance must include Chrome, Edge and Firefox.
+The shared Karma configuration recognizes an Edge `CHROME_BIN` and prevents Windows compatibility
+relaunch, so Karma retains the actual browser process and can clean its isolated profile after exit.
+A launcher retry while a relaunched browser remains alive can otherwise remove active OPFS data.
+Use `FIREFOX_BIN` and `-Pkotlin.js.browser.karma.browsers=firefox-headless` to add Firefox to the
+browser tests; keep the shared loader configuration intact.
+UI tests verify glyph metrics, defaults for invalid fonts and draft/cursor retention during loading.
+
+### Font preset download filters
+
+The `*.download.yaml` files in `deploy/dev-data/medias/files` select one font family per
+output ZIP. `NotoSans.zip` contains only `NotoSansNerdFont`; separate configurations
+cover Sans Propo, SansM (regular/Mono/Propo),
+Mono (regular/Mono/Propo), Serif and Serif Propo. Condensed faces remain excluded.
+Each family includes its available Regular, Bold, Italic and BoldItalic faces. MapleMono
+is packaged as `MapleMono-NF-CN.zip` with the same four-style selection. A missing upstream
+style is not manufactured. Existing mixed Noto or three-style MapleMono uploads are separate
+objects; import the new outputs and migrate community font references rather than overwriting
+existing objects behind unchanged database metadata.
+
+`name` selects the output filename. Optional `sourceName` selects the shared raw download
+cache filename; it defaults to `name`. All Noto outputs reuse `download/Noto.zip` while
+retaining independent files under `download/processed`. Register each configuration path
+in the font provider's file preset to import the separate outputs. Keep environment-specific
+preset account information outside the repository.
+
+The current Compose Markdown renderer does not interpret HTML/CSS `font-weight`;
+inline emphasis selects italic/bold, while heading weights come from application typography.
+The preset packages omit Medium and other optional weights. Add their matching faces if
+HTML weight support or another author-controlled weight mechanism is introduced.
+The 80 MiB decoded limit accommodates MapleMono's four normal/bold/italic faces while
+keeping the source limit at 64 MiB and each OPFS retention budget at 128 MiB.

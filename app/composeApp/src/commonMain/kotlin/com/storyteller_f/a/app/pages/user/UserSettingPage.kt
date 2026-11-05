@@ -101,7 +101,6 @@ sealed class SettingOption(open val value: String?) {
     data class RoomIcon(override val value: String?, val roomId: PrimaryKey?) : SettingOption(value)
     data class ContentFont(override val value: String?) : SettingOption(value)
     data class CodeFont(override val value: String?) : SettingOption(value)
-    data class FallbackFont(override val value: String?) : SettingOption(value)
     data class JsonPreview(override val value: String?) : SettingOption(value)
 }
 
@@ -178,8 +177,7 @@ fun ObjectSettingDialog(
     val showSheet = showFilePicker(currentOption)
     val isFontOption =
         currentOption is SettingOption.ContentFont ||
-            currentOption is SettingOption.CodeFont ||
-            currentOption is SettingOption.FallbackFont
+            currentOption is SettingOption.CodeFont
     FilePicker(
         showSheet,
         sheetState,
@@ -243,8 +241,7 @@ private fun showFilePicker(currentOption: SettingOption?): Boolean =
         currentOption is SettingOption.Poster ||
         currentOption is SettingOption.RoomIcon ||
         currentOption is SettingOption.ContentFont ||
-        currentOption is SettingOption.CodeFont ||
-        currentOption is SettingOption.FallbackFont
+        currentOption is SettingOption.CodeFont
 
 private fun processSelectedMedia(mediaList: List<FileInfo>, ratio: AspectRatio, context: SelectedMediaContext) {
     val info = mediaList.first()

@@ -47,10 +47,13 @@
 - **Tests**: Write tests whenever possible. Client-side non-UI tests go under `src/headlessTest/kotlin`. Compose tests should follow https://kotlinlang.org/docs/multiplatform/compose-test.html. End-to-end tests use `scripts/test_scripts/build-and-test.sh --e2e`, which runs the Appium runner modules' explicit `appiumTest` tasks and CLI E2E tasks; no Gradle property is required.
 
 ## Static Checks
-- After code changes, run `./gradlew assemble --console=plain` to check for compilation errors.
+- After code changes, compile the affected modules and platform source sets with scoped Gradle tasks. Include downstream consumers when changing shared or protocol types; see DEVELOPMENT.md's Build verification section for task selection.
+- For repository-wide compilation validation, use the existing `compileAllNoRelease` task.
+- Do not use root `assemble` as a routine compilation check: it also builds unrelated modules and release artifacts, including Wasm production linking and optimization. Run artifact/release tasks only when explicitly requested or needed to verify affected packaging, optimization, signing or distribution behavior.
+- When an Android artifact is needed for ordinary development or tests, select the affected Debug variant; do not build Benchmark/Release variants by default.
 - After compilation checks, run `./gradlew detekt --console=plain` for static code style checks.
   - On Windows, run this through Git Bash.
-- Detekt allows function names up to 50 characters. Appium and CLI E2E source sets are exempt from function naming and length rules so backtick test names can remain behavior-descriptive. Keep production function names concise even when the configured limit permits longer names.
+- Detekt limits production function names to 50 characters. Test source sets (`src/test` and `src/*Test`) are exempt from the maximum function-name length so test names can describe behavior completely. Preserve the separately configured naming-style checks and keep production function names concise.
 
 ## Tests
 - Actively test affected modules.
@@ -679,3 +682,74 @@
 
 - Build production Wasm distributions and Appium development distributions in separate Gradle
   invocations; their CompileSync tasks share generated npm package directories.
+
+- Community fonts belong to topic/editor content, not the enclosing application theme. Reuse native
+  Downloader disk caches; Wasm uploaded-font caching is separate from system-font permission access.
+  Community settings expose content/code fonts only; leave missing-glyph fallback to the platform.
+  Key uploaded-font caches by object version rather than expiring signed URLs. Verify real glyph metrics
+  because resolver preload may silently resolve an invalid font to a default.
+- Internal downloads are application-owned and shared across accounts. Use guest database collections
+  and paths in the public resource namespace, separated by server and file identity. Ignore legacy
+  collections/directories without migration, deletion or reset; keep Room version 2 and entity schemas.
+  OPFS retention indexes/budgets are server-scoped inside the new namespace; eviction must acquire the
+  same server/file lease as Downloader and must never read legacy retention indexes.
+- Downloader owns admission, transfer, processing and status publication; FileEngine owns platform IO,
+  leases and archive primitives. Snapshot request Cookie/account context into an admission-owned client,
+  close it on completion, and never retain an account session in the public service.
+- `download(file)` never retries failed/paused tasks; use `resume(id)`. Publish PROCESSED with a persisted
+  successful generation after writers/extraction close, under the shared server/file lease. Recheck
+  revision/path/generation/status under that lease before building fonts. Database Flow may skip states.
+- Cache one stateIn font flow per public file revision, with shared upstream construction and recoverable
+  failure states. Do not add finished-bundle/pending caches or reload events. Active registry entries
+  cannot be evicted; release idle replay and entries after the subscription grace period. Retry success
+  must rebuild from a new generation even if every intermediate status was missed.
+
+- Wasm Default dispatching stays on the browser event loop. Keep ZIP processing in the dedicated
+  file worker, pass OPFS paths and in-memory file metadata rather than Kotlin/Skia objects, and await worker
+  cancellation acknowledgement before deleting unpublished output or releasing download locks.
+- Windows Edge Karma runs must prevent compatibility-layer relaunch so Karma owns the actual
+  browser process; otherwise launcher retries can delete a still-running browser's OPFS profile.
+  Keep browser launcher setup in the shared Wasm test convention and track configuration inputs.
+- Browser Worker cancellation tests must synchronize at observed native OPFS phases (a pending
+  Promise or a completed write), rather than before Worker startup. Keep instrumentation in test-only
+  entries, reuse production protocol/cleanup, and deliver cancellation before releasing a paused write.
+  Retain page-initiated cancellation coverage alongside worker-local cancellation at the pending phase.
+- Atomically ignore same-server/file download and resume duplicates while a task is preparing,
+  executing or stopping, including requests with a different URL. Never queue these duplicates;
+  keep different files concurrent. Pause waits for cleanup and status publication before admission
+  reopens. Handle ordinary failures at the owned request boundary; preserve caller cancellation.
+- Keep retry controls busy until registry activity ends, including terminal database writes and cleanup.
+  Publish font loading state during retries and before generation construction, even when database
+  observers skip intermediate snapshots. Only successful processing generations construct fonts.
+
+- Font preset ZIPs must contain a single family. Preserve available regular/bold/italic faces,
+  exclude Condensed, and use sourceName to share raw downloads across separately filtered outputs.
+  Recheck author-controlled Markdown weight support before removing or restoring extra weights.
+
+- Keep font fixture builders in test source sets. Exercise ZIP loading through the production
+  Downloader/storage/worker pipeline instead of retaining a separate production decoder only for tests.
+
+- Community font stateIn replay owns built FontFamily/resolver objects; native platforms load local files.
+  Keep Wasm framework-retained bytes distinct from a separate source-byte cache. Extraction completion
+  belongs to the download record under the server/file lock; never add a second extraction manifest.
+  Keep native backing files available for resolution through another presentation resolver; idle-flow
+  removal must not close framework resources still referenced by content.
+
+- Validate community font bundles before publication on every platform: reject duplicate weight/style pairs,
+  compare filename styles with original OS/2 metadata, and compare typographic family (name ID 16,
+  otherwise ID 1). Never compare style names or overridden platform attributes, deduplicate, or skip failed faces.
+
+- Cap ZIP archives at 128 total entries, counting both files and directories on every platform.
+- Bound native ZIP extraction while writing, including non-font data. Reject duplicate normalized
+  target paths before opening sinks; post-extraction font validation cannot detect overwritten entries.
+  Reject trailing dots/spaces in every native archive path component, including parent directories,
+  because Windows can fold them into existing targets.
+
+- Create native ZIP output files exclusively with CREATE_NEW. String-based path normalization cannot
+  detect every filesystem alias; never open an existing extraction target with truncation.
+
+- Keep font identity independent of expiring transport URLs. Pass current FileInfo to explicit resume,
+  refresh only matching-revision URLs under the shared file lease, and preserve newer stored revisions.
+
+- Refresh expired signed resource URLs once before transferring bytes, not when reading a complete cache.
+  Preserve the requested file revision and partial source; guest refresh failure must not block post reading.

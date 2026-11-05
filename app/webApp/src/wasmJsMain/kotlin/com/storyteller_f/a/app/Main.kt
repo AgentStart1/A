@@ -51,16 +51,18 @@ fun main() {
             val account by uiViewModel.instance.collectAsState()
             val fileProvider =
                 remember(uiViewModel, account) {
+                    val register = SimpleTaskRegister(account.accountScope)
+                    val downloader = uiViewModel.downloader
                     val uploader =
                         UploaderImpl(
                             uiViewModel,
-                            SimpleTaskRegister(account.accountScope),
+                            register,
                             retainSelectedFiles = true,
                             // Fetch consumes the request body before transmission; report acknowledged chunks instead.
                             persistTransportProgress = false,
                         )
                     object : ClientFileProvider {
-                        override suspend fun getDownloader(): Downloader? = null
+                        override suspend fun getDownloader(): Downloader = downloader
                         override suspend fun getUploader() = uploader
                     }
                 }

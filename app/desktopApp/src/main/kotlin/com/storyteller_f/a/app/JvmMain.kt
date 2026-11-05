@@ -7,7 +7,6 @@ package com.storyteller_f.a.app
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.ImageBitmap
 import com.storyteller_f.a.app.common.Downloader
-import com.storyteller_f.a.app.common.DownloaderImpl
 import com.storyteller_f.a.app.common.ExternalUriHandler
 import com.storyteller_f.a.app.common.SimpleTaskRegister
 import com.storyteller_f.a.app.common.Uploader
@@ -84,7 +83,7 @@ fun main(args: Array<String>) {
     val taskRegister = SimpleTaskRegister(GlobalScope)
     val provider =
         object : ClientFileProvider {
-            override suspend fun getDownloader(): Downloader = DownloaderImpl(uiViewModel, taskRegister)
+            override suspend fun getDownloader(): Downloader = uiViewModel.downloader
 
             override suspend fun getUploader(): Uploader = UploaderImpl(uiViewModel, taskRegister)
         }

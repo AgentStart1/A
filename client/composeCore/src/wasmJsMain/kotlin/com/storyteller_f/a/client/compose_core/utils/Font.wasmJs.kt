@@ -33,8 +33,6 @@ import kotlin.io.encoding.Base64
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.JsException
 
-actual fun loadFontFromLocal(path: String): FontFamily? = null
-
 private val LocalPlatformFont = staticCompositionLocalOf<FontFamily?> { null }
 
 @Composable

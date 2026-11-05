@@ -184,4 +184,6 @@
     <string name="preview_unavailable">Preview unavailable for this file type</string>
     <string name="library_count">%1$d libraries</string>
     <string name="download_started">Download started</string>
+    <string name="font_loaded">Font loaded</string>
+    <string name="retry_font_loading">Retry font loading</string>
 </resources>

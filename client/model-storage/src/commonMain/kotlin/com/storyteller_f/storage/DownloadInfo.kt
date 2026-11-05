@@ -26,4 +26,5 @@ data class DownloadInfo(
     val path: String,
     val progress: Long,
     val total: Long,
+    val processedGeneration: Long = 0,
 )

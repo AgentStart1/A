@@ -1,0 +1,139 @@
+/* This is a private project. All rights reserved. */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { ZipWriter, Uint8ArrayReader, Uint8ArrayWriter } from '@zip.js/zip.js/lib/zip-core-native.js';
+import { extractArchive } from './archive.mjs';
+
+async function zip(entries, level = 0) {
+  const writer = new ZipWriter(new Uint8ArrayWriter(), {useWebWorkers: false});
+  for (const [name, bytes] of entries) {
+    await writer.add(name, new Uint8ArrayReader(bytes), {level});
+  }
+  return writer.close();
+}
+
+function storage(source, onWrite = () => {}) {
+  const files = new Map([['downloads/test/source', source]]);
+  let open = 0;
+  const directory = prefix => ({
+    async getDirectoryHandle(name) { return directory(prefix + name + '/'); },
+    async getFileHandle(name) {
+      const path = prefix + name;
+      return {
+        async getFile() { return new File([files.get(path)], name); },
+        async createWritable() {
+          open++;
+          const chunks = [];
+          let finished = false;
+          const finish = () => { if (!finished) { finished = true; open--; } };
+          return {
+            async write(bytes) { chunks.push(bytes.slice()); onWrite(); },
+            async close() { files.set(path, new Uint8Array(await new Blob(chunks).arrayBuffer())); finish(); },
+            async abort() { finish(); },
+          };
+        },
+      };
+    },
+  });
+  Object.defineProperty(globalThis, 'navigator', {
+    value: {storage: {getDirectory: async () => directory('')}}, configurable: true,
+  });
+  return {files, get open() { return open; }};
+}
+const source = 'downloads/test/source';
+const directory = source + '.extracted';
+
+test('archive extraction returns only closed OPFS files with exact bytes', async () => {
+  const data = new Uint8Array([1, 2, 3]);
+  const target = storage(await zip([['family/Regular.ttf', data]]));
+  const entries = await extractArchive(source, directory, new AbortController().signal);
+  assert.deepEqual(entries, [{path: directory + '/family/Regular.ttf', size: 3}]);
+  assert.deepEqual(target.files.get(entries[0].path), data);
+  assert.equal(target.open, 0);
+});
+
+test('CRC corruption is rejected before an extraction can be published', async () => {
+  const bytes = await zip([['Regular.ttf', new Uint8Array([1, 2, 3])]]);
+  const header = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const offset = 30 + header.getUint16(26, true) + header.getUint16(28, true);
+  bytes[offset] ^= 0xff;
+  const target = storage(bytes);
+  await assert.rejects(extractArchive(source, directory, new AbortController().signal));
+  assert.equal(target.open, 0);
+});
+
+test('case insensitive duplicate paths are rejected before writing', async () => {
+  const target = storage(await zip([
+    ['Regular.ttf', new Uint8Array([1])], ['regular.ttf', new Uint8Array([2])],
+  ]));
+  await assert.rejects(extractArchive(source, directory, new AbortController().signal), /Duplicate archive paths/);
+  assert.equal(target.files.size, 1);
+});
+
+test('cancellation closes an open OPFS writer before rejecting', async () => {
+  const controller = new AbortController();
+  const target = storage(await zip([['Regular.ttf', new Uint8Array(128 * 1024)]]), () => controller.abort());
+  await assert.rejects(extractArchive(source, directory, controller.signal), {name: 'AbortError'});
+  assert.equal(target.open, 0);
+  assert.equal(target.files.has(directory + '/Regular.ttf'), false);
+});
+
+test('oversized entry metadata is rejected before allocating an output file', async () => {
+  const bytes = await zip([['Regular.ttf', new Uint8Array([1])]]);
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  for (let offset = 0; offset < bytes.length - 46; offset++) {
+    if (view.getUint32(offset, true) === 0x02014b50) view.setUint32(offset + 24, 80 * 1024 * 1024 + 1, true);
+  }
+  const target = storage(bytes);
+  await assert.rejects(extractArchive(source, directory, new AbortController().signal), /decoded size limit/);
+  assert.equal(target.files.size, 1);
+});
+
+test('expanded font data above 64 MiB fits the bounded 80 MiB budget', async () => {
+  const data = new Uint8Array(68 * 1024 * 1024).fill(65);
+  const target = storage(await zip([['Regular.ttf', data]], 1));
+  const entries = await extractArchive(source, directory, new AbortController().signal);
+  assert.deepEqual(entries, [{path: directory + '/Regular.ttf', size: data.byteLength}]);
+  const output = target.files.get(entries[0].path);
+  assert.equal(output.byteLength, data.byteLength);
+  assert.equal(output[0], 65);
+  assert.equal(output[output.byteLength - 1], 65);
+  assert.equal(target.open, 0);
+});
+
+test('extraction cannot write outside the source extraction directory', async () => {
+  const target = storage(await zip([['Regular.ttf', new Uint8Array([1])]]));
+  await assert.rejects(
+    extractArchive(source, source + '.extracted/other', new AbortController().signal),
+    /Invalid extraction directory/,
+  );
+  assert.equal(target.files.size, 1);
+  assert.equal(target.open, 0);
+});
+
+async function entryCountArchive(directories, files) {
+  const writer = new ZipWriter(new Uint8ArrayWriter(), {useWebWorkers: false});
+  for (let index = 0; index < directories; index++) {
+    await writer.add('dir' + index + '/', undefined, {directory: true});
+  }
+  for (let index = 0; index < files; index++) {
+    await writer.add(index + '.ttf', new Uint8ArrayReader(new Uint8Array([1])), {level: 0});
+  }
+  return writer.close();
+}
+
+test('exactly 128 mixed directory and file entries are accepted', async () => {
+  const target = storage(await entryCountArchive(127, 1));
+  const entries = await extractArchive(source, directory, new AbortController().signal);
+  assert.equal(entries.length, 1);
+  assert.equal(target.open, 0);
+});
+
+for (const [directories, files] of [[0, 129], [128, 1], [129, 0]]) {
+  test(`129 total entries are rejected (${directories} directories, ${files} files)`, async () => {
+    const target = storage(await entryCountArchive(directories, files));
+    await assert.rejects(extractArchive(source, directory, new AbortController().signal), /Too many archive entries/);
+    assert.equal(target.files.size, 1);
+    assert.equal(target.open, 0);
+  });
+}

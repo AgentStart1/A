@@ -26,7 +26,6 @@ import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -36,12 +35,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.a.app.AppGlobalDialogController
 import com.storyteller_f.a.app.LocalAppNavFactory
-import com.storyteller_f.a.app.LocalClientFileProvider
 import com.storyteller_f.a.app.LocalGlobalDialog
 import com.storyteller_f.a.app.LocalUserInfo
 import com.storyteller_f.a.app.Res
@@ -54,7 +51,6 @@ import com.storyteller_f.a.app.common.OnCommunityJoined
 import com.storyteller_f.a.app.common.createCommunityRoomsViewModel
 import com.storyteller_f.a.app.common.createCommunityTopicsViewModel
 import com.storyteller_f.a.app.common.createCommunityViewModel
-import com.storyteller_f.a.app.common.getDownloadViewModel
 import com.storyteller_f.a.app.common.hasRouteFlow
 import com.storyteller_f.a.app.components.FontView
 import com.storyteller_f.a.app.exit_community
@@ -68,7 +64,6 @@ import com.storyteller_f.a.app.pages.topic.TopicList
 import com.storyteller_f.a.app.pages.user.ButtonBadgeSuffix
 import com.storyteller_f.a.app.rooms
 import com.storyteller_f.a.app.topics
-import com.storyteller_f.a.app.ui.theme.AppTheme
 import com.storyteller_f.a.client.compose_core.components.ButtonNav
 import com.storyteller_f.a.client.compose_core.components.CommunityIcon
 import com.storyteller_f.a.client.compose_core.components.DialogContainer
@@ -91,51 +86,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun CommunityPage(communityId: PrimaryKey, showDialog: Boolean) {
     val model = createCommunityViewModel(communityId)
-    val typography = getCommunityFont(communityId)
-    AppTheme(typography = typography) {
-        CommunityPageInternal(communityId, showDialog, model)
-    }
-}
-
-@Composable
-fun getCommunityFont(communityId: PrimaryKey): Typography {
-    val fontSettings = getFontSettings(communityId)
-    val typography = MaterialTheme.typography
-    val defaultFont = fontSettings.contentFontFamily ?: fontSettings.fallbackFontFamily
-    return typography.copy(
-        bodyLarge = typography.bodyLarge.copy(fontFamily = defaultFont ?: typography.bodyLarge.fontFamily),
-        bodyMedium = typography.bodyMedium.copy(fontFamily = defaultFont ?: typography.bodyMedium.fontFamily),
-        bodySmall = typography.bodySmall.copy(fontFamily = defaultFont ?: typography.bodySmall.fontFamily),
-    )
-}
-
-data class CommunityFontSettings(
-    val contentFontFamily: FontFamily? = null,
-    val codeFontFamily: FontFamily? = null,
-    val fallbackFontFamily: FontFamily? = null,
-)
-
-@Composable
-fun getFontSettings(communityId: PrimaryKey): CommunityFontSettings {
-    val model = createCommunityViewModel(communityId)
-    val community by model.handler.data.collectAsState()
-    val fontSettings = community?.fontSettings
-    val contentDownloadViewModel = getDownloadViewModel(fontSettings?.settings?.contentFontId)
-    val codeDownloadViewModel = getDownloadViewModel(fontSettings?.settings?.codeFontId)
-    val fallbackDownloadViewModel = getDownloadViewModel(fontSettings?.settings?.fallbackFontId)
-    val provider = LocalClientFileProvider.current
-
-    LaunchedEffect(fontSettings) {
-        fontSettings?.contentFont?.let { provider.getDownloader()?.download(it) }
-        fontSettings?.codeFont?.let { provider.getDownloader()?.download(it) }
-        fontSettings?.fallbackFont?.let { provider.getDownloader()?.download(it) }
-    }
-
-    return CommunityFontSettings(
-        contentFontFamily = contentDownloadViewModel.fontFamily.collectAsState().value,
-        codeFontFamily = codeDownloadViewModel.fontFamily.collectAsState().value,
-        fallbackFontFamily = fallbackDownloadViewModel.fontFamily.collectAsState().value,
-    )
+    CommunityPageInternal(communityId, showDialog, model)
 }
 
 @Composable
@@ -217,9 +168,6 @@ fun CommunityDialogInternal(communityInfo: CommunityInfo, dismiss: () -> Unit) {
             FontView(it)
         }
         communityInfo.fontSettings?.codeFont?.let {
-            FontView(it)
-        }
-        communityInfo.fontSettings?.fallbackFont?.let {
             FontView(it)
         }
         CommunityMenus(communityId, communityInfo, dismiss)

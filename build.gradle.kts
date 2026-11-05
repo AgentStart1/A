@@ -46,9 +46,16 @@ val wasmMediaHostSources = layout.projectDirectory.dir("client/composeCore/wasm-
     include("host.mjs", "decode-worker.mjs", "gpu-bridge.mjs", "video-sample.mjs", "package.json", "NOTICE")
 }
 
+val downloadWorkerSources = layout.projectDirectory.dir("app/composeApp/file-worker").asFileTree.matching {
+    include("*.mjs", "test/*.mjs", "package.json")
+    exclude("*.test.mjs")
+}
+
 // Yarn file dependencies retain stale source copies unless installation is forced.
 tasks.withType<KotlinNpmInstallTask>().matching { it.name == "kotlinWasmNpmInstall" }.configureEach {
     inputs.files(wasmMediaHostSources).withPropertyName("wasmMediaHostSources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(downloadWorkerSources).withPropertyName("downloadWorkerSources")
         .withPathSensitivity(PathSensitivity.RELATIVE)
     args.add("--force")
 }
@@ -60,6 +67,10 @@ val wasmMediaHostConsumers = setOf(
 
 allprojects {
     tasks.withType<KotlinWebpack>().configureEach {
+        if (project.path in setOf(":app:composeApp", ":app:webApp") && name.startsWith("wasmJs")) {
+            inputs.files(downloadWorkerSources).withPropertyName("downloadWorkerSources")
+                .withPathSensitivity(PathSensitivity.RELATIVE)
+        }
         if (project.path in wasmMediaHostConsumers && name.startsWith("wasmJs")) {
             inputs.files(wasmMediaHostSources).withPropertyName("wasmMediaHostSources")
                 .withPathSensitivity(PathSensitivity.RELATIVE)

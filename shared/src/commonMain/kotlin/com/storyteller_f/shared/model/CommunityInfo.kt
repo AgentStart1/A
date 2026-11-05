@@ -17,7 +17,6 @@ data class FontSettingsWithInfo(
     val settings: FontSettings,
     val contentFont: FileInfo? = null,
     val codeFont: FileInfo? = null,
-    val fallbackFont: FileInfo? = null,
 )
 
 @Serializable

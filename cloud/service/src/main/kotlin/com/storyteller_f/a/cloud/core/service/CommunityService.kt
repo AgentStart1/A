@@ -388,7 +388,6 @@ private suspend fun Backend.checkCommunityFontSettingsForUpdate(
         listOfNotNull(
             fontSettings.contentFontId,
             fontSettings.codeFontId,
-            fontSettings.fallbackFontId,
         )
     if (fontIds.isEmpty()) return CustomResult.Success(Unit)
     return database.file.getFileRecordByIds(fontIds).andThen(CommunityError::fromError) { files ->
@@ -487,7 +486,7 @@ suspend fun Backend.processRawCommunityToCommunityInfo(
     database.file.getFileRecordByIds(
         list.flatMap { (community) ->
             community.fontSettings?.let { fs ->
-                listOfNotNull(fs.contentFontId, fs.codeFontId, fs.fallbackFontId)
+                listOfNotNull(fs.contentFontId, fs.codeFontId)
             }.orEmpty() + listOf(community.iconId, community.posterId)
         }.filterNotNull(),
     ).andThenPresent(CommunityError::fromError) { medias ->
@@ -499,12 +498,10 @@ suspend fun Backend.processRawCommunityToCommunityInfo(
                     fs?.let {
                         val contentFont = if (it.contentFontId == null) null else map[it.contentFontId]
                         val codeFont = if (it.codeFontId == null) null else map[it.codeFontId]
-                        val fallbackFont = if (it.fallbackFontId == null) null else map[it.fallbackFontId]
                         FontSettingsWithInfo(
                             settings = it,
                             contentFont = contentFont,
                             codeFont = codeFont,
-                            fallbackFont = fallbackFont,
                         )
                     }
                 rawResult.toCommunityIfo(

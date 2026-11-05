@@ -1,0 +1,10 @@
+{
+  "name": "download-file-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "host.mjs",
+  "files": ["host.mjs", "worker.mjs", "archive.mjs", "paths.mjs", "test/*.mjs"],
+  "dependencies": {"@zip.js/zip.js": "2.24.0"},
+  "scripts": {"test": "node --test *.test.mjs"}
+}

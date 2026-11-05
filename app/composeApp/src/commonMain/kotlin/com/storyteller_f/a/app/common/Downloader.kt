@@ -4,336 +4,278 @@
 
 package com.storyteller_f.a.app.common
 
-import com.storyteller_f.a.app.UIViewModel
-import com.storyteller_f.a.client.core.SimpleUserSessionManager
-import com.storyteller_f.a.client.core.serviceCatching
-import com.storyteller_f.result.getOrThrow
+import com.storyteller_f.a.client.core.UserSessionManager
 import com.storyteller_f.shared.model.FileInfo
 import com.storyteller_f.shared.type.PrimaryKey
-import com.storyteller_f.shared.utils.now
-import com.storyteller_f.shared.utils.nowInstance
+import com.storyteller_f.shared.utils.md5
 import com.storyteller_f.storage.DownloadInfo
+import com.storyteller_f.storage.DownloadInfoStorage
 import com.storyteller_f.storage.DownloadStatus
-import com.storyteller_f.storage.ModelStorage
 import io.github.aakira.napier.Napier
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.header
-import io.ktor.client.request.prepareGet
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
-import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.core.remaining
-import io.ktor.utils.io.readBuffer
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.io.files.Path
-import kotlinx.io.files.SystemFileSystem
-import kotlinx.io.files.SystemTemporaryDirectory
-import no.synth.kmpzip.kotlinx.unzipFrom
-import kotlin.coroutines.cancellation.CancellationException
-import kotlin.time.ExperimentalTime
+import kotlinx.coroutines.withContext
 
 interface Downloader {
-    fun download(fileInfo: FileInfo)
+    /** True through admission, execution and pause cleanup; terminal controls wait for false. */
+    fun observeTask(id: PrimaryKey): Flow<Boolean>
 
+    /** Register once or reuse; return null for an active duplicate. Retry failed/paused tasks through [resume]. */
+    suspend fun download(fileInfo: FileInfo): DownloadInfo?
     fun resume(id: PrimaryKey)
 
+    /** Resume with an updated transport URL only when the supplied file matches the stored revision. */
+    fun resume(fileInfo: FileInfo)
     fun pause(id: PrimaryKey)
 }
 
-interface TaskRegister {
-    fun lockTask(key: String, block: suspend () -> Unit)
-    fun stop(key: String, block: suspend () -> Unit)
-}
+internal data class DownloadContext(
+    val namespace: String,
+    val scope: CoroutineScope,
+    val records: DownloadInfoStorage,
+    val session: suspend () -> DownloadSession,
+)
 
-class SimpleTaskRegister(val lifecycleScope: CoroutineScope) : TaskRegister {
-    val runningTaskCount = MutableStateFlow(0)
-    val mutex = Mutex()
-    val runningSet = mutableMapOf<String, Job>()
+/** Application-owned resource tasks. Account sessions are captured per admission and never retained between tasks. */
+class DownloaderImpl internal constructor(
+    private val context: DownloadContext,
+    private val register: TaskRegister,
+    private val files: FileEngine,
+) : Downloader {
+    override fun observeTask(id: PrimaryKey): Flow<Boolean> =
+        register.observeTask(downloadTaskKey(context.namespace, id))
 
-    override fun lockTask(key: String, block: suspend () -> Unit) {
-        lifecycleScope.launch {
-            lock(key, block)
-        }
-    }
+    override suspend fun download(fileInfo: FileInfo): DownloadInfo? = start(fileInfo)
 
-    override fun stop(key: String, block: suspend () -> Unit) {
-        lifecycleScope.launch {
-            runningSet[key]?.cancelAndJoin()
-            block()
-        }
-    }
-
-    suspend inline fun lock(id: String, block: suspend () -> Unit) {
-        val job = currentCoroutineContext()[Job]
-        if (job == null) {
-            Napier.w(tag = "download") {
-                "no job in lock"
-            }
-            return
-        }
-        mutex.withLock {
-            if (runningSet.contains(id)) {
-                return
-            }
-            runningTaskCount.update {
-                it + 1
-            }
-            runningSet[id] = job
-        }
-        try {
-            block()
+    internal suspend fun start(file: FileInfo): DownloadInfo? {
+        currentCoroutineContext().ensureActive()
+        val prepared = admit(file.id, retry = false) { file }
+        return try {
+            val result = prepared.await()
+            currentCoroutineContext().ensureActive()
+            context.scope.coroutineContext.ensureActive()
+            result.getOrThrow()
+        } catch (stopped: TaskStoppedException) {
+            currentCoroutineContext().ensureActive()
+            context.scope.coroutineContext.ensureActive()
+            throw IllegalStateException("Download request was paused", stopped)
         } finally {
-            mutex.withLock {
-                runningTaskCount.update {
-                    it - 1
-                }
-                runningSet.remove(id)
-            }
-        }
-    }
-}
-
-class DownloaderImpl(val uiViewModel: UIViewModel, val register: TaskRegister) : Downloader {
-    override fun download(fileInfo: FileInfo) {
-        val path = Path(SystemTemporaryDirectory, "downloads", fileInfo.id.toString(), fileInfo.name)
-        Napier.i(tag = "download") {
-            "download $fileInfo to $path"
-        }
-        path.parent?.let { SystemFileSystem.createDirectories(it) }
-        val instance = uiViewModel.instance.value
-        val modelStorage = instance.database
-        val userSession = instance.sessionManager
-        register.lockTask(fileInfo.id.toString()) {
-            try {
-                downloadIfNeed(modelStorage, fileInfo, path, userSession)
-            } catch (cancellation: kotlin.coroutines.cancellation.CancellationException) {
-                throw cancellation
-            } catch (e: Exception) {
-                Napier.e(e, tag = "download") {
-                    "download failed"
-                }
-            }
+            if (!currentCoroutineContext().isActive) prepared.cancel()
         }
     }
 
     override fun resume(id: PrimaryKey) {
-        Napier.i(tag = "download") {
-            "resume download $id"
+        admit(id, retry = true) { context.records.getDocumentByFileId(id)?.fileInfo }
+    }
+
+    override fun resume(fileInfo: FileInfo) {
+        admit(fileInfo.id, retry = true) {
+            context.records.getDocumentByFileId(fileInfo.id)?.fileInfo?.let { current ->
+                if (getDownloadRevision(current) == getDownloadRevision(fileInfo)) {
+                    current.copy(url = fileInfo.url)
+                } else {
+                    current
+                }
+            }
         }
-        val instance = uiViewModel.instance.value
-        val modelStorage = instance.database
-        val userSession = instance.sessionManager
-        register.lockTask(id.toString()) {
-            try {
-                download(userSession, modelStorage, id)
-            } catch (cancellation: kotlin.coroutines.cancellation.CancellationException) {
-                throw cancellation
-            } catch (e: Exception) {
-                Napier.e(e, tag = "download") {
-                    "resume failed"
+    }
+
+    private fun admit(
+        id: PrimaryKey,
+        retry: Boolean,
+        resolveFile: suspend () -> FileInfo?,
+    ): Deferred<Result<DownloadInfo?>> {
+        val prepared = CompletableDeferred<Result<DownloadInfo?>>()
+        val key = downloadTaskKey(context.namespace, id)
+        val job =
+            context.scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                try {
+                    var request: DownloadSession? = null
+                    withDownloadCleanup({ request?.close() }) {
+                        register.runTask(key, prepare = { request = context.session() }) {
+                            executeDownload(id, retry, prepared, checkNotNull(request).session, resolveFile)
+                        }
+                    }
+                    prepared.complete(Result.success(null))
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (fatal: Error) {
+                    throw fatal
+                } catch (failure: Throwable) {
+                    prepared.complete(Result.failure(failure))
+                    Napier.w(failure) { "Download request failed" }
+                }
+            }
+        prepared.invokeOnCompletion { cause ->
+            if (prepared.isCancelled) job.cancel(cause as? CancellationException)
+        }
+        job.invokeOnCompletion { cause ->
+            if (cause != null) prepared.complete(Result.failure(cause))
+        }
+        return prepared
+    }
+
+    private suspend fun executeDownload(
+        id: PrimaryKey,
+        retry: Boolean,
+        prepared: CompletableDeferred<Result<DownloadInfo?>>,
+        session: UserSessionManager,
+        resolveFile: suspend () -> FileInfo?,
+    ) {
+        files.withLock(downloadTaskKey(context.namespace, id)) {
+            val file = resolveFile() ?: return@withLock
+            withDownloadFinalizer({ failure ->
+                when (failure) {
+                    is CancellationException -> {
+                        completeDownloadCleanup(failure) {
+                            if (context.scope.isActive) {
+                                withContext(NonCancellable) { update(file) { it.copy(status = DownloadStatus.PAUSED) } }
+                            }
+                        }
+                        // Keep post-cleanup diagnostics as data before the job canonicalizes its cancellation cause.
+                        prepared.complete(Result.failure(failure))
+                    }
+
+                    null, is Error -> Unit
+
+                    else ->
+                        update(file) {
+                            it.copy(status = DownloadStatus.DOWNLOAD_FAILED, message = failure.message.orEmpty())
+                        }
+                }
+            }) {
+                val record = prepare(file, retry)
+                prepared.complete(Result.success(record))
+                if (record.status == DownloadStatus.NOT_DOWNLOADED || record.status == DownloadStatus.DOWNLOADED) {
+                    process(record, session)
                 }
             }
         }
     }
 
     override fun pause(id: PrimaryKey) {
-        Napier.i(tag = "download") {
-            "pause download $id"
-        }
-        val instance = uiViewModel.instance.value
-        val modelStorage = instance.database
-        pauseIfNeed(id, modelStorage)
-    }
-
-    @OptIn(ExperimentalTime::class)
-    private suspend fun downloadIfNeed(
-        modelStorage: ModelStorage,
-        fileInfo: FileInfo,
-        path: Path,
-        userSession: SimpleUserSessionManager,
-    ) {
-        val document = modelStorage.download.getDocumentByFileId(fileInfo.id)
-        if (document == null) {
-            val new =
-                DownloadInfo(
-                    nowInstance().epochSeconds,
-                    fileInfo,
-                    DownloadStatus.NOT_DOWNLOADED,
-                    "",
-                    path.toString(),
-                    0,
-                    fileInfo.size,
-                )
-            modelStorage.download.save(new)
-            Napier.i(tag = "download") {
-                "add new document"
-            }
-        } else if (document.status != DownloadStatus.NOT_DOWNLOADED) {
-            Napier.i(tag = "download") {
-                "current download status ${document.status}"
-            }
-            return
-        }
-        download(userSession, modelStorage, fileInfo.id)
-        return
-    }
-
-    private fun pauseIfNeed(id: PrimaryKey, modelStorage: ModelStorage) {
-        register.stop(id.toString()) {
-            updateDownloadInfo(modelStorage, id) {
-                it.copy(status = DownloadStatus.PAUSED)
+        register.stop(downloadTaskKey(context.namespace, id)) {
+            try {
+                files.withLock(downloadTaskKey(context.namespace, id)) {
+                    val current = context.records.getDocumentByFileId(id)
+                    if (current != null && current.status != DownloadStatus.PROCESSED) {
+                        context.records.save(current.copy(status = DownloadStatus.PAUSED))
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (fatal: Error) {
+                throw fatal
+            } catch (failure: Throwable) {
+                Napier.w(failure) { "Unable to publish paused download state" }
             }
         }
     }
 
-    private suspend fun download(userSession: SimpleUserSessionManager, modelStorage: ModelStorage, id: PrimaryKey) {
-        val downloadInfo = modelStorage.download.getDocumentByFileId(id)
-        if (downloadInfo == null) {
-            Napier.w(tag = "download") {
-                "no downloadInfo"
+    private suspend fun prepare(file: FileInfo, retry: Boolean): DownloadInfo {
+        require(file.size >= 0) { "Invalid download size" }
+        val existing = context.records.getDocumentByFileId(file.id)
+        val current =
+            if (existing == null || getDownloadRevision(existing.fileInfo) != getDownloadRevision(file)) {
+                val path =
+                    files.location(
+                        "public-resources-v1/${context.namespace}/${file.id}/${getDownloadRevision(file)}/source",
+                    )
+                createDownloadRecord(
+                    file,
+                    path,
+                ).let {
+                    if (existing == null) {
+                        it
+                    } else {
+                        it.copy(
+                            id = existing.id,
+                            processedGeneration = existing.processedGeneration,
+                        )
+                    }
+                }
+            } else {
+                existing.copy(fileInfo = file)
             }
-            return
-        }
-        if (downloadInfo.status == DownloadStatus.PROCESSED) return
-        val path = Path(downloadInfo.path)
-        val isNeedDownload =
-            if (downloadInfo.status == DownloadStatus.DOWNLOADED ||
-                downloadInfo.status == DownloadStatus.PROCESS_FAILED
-            ) {
-                val isFileExists = SystemFileSystem.exists(path)
-                val isMediaSizeMatch = SystemFileSystem.metadataOrNull(path)?.size == downloadInfo.total
-                !isFileExists || !isMediaSizeMatch
+        val sourcePresent = files.size(current.path) == file.size
+        val archivePresent =
+            if (file.isDownloadArchive()) {
+                sourcePresent && files.extractedFiles(current.path) != null
             } else {
                 true
             }
-        if (isNeedDownload) {
-            val fileInfo = downloadInfo.fileInfo
-            if (downloadFile(downloadInfo, modelStorage, id, userSession, fileInfo, path)) {
-                return
+        val next =
+            when {
+                current.status == DownloadStatus.PROCESSED && sourcePresent && archivePresent && !retry -> current
+
+                current.status == DownloadStatus.PROCESSED ->
+                    current.copy(
+                        status = if (sourcePresent) DownloadStatus.DOWNLOADED else DownloadStatus.NOT_DOWNLOADED,
+                    )
+
+                retry || current.status == DownloadStatus.DOWNLOADED ->
+                    current.copy(
+                        status = if (sourcePresent) DownloadStatus.DOWNLOADED else DownloadStatus.NOT_DOWNLOADED,
+                    )
+
+                current.status == DownloadStatus.DOWNLOADING -> current.copy(status = DownloadStatus.PAUSED)
+
+                else -> current
             }
+        context.records.save(next)
+        return next
+    }
+
+    private suspend fun process(record: DownloadInfo, session: UserSessionManager) {
+        val file = record.fileInfo
+        if (files.size(record.path) != file.size) {
+            val source = session.refreshExpiredDownloadUrl(file)
+            update(file) { it.copy(fileInfo = source, status = DownloadStatus.DOWNLOADING) }
+            transferDownload(
+                session,
+                files,
+                record.path,
+                source,
+            ) { count -> update(file) { it.copy(progress = count) } }
         }
-        if (path.toString().endsWith(".zip") && extractFile(path, modelStorage, id)) {
+        check(files.size(record.path) == file.size) { "Downloaded file size mismatch" }
+        update(file) { it.copy(status = DownloadStatus.DOWNLOADED, progress = file.size) }
+        try {
+            if (file.isDownloadArchive()) files.extractArchive(record.path)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (fatal: Error) {
+            throw fatal
+        } catch (failure: Throwable) {
+            update(file) { it.copy(status = DownloadStatus.PROCESS_FAILED, message = failure.message.orEmpty()) }
             return
         }
-        updateDownloadInfo(modelStorage, id) {
-            it.copy(status = DownloadStatus.PROCESSED)
-        }
+        currentCoroutineContext().ensureActive()
+        update(
+            file,
+        ) { it.copy(status = DownloadStatus.PROCESSED, message = "", processedGeneration = it.processedGeneration + 1) }
     }
 
-    private suspend fun extractFile(path: Path, modelStorage: ModelStorage, id: PrimaryKey): Boolean {
-        try {
-            SystemFileSystem.unzipFrom(
-                archive = path,
-                target =
-                Path(
-                    checkNotNull(path.parent) { "Download path must have a parent" },
-                    "${path.name}.extracted",
-                ),
-            )
-        } catch (cancellation: kotlin.coroutines.cancellation.CancellationException) {
-            throw cancellation
-        } catch (e: Exception) {
-            updateDownloadInfo(modelStorage, id) {
-                it.copy(status = DownloadStatus.PROCESS_FAILED, message = e.message.orEmpty())
-            }
-            return true
-        }
-        return false
-    }
-
-    /**
-     * @return 返回是否下载成功
-     */
-    private suspend fun downloadFile(
-        downloadInfo: DownloadInfo,
-        modelStorage: ModelStorage,
-        id: PrimaryKey,
-        userSession: SimpleUserSessionManager,
-        fileInfo: FileInfo,
-        path: Path,
-    ): Boolean {
-        if (downloadInfo.status != DownloadStatus.DOWNLOADING) {
-            updateDownloadInfo(modelStorage, id) {
-                it.copy(status = DownloadStatus.DOWNLOADING)
-            }
-        }
-        try {
-            userSession.serviceCatching {
-                segmentedDownload(this, modelStorage, fileInfo, path)
-            }.getOrThrow()
-            updateDownloadInfo(modelStorage, id) { currentDownload ->
-                currentDownload.copy(
-                    status = DownloadStatus.DOWNLOADED,
-                    message = "download success ${now()}",
-                )
-            }
-            return false
-        } catch (cancellation: kotlin.coroutines.cancellation.CancellationException) {
-            throw cancellation
-        } catch (throwable: Exception) {
-            if (throwable is CancellationException) {
-                Napier.e(throwable) {
-                    "download failed ${fileInfo.name}"
-                }
-                updateDownloadInfo(modelStorage, id) {
-                    it.copy(status = DownloadStatus.DOWNLOAD_FAILED, message = throwable.message.orEmpty())
-                }
-            }
-            return true
-        }
-    }
-
-    suspend fun segmentedDownload(client: HttpClient, modelStorage: ModelStorage, fileInfo: FileInfo, path: Path) {
-        var downloadedBytes = 0L
-
-        // Check if the file already exists and get its size to resume the download
-        if (SystemFileSystem.exists(path)) {
-            downloadedBytes = SystemFileSystem.metadataOrNull(path)?.size ?: 0L
-        }
-
-        client.prepareGet(fileInfo.url) {
-            // Set the Range header to request the remaining part of the file
-            header(HttpHeaders.Range, "bytes=$downloadedBytes-")
-        }.execute { httpResponse ->
-            // Check for successful partial or full content
-            val httpStatus = httpResponse.status
-            check(httpStatus == HttpStatusCode.OK || httpStatus == HttpStatusCode.PartialContent) {
-                "Download failed: ${httpStatus.description}"
-            }
-
-            val channel: ByteReadChannel = httpResponse.body()
-
-            // Open the sink in append mode to continue writing to the file
-            SystemFileSystem.sink(path, append = true).use { sink ->
-                while (!channel.isClosedForRead) {
-                    val chunk = channel.readBuffer(10_240L)
-                    if (chunk.exhausted()) continue
-
-                    downloadedBytes += chunk.remaining
-                    chunk.transferTo(sink)
-
-                    updateDownloadInfo(modelStorage, fileInfo.id) {
-                        it.copy(progress = downloadedBytes)
-                    }
-                    Napier.i {
-                        "download progress $downloadedBytes"
-                    }
-                }
-            }
-        }
-    }
-
-    suspend fun updateDownloadInfo(modelStorage: ModelStorage, id: PrimaryKey, block: (DownloadInfo) -> DownloadInfo) {
-        val uploadInfo = modelStorage.download.getDocumentByFileId(id) ?: return
-        modelStorage.download.save(block(uploadInfo))
+    private suspend fun update(file: FileInfo, change: (DownloadInfo) -> DownloadInfo) {
+        val current = context.records.getDocumentByFileId(file.id) ?: return
+        if (getDownloadRevision(current.fileInfo) == getDownloadRevision(file)) context.records.save(change(current))
     }
 }
+
+internal fun downloadTaskKey(namespace: String, id: PrimaryKey): String = "download:$namespace:$id"
+internal fun FileInfo.isDownloadArchive(): Boolean = name.endsWith(".zip", ignoreCase = true)
+
+internal fun getDownloadRevision(file: FileInfo): String =
+    md5("${file.fullName}:${file.lastModified}:${file.size}:${file.name}")
+
+internal fun createDownloadRecord(file: FileInfo, path: String): DownloadInfo =
+    DownloadInfo(file.id, file, com.storyteller_f.storage.DownloadStatus.NOT_DOWNLOADED, "", path, 0, file.size)

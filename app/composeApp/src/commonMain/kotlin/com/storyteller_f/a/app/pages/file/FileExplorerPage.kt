@@ -122,7 +122,7 @@ private fun fileNavRoutes(mediaTarget: ObjectTuple): List<NavRoute> {
             NavRoute("/upload-record", Icons.Filled.CloudUpload, "Upload"),
         )
     if (mediaTarget.objectType == ObjectType.USER) {
-        list.add(NavRoute("/download-record", Icons.Filled.Download, "Download"))
+        list.add(NavRoute("/download-record", Icons.Filled.Download, "App downloads"))
     }
     return list
 }
@@ -483,16 +483,14 @@ private fun DownloadStatusButton(d: DownloadInfo?) {
         }
 
         DownloadStatus.PROCESSED -> {
-            IconButton(onClick = { }) {
-                Icon(Icons.Default.Done, contentDescription = "done")
-            }
+            Icon(Icons.Default.Done, contentDescription = "done")
         }
 
         DownloadStatus.NOT_DOWNLOADED -> {
             IconButton({
                 globalDialogController.launch {
                     useResult {
-                        fileProvider.getDownloader()?.download(d.fileInfo)
+                        fileProvider.getDownloader()?.resume(d.fileInfo.id)
                         CustomResult.success(Unit)
                     }
                 }

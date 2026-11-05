@@ -6,6 +6,7 @@ package com.storyteller_f.a.cloud.server
 
 import com.perraco.utils.SnowflakeFactory
 import com.storyteller_f.a.api.PaginationQuery
+import com.storyteller_f.a.backend.core.Backend
 import com.storyteller_f.a.backend.core.ObjectListFetch.AidListFetch
 import com.storyteller_f.a.backend.core.types.User
 import com.storyteller_f.a.client.core.AuthKey
@@ -16,7 +17,7 @@ import com.storyteller_f.a.client.core.getAllTitles
 import com.storyteller_f.a.client.core.getAllTopics
 import com.storyteller_f.a.client.core.getUserInfo
 import com.storyteller_f.a.client.core.overview
-import com.storyteller_f.a.cloud.cli.applyPreset
+import com.storyteller_f.a.cloud.cli.AddPreset
 import com.storyteller_f.a.cloud.worker.WorkerBackend
 import com.storyteller_f.a.cloud.worker.doAcgTask
 import com.storyteller_f.result.getOrThrow
@@ -540,5 +541,11 @@ private suspend fun TestMate.withCliContentPreset(testName: String, block: suspe
         )
 
         block(backend, presetDir)
+    }
+}
+
+private suspend fun Backend.applyPreset(presetValue: PresetValue, parentDir: File) {
+    AddPreset().run {
+        applyPresetByValue(presetValue, parentDir)
     }
 }

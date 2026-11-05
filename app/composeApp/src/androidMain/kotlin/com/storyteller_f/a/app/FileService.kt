@@ -12,23 +12,28 @@ import android.os.Binder
 import android.os.IBinder
 import androidx.activity.ComponentActivity
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.storyteller_f.a.app.android_library.R.drawable.baseline_upload_file_24
 import com.storyteller_f.a.app.common.Downloader
-import com.storyteller_f.a.app.common.DownloaderImpl
 import com.storyteller_f.a.app.common.SimpleTaskRegister
 import com.storyteller_f.a.app.common.Uploader
 import com.storyteller_f.a.app.common.UploaderImpl
+import com.storyteller_f.shared.getAppContextRefValue
 import io.github.aakira.napier.Napier
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 
@@ -40,10 +45,19 @@ class FileService : LifecycleService() {
     override fun onCreate() {
         super.onCreate()
         lifecycleScope.launch {
-            taskRegister.runningTaskCount.debounce(1000).collectLatest {
+            combine(taskRegister.runningTaskCount, uiViewModel.resourceTasks.runningTaskCount) { uploads, downloads ->
+                uploads + downloads
+            }.debounce(1000).collectLatest {
                 updateNotification(it)
             }
         }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
+        val count = taskRegister.runningTaskCount.value + uiViewModel.resourceTasks.runningTaskCount.value
+        updateNotification(count.coerceAtLeast(1))
+        return START_NOT_STICKY
     }
 
     private fun updateNotification(count: Int) {
@@ -56,18 +70,19 @@ class FileService : LifecycleService() {
             val notification =
                 NotificationCompat.Builder(this, channel)
                     .setSmallIcon(baseline_upload_file_24)
-                    .setContentTitle("Uploading")
+                    .setContentTitle("Transferring files")
                     .setOngoing(true)
             startForeground(id, notification.build())
         } else {
             stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
         }
     }
 
     override fun onBind(intent: Intent): IBinder {
         super.onBind(intent)
         val uiViewModel = uiViewModel
-        return FileBinder(DownloaderImpl(uiViewModel, taskRegister), UploaderImpl(uiViewModel, taskRegister))
+        return FileBinder(uiViewModel.downloader, UploaderImpl(uiViewModel, taskRegister))
     }
 }
 
@@ -140,5 +155,18 @@ class CustomClientFileProvider<T>(val service: T) :
     override suspend fun getUploader(): Uploader? {
         val binder = service.binder ?: awaitBinder()
         return binder?.uploader
+    }
+}
+
+/** Observe application tasks without transferring their ownership to a bound Activity or Service. */
+internal fun observeResourceTransfers(viewModel: UIViewModel) {
+    viewModel.viewModelScope.launch(Dispatchers.Main) {
+        viewModel.resourceTasks.runningTaskCount
+            .map { it > 0 }.distinctUntilChanged().collect { active ->
+                if (active) {
+                    val context = checkNotNull(getAppContextRefValue()).applicationContext
+                    ContextCompat.startForegroundService(context, Intent(context, FileService::class.java))
+                }
+            }
     }
 }

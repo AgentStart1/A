@@ -49,6 +49,7 @@ plugins {
     alias(libs.plugins.buildconfig)
     alias(libs.plugins.serialization)
     id("com.mikepenz.aboutlibraries.plugin")
+    id("wasm-browser-test-interop")
 }
 
 val buildIosTarget = project.findProperty("target.ios") == "true"
@@ -115,6 +116,9 @@ kotlin {
             create("platformStorageTest") {
                 dependsOn(headlessTest)
                 kotlin.srcDir("src/headlessTest/kotlin/platform_storage")
+                dependencies {
+                    implementation(libs.androidx.room.runtime)
+                }
             }
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
@@ -222,6 +226,9 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
 
             implementation(libs.ui.test)
+        }
+        wasmJsMain.dependencies {
+            implementation(npm("download-file-worker", project.file("file-worker")))
         }
         jvmMain.dependencies {
             val nativePlatform =
@@ -448,6 +455,7 @@ tasks.withType<Test>().configureEach {
 }
 
 tasks.named<Test>("jvmTest") {
+    systemProperty("java.io.tmpdir", layout.buildDirectory.get().asFile.absolutePath)
     systemProperty(
         "app.protected.storage.dir",
         layout.buildDirectory.dir("test-protected-storage").get().asFile.absolutePath,
@@ -458,6 +466,7 @@ tasks.named<Test>("jvmTest") {
 tasks.register<Test>("adaptiveUiTest") {
     dependsOn("jvmTestClasses")
     val hostTest = tasks.named<Test>("jvmTest").get()
+    mustRunAfter(hostTest)
     testClassesDirs = hostTest.testClassesDirs
     classpath = hostTest.classpath
     include(
@@ -465,7 +474,12 @@ tasks.register<Test>("adaptiveUiTest") {
         "device_based/RoomPagingUiTest*",
         "device_based/FileExplorerNavigationUiTest*",
         "device_based/SignInPromptUiTest*",
+        "device_based/CommunityFontRenderingUiTest*",
+        "device_based/CommunityTopicFontsUiTest*",
+        "device_based/TopicComposePageBlockEditorTest*",
     )
     systemProperty("java.io.tmpdir", layout.buildDirectory.get().asFile.absolutePath)
+    systemProperty("user.language", "en")
+    systemProperty("user.country", "US")
     maxParallelForks = 1
 }

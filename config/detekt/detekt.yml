@@ -345,7 +345,8 @@ naming:
     forbiddenName: []
   FunctionNameMaxLength:
     active: true
-    excludes: ['**/appiumTest/**', '**/e2eTest/**']
+    # Behavior-descriptive test names are unrestricted; production names retain the limit.
+    excludes: ['**/src/test/**', '**/src/*Test/**']
     maximumFunctionNameLength: 50
   FunctionNameMinLength:
     active: true

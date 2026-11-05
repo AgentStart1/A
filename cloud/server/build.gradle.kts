@@ -89,6 +89,7 @@ dependencies {
     testImplementation(libs.commons.imaging)
     testImplementation(projects.cloud.worker)
     testImplementation(projects.cloud.cli)
+    testImplementation(libs.kotlinx.cli)
     testImplementation(projects.cloud.ws)
 }
 

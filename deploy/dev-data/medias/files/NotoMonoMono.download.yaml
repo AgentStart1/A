@@ -1,0 +1,8 @@
+name: NotoMonoMono.zip
+sourceName: Noto.zip
+link: https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/Noto.zip
+hash: sha256:eb9038a1b788a3a3ee34324f5b2277954a1c301d241b0cc7b62e5ff890b544b9
+excludeArchiveEntries:
+  - "*Condensed*.ttf"
+includeArchiveEntries:
+  - "NotoMonoNerdFontMono-{Regular,Bold,Italic,BoldItalic}.ttf"
