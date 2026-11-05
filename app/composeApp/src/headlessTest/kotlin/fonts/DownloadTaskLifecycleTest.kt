@@ -33,6 +33,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -113,7 +114,7 @@ class DownloadTaskLifecycleTest {
         }
 
     @Test
-    fun resumeAfterOrdinaryRegistrationPreservesTheResumeIntent() =
+    fun resumeDuringOrdinaryRegistrationIsIgnored() =
         runTest {
             val failures = mutableListOf<Throwable>()
             val account = createAccountScope(failures)
@@ -149,7 +150,11 @@ class DownloadTaskLifecycleTest {
                     entered.await()
                     fixture.downloader.resume(file.id)
                     release.complete(Unit)
-                    assertEquals(DownloadStatus.PAUSED, ordinary.await().status)
+                    assertEquals(DownloadStatus.PAUSED, assertNotNull(ordinary.await()).status)
+                    runCurrent()
+                    assertEquals(0, requests)
+                    assertEquals(DownloadStatus.PAUSED, fixture.records.getDocumentByFileId(file.id)?.status)
+                    fixture.downloader.resume(file.id)
                     runCurrent()
                     assertEquals(1, requests)
                     assertEquals(DownloadStatus.PROCESSED, fixture.records.getDocumentByFileId(file.id)?.status)

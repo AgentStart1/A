@@ -494,6 +494,7 @@ class DownloaderTest {
             }
         val downloader =
             object : Downloader {
+                override fun observeTask(id: Long) = kotlinx.coroutines.flow.flowOf(false)
                 override suspend fun download(fileInfo: FileInfo) = record
                 override fun resume(id: Long) = error("Unused")
                 override fun resume(fileInfo: FileInfo) = error("Unused")

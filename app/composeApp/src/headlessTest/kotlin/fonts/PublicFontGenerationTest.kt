@@ -62,6 +62,36 @@ class PublicFontGenerationTest {
         }
 
     @Test
+    fun ordinaryCacheRegistrationDoesNotReconstructAnActiveFont() =
+        runTest {
+            HttpClient(MockEngine { respond(CommunityFontTestData.primary) }).use { client ->
+                val fixture = DownloadTestFixture(this, createFileEngine(), client)
+                try {
+                    val file = fontFile(CommunityFontTestData.primary)
+                    var builds = 0
+                    val source =
+                        CommunityFontDownload(
+                            fixture.records,
+                            fixture.downloader,
+                            fixture.files,
+                            fixture.namespace,
+                            onLoaded = { builds++ },
+                        )
+                    val store = CommunityFontStore(backgroundScope, source::observe, fixture.downloader::resume)
+                    backgroundScope.launch { store.observeFont(file).collect {} }
+                    val first = assertNotNull(store.load(file))
+                    fixture.downloader.download(file)
+                    fixture.downloader.observeTask(file.id).first { !it }
+                    runCurrent()
+                    assertSame(first, store.load(file))
+                    assertEquals(1, builds)
+                } finally {
+                    fixture.close()
+                }
+            }
+        }
+
+    @Test
     fun unrelatedRowsAndProgressDoNotReconstructTheSuccessfulGeneration() =
         runTest {
             HttpClient(MockEngine { respond(CommunityFontTestData.primary) }).use { client ->

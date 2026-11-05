@@ -693,7 +693,7 @@
   collections/directories without migration, deletion or reset; keep Room version 2 and entity schemas.
   OPFS retention indexes/budgets are server-scoped inside the new namespace; eviction must acquire the
   same server/file lease as Downloader and must never read legacy retention indexes.
-- Downloader owns queues, transfer, processing and status publication; FileEngine owns platform IO,
+- Downloader owns admission, transfer, processing and status publication; FileEngine owns platform IO,
   leases and archive primitives. Snapshot request Cookie/account context into an admission-owned client,
   close it on completion, and never retain an account session in the public service.
 - `download(file)` never retries failed/paused tasks; use `resume(id)`. Publish PROCESSED with a persisted
@@ -714,10 +714,13 @@
   Promise or a completed write), rather than before Worker startup. Keep instrumentation in test-only
   entries, reuse production protocol/cleanup, and deliver cancellation before releasing a paused write.
   Retain page-initiated cancellation coverage alongside worker-local cancellation at the pending phase.
-- Download task ownership must include queued requests and pause publication. Pause invalidates
-  earlier admissions and waits for cleanup before later work runs. Merge repeated resume intents
-  without dropping an explicit resume behind an ordinary registration. Handle ordinary failures at
-  the owned request boundary; distinguish explicit operation pause from caller/application cancellation.
+- Atomically ignore same-server/file download and resume duplicates while a task is preparing,
+  executing or stopping, including requests with a different URL. Never queue these duplicates;
+  keep different files concurrent. Pause waits for cleanup and status publication before admission
+  reopens. Handle ordinary failures at the owned request boundary; preserve caller cancellation.
+- Keep retry controls busy until registry activity ends, including terminal database writes and cleanup.
+  Publish font loading state during retries and before generation construction, even when database
+  observers skip intermediate snapshots. Only successful processing generations construct fonts.
 
 - Font preset ZIPs must contain a single family. Preserve available regular/bold/italic faces,
   exclude Condensed, and use sourceName to share raw downloads across separately filtered outputs.

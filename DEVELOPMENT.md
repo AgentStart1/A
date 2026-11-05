@@ -2205,20 +2205,27 @@ account identity into a short-lived client owned by that request. Closing or swi
 not close that client or cancel application tasks. Request completion/cancellation closes it; later
 resume admissions capture the current account. On browsers, HttpOnly cookies remain browser-owned;
 the captured account header rejects identity changes instead of silently using another account.
-Logout can therefore invalidate queued protected reads. Server session revocation still fails protected requests;
+Logout can therefore invalidate admitted protected reads. Server session revocation still fails protected requests;
 there is no saved-key login, mutation replay or perpetual account session in the shared service.
 
 `download(file)` registers or reuses a task without retrying failed/paused records. `resume(...)` is the
 only retry command and can reuse a complete source archive. The `resume(FileInfo)` overload supplies a renewed
 transport URL for the same stored revision; font retries pass the current `FileInfo` without changing the shared
 font identity. A mismatched revision cannot replace the stored metadata. Resume metadata is resolved under
-the shared file lease, so another task cannot replace the revision between lookup and registration. Per-server/file task queues serialize
-executing and queued requests. Pause cancels earlier admissions, drains native writes/worker cleanup,
-and publishes PAUSED before later requests run. Resume intents merge with other resume admissions;
-an explicit resume behind an ordinary registration remains queued. URL-bearing resume requests also remain
-queued so a newer address is not merged into a running expired-address attempt. Registration cancellation propagates
+the shared file lease, so another task cannot replace the revision between lookup and registration.
+Admission checks and registration are atomic under the task-registry mutex. While a server/file key is
+preparing, executing or stopping, duplicate download/resume calls return immediately without capturing
+a client or queuing work, even if they supply a different URL. Ignored download calls return null;
+collectors continue observing the existing database task. Different files execute concurrently outside
+the registry mutex. Pause drains native writes/worker cleanup and publishes PAUSED before admission
+reopens. Registration cancellation propagates
 to its uncompleted admission; already registered work belongs to the application. Failures are isolated
 at the request boundary and cleanup failures remain suppressed on the original error.
+
+Font observers combine database snapshots with registry activity, keeping retry controls Loading through
+task cleanup before publishing failure or pause states. They also publish Loading before constructing a selected successful
+generation, including when intermediate database snapshots are skipped. The retry control therefore
+shows progress instead of an actionable failure while the retry is running.
 
 Before an actual network transfer, the downloader checks MinIO/S3 SigV4 X-Amz-Date and X-Amz-Expires.
 Expired or malformed signed expiry is refreshed once through the existing authenticated file-info API,

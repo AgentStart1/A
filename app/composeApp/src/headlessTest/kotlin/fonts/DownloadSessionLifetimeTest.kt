@@ -36,13 +36,14 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 class DownloadSessionLifetimeTest {
     @Test
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun pauseOwnsSessionPreparationBeforeTheQueueRuns() =
+    fun pauseOwnsSessionPreparationBeforeExecution() =
         runTest {
             val entered = CompletableDeferred<Unit>()
             val cleaned = CompletableDeferred<Unit>()
@@ -106,14 +107,16 @@ class DownloadSessionLifetimeTest {
                 )
             try {
                 val file = fontFile(CommunityFontTestData.primary)
-                val initial = downloader.download(file)
+                val initial = assertNotNull(downloader.download(file))
                 started.await()
                 current = second
                 val reused = async { downloader.download(file) }
                 runCurrent()
-                assertEquals(listOf(first, second), captured)
+                assertEquals(listOf(first), captured)
+                assertNull(reused.await())
                 release.complete(Unit)
-                assertEquals(initial.path, reused.await().path)
+                downloader.observeTask(file.id).first { !it }
+                assertEquals(initial.path, records.getDocumentByFileId(file.id)?.path)
                 assertEquals(1L, records.getDocumentByFileId(file.id)?.processedGeneration)
                 assertEquals(1, requests)
             } finally {

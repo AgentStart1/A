@@ -20,11 +20,12 @@ import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.withContext
 
 private const val MAX_FONT_FACES = 18
@@ -74,26 +75,24 @@ internal class CommunityFontDownload(
             records.observeDocumentByFileId(file.id)
                 .map { it?.takeIf { row -> getDownloadRevision(row.fileInfo) == getDownloadRevision(file) } }
                 .filterNotNull()
-                .map { row ->
-                    when (row.status) {
-                        DownloadStatus.PROCESSED -> FontRecordSelection.Ready(row.path, row.processedGeneration)
-
-                        DownloadStatus.PAUSED, DownloadStatus.DOWNLOAD_FAILED, DownloadStatus.PROCESS_FAILED ->
-                            FontRecordSelection.Failed(row.message.ifEmpty { row.status.name })
-
-                        else -> null
-                    }
-                }
-                .filterNotNull()
+                .map(::selectFontRecord)
                 .distinctUntilChanged()
-                .mapLatest { selection ->
+                .transformLatest { selection ->
                     when (selection) {
-                        is FontRecordSelection.Failed ->
-                            CommunityFontState.Failed(IllegalStateException(selection.message))
+                        FontRecordSelection.Loading -> emit(CommunityFontState.Loading)
 
-                        is FontRecordSelection.Ready -> construct(file, selection)
+                        is FontRecordSelection.Failed ->
+                            emit(CommunityFontState.Failed(IllegalStateException(selection.message)))
+
+                        is FontRecordSelection.Ready -> {
+                            emit(CommunityFontState.Loading)
+                            emit(construct(file, selection))
+                        }
                     }
                 }.collect { emit(it) }
+        }.combine(downloader.observeTask(file.id)) { state, active ->
+            // A terminal database snapshot can precede writer/lease cleanup. Keep retry disabled until idle.
+            if (active && state is CommunityFontState.Failed) CommunityFontState.Loading else state
         }
 
     private suspend fun construct(file: FileInfo, selection: FontRecordSelection.Ready): CommunityFontState =
@@ -118,7 +117,18 @@ internal class CommunityFontDownload(
         }
 }
 
+private fun selectFontRecord(row: DownloadInfo): FontRecordSelection =
+    when (row.status) {
+        DownloadStatus.PROCESSED -> FontRecordSelection.Ready(row.path, row.processedGeneration)
+
+        DownloadStatus.PAUSED, DownloadStatus.DOWNLOAD_FAILED, DownloadStatus.PROCESS_FAILED ->
+            FontRecordSelection.Failed(row.message.ifEmpty { row.status.name })
+
+        else -> FontRecordSelection.Loading
+    }
+
 private sealed interface FontRecordSelection {
+    data object Loading : FontRecordSelection
     data class Ready(val path: String, val generation: Long) : FontRecordSelection
     data class Failed(val message: String) : FontRecordSelection
 }

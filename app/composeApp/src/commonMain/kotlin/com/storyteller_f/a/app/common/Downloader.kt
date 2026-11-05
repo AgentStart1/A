@@ -20,13 +20,17 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 interface Downloader {
-    /** Register once or reuse; failed/paused tasks are retried explicitly through [resume]. */
-    suspend fun download(fileInfo: FileInfo): DownloadInfo
+    /** True through admission, execution and pause cleanup; terminal controls wait for false. */
+    fun observeTask(id: PrimaryKey): Flow<Boolean>
+
+    /** Register once or reuse; return null for an active duplicate. Retry failed/paused tasks through [resume]. */
+    suspend fun download(fileInfo: FileInfo): DownloadInfo?
     fun resume(id: PrimaryKey)
 
     /** Resume with an updated transport URL only when the supplied file matches the stored revision. */
@@ -47,16 +51,19 @@ class DownloaderImpl internal constructor(
     private val register: TaskRegister,
     private val files: FileEngine,
 ) : Downloader {
-    override suspend fun download(fileInfo: FileInfo): DownloadInfo = start(fileInfo)
+    override fun observeTask(id: PrimaryKey): Flow<Boolean> =
+        register.observeTask(downloadTaskKey(context.namespace, id))
 
-    internal suspend fun start(file: FileInfo): DownloadInfo {
+    override suspend fun download(fileInfo: FileInfo): DownloadInfo? = start(fileInfo)
+
+    internal suspend fun start(file: FileInfo): DownloadInfo? {
         currentCoroutineContext().ensureActive()
-        val prepared = enqueue(file.id, retry = false, merge = false) { file }
+        val prepared = admit(file.id, retry = false) { file }
         return try {
             val result = prepared.await()
             currentCoroutineContext().ensureActive()
             context.scope.coroutineContext.ensureActive()
-            checkNotNull(result.getOrThrow())
+            result.getOrThrow()
         } catch (stopped: TaskStoppedException) {
             currentCoroutineContext().ensureActive()
             context.scope.coroutineContext.ensureActive()
@@ -67,12 +74,11 @@ class DownloaderImpl internal constructor(
     }
 
     override fun resume(id: PrimaryKey) {
-        enqueue(id, retry = true, merge = true) { context.records.getDocumentByFileId(id)?.fileInfo }
+        admit(id, retry = true) { context.records.getDocumentByFileId(id)?.fileInfo }
     }
 
     override fun resume(fileInfo: FileInfo) {
-        // A newer URL must survive an earlier resume that is still using an expired URL.
-        enqueue(fileInfo.id, retry = true, merge = false) {
+        admit(fileInfo.id, retry = true) {
             context.records.getDocumentByFileId(fileInfo.id)?.fileInfo?.let { current ->
                 if (getDownloadRevision(current) == getDownloadRevision(fileInfo)) {
                     current.copy(url = fileInfo.url)
@@ -83,10 +89,9 @@ class DownloaderImpl internal constructor(
         }
     }
 
-    private fun enqueue(
+    private fun admit(
         id: PrimaryKey,
         retry: Boolean,
-        merge: Boolean,
         resolveFile: suspend () -> FileInfo?,
     ): Deferred<Result<DownloadInfo?>> {
         val prepared = CompletableDeferred<Result<DownloadInfo?>>()
@@ -96,7 +101,7 @@ class DownloaderImpl internal constructor(
                 try {
                     var request: DownloadSession? = null
                     withDownloadCleanup({ request?.close() }) {
-                        register.runTask(key, merge, prepare = { request = context.session() }) {
+                        register.runTask(key, prepare = { request = context.session() }) {
                             executeDownload(id, retry, prepared, checkNotNull(request).session, resolveFile)
                         }
                     }

@@ -74,7 +74,8 @@ class DownloadResumeTest {
         }
 
     @Test
-    fun renewedSourceIsNotMergedIntoAnExpiredRetry() =
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun activeRetryIgnoresEvenARenewedUrl() =
         runTest {
             val entered = CompletableDeferred<Unit>()
             val release = CompletableDeferred<Unit>()
@@ -106,6 +107,10 @@ class DownloadResumeTest {
                     entered.await()
                     fixture.downloader.resume(file.copy(url = renewed))
                     release.complete(Unit)
+                    fixture.downloader.observeTask(file.id).first { !it }
+                    assertEquals(listOf(expired, expired), requests)
+                    assertEquals(DownloadStatus.DOWNLOAD_FAILED, fixture.records.getDocumentByFileId(file.id)?.status)
+                    fixture.downloader.resume(file.copy(url = renewed))
                     assertEquals(renewed, fixture.completed(file.id, 1).fileInfo.url)
                     assertEquals(listOf(expired, expired, renewed), requests)
                 } finally {
@@ -120,6 +125,7 @@ class DownloadResumeTest {
             records.observeDocumentByFileId(id).first {
                 it?.status == DownloadStatus.PROCESSED && it.processedGeneration == generation
             }
+        downloader.observeTask(id).first { !it }
         return assertNotNull(completed)
     }
 }
