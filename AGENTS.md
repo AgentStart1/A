@@ -738,3 +738,5 @@
 
 - Bound native ZIP extraction while writing, including non-font data. Reject duplicate normalized
   target paths before opening sinks; post-extraction font validation cannot detect overwritten entries.
+  Reject trailing dots/spaces in every native archive path component, including parent directories,
+  because Windows can fold them into existing targets.

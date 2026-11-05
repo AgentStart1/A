@@ -80,6 +80,30 @@ class DiskArchiveTest {
         }
 
     @Test
+    fun rejectsTrailingDotFileAliases() =
+        runTest {
+            assertRejected(fontTestZip("Regular.ttf", "Regular.ttf."), "trailing dot or space")
+        }
+
+    @Test
+    fun rejectsTrailingSpaceFileAliases() =
+        runTest {
+            assertRejected(fontTestZip("Regular.ttf", "Regular.ttf "), "trailing dot or space")
+        }
+
+    @Test
+    fun rejectsTrailingDotParentDirectoryAliases() =
+        runTest {
+            assertRejected(fontTestZip("family/Regular.ttf", "family./Regular.ttf"), "trailing dot or space")
+        }
+
+    @Test
+    fun rejectsTrailingSpaceParentDirectoryAliases() =
+        runTest {
+            assertRejected(fontTestZip("family/Regular.ttf", "family /Regular.ttf"), "trailing dot or space")
+        }
+
+    @Test
     fun rejectsTooManyArchiveEntriesAndCleansPartialFiles() =
         runTest {
             val bytes =

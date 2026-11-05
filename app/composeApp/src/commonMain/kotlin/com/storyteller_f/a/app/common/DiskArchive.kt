@@ -34,6 +34,10 @@ internal suspend fun extractDiskArchive(path: String, directory: String) {
                 val entry = archive.nextEntry ?: break
                 val segments = safeEntrySegments(entry.name)
                 require(segments.isNotEmpty()) { "Empty archive path" }
+                // Windows folds these suffixes when opening files, even on parent directories.
+                require(segments.none { it.endsWith('.') || it.endsWith(' ') }) {
+                    "Archive path has a trailing dot or space"
+                }
                 require(names.size < MAX_DISK_ARCHIVE_ENTRIES) { "Too many archive entries" }
                 require(names.add(segments.joinToString("/").lowercase())) { "Duplicate archive paths" }
                 val target = segments.fold(Path(directory)) { parent, name -> Path(parent, name) }
