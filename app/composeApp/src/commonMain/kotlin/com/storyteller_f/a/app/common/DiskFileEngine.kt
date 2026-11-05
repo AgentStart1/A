@@ -14,7 +14,6 @@ import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.files.SystemTemporaryDirectory
-import no.synth.kmpzip.kotlinx.unzipFrom
 
 internal class DiskFileEngine(private val dispatcher: CoroutineDispatcher) : FileEngine {
     override fun location(key: String): String = Path(SystemTemporaryDirectory, "downloads", key).toString()
@@ -72,7 +71,7 @@ internal class DiskFileEngine(private val dispatcher: CoroutineDispatcher) : Fil
     override suspend fun extractArchive(path: String) =
         withContext(dispatcher) {
             extractDownloadArchive(path) { directory ->
-                SystemFileSystem.unzipFrom(archive = Path(path), target = Path(directory))
+                extractDiskArchive(path, directory)
             }
         }
 }

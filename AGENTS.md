@@ -735,3 +735,6 @@
 - Validate community font bundles before publication on every platform: reject duplicate weight/style pairs,
   compare filename styles with original OS/2 metadata, and compare typographic family (name ID 16,
   otherwise ID 1). Never compare style names or overridden platform attributes, deduplicate, or skip failed faces.
+
+- Bound native ZIP extraction while writing, including non-font data. Reject duplicate normalized
+  target paths before opening sinks; post-extraction font validation cannot detect overwritten entries.
