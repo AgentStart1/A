@@ -233,8 +233,14 @@ class DownloaderImpl internal constructor(
     private suspend fun process(record: DownloadInfo, session: UserSessionManager) {
         val file = record.fileInfo
         if (files.size(record.path) != file.size) {
-            update(file) { it.copy(status = DownloadStatus.DOWNLOADING) }
-            transferDownload(session, files, record.path, file) { count -> update(file) { it.copy(progress = count) } }
+            val source = session.refreshExpiredDownloadUrl(file)
+            update(file) { it.copy(fileInfo = source, status = DownloadStatus.DOWNLOADING) }
+            transferDownload(
+                session,
+                files,
+                record.path,
+                source,
+            ) { count -> update(file) { it.copy(progress = count) } }
         }
         check(files.size(record.path) == file.size) { "Downloaded file size mismatch" }
         update(file) { it.copy(status = DownloadStatus.DOWNLOADED, progress = file.size) }

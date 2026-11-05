@@ -746,3 +746,6 @@
 
 - Keep font identity independent of expiring transport URLs. Pass current FileInfo to explicit resume,
   refresh only matching-revision URLs under the shared file lease, and preserve newer stored revisions.
+
+- Refresh expired signed resource URLs once before transferring bytes, not when reading a complete cache.
+  Preserve the requested file revision and partial source; guest refresh failure must not block post reading.

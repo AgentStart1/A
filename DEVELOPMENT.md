@@ -2220,6 +2220,13 @@ queued so a newer address is not merged into a running expired-address attempt. 
 to its uncompleted admission; already registered work belongs to the application. Failures are isolated
 at the request boundary and cleanup failures remain suppressed on the original error.
 
+Before an actual network transfer, the downloader checks MinIO/S3 SigV4 X-Amz-Date and X-Amz-Expires.
+Expired or malformed signed expiry is refreshed once through the existing authenticated file-info API,
+with file identity/revision validated before any source bytes are requested. A complete local source needs
+no refresh; URLs without declared SigV4 expiry retain their existing behavior. Refresh failures (including
+guest authentication failures) remain download failures and use application typography without affecting
+post reading. Public community responses can already provide usable font URLs to guests.
+
 PROCESSED and a new monotonically increasing processedGeneration are saved together, only after source
 writers close and extraction succeeds. The shared file lease covers snapshot rechecks, generation
 increments, directory replacement and terminal publication, including across browser tabs/workers.
