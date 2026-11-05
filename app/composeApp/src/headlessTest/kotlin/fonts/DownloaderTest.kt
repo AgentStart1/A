@@ -6,15 +6,20 @@ package fonts
 
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import com.storyteller_f.a.app.common.DownloadFileStore
-import com.storyteller_f.a.app.common.createDownloadFileStore
+import com.storyteller_f.a.app.common.DownloadFileLease
+import com.storyteller_f.a.app.common.Downloader
+import com.storyteller_f.a.app.common.FileEngine
 import com.storyteller_f.a.app.common.createDownloadRecord
+import com.storyteller_f.a.app.common.createFileEngine
 import com.storyteller_f.a.app.common.extractDownloadArchive
 import com.storyteller_f.a.app.common.extractedFiles
 import com.storyteller_f.a.app.common.getDownloadRevision
 import com.storyteller_f.a.app.common.write
 import com.storyteller_f.a.app.pages.community.CommunityFontBundle
 import com.storyteller_f.a.app.pages.community.CommunityFontDownload
+import com.storyteller_f.shared.model.FileInfo
+import com.storyteller_f.storage.DownloadInfo
+import com.storyteller_f.storage.DownloadInfoStorage
 import com.storyteller_f.storage.DownloadStatus
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -26,6 +31,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
@@ -37,7 +43,7 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
-class DownloadEngineTest {
+class DownloaderTest {
     @Test
     fun databaseCompletionPublishesReadableExtractedFonts() =
         runTest {
@@ -51,7 +57,7 @@ class DownloadEngineTest {
                     respond(bytes)
                 },
             ).use { client ->
-                val files = createDownloadFileStore()
+                val files = createFileEngine()
                 val records =
                     DownloadTestRecords { saved ->
                         if (saved.status == DownloadStatus.PROCESSED) assertNotNull(files.extractedFiles(saved.path))
@@ -85,7 +91,7 @@ class DownloadEngineTest {
                     respond(bytes)
                 },
             ).use { client ->
-                val fixture = DownloadTestFixture(this, createDownloadFileStore(), client)
+                val fixture = DownloadTestFixture(this, createFileEngine(), client)
                 try {
                     val file = fontFile(bytes, "family.zip")
                     load(fixture, file)
@@ -93,7 +99,7 @@ class DownloadEngineTest {
                     val recreated =
                         DownloadTestFixture(
                             this,
-                            createDownloadFileStore(),
+                            createFileEngine(),
                             client,
                             fixture.namespace,
                             fixture.records,
@@ -121,7 +127,7 @@ class DownloadEngineTest {
                     respond(bytes)
                 },
             ).use { client ->
-                val fixture = DownloadTestFixture(this, createDownloadFileStore(), client)
+                val fixture = DownloadTestFixture(this, createFileEngine(), client)
                 try {
                     val file = fontFile(bytes, "family.zip")
                     load(fixture, file)
@@ -151,7 +157,7 @@ class DownloadEngineTest {
                     respond(bytes)
                 },
             ).use { client ->
-                val fixture = DownloadTestFixture(this, createDownloadFileStore(), client)
+                val fixture = DownloadTestFixture(this, createFileEngine(), client)
                 try {
                     val file = fontFile(bytes)
                     load(fixture, file)
@@ -174,7 +180,7 @@ class DownloadEngineTest {
                     if (++requests == 1) respond("missing", HttpStatusCode.NotFound) else respond(bytes)
                 },
             ).use { client ->
-                val fixture = DownloadTestFixture(this, createDownloadFileStore(), client)
+                val fixture = DownloadTestFixture(this, createFileEngine(), client)
                 try {
                     val file = fontFile(bytes)
                     assertFailsWith<IllegalStateException> { load(fixture, file) }
@@ -192,10 +198,10 @@ class DownloadEngineTest {
     fun extractionRetryReusesTheDownloadedArchive() =
         runTest {
             val bytes = CommunityFontTestData.primaryZip
-            val disk = createDownloadFileStore()
+            val disk = createFileEngine()
             var extractions = 0
             val files =
-                object : DownloadFileStore by disk {
+                object : FileEngine by disk {
                     override suspend fun extractArchive(path: String) {
                         if (++extractions == 1) error("Synthetic extraction failure")
                         disk.extractArchive(path)
@@ -232,7 +238,7 @@ class DownloadEngineTest {
                     respond(bytes)
                 },
             ).use { client ->
-                val fixture = DownloadTestFixture(this, createDownloadFileStore(), client)
+                val fixture = DownloadTestFixture(this, createFileEngine(), client)
                 try {
                     val file = fontFile(bytes)
                     val partialPath =
@@ -263,7 +269,7 @@ class DownloadEngineTest {
                     respond(bytes)
                 },
             ).use { client ->
-                val fixture = DownloadTestFixture(this, createDownloadFileStore(), client)
+                val fixture = DownloadTestFixture(this, createFileEngine(), client)
                 try {
                     val file = fontFile(bytes)
                     load(fixture, file)
@@ -280,7 +286,7 @@ class DownloadEngineTest {
     @Test
     fun cancelledExtractionDoesNotPublishPartialFiles() =
         runTest {
-            val files = createDownloadFileStore()
+            val files = createFileEngine()
             val root = files.location("test-cancel-${kotlin.uuid.Uuid.random().toHexString()}")
             val entered = CompletableDeferred<Unit>()
             val pending =
@@ -303,10 +309,10 @@ class DownloadEngineTest {
     @Test
     fun extractionCleanupPreservesTheOriginalFailure() =
         runTest {
-            val disk = createDownloadFileStore()
+            val disk = createFileEngine()
             val root = disk.location("test-cleanup-${kotlin.uuid.Uuid.random().toHexString()}")
             val files =
-                object : DownloadFileStore by disk {
+                object : FileEngine by disk {
                     private var deletes = 0
                     override suspend fun delete(path: String) {
                         if (++deletes > 1) error("cleanup")
@@ -372,9 +378,9 @@ class DownloadEngineTest {
     @Test
     fun nativeFontLoadingNeverReadsTheSourceIntoBytes() =
         runTest {
-            val disk = createDownloadFileStore()
+            val disk = createFileEngine()
             val files =
-                object : DownloadFileStore by disk {
+                object : FileEngine by disk {
                     override suspend fun read(path: String, limit: Long): ByteArray =
                         error("Unexpected byte-array read")
                 }
@@ -392,11 +398,11 @@ class DownloadEngineTest {
     fun retryLeavesCompletedStateBeforeReplacingPartialExtraction() =
         runTest {
             val bytes = fontTestZip("Regular.ttf", "Bold.ttf")
-            val disk = createDownloadFileStore()
+            val disk = createFileEngine()
             val records = DownloadTestRecords()
             var extractions = 0
             val files =
-                object : DownloadFileStore by disk {
+                object : FileEngine by disk {
                     override suspend fun extractArchive(path: String) {
                         assertEquals(DownloadStatus.DOWNLOADED, records.getDocumentByFileId(1)?.status)
                         extractions++
@@ -427,7 +433,7 @@ class DownloadEngineTest {
         runTest {
             val bytes = CommunityFontTestData.primaryZip
             HttpClient(MockEngine { error("The complete source must be reused") }).use { client ->
-                val fixture = DownloadTestFixture(this, createDownloadFileStore(), client)
+                val fixture = DownloadTestFixture(this, createFileEngine(), client)
                 try {
                     val file = fontFile(bytes, "family.zip")
                     val path = fixture.files.location("${fixture.namespace}/1/${getDownloadRevision(file)}/source")
@@ -446,33 +452,60 @@ class DownloadEngineTest {
     @Test
     fun readerRechecksCompletionAfterEnteringTheFileLock() =
         runTest {
-            val records = DownloadTestRecords()
-            val file = fontFile(CommunityFontTestData.primary)
-            val record = createDownloadRecord(file, "synthetic/source").copy(status = DownloadStatus.PROCESSED)
-            records.save(record)
-            val disk = createDownloadFileStore()
-            val files =
-                object : DownloadFileStore by disk {
-                    override suspend fun acquire(key: String): com.storyteller_f.a.app.common.DownloadFileLease {
-                        records.save(record.copy(status = DownloadStatus.DOWNLOADED))
-                        return com.storyteller_f.a.app.common.DownloadFileLease { }
-                    }
-                }
-            val downloader =
-                object : com.storyteller_f.a.app.common.Downloader {
-                    override suspend fun download(fileInfo: com.storyteller_f.shared.model.FileInfo, retry: Boolean) =
-                        record
-                    override fun resume(id: Long) = error("Unused")
-                    override fun pause(id: Long) = error("Unused")
-                }
-            val source = CommunityFontDownload(records, downloader, files, "synthetic")
-            val failure = assertFailsWith<IllegalStateException> { source.load(file) }
-            assertEquals("Font download changed before reading", failure.message)
+            assertRejectedReplacement { it.copy(status = DownloadStatus.DOWNLOADED) }
         }
+
+    @Test
+    fun readerRechecksGenerationAfterEnteringTheFileLock() =
+        runTest {
+            assertRejectedReplacement { it.copy(processedGeneration = it.processedGeneration + 1) }
+        }
+
+    @Test
+    fun readerRechecksRevisionAfterEnteringTheFileLock() =
+        runTest {
+            assertRejectedReplacement {
+                it.copy(fileInfo = it.fileInfo.copy(lastModified = LocalDateTime(2026, 2, 3, 0, 0)))
+            }
+        }
+
+    @Test
+    fun readerRechecksPathAfterEnteringTheFileLock() =
+        runTest {
+            assertRejectedReplacement { it.copy(path = "replacement/source") }
+        }
+
+    private suspend fun assertRejectedReplacement(change: (DownloadInfo) -> DownloadInfo) {
+        val backing = DownloadTestRecords()
+        val file = fontFile(CommunityFontTestData.primary)
+        val record = createDownloadRecord(file, "synthetic/source").copy(status = DownloadStatus.PROCESSED)
+        backing.save(record)
+        val records =
+            object : DownloadInfoStorage by backing {
+                // A snapshot is allowed to remain unchanged while the reader waits for the file lease.
+                override fun observeDocumentByFileId(fileId: Long) = flowOf(record)
+            }
+        val files =
+            object : FileEngine by createFileEngine() {
+                override suspend fun acquire(key: String): DownloadFileLease {
+                    backing.save(change(record))
+                    return DownloadFileLease { }
+                }
+            }
+        val downloader =
+            object : Downloader {
+                override suspend fun download(fileInfo: FileInfo) = record
+                override fun resume(id: Long) = error("Unused")
+                override fun pause(id: Long) = error("Unused")
+            }
+        val source = CommunityFontDownload(records, downloader, files, "synthetic")
+        val failure = assertFailsWith<IllegalStateException> { source.load(file) }
+        assertEquals("Font download changed before reading", failure.message)
+    }
 
     private suspend fun CoroutineScope.downloadFont(bytes: ByteArray, name: String): CommunityFontBundle =
         HttpClient(MockEngine { respond(bytes) }).use { client ->
-            val fixture = DownloadTestFixture(this, createDownloadFileStore(), client)
+            val fixture = DownloadTestFixture(this, createFileEngine(), client)
             try {
                 load(fixture, fontFile(bytes, name))
             } finally {
@@ -484,5 +517,17 @@ class DownloadEngineTest {
         fixture: DownloadTestFixture,
         file: com.storyteller_f.shared.model.FileInfo,
         retry: Boolean = false,
-    ) = CommunityFontDownload(fixture.records, fixture.downloader, fixture.files, fixture.namespace).load(file, retry)
+    ): CommunityFontBundle {
+        if (retry) {
+            val old = fixture.records.getDocumentByFileId(file.id)?.processedGeneration ?: 0
+            fixture.downloader.resume(file.id)
+            fixture.records.observeDocumentByFileId(file.id).first {
+                it != null && (
+                    it.processedGeneration > old || it.status == DownloadStatus.PROCESS_FAILED ||
+                        it.status == DownloadStatus.DOWNLOAD_FAILED
+                    )
+            }
+        }
+        return CommunityFontDownload(fixture.records, fixture.downloader, fixture.files, fixture.namespace).load(file)
+    }
 }

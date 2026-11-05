@@ -4,9 +4,9 @@
 
 package fonts
 
-import com.storyteller_f.a.app.common.DiskDownloadFileStore
+import com.storyteller_f.a.app.common.DiskFileEngine
 import com.storyteller_f.a.app.common.DownloadFileLease
-import com.storyteller_f.a.app.common.DownloadFileStore
+import com.storyteller_f.a.app.common.FileEngine
 import com.storyteller_f.a.app.common.createDownloadRecord
 import com.storyteller_f.storage.DownloadInfo
 import com.storyteller_f.storage.DownloadInfoStorage
@@ -42,9 +42,9 @@ class DownloadTaskLifecycleTest {
             val failures = mutableListOf<Throwable>()
             val account = createAccountScope(failures)
             val sibling = account.launch { awaitCancellation() }
-            val disk = DiskDownloadFileStore(StandardTestDispatcher(testScheduler))
+            val disk = DiskFileEngine(StandardTestDispatcher(testScheduler))
             val files =
-                object : DownloadFileStore by disk {
+                object : FileEngine by disk {
                     override suspend fun size(path: String): Long? = error("Synthetic storage lookup failure")
                 }
             createClient { error("Preparation failure must not send a request") }.use { client ->
@@ -73,7 +73,7 @@ class DownloadTaskLifecycleTest {
         runTest {
             val failures = mutableListOf<Throwable>()
             val account = createAccountScope(failures)
-            val files = DiskDownloadFileStore(StandardTestDispatcher(testScheduler))
+            val files = DiskFileEngine(StandardTestDispatcher(testScheduler))
             var requests = 0
             var allowCompletion = false
             val bytes = CommunityFontTestData.primary
@@ -118,10 +118,10 @@ class DownloadTaskLifecycleTest {
             val account = createAccountScope(failures)
             val entered = CompletableDeferred<Unit>()
             val release = CompletableDeferred<Unit>()
-            val disk = DiskDownloadFileStore(StandardTestDispatcher(testScheduler))
+            val disk = DiskFileEngine(StandardTestDispatcher(testScheduler))
             var first = true
             val files =
-                object : DownloadFileStore by disk {
+                object : FileEngine by disk {
                     override suspend fun acquire(key: String): DownloadFileLease {
                         if (first) {
                             first = false
@@ -167,7 +167,7 @@ class DownloadTaskLifecycleTest {
             val failures = mutableListOf<Throwable>()
             val account = createAccountScope(failures)
             val sibling = account.launch { awaitCancellation() }
-            val files = DiskDownloadFileStore(StandardTestDispatcher(testScheduler))
+            val files = DiskFileEngine(StandardTestDispatcher(testScheduler))
             var lookups = 0
             val records =
                 object : DownloadInfoStorage by DownloadTestRecords() {
@@ -198,9 +198,9 @@ class DownloadTaskLifecycleTest {
             val failures = mutableListOf<Throwable>()
             val account = createAccountScope(failures)
             val sibling = account.launch { awaitCancellation() }
-            val disk = DiskDownloadFileStore(StandardTestDispatcher(testScheduler))
+            val disk = DiskFileEngine(StandardTestDispatcher(testScheduler))
             val files =
-                object : DownloadFileStore by disk {
+                object : FileEngine by disk {
                     override suspend fun size(path: String): Long? = error("Synthetic storage lookup failure")
                 }
             val backing = DownloadTestRecords()
@@ -238,9 +238,9 @@ class DownloadTaskLifecycleTest {
             val failures = mutableListOf<Throwable>()
             val account = createAccountScope(failures)
             val entered = CompletableDeferred<Unit>()
-            val disk = DiskDownloadFileStore(StandardTestDispatcher(testScheduler))
+            val disk = DiskFileEngine(StandardTestDispatcher(testScheduler))
             val files =
-                object : DownloadFileStore by disk {
+                object : FileEngine by disk {
                     override suspend fun acquire(key: String): DownloadFileLease {
                         entered.complete(Unit)
                         awaitCancellation()
@@ -272,10 +272,10 @@ class DownloadTaskLifecycleTest {
             val failures = mutableListOf<Throwable>()
             val account = createAccountScope(failures)
             val entered = CompletableDeferred<Unit>()
-            val disk = DiskDownloadFileStore(StandardTestDispatcher(testScheduler))
+            val disk = DiskFileEngine(StandardTestDispatcher(testScheduler))
             val files =
-                object : DownloadFileStore by disk {
-                    override suspend fun acquire(key: String): DownloadFileLease {
+                object : FileEngine by disk {
+                    override suspend fun size(path: String): Long? {
                         entered.complete(Unit)
                         awaitCancellation()
                     }

@@ -24,9 +24,9 @@ import kotlin.js.JsString
 import kotlin.js.Promise
 import kotlin.js.toJsString
 
-internal actual fun createDownloadFileStore(): DownloadFileStore = OpfsDownloadFileStore()
+internal actual fun createFileEngine(): FileEngine = OpfsFileEngine()
 
-internal class OpfsDownloadFileStore : DownloadFileStore {
+internal class OpfsFileEngine : FileEngine {
     private val bridge = opfsBridge
     override fun location(key: String): String = "downloads/$key"
 
@@ -230,12 +230,17 @@ private val opfsBridge: OpfsBridge =
             },
             async retain(path, maxFiles, maxBytes) {
                 const values = parts(path);
-                const account = values[1];
-                const lease = lock('font-cache:' + account);
+                if (values.length !== 6 || values[1] !== 'public-resources-v1') {
+                    throw new Error('Font retention requires a public resource location');
+                }
+                const server = values[2];
+                const root = values.slice(0, 3).join('/');
+                const lease = lock('font-cache:public-resources-v1:' + server);
                 try {
                     await lease.ready();
-                    const indexPath = 'downloads/' + account + '/font-cache.json';
-                    const index = (await readJson(indexPath, [])).filter(item => item.path !== path);
+                    const indexPath = root + '/font-cache.json';
+                    const index = (await readJson(indexPath, [])).filter(item =>
+                        item.path !== path && item.path.startsWith(root + '/') && parts(item.path).length === 6);
                     const entries = JSON.parse(await list(path + '.extracted'));
                     const sourceBytes = await size(path);
                     if (sourceBytes === null) return;
@@ -248,7 +253,7 @@ private val opfsBridge: OpfsBridge =
                         sources -= old.sourceBytes;
                         decoded -= old.decodedBytes;
                         const fields = parts(old.path);
-                        const entryLease = lock('download:' + fields[1] + ':' + fields[2]);
+                        const entryLease = lock('download:' + fields[2] + ':' + fields[3]);
                         try {
                             await entryLease.ready();
                             await remove(old.path.substring(0, old.path.lastIndexOf('/')));

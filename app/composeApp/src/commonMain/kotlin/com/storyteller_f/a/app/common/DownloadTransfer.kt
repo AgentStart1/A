@@ -4,6 +4,7 @@
 
 package com.storyteller_f.a.app.common
 
+import com.storyteller_f.a.client.core.UserSessionManager
 import com.storyteller_f.a.client.core.serviceCatching
 import com.storyteller_f.result.getOrThrow
 import com.storyteller_f.shared.model.FileInfo
@@ -19,14 +20,14 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.io.readByteArray
 
 internal suspend fun transferDownload(
-    context: DownloadContext,
-    files: DownloadFileStore,
+    session: UserSessionManager,
+    files: FileEngine,
     path: String,
     file: FileInfo,
     progress: suspend (Long) -> Unit,
 ) {
     val offset = files.size(path) ?: 0
-    context.session.serviceCatching {
+    session.serviceCatching {
         prepareGet(file.url) {
             if (offset > 0 && offset < file.size) header(HttpHeaders.Range, "bytes=$offset-")
         }.execute { response ->

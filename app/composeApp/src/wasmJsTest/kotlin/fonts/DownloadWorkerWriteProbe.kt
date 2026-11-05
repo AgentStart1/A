@@ -6,8 +6,8 @@
 
 package fonts
 
-import com.storyteller_f.a.app.common.DownloadFileStore
 import com.storyteller_f.a.app.common.DownloadWorkerJob
+import com.storyteller_f.a.app.common.FileEngine
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.await
@@ -49,9 +49,9 @@ internal suspend fun <T : JsAny?> awaitWorkerProbe(signal: Promise<T>): T =
 
 /** Observe ordering without replacing any actual OPFS operation. */
 internal class WorkerCleanupProbe(
-    private val files: DownloadFileStore,
+    private val files: FileEngine,
     private val started: Deferred<WritingDownloadWorker>,
-) : DownloadFileStore by files {
+) : FileEngine by files {
     var cleaned = false
         private set
 

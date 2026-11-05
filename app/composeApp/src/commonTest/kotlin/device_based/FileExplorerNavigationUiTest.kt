@@ -21,6 +21,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
@@ -41,13 +43,36 @@ import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.rememberNavigationEventDispatcherOwner
 import com.storyteller_f.a.app.pages.file.FileExplorerNavigation
 import com.storyteller_f.a.app.pages.file.FileExplorerRoute
+import com.storyteller_f.a.app.pages.file.FilePreviewToolbar
 import com.storyteller_f.a.app.pages.file.rememberFileExplorerBackStack
 import com.storyteller_f.a.client.compose_core.components.NavRoute
+import com.storyteller_f.shared.model.FileInfo
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @OptIn(ExperimentalTestApi::class)
 class FileExplorerNavigationUiTest {
+    @Test
+    fun ordinaryFileDownloadOpensThePlatformBrowser() =
+        runComposeUiTest {
+            val opened = mutableListOf<String>()
+            val file = FileInfo.EMPTY.copy(name = "document.pdf", url = "https://files.invalid/document.pdf")
+            setContent {
+                CompositionLocalProvider(
+                    LocalUriHandler provides
+                        object : UriHandler {
+                            override fun openUri(uri: String) {
+                                opened += uri
+                            }
+                        },
+                ) {
+                    MaterialTheme { FilePreviewToolbar(file) }
+                }
+            }
+            onNodeWithText("Download").performClick()
+            runOnIdle { assertEquals(listOf(file.url), opened) }
+        }
+
     @Test
     fun historySelectionAndDraftSurviveResizing() =
         runComposeUiTest {

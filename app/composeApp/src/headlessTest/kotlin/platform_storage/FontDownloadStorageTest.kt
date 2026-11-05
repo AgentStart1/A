@@ -6,8 +6,8 @@ package fonts
 
 import androidx.paging.PagingSource
 import com.storyteller_f.a.app.PlatformHeadlessTest
-import com.storyteller_f.a.app.common.createDownloadFileStore
 import com.storyteller_f.a.app.common.createDownloadRecord
+import com.storyteller_f.a.app.common.createFileEngine
 import com.storyteller_f.a.app.common.write
 import com.storyteller_f.a.app.pages.community.CommunityFontDownload
 import com.storyteller_f.a.client.room.RoomDownloadInfoStorage
@@ -28,12 +28,41 @@ import kotlin.uuid.Uuid
 
 class FontDownloadStorageTest : PlatformHeadlessTest() {
     @Test
+    fun publicCollectionsSeparateServersAndIgnoreLegacyRows() =
+        runTest {
+            val database = getRoomDatabase("font-collections-${Uuid.random().toHexString()}")
+            try {
+                val legacy = RoomDownloadInfoStorage(database)
+                val left = legacy.forServer("server-one")
+                val right = legacy.forServer("server-two")
+                val file = fontFile(CommunityFontTestData.primary)
+                val old = createDownloadRecord(file, "legacy/source").copy(status = DownloadStatus.PROCESSED)
+                legacy.save(old)
+                kotlin.test.assertNull(left.getDocumentByFileId(file.id))
+                kotlin.test.assertNull(right.getDocumentByFileId(file.id))
+                val first = old.copy(path = "public/server-one/source", processedGeneration = 7)
+                val second = old.copy(path = "public/server-two/source", processedGeneration = 3)
+                left.save(first)
+                right.save(second)
+                assertEquals(first, legacy.forServer("server-one").getDocumentByFileId(file.id))
+                assertEquals(second, right.getDocumentByFileId(file.id))
+                assertEquals(old, legacy.getDocumentByFileId(file.id))
+                val page =
+                    left.observeData().load(PagingSource.LoadParams.Refresh(null, 10, false))
+                        as PagingSource.LoadResult.Page
+                assertEquals(listOf(first), page.data)
+            } finally {
+                database.close()
+            }
+        }
+
+    @Test
     fun revisedDownloadsPreserveLegacyRecordIdentity() =
         runTest {
             val database = getRoomDatabase("font-legacy-${Uuid.random().toHexString()}")
             val records = RoomDownloadInfoStorage(database)
             HttpClient(MockEngine { respond(CommunityFontTestData.primary) }).use { client ->
-                val fixture = DownloadTestFixture(this, createDownloadFileStore(), client, records = records)
+                val fixture = DownloadTestFixture(this, createFileEngine(), client, records = records)
                 try {
                     val original = fontFile(CommunityFontTestData.primary)
                     val path = fixture.files.location("${fixture.namespace}/legacy-source")

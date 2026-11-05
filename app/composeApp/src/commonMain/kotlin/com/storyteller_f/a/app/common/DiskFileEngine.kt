@@ -16,7 +16,7 @@ import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.files.SystemTemporaryDirectory
 import no.synth.kmpzip.kotlinx.unzipFrom
 
-internal class DiskDownloadFileStore(private val dispatcher: CoroutineDispatcher) : DownloadFileStore {
+internal class DiskFileEngine(private val dispatcher: CoroutineDispatcher) : FileEngine {
     override fun location(key: String): String = Path(SystemTemporaryDirectory, "downloads", key).toString()
 
     override suspend fun size(path: String): Long? =

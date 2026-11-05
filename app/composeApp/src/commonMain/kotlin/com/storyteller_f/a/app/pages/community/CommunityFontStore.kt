@@ -6,150 +6,105 @@ package com.storyteller_f.a.app.pages.community
 
 import com.storyteller_f.shared.model.FileInfo
 import com.storyteller_f.shared.utils.md5
-import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.async
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-private const val MAX_CACHED_FONT_FACES = 48
-private const val MAX_CACHED_FONT_FAMILIES = 12
+private const val FONT_STOP_MILLIS = 5_000L
 
-/** One account/session owns this ephemeral cache. A cancelled reader does not cancel other readers. */
+internal sealed interface CommunityFontState {
+    data object Loading : CommunityFontState
+    data class Ready(val bundle: CommunityFontBundle) : CommunityFontState
+    data class Failed(val failure: Exception) : CommunityFontState
+}
+
+/** An application/server registry of shared construction flows; active entries are never evicted. */
 internal class CommunityFontStore(
     private val scope: CoroutineScope,
-    private val maxCachedFamilies: Int = MAX_CACHED_FONT_FAMILIES,
-    private val maxCachedFaces: Int = MAX_CACHED_FONT_FACES,
-    private val fetch: suspend (FileInfo, Boolean) -> CommunityFontBundle,
+    private val observe: (FileInfo) -> Flow<CommunityFontState>,
+    private val resume: (FileInfo) -> Unit,
 ) {
-    init {
-        require(maxCachedFamilies >= 0 && maxCachedFaces >= 0) { "Invalid font cache limits" }
-    }
-
     private val mutex = Mutex()
-    private val cached = linkedMapOf<String, CommunityFontBundle>()
-    private val pending = mutableMapOf<String, PendingFontLoad>()
-    private val reloadEvents = MutableSharedFlow<CommunityFontReloaded>(extraBufferCapacity = MAX_CACHED_FONT_FAMILIES)
+    private val entries = mutableMapOf<String, FontFlowEntry>()
 
-    /** Successful explicit retries only; ordinary cache fills and evictions do not request UI refreshes. */
-    val reloads = reloadEvents.asSharedFlow()
-
-    /** Each subscription owns its collector; shared account-owned reads survive unsubscription. */
-    fun observeFont(file: FileInfo, retry: Boolean = false): Flow<CommunityFontBundle?> =
+    /** Each collector leases the registered stateIn, including throughout its stop grace period. */
+    fun observeFont(file: FileInfo): Flow<CommunityFontState> =
         flow {
+            scope.coroutineContext.ensureActive()
             val key = fontFileKey(file)
-            coroutineScope {
-                // Subscribe before loading, retaining the latest retry while the initial read suspends.
-                val refreshed = Channel<CommunityFontBundle>(Channel.CONFLATED)
-                launch(start = CoroutineStart.UNDISPATCHED) {
-                    reloads.filter { it.key == key }.collect { refreshed.send(it.bundle) }
-                }
-                try {
-                    emit(load(file, retry))
-                    for (bundle in refreshed) emit(bundle)
-                } finally {
-                    refreshed.cancel()
-                }
-            }
-        }.distinctUntilChanged()
-
-    suspend fun load(file: FileInfo, retry: Boolean = false): CommunityFontBundle? {
-        currentCoroutineContext().ensureActive()
-        scope.coroutineContext.ensureActive()
-        val key = fontFileKey(file)
-        val result =
-            mutex.withLock {
-                if (!retry) {
-                    cached.remove(key)?.let { value ->
-                        cached[key] = value
-                        return value
-                    }
-                }
-                val previous = pending[key]
-                if (previous != null && (!retry || previous.retry)) {
-                    previous.result
-                } else {
-                    if (retry) cached.remove(key)
-                    scope.async(start = CoroutineStart.LAZY) {
-                        readAndCache(file, retry, previous?.result)
-                    }.also { pending[key] = PendingFontLoad(retry, it) }
-                }
-            }
-        result.start()
-        return result.await()
-    }
-
-    private suspend fun readAndCache(
-        file: FileInfo,
-        retry: Boolean,
-        previous: Deferred<CommunityFontBundle?>?,
-    ): CommunityFontBundle? {
-        val key = fontFileKey(file)
-        val owner = checkNotNull(currentCoroutineContext()[Job])
-        try {
-            previous?.await()
-            val bundle = readFont(file, retry)
-            currentCoroutineContext().ensureActive()
-            val published =
+            val entry =
                 mutex.withLock {
-                    if (pending[key]?.result !== owner) {
-                        false
-                    } else {
-                        if (bundle != null) cached[key] = bundle
-                        trimCache()
-                        true
+                    entries.getOrPut(key) {
+                        val owner = CoroutineScope(scope.coroutineContext + Job(scope.coroutineContext[Job]))
+                        FontFlowEntry(
+                            owner,
+                            observe(file).stateIn(
+                                owner,
+                                SharingStarted.WhileSubscribed(FONT_STOP_MILLIS, replayExpirationMillis = 0),
+                                CommunityFontState.Loading,
+                            ),
+                        )
+                    }.also {
+                        it.retain()
                     }
                 }
-            if (published && retry && bundle != null) reloadEvents.emit(CommunityFontReloaded(key, bundle))
-            return bundle
-        } finally {
-            withContext(NonCancellable) {
-                mutex.withLock { if (pending[key]?.result === owner) pending.remove(key) }
+            try {
+                emitAll(entry.state)
+            } finally {
+                withContext(NonCancellable) {
+                    mutex.withLock {
+                        if (entry.release()) scheduleRemoval(key, entry)
+                    }
+                }
             }
         }
-    }
 
-    private suspend fun readFont(file: FileInfo, retry: Boolean): CommunityFontBundle? =
-        try {
-            fetch(file, retry)
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (fatal: Error) {
-            throw fatal
-        } catch (failure: Throwable) {
-            Napier.w { "Unable to load a community font: ${failure.message.orEmpty()}" }
-            null
-        }
+    fun retry(file: FileInfo) = resume(file)
 
-    private fun trimCache() {
-        while (cached.size > maxCachedFamilies || cached.values.sumOf { it.faces.size } > maxCachedFaces) {
-            cached.remove(cached.keys.first())
+    private fun scheduleRemoval(key: String, entry: FontFlowEntry) {
+        val epoch = entry.epoch
+        scope.launch {
+            delay(FONT_STOP_MILLIS)
+            mutex.withLock {
+                if (entry.isIdle(epoch) && entries[key] === entry) {
+                    entries.remove(key)
+                    entry.scope.cancel()
+                }
+            }
         }
     }
 }
 
-internal data class CommunityFontReloaded(val key: String, val bundle: CommunityFontBundle)
+private class FontFlowEntry(val scope: CoroutineScope, val state: StateFlow<CommunityFontState>) {
+    private var readers = 0
+    var epoch = 0L
+        private set
 
-private data class PendingFontLoad(val retry: Boolean, val result: Deferred<CommunityFontBundle?>)
+    fun retain() {
+        readers++
+        epoch++
+    }
+
+    fun release(): Boolean {
+        readers--
+        return readers == 0
+    }
+
+    fun isIdle(expectedEpoch: Long): Boolean = readers == 0 && epoch == expectedEpoch
+}
 
 internal fun fontFileKey(file: FileInfo): String =
-    md5(
-        "${file.id}:${file.fullName}:${file.lastModified}:${file.size}:${file.name}",
-    )
+    md5("${file.id}:${file.fullName}:${file.lastModified}:${file.size}:${file.name}")

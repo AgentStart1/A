@@ -6,9 +6,9 @@ package fonts
 
 import androidx.paging.PagingSource
 import com.storyteller_f.a.app.common.DownloadContext
-import com.storyteller_f.a.app.common.DownloadEngine
-import com.storyteller_f.a.app.common.DownloadFileStore
-import com.storyteller_f.a.app.common.Downloader
+import com.storyteller_f.a.app.common.DownloadSession
+import com.storyteller_f.a.app.common.DownloaderImpl
+import com.storyteller_f.a.app.common.FileEngine
 import com.storyteller_f.a.app.common.SimpleTaskRegister
 import com.storyteller_f.a.client.core.ConstPassHolder
 import com.storyteller_f.a.client.core.UserSessionManager
@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.update
 import kotlin.uuid.Uuid
 
 internal class DownloadTestRecords(private val onSave: suspend (DownloadInfo) -> Unit = {}) : DownloadInfoStorage {
+    override fun forServer(server: String): DownloadInfoStorage = error("Use SQLite for collection isolation")
     private val rows = MutableStateFlow<Map<Long, DownloadInfo>>(emptyMap())
     val history = mutableListOf<DownloadInfo>()
     override suspend fun save(item: DownloadInfo) {
@@ -45,7 +46,7 @@ internal class DownloadTestRecords(private val onSave: suspend (DownloadInfo) ->
 
 internal class DownloadTestFixture(
     scope: CoroutineScope,
-    val files: DownloadFileStore,
+    val files: FileEngine,
     client: HttpClient,
     val namespace: String = "test-${Uuid.random().toHexString()}",
     val records: DownloadInfoStorage = DownloadTestRecords(),
@@ -57,21 +58,14 @@ internal class DownloadTestFixture(
             override val passHolder = ConstPassHolder(null)
             override val webSocketClient: WebSocketClientImpl get() = error("Downloads do not use WebSockets")
         }
-    private val engine =
-        DownloadEngine(
-            DownloadContext(namespace, scope, records, session),
+    val downloader =
+        DownloaderImpl(
+            DownloadContext(namespace, scope, records) { DownloadSession(session) {} },
             SimpleTaskRegister(scope),
             files,
         )
-    val downloader =
-        object : Downloader {
-            override suspend fun download(fileInfo: FileInfo, retry: Boolean): DownloadInfo =
-                engine.start(fileInfo, retry)
-            override fun resume(id: Long) = engine.resume(id)
-            override fun pause(id: Long) = engine.pause(id)
-        }
     suspend fun close() {
-        files.delete(files.location(namespace))
+        files.delete(files.location("public-resources-v1/$namespace"))
     }
 }
 

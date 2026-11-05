@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
 import com.mikepenz.markdown.m3.markdownColor
 import com.storyteller_f.a.app.pages.community.CommunityFontContent
-import com.storyteller_f.a.app.pages.community.CommunityFontStore
 import com.storyteller_f.a.app.pages.community.fontFileKey
 import com.storyteller_f.a.app.pages.topic.EditTopicPage
 import com.storyteller_f.a.client.compose_core.components.LocalTopicContentFonts
@@ -162,13 +161,13 @@ class CommunityTopicFontsUiTest {
         }
 
     @Test
-    fun visibleFontsSurviveFamilyCacheEviction() =
+    fun visibleFontsShareTheirConstructionFlows() =
         runComposeUiTest {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
             try {
                 val reads = MutableStateFlow(emptyMap<Long, Int>())
                 val store =
-                    CommunityFontStore(scope, maxCachedFamilies = 1) { file, _ ->
+                    fontFixture.createBundleStore(scope) { file ->
                         reads.update { counts -> counts + (file.id to counts.getOrElse(file.id) { 0 } + 1) }
                         val bytes = if (file.id == 1L) CommunityFontTestData.primary else CommunityFontTestData.code
                         fontFixture.testFontBundle(fontFileKey(file), file.name, bytes)
@@ -226,7 +225,7 @@ class CommunityTopicFontsUiTest {
                 val previousCode = assertNotNull(fonts.code)
                 runOnIdle {
                     assertNull(fonts.content)
-                    scope.launch { store.load(assertNotNull(selected.contentFont), retry = true) }
+                    scope.launch { store.retry(assertNotNull(selected.contentFont)) }
                 }
                 waitUntil { fonts.content != null }
                 runOnIdle {

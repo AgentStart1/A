@@ -526,13 +526,19 @@ class RoomFileInfoStorage(appDatabase: AppDatabase) : FileInfoStorage {
     }
 }
 
-class RoomDownloadInfoStorage(val appDatabase: AppDatabase) : DownloadInfoStorage {
+class RoomDownloadInfoStorage(
+    val appDatabase: AppDatabase,
+    private val collection: String = DownloadInfoStorage.COLLECTION_NAME,
+) : DownloadInfoStorage {
+    override fun forServer(server: String): DownloadInfoStorage =
+        RoomDownloadInfoStorage(appDatabase, "public-resources-v1:$server")
+
     override suspend fun save(item: DownloadInfo) {
         val data = commonJson.encodeToString(item)
         appDatabase.getDownloadDao().insert(
             DownloadEntity(
                 id = item.id.toString(),
-                collection = DownloadInfoStorage.COLLECTION_NAME,
+                collection = collection,
                 fileId = item.fileInfo.id,
                 data = data,
             ),
@@ -541,7 +547,7 @@ class RoomDownloadInfoStorage(val appDatabase: AppDatabase) : DownloadInfoStorag
 
     override suspend fun getDocumentByFileId(fileId: PrimaryKey): DownloadInfo? =
         appDatabase.getDownloadDao().getByFileId(
-            DownloadInfoStorage.COLLECTION_NAME,
+            collection,
             fileId,
         )
             ?.let {
@@ -550,13 +556,13 @@ class RoomDownloadInfoStorage(val appDatabase: AppDatabase) : DownloadInfoStorag
 
     override fun observeDocumentByFileId(fileId: PrimaryKey): Flow<DownloadInfo?> =
         appDatabase.getDownloadDao()
-            .getByFileIdAsFlow(DownloadInfoStorage.COLLECTION_NAME, fileId).map {
+            .getByFileIdAsFlow(collection, fileId).map {
                 it?.data?.let { string -> commonJson.safeDecodeFromStringOrNull(string) }
             }
 
     override fun observeData(): PagingSource<Int, DownloadInfo> =
         WrappedPagingSource(
-            appDatabase.getDownloadDao().getAsSource(DownloadInfoStorage.COLLECTION_NAME),
+            appDatabase.getDownloadDao().getAsSource(collection),
             ::getLocalRefreshKey,
         ) { entities ->
             entities.mapNotNull {
@@ -565,7 +571,7 @@ class RoomDownloadInfoStorage(val appDatabase: AppDatabase) : DownloadInfoStorag
         }
 
     override suspend fun clean() {
-        appDatabase.getDownloadDao().clean(DownloadInfoStorage.COLLECTION_NAME)
+        appDatabase.getDownloadDao().clean(collection)
     }
 }
 

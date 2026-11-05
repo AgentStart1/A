@@ -33,17 +33,12 @@ import androidx.compose.ui.unit.dp
 import com.github.panpf.zoomimage.CoilZoomAsyncImage
 import com.storyteller_f.a.app.LocalAppNavFactory
 import com.storyteller_f.a.app.LocalGlobalDialog
-import com.storyteller_f.a.app.LocalSessionManager
 import com.storyteller_f.a.app.Res
 import com.storyteller_f.a.app.common.FileViewViewModel
 import com.storyteller_f.a.app.common.createFileViewModel
 import com.storyteller_f.a.app.download_file
-import com.storyteller_f.a.app.download_started
-import com.storyteller_f.a.app.file_saved
 import com.storyteller_f.a.app.preview_unavailable
 import com.storyteller_f.a.app.ui.MaterialSymbolsOutlined
-import com.storyteller_f.a.app.utils.FileSaveOutcome
-import com.storyteller_f.a.app.utils.saveUploadedFile
 import com.storyteller_f.a.client.compose_core.components.AudioViewFullScreen
 import com.storyteller_f.a.client.compose_core.components.BaseSheet
 import com.storyteller_f.a.client.compose_core.components.ButtonNav
@@ -57,10 +52,8 @@ import com.storyteller_f.a.client.compose_core.components.VideoViewFullScreen
 import com.storyteller_f.a.client.compose_core.components.globalLoader
 import com.storyteller_f.a.client.compose_core.components.rememberIsInPipMode
 import com.storyteller_f.a.client.compose_core.components.request
-import com.storyteller_f.a.client.compose_core.utils.LocalFileDialogSettings
 import com.storyteller_f.a.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.a.client.core.copy
-import com.storyteller_f.a.client.core.serviceCatching
 import com.storyteller_f.result.onSuccess
 import com.storyteller_f.shared.model.FileInfo
 import io.github.aakira.napier.Napier
@@ -141,28 +134,12 @@ private fun RegularFileViewInternal(info: FileInfo) {
 private fun FileInfo.mediaItem() = RemoteMediaItem(id.toString(), url, contentType, name)
 
 @Composable
-private fun FilePreviewToolbar(info: FileInfo) {
-    val controller = LocalGlobalDialog.current
-    val dialogSettings = LocalFileDialogSettings.current
-    val session = LocalSessionManager.current
-    val toaster = LocalToaster.current
-    val saved = stringResource(Res.string.file_saved)
-    val started = stringResource(Res.string.download_started)
+internal fun FilePreviewToolbar(info: FileInfo) {
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
     val downloadLabel = stringResource(Res.string.download_file)
     val navigation = LocalAppNavFactory.current
     val back = { navigation.newAppNav().back() }
-    val download = {
-        controller.launch {
-            useResult { session.serviceCatching { saveUploadedFile(this, info, dialogSettings) } }.onSuccess {
-                when (it) {
-                    FileSaveOutcome.SAVED -> toaster.showMessage(saved)
-                    FileSaveOutcome.STARTED -> toaster.showMessage(started)
-                    FileSaveOutcome.CANCELLED -> Unit
-                }
-            }
-        }
-        Unit
-    }
+    val download = { uriHandler.openUri(info.url) }
     Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
         IconButton(back, Modifier.appiumSemantics(description = "back", onClick = back)) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "back")

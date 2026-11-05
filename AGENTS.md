@@ -688,15 +688,21 @@
   Community settings expose content/code fonts only; leave missing-glyph fallback to the platform.
   Key uploaded-font caches by object version rather than expiring signed URLs. Verify real glyph metrics
   because resolver preload may silently resolve an invalid font to a default.
-- Download records are unique per file. Use file identity rather than second-resolution timestamps for
-  their IDs, so simultaneous downloads cannot replace one another's records.
-- Publish download PROCESSED only after file writers close and complete extraction output is committed.
-  Observe persisted completion instead of adding a second download-completion API. Keep platform storage
-  behind DownloadFileStore and serialize account/file transfer, extraction and reads; browser Web Locks
-  must also cover other tabs/workers. Preserve legacy record IDs when updating existing files.
-- Font cache fills and evictions must not trigger presentation reloads. Publish successful explicit
-  retries as per-file data updates, and retain displayed families independently of cache residency.
-  Expose per-file font flows to content; cancelling a subscriber must not cancel account-owned shared reads.
+- Internal downloads are application-owned and shared across accounts. Use guest database collections
+  and paths in the public resource namespace, separated by server and file identity. Ignore legacy
+  collections/directories without migration, deletion or reset; keep Room version 2 and entity schemas.
+  OPFS retention indexes/budgets are server-scoped inside the new namespace; eviction must acquire the
+  same server/file lease as Downloader and must never read legacy retention indexes.
+- Downloader owns queues, transfer, processing and status publication; FileEngine owns platform IO,
+  leases and archive primitives. Snapshot request Cookie/account context into an admission-owned client,
+  close it on completion, and never retain an account session in the public service.
+- `download(file)` never retries failed/paused tasks; use `resume(id)`. Publish PROCESSED with a persisted
+  successful generation after writers/extraction close, under the shared server/file lease. Recheck
+  revision/path/generation/status under that lease before building fonts. Database Flow may skip states.
+- Cache one stateIn font flow per public file revision, with shared upstream construction and recoverable
+  failure states. Do not add finished-bundle/pending caches or reload events. Active registry entries
+  cannot be evicted; release idle replay and entries after the subscription grace period. Retry success
+  must rebuild from a new generation even if every intermediate status was missed.
 
 - Wasm Default dispatching stays on the browser event loop. Keep ZIP processing in the dedicated
   file worker, pass OPFS paths and in-memory file metadata rather than Kotlin/Skia objects, and await worker
@@ -711,7 +717,7 @@
 - Download task ownership must include queued requests and pause publication. Pause invalidates
   earlier admissions and waits for cleanup before later work runs. Merge repeated resume intents
   without dropping an explicit resume behind an ordinary registration. Handle ordinary failures at
-  the owned request boundary; distinguish explicit operation pause from caller/account cancellation.
+  the owned request boundary; distinguish explicit operation pause from caller/application cancellation.
 
 - Font preset ZIPs must contain a single family. Preserve available regular/bold/italic faces,
   exclude Condensed, and use sourceName to share raw downloads across separately filtered outputs.
@@ -720,11 +726,11 @@
 - Keep font fixture builders in test source sets. Exercise ZIP loading through the production
   Downloader/storage/worker pipeline instead of retaining a separate production decoder only for tests.
 
-- Community font caches own built FontFamily/resolver objects; native platforms load local files.
+- Community font stateIn replay owns built FontFamily/resolver objects; native platforms load local files.
   Keep Wasm framework-retained bytes distinct from a separate source-byte cache. Extraction completion
-  belongs to the download record under the account/file lock; never add a second extraction manifest.
-  Keep native backing files available for resolution through another presentation resolver; owned-cache
-  eviction must not close framework resources still referenced by content.
+  belongs to the download record under the server/file lock; never add a second extraction manifest.
+  Keep native backing files available for resolution through another presentation resolver; idle-flow
+  removal must not close framework resources still referenced by content.
 
 - Validate community font bundles before publication on every platform: reject duplicate weight/style pairs,
   compare filename styles with original OS/2 metadata, and compare typographic family (name ID 16,

@@ -646,10 +646,10 @@ class UploadDetailViewModel(modelStorage: ModelStorage, pathHash: String, myUid:
     val data = modelStorage.upload.observeDatumByHash(UploadCollection(myUid), pathHash)
 }
 
-class DownloadListViewModel(modelStorage: ModelStorage) : PagingViewModel<DownloadInfo>() {
+class DownloadListViewModel(records: com.storyteller_f.storage.DownloadInfoStorage) : PagingViewModel<DownloadInfo>() {
     override val flow =
         Pager(PagingConfig(10)) {
-            modelStorage.download.observeData()
+            records.observeData()
         }.flow.cachedIn(viewModelScope)
 }
 
@@ -682,8 +682,8 @@ class DownloadHandler<T>(
     }
 }
 
-class DownloadViewModel(modelStorage: ModelStorage, fileId: PrimaryKey?) : ViewModel() {
-    val data = fileId?.let { modelStorage.download.observeDocumentByFileId(it) } ?: MutableStateFlow(null)
+class DownloadViewModel(records: com.storyteller_f.storage.DownloadInfoStorage, fileId: PrimaryKey?) : ViewModel() {
+    val data = fileId?.let { records.observeDocumentByFileId(it) } ?: MutableStateFlow(null)
 }
 
 class MarkdownMediasViewModel(val sessionManager: UserSessionManager, content: String, objectTuple: ObjectTuple) :

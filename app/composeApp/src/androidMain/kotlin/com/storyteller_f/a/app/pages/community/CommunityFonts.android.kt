@@ -9,7 +9,7 @@ import androidx.compose.ui.text.font.AndroidFont
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.createFontFamilyResolver
-import com.storyteller_f.a.app.common.DownloadFileStore
+import com.storyteller_f.a.app.common.FileEngine
 import com.storyteller_f.shared.getAppContextRefValue
 import java.io.File
 
@@ -17,7 +17,7 @@ import java.io.File
 internal actual suspend fun buildCommunityFont(
     identity: String,
     faces: List<CommunityFontFace>,
-    files: DownloadFileStore,
+    files: FileEngine,
 ): LoadedCommunityFont {
     val validation = CommunityFontValidation(faces)
     faces.forEach { face ->

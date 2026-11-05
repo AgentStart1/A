@@ -17,7 +17,6 @@ import com.storyteller_f.a.app.IAccountInstance
 import com.storyteller_f.a.app.LocalUiViewModel
 import com.storyteller_f.a.app.UIViewModel
 import com.storyteller_f.a.app.common.Downloader
-import com.storyteller_f.a.app.common.DownloaderImpl
 import com.storyteller_f.a.app.common.SimpleTaskRegister
 import com.storyteller_f.a.app.common.UploaderImpl
 import com.storyteller_f.a.app.getWasmServerUrl
@@ -53,7 +52,7 @@ fun main() {
             val fileProvider =
                 remember(uiViewModel, account) {
                     val register = SimpleTaskRegister(account.accountScope)
-                    val downloader = DownloaderImpl(uiViewModel, register)
+                    val downloader = uiViewModel.downloader
                     val uploader =
                         UploaderImpl(
                             uiViewModel,

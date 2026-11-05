@@ -13,7 +13,7 @@ import kotlinx.io.Buffer
 import kotlinx.io.Source
 import kotlinx.io.readByteArray
 
-internal suspend fun DownloadFileStore.extractDownloadArchive(path: String, extract: suspend (String) -> Unit) {
+internal suspend fun FileEngine.extractDownloadArchive(path: String, extract: suspend (String) -> Unit) {
     // The download record has left PROCESSED, and the caller holds the file lock.
     // A crash leaves an incomplete directory that must be removed before reprocessing.
     val directory = "$path.extracted"

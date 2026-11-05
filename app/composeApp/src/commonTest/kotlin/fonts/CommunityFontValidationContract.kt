@@ -4,14 +4,17 @@
 
 package fonts
 
-import com.storyteller_f.a.app.common.createDownloadFileStore
+import com.storyteller_f.a.app.common.createFileEngine
 import com.storyteller_f.a.app.pages.community.CommunityFontBundle
 import com.storyteller_f.a.app.pages.community.CommunityFontDownload
+import com.storyteller_f.a.app.pages.community.CommunityFontState
 import com.storyteller_f.a.app.pages.community.CommunityFontStore
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -162,14 +165,30 @@ abstract class CommunityFontValidationContract {
             prepareFontEngine()
             var fetches = 0
             val store =
-                CommunityFontStore(this) { file, _ ->
-                    fetches++
-                    downloadValidationFont(CommunityFontTestData.primary, file.name)
-                }
+                CommunityFontStore(
+                    backgroundScope,
+                    observe = { file ->
+                        flow {
+                            try {
+                                fetches++
+                                emit(
+                                    CommunityFontState.Ready(
+                                        downloadValidationFont(CommunityFontTestData.primary, file.name),
+                                    ),
+                                )
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (failure: IllegalStateException) {
+                                emit(CommunityFontState.Failed(failure))
+                            }
+                        }
+                    },
+                    resume = {},
+                )
             val file = fontFile(CommunityFontTestData.primary, "Bold.ttf")
             assertNull(store.load(file))
             assertNull(store.load(file))
-            assertEquals(2, fetches)
+            assertEquals(1, fetches)
         }
 
     private suspend fun CoroutineScope.assertRejected(bytes: ByteArray, name: String, message: String) {
@@ -180,7 +199,7 @@ abstract class CommunityFontValidationContract {
 
 internal suspend fun CoroutineScope.downloadValidationFont(bytes: ByteArray, name: String): CommunityFontBundle =
     HttpClient(MockEngine { respond(bytes) }).use { client ->
-        val fixture = DownloadTestFixture(this, createDownloadFileStore(), client)
+        val fixture = DownloadTestFixture(this, createFileEngine(), client)
         try {
             CommunityFontDownload(fixture.records, fixture.downloader, fixture.files, fixture.namespace)
                 .load(fontFile(bytes, name))

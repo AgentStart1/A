@@ -4,22 +4,27 @@
 
 package com.storyteller_f.a.app.pages.community
 
-import com.storyteller_f.a.app.ClientFileProvider
-import com.storyteller_f.a.app.IAccountInstance
-import com.storyteller_f.a.app.common.DownloadFileStore
+import com.storyteller_f.a.app.UIViewModel
 import com.storyteller_f.a.app.common.Downloader
+import com.storyteller_f.a.app.common.FileEngine
 import com.storyteller_f.a.app.common.downloadTaskKey
 import com.storyteller_f.a.app.common.extractedFiles
 import com.storyteller_f.a.app.common.getDownloadRevision
 import com.storyteller_f.a.app.common.isDownloadArchive
 import com.storyteller_f.a.app.common.withLock
 import com.storyteller_f.shared.model.FileInfo
-import com.storyteller_f.shared.utils.md5
 import com.storyteller_f.storage.DownloadInfo
 import com.storyteller_f.storage.DownloadInfoStorage
 import com.storyteller_f.storage.DownloadStatus
+import io.github.aakira.napier.Napier
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.withContext
 
 private const val MAX_FONT_FACES = 18
@@ -27,84 +32,98 @@ private const val MAX_FONT_FACES = 18
 internal expect suspend fun buildCommunityFont(
     identity: String,
     faces: List<CommunityFontFace>,
-    files: DownloadFileStore,
+    files: FileEngine,
 ): LoadedCommunityFont
 
-internal expect fun createCommunityFontStore(
-    instance: IAccountInstance,
-    provider: ClientFileProvider,
-): CommunityFontStore
+internal expect fun createCommunityFontStore(viewModel: UIViewModel): CommunityFontStore
 
 internal fun createDownloadedFontStore(
-    instance: IAccountInstance,
-    files: DownloadFileStore,
+    viewModel: UIViewModel,
     onLoaded: suspend (String) -> Unit = {},
-    getDownloader: suspend () -> Downloader,
-): CommunityFontStore =
-    CommunityFontStore(instance.accountScope) { file, retry ->
+): CommunityFontStore {
+    val source =
         CommunityFontDownload(
-            instance.database.download,
-            getDownloader(),
-            files,
-            md5(instance.address),
+            viewModel.resourceRecords,
+            viewModel.downloader,
+            viewModel.resourceFiles,
+            viewModel.resourceNamespace,
             onLoaded,
-        ).load(file, retry)
-    }
+        )
+    return CommunityFontStore(viewModel.viewModelScope, source::observe) { viewModel.downloader.resume(it.id) }
+}
 
-/** Download returns after registration. Completion is observed from the existing database projection. */
+/** Database snapshots select successful generations, never inferred intermediate status events. */
 internal class CommunityFontDownload(
     private val records: DownloadInfoStorage,
     private val downloader: Downloader,
-    private val files: DownloadFileStore,
+    private val files: FileEngine,
     private val namespace: String,
     private val onLoaded: suspend (String) -> Unit = {},
 ) {
-    suspend fun load(file: FileInfo, retry: Boolean = false): CommunityFontBundle {
-        require(file.size in 1..MAX_FONT_SOURCE_BYTES) { "Unsupported font size" }
-        val registered = downloader.download(file, retry)
-        val record =
-            if (registered.isTerminal()) {
-                registered
-            } else {
-                checkNotNull(
-                    records.observeDocumentByFileId(file.id).first { current ->
-                        current != null && (
-                            getDownloadRevision(
-                                current.fileInfo,
-                            ) != getDownloadRevision(file) || current.isTerminal()
-                            )
-                    },
-                )
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun observe(file: FileInfo): Flow<CommunityFontState> =
+        flow {
+            try {
+                require(file.size in 1..MAX_FONT_SOURCE_BYTES) { "Unsupported font size" }
+                downloader.download(file)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                emit(CommunityFontState.Failed(failure))
             }
-        check(getDownloadRevision(record.fileInfo) == getDownloadRevision(file)) { "Font request was superseded" }
-        check(record.status == DownloadStatus.PROCESSED) { "Font download has not completed: ${record.status}" }
-        val bundle =
-            files.withLock(downloadTaskKey(namespace, file.id)) {
-                val current = records.getDocumentByFileId(file.id)
-                check(current?.status == DownloadStatus.PROCESSED && current.path == record.path) {
-                    "Font download changed before reading"
+            records.observeDocumentByFileId(file.id)
+                .map { it?.takeIf { row -> getDownloadRevision(row.fileInfo) == getDownloadRevision(file) } }
+                .filterNotNull()
+                .map { row ->
+                    when (row.status) {
+                        DownloadStatus.PROCESSED -> FontRecordSelection.Ready(row.path, row.processedGeneration)
+
+                        DownloadStatus.PAUSED, DownloadStatus.DOWNLOAD_FAILED, DownloadStatus.PROCESS_FAILED ->
+                            FontRecordSelection.Failed(row.message.ifEmpty { row.status.name })
+
+                        else -> null
+                    }
                 }
-                withContext(Dispatchers.Default) { readFontBundle(file, record, files) }
-            }
-        onLoaded(record.path)
-        return bundle
-    }
+                .filterNotNull()
+                .distinctUntilChanged()
+                .mapLatest { selection ->
+                    when (selection) {
+                        is FontRecordSelection.Failed ->
+                            CommunityFontState.Failed(IllegalStateException(selection.message))
+
+                        is FontRecordSelection.Ready -> construct(file, selection)
+                    }
+                }.collect { emit(it) }
+        }
+
+    private suspend fun construct(file: FileInfo, selection: FontRecordSelection.Ready): CommunityFontState =
+        try {
+            val bundle =
+                files.withLock(downloadTaskKey(namespace, file.id)) {
+                    val current = records.getDocumentByFileId(file.id)
+                    check(
+                        current != null && current.status == DownloadStatus.PROCESSED &&
+                            current.path == selection.path && current.processedGeneration == selection.generation &&
+                            getDownloadRevision(current.fileInfo) == getDownloadRevision(file),
+                    ) { "Font download changed before reading" }
+                    withContext(Dispatchers.Default) { readFontBundle(file, current, files) }
+                }
+            onLoaded(selection.path)
+            CommunityFontState.Ready(bundle)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            Napier.w(failure) { "Community font construction failed" }
+            CommunityFontState.Failed(failure)
+        }
 }
 
-private fun DownloadInfo.isTerminal(): Boolean =
-    status in
-        listOf(
-            DownloadStatus.PROCESSED,
-            DownloadStatus.DOWNLOAD_FAILED,
-            DownloadStatus.PROCESS_FAILED,
-            DownloadStatus.PAUSED,
-        )
+private sealed interface FontRecordSelection {
+    data class Ready(val path: String, val generation: Long) : FontRecordSelection
+    data class Failed(val message: String) : FontRecordSelection
+}
 
-private suspend fun readFontBundle(
-    file: FileInfo,
-    record: DownloadInfo,
-    files: DownloadFileStore,
-): CommunityFontBundle {
+private suspend fun readFontBundle(file: FileInfo, record: DownloadInfo, files: FileEngine): CommunityFontBundle {
     check(files.size(record.path) == file.size) { "Font cache is missing or incomplete" }
     var remaining = MAX_FONT_DECODED_BYTES
     val faces =
@@ -122,5 +141,5 @@ private suspend fun readFontBundle(
             require(isFontName(file.name)) { "Unsupported font format" }
             listOf(createFontFace(file.name).copy(name = record.path))
         }
-    return CommunityFontBundle(faces, buildCommunityFont(fontFileKey(file), faces, files))
+    return CommunityFontBundle(faces, buildCommunityFont("${record.path}:${record.processedGeneration}", faces, files))
 }

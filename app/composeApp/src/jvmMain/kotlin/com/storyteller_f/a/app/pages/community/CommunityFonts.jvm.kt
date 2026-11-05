@@ -8,7 +8,7 @@ import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.createFontFamilyResolver
 import androidx.compose.ui.text.platform.Font
-import com.storyteller_f.a.app.common.DownloadFileStore
+import com.storyteller_f.a.app.common.FileEngine
 import org.jetbrains.skia.FontMgr
 import org.jetbrains.skia.impl.use
 import java.io.File
@@ -17,7 +17,7 @@ import java.io.File
 internal actual suspend fun buildCommunityFont(
     identity: String,
     faces: List<CommunityFontFace>,
-    files: DownloadFileStore,
+    files: FileEngine,
 ): LoadedCommunityFont {
     val validation = CommunityFontValidation(faces)
     // Compose silently substitutes a system face on decode failure; validate file input first.

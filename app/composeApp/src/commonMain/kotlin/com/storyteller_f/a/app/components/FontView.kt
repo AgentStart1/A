@@ -17,23 +17,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.a.app.Res
 import com.storyteller_f.a.app.font_loaded
+import com.storyteller_f.a.app.pages.community.CommunityFontState
 import com.storyteller_f.a.app.pages.community.LocalCommunityFontStore
 import com.storyteller_f.a.app.pages.community.fontFileKey
-import com.storyteller_f.a.app.pages.community.observeCommunityFont
 import com.storyteller_f.a.app.retry_font_loading
 import com.storyteller_f.a.app.ui.MaterialSymbolsOutlined
 import com.storyteller_f.shared.model.FileInfo
 import dev.tclement.fonticons.FontIcon
-import kotlinx.coroutines.flow.map
 import org.jetbrains.compose.resources.stringResource
 
 private enum class FontLoadStatus { LOADING, READY, FAILED }
@@ -42,17 +38,13 @@ private enum class FontLoadStatus { LOADING, READY, FAILED }
 fun FontView(info: FileInfo) {
     val store = LocalCommunityFontStore.current
     val fileKey = fontFileKey(info)
-    var retry by remember(store, fileKey) { mutableStateOf(0) }
+    val states = remember(store, fileKey) { store.observeFont(info) }
+    val state by states.collectAsState(CommunityFontState.Loading)
     val status =
-        key(store, fileKey, retry) {
-            val statuses =
-                remember {
-                    observeCommunityFont(info, store, retry = retry > 0).map {
-                        if (it.family != null) FontLoadStatus.READY else FontLoadStatus.FAILED
-                    }
-                }
-            val current by statuses.collectAsState(FontLoadStatus.LOADING)
-            current
+        when (state) {
+            CommunityFontState.Loading -> FontLoadStatus.LOADING
+            is CommunityFontState.Ready -> FontLoadStatus.READY
+            is CommunityFontState.Failed -> FontLoadStatus.FAILED
         }
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -71,7 +63,7 @@ fun FontView(info: FileInfo) {
                 )
 
             FontLoadStatus.FAILED ->
-                IconButton(onClick = { retry++ }) {
+                IconButton(onClick = { store.retry(info) }) {
                     FontIcon(MaterialSymbolsOutlined.Refresh, stringResource(Res.string.retry_font_loading))
                 }
         }

@@ -360,20 +360,24 @@ fun getMarkdownMediasViewModel(input: String, objectTuple: ObjectTuple): Markdow
     }
 
 @Composable
-fun getDownloadViewModel(fileId: PrimaryKey?): DownloadViewModel =
-    customViewModel(
+fun getDownloadViewModel(fileId: PrimaryKey?): DownloadViewModel {
+    val records = LocalUiViewModel.current.resourceRecords
+    return customViewModel(
         listOf("download", fileId),
-    ) { _, storageSource ->
-        DownloadViewModel(storageSource, fileId)
+    ) { _, _ ->
+        DownloadViewModel(records, fileId)
     }
+}
 
 @Composable
-fun getDownloadListViewModel(): DownloadListViewModel =
-    customViewModel(
+fun getDownloadListViewModel(): DownloadListViewModel {
+    val records = LocalUiViewModel.current.resourceRecords
+    return customViewModel(
         listOf("download-list"),
-    ) { _, storageSource ->
-        DownloadListViewModel(storageSource)
+    ) { _, _ ->
+        DownloadListViewModel(records)
     }
+}
 
 @Composable
 fun getQuotaViewModel(objectTuple: ObjectTuple, quotaType: QuotaType = QuotaType.FILE): QuotaViewModel =

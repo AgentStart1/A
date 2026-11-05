@@ -8,8 +8,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 
-/** Files are private download-cache entries. A location is interpreted only by its platform store. */
-internal interface DownloadFileStore {
+/** Files are private download-cache entries. A location is interpreted only by its platform engine. */
+internal interface FileEngine {
     fun location(key: String): String
     suspend fun size(path: String): Long?
     suspend fun read(path: String, limit: Long): ByteArray
@@ -32,14 +32,14 @@ internal fun interface DownloadFileLease {
 @Serializable
 internal data class DownloadFileEntry(val path: String, val size: Long)
 
-internal expect fun createDownloadFileStore(): DownloadFileStore
+internal expect fun createFileEngine(): FileEngine
 
-internal suspend fun <T> DownloadFileStore.withLock(key: String, block: suspend () -> T): T {
+internal suspend fun <T> FileEngine.withLock(key: String, block: suspend () -> T): T {
     val lease = acquire(key)
     return withDownloadCleanup({ withContext(NonCancellable) { lease.close() } }) { block() }
 }
 
-internal suspend fun <T> DownloadFileStore.withWriter(
+internal suspend fun <T> FileEngine.withWriter(
     path: String,
     append: Boolean,
     block: suspend (DownloadFileWriter) -> T,
@@ -75,10 +75,10 @@ internal inline fun completeDownloadCleanup(failure: Throwable?, cleanup: () -> 
     }
 }
 
-internal suspend fun DownloadFileStore.write(path: String, bytes: ByteArray) {
+internal suspend fun FileEngine.write(path: String, bytes: ByteArray) {
     withWriter(path, append = false) { it.write(bytes) }
 }
 
-/** Callers hold the account/file lock and check PROCESSED before consuming this directory. */
-internal suspend fun DownloadFileStore.extractedFiles(path: String): List<DownloadFileEntry>? =
+/** Callers hold the server/file lock and check PROCESSED before consuming this directory. */
+internal suspend fun FileEngine.extractedFiles(path: String): List<DownloadFileEntry>? =
     listFiles("$path.extracted").takeIf { it.isNotEmpty() }

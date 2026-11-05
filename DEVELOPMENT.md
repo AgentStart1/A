@@ -2185,47 +2185,64 @@ fallback family. Existing JSON with retired fallback fields remains readable thr
 unknown-field handling, and subsequent writes omit those fields. Test actual glyph advances
 with the synthetic fixtures rather than treating resolver preload as proof of valid font data.
 
-All platforms share Downloader registration, persisted download states and ZIP processing through
-DownloadFileStore. Android and desktop keep their disk cache; Wasm streams binary data into OPFS.
-Displayed body/code families have independent content lifetimes. Content subscribes to per-file
-font flows with collectAsState; the store coordinates initial reads and targeted reloads. Font status
-rows use the same presentation flow, including explicit retry and validation failure. Unsubscribing
-stops observation without cancelling the account-owned shared read. Font-family construction belongs to the account-owned shared load, on the default dispatcher:
-Android/JVM use background threads, while Wasm still uses the browser event loop. Consumers receive
-already-built families and their resolver through Flow; recomposition and additional consumers do
-not construct another family. Android/JVM use local-file Font constructors with weight/style metadata,
-without a full source ByteArray. Skia families preload into a family-owned resolver. Compose/Skia
-font objects remain in the page's rendering instance. Ordinary loads return results without broadcasting
-cache changes. Only a successful explicit retry publishes a per-file reload carrying its new built
-family; matching views adopt it without rebuilding or reloading the other family. Cache eviction affects future reuse, not already displayed fonts. Concurrent retries
-share one request; a retry arriving during an ordinary read runs after that read finishes.
+Downloader is an application-owned service for internal resources (currently community fonts).
+Ordinary file downloads open their URL through the platform URI handler. Internal resource records
+and pause/resume controls remain under App downloads in the file explorer. All platform providers return
+the same service. Android foreground notifications observe application task counts without owning those
+tasks. The adaptive UI test process fixes its language/country to English/US for stable selectors and runs after
+the regular JVM suite when both tasks are requested. Font fixtures wait for in-flight native construction
+to finish before deleting files, including after cancellation.
+The guest database stores records in `public-resources-v1:<server-identity>` collections; disk and OPFS
+paths use the matching new namespace plus file ID and metadata revision. Server identity derives from
+the configured HTTP root, independently of the active account. Identical file IDs on different servers
+cannot collide. Legacy account/guest download collections and directories are ignored, without scans,
+migration, deletion or database reset. Room remains version 2; successful processing generations are
+serialized in DownloadEntity.data, with no entity/schema change.
 
-Font loading observes the database's terminal status. PROCESSED is saved only after writers close
-and extraction succeeds. The database status is the completion authority; there is no extraction
-manifest. Fonts recheck PROCESSED after acquiring the account/file lock, then load the extracted
-files without decoding the ZIP again. Account/file locks serialize transfer, extraction and font reads. Browser Web Locks
-also coordinate independent tabs and workers. Failures require an explicit retry.
+Downloader owns registration, transfer, processing and status publication; FileEngine provides platform
+file IO, archive extraction and leases. Each admission snapshots the initiating Cookie context and
+account identity into a short-lived client owned by that request. Closing or switching accounts does
+not close that client or cancel application tasks. Request completion/cancellation closes it; later
+resume admissions capture the current account. On browsers, HttpOnly cookies remain browser-owned;
+the captured account header rejects identity changes instead of silently using another account.
+Logout can therefore invalidate queued protected reads. Server session revocation still fails protected requests;
+there is no saved-key login, mutation replay or perpetual account session in the shared service.
 
-The task register tracks both executing and queued requests per account/file key. Pause cancels
-all earlier admissions, waits for their cleanup, and publishes PAUSED before later requests run.
-Repeated resume commands merge with other admitted resume commands; an explicit resume behind an
-ordinary registration remains queued so its intent is preserved. Requests are admitted before their
-database lookup, including requests waiting for a file lock. Ordinary request failures are handled at
-the download-owned boundary and cannot cancel the account scope. Registration outcomes carry errors
-as data until the caller boundary, preserving cleanup diagnostics that coroutine cancellation recovery
-could otherwise discard. Failed status writes remain suppressed on the original error. Explicit pause becomes a registration failure for a still-active
-caller, while caller/account cancellation continues to propagate as cancellation.
+`download(file)` registers or reuses a task without retrying failed/paused records. `resume(id)` is the
+only retry command and can reuse a complete source archive. Per-server/file task queues serialize
+executing and queued requests. Pause cancels earlier admissions, drains native writes/worker cleanup,
+and publishes PAUSED before later requests run. Resume intents merge with other resume admissions;
+an explicit resume behind an ordinary registration remains queued. Registration cancellation propagates
+to its uncompleted admission; already registered work belongs to the application. Failures are isolated
+at the request boundary and cleanup failures remain suppressed on the original error.
 
-New records use file IDs; updates preserve existing record IDs and native cache paths. Cache
-identity uses object metadata, so renewed signed URLs do not invalidate unchanged bytes. Missing/empty
-extracted directories are rebuilt from the cached ZIP; a missing source triggers a new download. Each
-extraction first leaves PROCESSED, removes the previous `<source>.extracted` directory under the
-account/file lock, and writes into that fixed directory. Explicit retries rebuild even a nonempty
-partial extraction from the source archive. Failure/cancellation removes partial output; after a crash,
-a non-PROCESSED record forces directory replacement before reuse. A missing/empty directory also
-triggers repair. A nonempty directory alone never authorizes a font reader. OPFS replaces the previous browser Cache Storage font cache; existing
-browser entries are not reused. Storage denial or quota failures surface as download failures.
-Browser storage can be evicted, so persistent cache availability is never assumed.
+PROCESSED and a new monotonically increasing processedGeneration are saved together, only after source
+writers close and extraction succeeds. The shared file lease covers snapshot rechecks, generation
+increments, directory replacement and terminal publication, including across browser tabs/workers.
+Database Flow is a snapshot, not an event log: a consumer may miss all intermediate retry statuses.
+The font source selects revision/path/successful generation, ignores unrelated progress/row changes,
+and uses mapLatest to validate/build under that same file lease after rechecking the database snapshot.
+A failed construction emits a failure state and continues observing; same-version resume success always
+constructs a replacement from its new generation. Duplicate weight/style, metadata and family checks
+remain mandatory on every platform. Extraction completion has no separate manifest.
+
+CommunityFontStore registers one stateIn flow per public file revision. All pages and accounts share
+that upstream validation/construction and receive its built family/resolver. There is no separate
+finished-bundle cache, pending-load cache or reload event bus. WhileSubscribed keeps upstream work for
+a five-second stop grace period and resets replay immediately when stopped. The registry leases entries
+per collector, never evicts active subscribers, and removes/cancels idle entries after that grace period;
+an earlier idle timer cannot evict a newly subscribed entry. Content keeps its displayed family during
+retry processing until a new successful snapshot replaces it. Android/JVM construct on background
+threads and load native files without a full source ByteArray; Wasm construction stays on the browser
+event loop while archive processing stays in its dedicated worker. Skia families preload into their
+family-owned resolver. Unsubscription by one reader does not cancel other readers or download tasks.
+
+Cache identity uses object metadata rather than expiring signed URLs. Missing/empty extraction directories
+are rebuilt from the source; missing sources are downloaded again. Each extraction leaves PROCESSED,
+replaces `<source>.extracted` under the shared file lease, and removes partial output on failure or
+cancellation. Explicit resume rebuilds even nonempty partial extraction. A nonempty directory alone
+never authorizes a font read. Storage denial/quota errors surface as failures and browser cache
+availability is never assumed.
 
 Wasm ZIP processing runs in a dedicated module Web Worker from `app/composeApp/file-worker`.
 The worker uses the pinned zip.js native-stream implementation, reads the source directly from OPFS,
@@ -2251,18 +2268,17 @@ tables from the file; Skia platforms read the original tables during their exist
 Collection entries continue to refer to face index zero. Synthetic test fonts explicitly encode their
 weight, slant and typographic family while retaining their distinct glyph advances.
 
-Account-session built-family cache retains at most 12 families and 48 loaded faces. These are object-count limits,
-not estimates of native allocation size. Live renderers and framework-internal caches may retain
-objects beyond these owned-cache limits. Native backing files remain in the download revision:
-another presentation resolver may need to load them again. Font-cache eviction does not delete
-native files; Wasm retention may remove OPFS files because LoadedFont retains its supplied data.
-Families and resolvers retain the framework-managed native resources, which must not be closed on cache eviction
-while renderers may still use them. Skia's public loader silently substitutes a system face for invalid
-input, so explicit validation still precedes framework loading (a second parse per cache miss).
+The shared stateIn replay owns the most recently built FontFamily/resolver while subscribed or in
+its stop grace period. Frameworks and live renderers may retain those resources longer. Native backing
+files remain available for another presentation resolver; removing an idle flow must not close framework
+resources still referenced by content. Skia's public loader silently substitutes a system face for invalid
+input, so explicit validation still precedes framework loading (a second parse per construction).
 Wasm LoadedFont retains its byte supplier: these arrays and Skia's native data live with the family,
 without an additional source-byte cache. ByteArray/JS/Skia conversion can still copy data. Browser font
 retention tracks up to 12 successfully loaded OPFS
-versions with separate 128 MiB source and expanded-data budgets. Retention applies only to
+versions per server with separate 128 MiB source and expanded-data budgets. Its index lives inside the
+new public server root; legacy retention indexes are never read. Eviction acquires the same server/file
+lease as transfer and construction before deleting a revision. Retention applies only to
 font entries, not general downloads. System-font permission bytes remain separate.
 
 Native Android font loading and invalid-file rejection run on a device with
@@ -2272,9 +2288,12 @@ Keep the normal flavor/build-type properties and device lease; these tests use t
 Run `:app:composeApp:jvmTest --tests 'fonts.*'`,
 `:app:composeApp:adaptiveUiTest --tests 'device_based.Community*'` and
 `:app:composeApp:wasmJsBrowserTest --tests '*CommunityFontBrowserTest*'`
-with the normal flavor/build-type properties. JVM tests cover completion ordering, disk cache
+with the normal flavor/build-type properties. Store tests use continuous observation and explicit resume
+in place of the retired load/retry and cache-eviction contracts. JVM tests cover shared construction,
+idle replay release, skipped intermediate snapshots, generation updates, account-client closure,
+server/legacy SQLite collection isolation, completion ordering, disk cache
 recreation and repair, explicit retry, Range handling, cancellation and real SQLite record identity.
-Browser tests exercise real OPFS binary storage, recreated stores, account/revision separation,
+Browser tests exercise real OPFS binary storage, recreated stores, server/revision separation,
 retention, Web Locks across stores and a worker, cancelled extraction-worker cleanup and real ZIP/font
 decoding. A test-only worker entry instruments the real OPFS stream, pauses after a successful native
 write, and releases that pause only on cancellation. The browser test asserts the real abort completes
@@ -2319,4 +2338,4 @@ inline emphasis selects italic/bold, while heading weights come from application
 The preset packages omit Medium and other optional weights. Add their matching faces if
 HTML weight support or another author-controlled weight mechanism is introduced.
 The 80 MiB decoded limit accommodates MapleMono's four normal/bold/italic faces while
-keeping the source limit at 64 MiB and the account font-byte cache at 128 MiB.
+keeping the source limit at 64 MiB and each OPFS retention budget at 128 MiB.

@@ -102,8 +102,5 @@ private fun rememberCommunityFont(file: FileInfo?, store: CommunityFontStore): L
         loaded
     }
 
-internal fun observeCommunityFont(
-    file: FileInfo,
-    store: CommunityFontStore,
-    retry: Boolean = false,
-): Flow<LoadedCommunityFont> = store.observeFont(file, retry).map { it?.loaded ?: LoadedCommunityFont(null) }
+internal fun observeCommunityFont(file: FileInfo, store: CommunityFontStore): Flow<LoadedCommunityFont> =
+    store.observeFont(file).map { (it as? CommunityFontState.Ready)?.bundle?.loaded ?: LoadedCommunityFont(null) }

@@ -466,6 +466,7 @@ tasks.named<Test>("jvmTest") {
 tasks.register<Test>("adaptiveUiTest") {
     dependsOn("jvmTestClasses")
     val hostTest = tasks.named<Test>("jvmTest").get()
+    mustRunAfter(hostTest)
     testClassesDirs = hostTest.testClassesDirs
     classpath = hostTest.classpath
     include(
@@ -478,5 +479,7 @@ tasks.register<Test>("adaptiveUiTest") {
         "device_based/TopicComposePageBlockEditorTest*",
     )
     systemProperty("java.io.tmpdir", layout.buildDirectory.get().asFile.absolutePath)
+    systemProperty("user.language", "en")
+    systemProperty("user.country", "US")
     maxParallelForks = 1
 }

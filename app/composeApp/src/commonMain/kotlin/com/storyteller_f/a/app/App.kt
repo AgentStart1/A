@@ -43,14 +43,19 @@ import com.dokar.sonner.Toaster
 import com.dokar.sonner.rememberToasterState
 import com.storyteller_f.a.app.common.AppNav
 import com.storyteller_f.a.app.common.AppNavFactory
+import com.storyteller_f.a.app.common.DownloadContext
 import com.storyteller_f.a.app.common.Downloader
+import com.storyteller_f.a.app.common.DownloaderImpl
 import com.storyteller_f.a.app.common.ExternalUriHandler
 import com.storyteller_f.a.app.common.HomeScreen
 import com.storyteller_f.a.app.common.OnTopicCreated
 import com.storyteller_f.a.app.common.RoomScreen
+import com.storyteller_f.a.app.common.SimpleTaskRegister
 import com.storyteller_f.a.app.common.TopicScreen
 import com.storyteller_f.a.app.common.Uploader
 import com.storyteller_f.a.app.common.appNavSerializersModule
+import com.storyteller_f.a.app.common.captureDownloadSession
+import com.storyteller_f.a.app.common.createFileEngine
 import com.storyteller_f.a.app.common.newAppNav
 import com.storyteller_f.a.app.common.processEvent
 import com.storyteller_f.a.app.common.rootEntryProvider
@@ -120,6 +125,7 @@ import com.storyteller_f.shared.obj.RoomFrame
 import com.storyteller_f.shared.obj.ob
 import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
+import com.storyteller_f.shared.utils.md5
 import com.storyteller_f.storage.ModelStorage
 import dev.tclement.fonticons.LocalIconFont
 import dev.tclement.fonticons.LocalIconSize
@@ -307,10 +313,9 @@ fun CommonEntry(content: @Composable () -> Unit) {
         val uiViewModel = LocalUiViewModel.current
         val instance by uiViewModel.instance.collectAsState()
         val currentUserSessionManager = instance.sessionManager
-        val fileProvider = LocalClientFileProvider.current
         val communityFonts =
-            remember(currentUserSessionManager, fileProvider) {
-                createCommunityFontStore(instance, fileProvider)
+            remember(uiViewModel) {
+                uiViewModel.communityFonts
             }
         val user by currentUserSessionManager.model.userHandler.data.collectAsState()
 
@@ -536,6 +541,17 @@ sealed interface IAccountInstance {
 class UIViewModel(val viewModelScope: CoroutineScope, val wsServerUrl: String, val httpUrl: String) {
     val instance: MutableStateFlow<IAccountInstance>
     val historyManager = buildSessionHistoryFactory("user")
+    internal val resourceNamespace = md5(httpUrl.trimEnd('/'))
+    internal val resourceRecords = getRoomModelStorage("guest").download.forServer(resourceNamespace)
+    internal val resourceFiles = createFileEngine()
+    internal val resourceTasks = SimpleTaskRegister(viewModelScope)
+    val downloader: Downloader =
+        DownloaderImpl(
+            DownloadContext(resourceNamespace, viewModelScope, resourceRecords, ::captureDownloadSession),
+            resourceTasks,
+            resourceFiles,
+        )
+    internal val communityFonts by lazy { createCommunityFontStore(this) }
 
     init {
         val value = IAccountInstance.None(viewModelScope, httpUrl, wsServerUrl)

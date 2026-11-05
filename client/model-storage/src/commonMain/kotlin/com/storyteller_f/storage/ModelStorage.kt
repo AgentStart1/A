@@ -366,6 +366,9 @@ interface ChildAccountStorage : GlobalListStorage<ChildAccountInfo> {
 interface FileInfoStorage : CollectionListStorageWithDefault<FileCollection, FileInfo>
 
 interface DownloadInfoStorage {
+    /** Isolate public resources by server without reading or migrating legacy collections. */
+    fun forServer(server: String): DownloadInfoStorage
+
     suspend fun save(item: DownloadInfo)
     fun observeData(): PagingSource<Int, DownloadInfo>
     suspend fun clean()
