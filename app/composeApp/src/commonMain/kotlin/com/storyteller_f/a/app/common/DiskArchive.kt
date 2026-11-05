@@ -20,7 +20,7 @@ private const val MAX_DISK_EXPANDED_BYTES = 80L * 1024 * 1024
 private const val MAX_DISK_ARCHIVE_ENTRIES = 2048
 private const val ARCHIVE_BUFFER_BYTES = 64 * 1024
 
-internal suspend fun extractDiskArchive(path: String, directory: String) {
+internal suspend fun extractDiskArchive(path: String, directory: String, createSink: (Path) -> Sink) {
     val source = Path(path)
     require(SystemFileSystem.metadataOrNull(source)?.size in 0..MAX_DISK_ARCHIVE_BYTES) {
         "Archive exceeds the source size limit"
@@ -47,7 +47,7 @@ internal suspend fun extractDiskArchive(path: String, directory: String) {
                 } else {
                     require(entry.size in -1..remaining) { "Archive exceeds the decoded size limit" }
                     target.parent?.let { SystemFileSystem.createDirectories(it) }
-                    SystemFileSystem.sink(target).buffered().use { output ->
+                    createSink(target).use { output ->
                         remaining -= archive.copyArchiveEntry(output, remaining)
                     }
                 }

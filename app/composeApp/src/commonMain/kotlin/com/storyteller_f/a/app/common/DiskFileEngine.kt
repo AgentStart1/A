@@ -15,7 +15,10 @@ import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.files.SystemTemporaryDirectory
 
-internal class DiskFileEngine(private val dispatcher: CoroutineDispatcher) : FileEngine {
+internal class DiskFileEngine(
+    private val dispatcher: CoroutineDispatcher,
+    private val createArchiveSink: (Path) -> Sink,
+) : FileEngine {
     override fun location(key: String): String = Path(SystemTemporaryDirectory, "downloads", key).toString()
 
     override suspend fun size(path: String): Long? =
@@ -71,7 +74,7 @@ internal class DiskFileEngine(private val dispatcher: CoroutineDispatcher) : Fil
     override suspend fun extractArchive(path: String) =
         withContext(dispatcher) {
             extractDownloadArchive(path) { directory ->
-                extractDiskArchive(path, directory)
+                extractDiskArchive(path, directory, createArchiveSink)
             }
         }
 }

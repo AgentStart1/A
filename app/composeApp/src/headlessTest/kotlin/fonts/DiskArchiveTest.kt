@@ -4,6 +4,7 @@
 
 package fonts
 
+import com.storyteller_f.a.app.common.createExclusiveArchiveSink
 import com.storyteller_f.a.app.common.createFileEngine
 import com.storyteller_f.a.app.common.extractedFiles
 import com.storyteller_f.a.app.common.write
@@ -11,15 +12,21 @@ import com.storyteller_f.storage.DownloadStatus
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlinx.io.Buffer
+import kotlinx.io.files.Path
 import kotlinx.io.readByteArray
 import no.synth.kmpzip.kotlinx.ZipOutputStream
 import no.synth.kmpzip.zip.ZipEntry
+import java.nio.file.FileAlreadyExistsException
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -114,6 +121,71 @@ class DiskArchiveTest {
                     }
                 }
             assertRejected(bytes, "Too many archive entries")
+        }
+
+    @Test
+    fun exclusiveCreationPreservesAnExistingFile() =
+        runTest {
+            val files = createFileEngine()
+            val root = files.location("exclusive-test-${Uuid.random().toHexString()}")
+            val target = "$root/Regular.ttf"
+            try {
+                files.write(target, CommunityFontTestData.primary)
+                withContext(Dispatchers.IO) {
+                    assertFailsWith<FileAlreadyExistsException> {
+                        createExclusiveArchiveSink(Path(target)).use { it.write(CommunityFontTestData.code) }
+                    }
+                }
+                assertContentEquals(
+                    CommunityFontTestData.primary,
+                    files.read(target, CommunityFontTestData.primary.size.toLong()),
+                )
+            } finally {
+                files.delete(root)
+            }
+        }
+
+    @Test
+    fun shortFilenameAliasesNeverOverwriteEarlierEntries() =
+        runTest {
+            val files = createFileEngine()
+            val root = files.location("short-name-test-${Uuid.random().toHexString()}")
+            val source = "$root/source"
+            val bytes =
+                fontTestArchive(
+                    "RegularLongFont.ttf" to CommunityFontTestData.primary,
+                    "REGULA~1.TTF" to CommunityFontTestData.code,
+                )
+            try {
+                files.write(source, bytes)
+                val collision =
+                    try {
+                        files.extractArchive(source)
+                        null
+                    } catch (failure: FileAlreadyExistsException) {
+                        failure
+                    }
+                if (collision != null) {
+                    assertTrue(collision.message.orEmpty().contains("REGULA~1.TTF"), collision.toString())
+                    assertNull(files.extractedFiles(source))
+                } else {
+                    // Filesystems without DOS aliases keep two independent names; neither may be overwritten.
+                    assertEquals(2, assertNotNull(files.extractedFiles(source)).size)
+                    assertContentEquals(
+                        CommunityFontTestData.primary,
+                        files.read(
+                            "$source.extracted/RegularLongFont.ttf",
+                            CommunityFontTestData.primary.size.toLong(),
+                        ),
+                    )
+                    assertContentEquals(
+                        CommunityFontTestData.code,
+                        files.read("$source.extracted/REGULA~1.TTF", CommunityFontTestData.code.size.toLong()),
+                    )
+                }
+            } finally {
+                files.delete(root)
+            }
         }
 
     private suspend fun assertRejected(bytes: ByteArray, message: String) =

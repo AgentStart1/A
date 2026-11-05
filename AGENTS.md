@@ -740,3 +740,6 @@
   target paths before opening sinks; post-extraction font validation cannot detect overwritten entries.
   Reject trailing dots/spaces in every native archive path component, including parent directories,
   because Windows can fold them into existing targets.
+
+- Create native ZIP output files exclusively with CREATE_NEW. String-based path normalization cannot
+  detect every filesystem alias; never open an existing extraction target with truncation.

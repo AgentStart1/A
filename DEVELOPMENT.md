@@ -2258,6 +2258,8 @@ Browser ZIP processing permits at most 2048 file entries, 64 MiB of source data 
 native ZIP processing streams with the same byte limits, caps all entries (including directories) at 2048,
 and rejects case-insensitive duplicate normalized paths before opening an output file.
 Path components ending in a dot or space are rejected on native platforms to prevent Windows path aliases.
+Native output files are atomically created with CREATE_NEW; existing targets, including DOS short-name aliases,
+fail processing instead of being truncated.
 Both platforms bound actual expanded output, including non-font files, and remove partial extraction directories after rejection.
 Ordinary non-archive downloads stream to storage without that ZIP limit. Font bundles accept at most 18 faces, a 64 MiB source and 80 MiB of decoded faces.
 Before publishing a family on Android, JVM or Wasm, reject duplicate weight/style pairs and compare
