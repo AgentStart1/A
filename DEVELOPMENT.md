@@ -2265,8 +2265,8 @@ deleting the partial extraction directory; workers are terminated after each ope
 extraction fallback. Local npm sources are inputs to Wasm installation and webpack tasks; regenerate
 only `kotlin-js-store/wasm/yarn.lock` after dependency changes.
 
-Browser ZIP processing permits at most 2048 file entries, 64 MiB of source data and 80 MiB of expanded data;
-native ZIP processing streams with the same byte limits, caps all entries (including directories) at 2048,
+Browser and native ZIP processing permit at most 128 total entries (including directories),
+64 MiB of source data and 80 MiB of expanded data. Native processing streams with these limits
 and rejects case-insensitive duplicate normalized paths before opening an output file.
 Path components ending in a dot or space are rejected on native platforms to prevent Windows path aliases.
 Native output files are atomically created with CREATE_NEW; existing targets, including DOS short-name aliases,

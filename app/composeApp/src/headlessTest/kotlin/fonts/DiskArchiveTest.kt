@@ -115,12 +115,57 @@ class DiskArchiveTest {
         runTest {
             val bytes =
                 createArchive {
-                    repeat(2049) {
+                    repeat(129) {
                         putNextEntry(ZipEntry("$it.txt"))
                         closeEntry()
                     }
                 }
             assertRejected(bytes, "Too many archive entries")
+        }
+
+    @Test
+    fun acceptsExactly128MixedArchiveEntries() =
+        runTest {
+            val files = createFileEngine()
+            val root = files.location("archive-test-${Uuid.random().toHexString()}")
+            try {
+                val source = "$root/source"
+                files.write(source, mixedArchive(127))
+                files.extractArchive(source)
+                assertEquals(1, assertNotNull(files.extractedFiles(source)).size)
+            } finally {
+                files.delete(root)
+            }
+        }
+
+    @Test
+    fun rejects129MixedArchiveEntries() =
+        runTest {
+            assertRejected(mixedArchive(128), "Too many archive entries")
+        }
+
+    @Test
+    fun rejects129DirectoryEntries() =
+        runTest {
+            val bytes =
+                createArchive {
+                    repeat(129) {
+                        putNextEntry(ZipEntry("dir$it/"))
+                        closeEntry()
+                    }
+                }
+            assertRejected(bytes, "Too many archive entries")
+        }
+
+    private fun mixedArchive(directories: Int): ByteArray =
+        createArchive {
+            repeat(directories) {
+                putNextEntry(ZipEntry("dir$it/"))
+                closeEntry()
+            }
+            putNextEntry(ZipEntry("Regular.ttf"))
+            write(CommunityFontTestData.primary)
+            closeEntry()
         }
 
     @Test

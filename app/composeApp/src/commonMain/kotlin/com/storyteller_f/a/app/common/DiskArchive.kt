@@ -17,7 +17,7 @@ import no.synth.kmpzip.zip.safeEntrySegments
 
 private const val MAX_DISK_ARCHIVE_BYTES = 64L * 1024 * 1024
 private const val MAX_DISK_EXPANDED_BYTES = 80L * 1024 * 1024
-private const val MAX_DISK_ARCHIVE_ENTRIES = 2048
+private const val MAX_DISK_ARCHIVE_ENTRIES = 128
 private const val ARCHIVE_BUFFER_BYTES = 64 * 1024
 
 internal suspend fun extractDiskArchive(path: String, directory: String, createSink: (Path) -> Sink) {

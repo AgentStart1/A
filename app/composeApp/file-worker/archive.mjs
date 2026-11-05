@@ -5,7 +5,7 @@ import { archiveName, cacheFile, cacheParts } from './paths.mjs';
 configure({useWebWorkers: false, chunkSize: 64 * 1024});
 const MAX_SOURCE_BYTES = 64 * 1024 * 1024;
 const MAX_EXPANDED_BYTES = 80 * 1024 * 1024;
-const MAX_ENTRIES = 2048;
+const MAX_ENTRIES = 128;
 
 // The caller holds the file lock and saves database completion only after this returns.
 export async function extractArchive(path, directory, signal) {
@@ -22,10 +22,11 @@ export async function extractArchive(path, directory, signal) {
     const entries = [];
     const names = new Set();
     let total = 0;
+    let count = 0;
     for await (const entry of reader.getEntriesGenerator()) {
       signal.throwIfAborted();
+      if (++count > MAX_ENTRIES) throw new Error('Too many archive entries');
       if (entry.directory) continue;
-      if (entries.length >= MAX_ENTRIES) throw new Error('Too many archive entries');
       const name = archiveName(entry.filename);
       const key = name.toLowerCase();
       if (names.has(key)) throw new Error('Duplicate archive paths');

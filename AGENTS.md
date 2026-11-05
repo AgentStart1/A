@@ -736,6 +736,7 @@
   compare filename styles with original OS/2 metadata, and compare typographic family (name ID 16,
   otherwise ID 1). Never compare style names or overridden platform attributes, deduplicate, or skip failed faces.
 
+- Cap ZIP archives at 128 total entries, counting both files and directories on every platform.
 - Bound native ZIP extraction while writing, including non-font data. Reject duplicate normalized
   target paths before opening sinks; post-extraction font validation cannot detect overwritten entries.
   Reject trailing dots/spaces in every native archive path component, including parent directories,

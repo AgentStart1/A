@@ -110,3 +110,30 @@ test('extraction cannot write outside the source extraction directory', async ()
   assert.equal(target.files.size, 1);
   assert.equal(target.open, 0);
 });
+
+async function entryCountArchive(directories, files) {
+  const writer = new ZipWriter(new Uint8ArrayWriter(), {useWebWorkers: false});
+  for (let index = 0; index < directories; index++) {
+    await writer.add('dir' + index + '/', undefined, {directory: true});
+  }
+  for (let index = 0; index < files; index++) {
+    await writer.add(index + '.ttf', new Uint8ArrayReader(new Uint8Array([1])), {level: 0});
+  }
+  return writer.close();
+}
+
+test('exactly 128 mixed directory and file entries are accepted', async () => {
+  const target = storage(await entryCountArchive(127, 1));
+  const entries = await extractArchive(source, directory, new AbortController().signal);
+  assert.equal(entries.length, 1);
+  assert.equal(target.open, 0);
+});
+
+for (const [directories, files] of [[0, 129], [128, 1], [129, 0]]) {
+  test(`129 total entries are rejected (${directories} directories, ${files} files)`, async () => {
+    const target = storage(await entryCountArchive(directories, files));
+    await assert.rejects(extractArchive(source, directory, new AbortController().signal), /Too many archive entries/);
+    assert.equal(target.files.size, 1);
+    assert.equal(target.open, 0);
+  });
+}
