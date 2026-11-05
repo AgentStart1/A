@@ -725,3 +725,7 @@
   belongs to the download record under the account/file lock; never add a second extraction manifest.
   Keep native backing files available for resolution through another presentation resolver; owned-cache
   eviction must not close framework resources still referenced by content.
+
+- Validate community font bundles before publication on every platform: reject duplicate weight/style pairs,
+  compare filename styles with original OS/2 metadata, and compare typographic family (name ID 16,
+  otherwise ID 1). Never compare style names or overridden platform attributes, deduplicate, or skip failed faces.

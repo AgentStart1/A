@@ -122,6 +122,5 @@ private suspend fun readFontBundle(
             require(isFontName(file.name)) { "Unsupported font format" }
             listOf(createFontFace(file.name).copy(name = record.path))
         }
-    val uniqueFaces = faces.distinctBy { it.weight to it.style }
-    return CommunityFontBundle(uniqueFaces, buildCommunityFont(fontFileKey(file), uniqueFaces, files))
+    return CommunityFontBundle(faces, buildCommunityFont(fontFileKey(file), faces, files))
 }

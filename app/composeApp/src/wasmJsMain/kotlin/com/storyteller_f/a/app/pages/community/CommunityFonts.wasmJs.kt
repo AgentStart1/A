@@ -19,6 +19,7 @@ internal actual suspend fun buildCommunityFont(
     faces: List<CommunityFontFace>,
     files: DownloadFileStore,
 ): LoadedCommunityFont {
+    val validation = CommunityFontValidation(faces)
     val family =
         FontFamily(
             faces.map { face ->
@@ -26,7 +27,13 @@ internal actual suspend fun buildCommunityFont(
                 // Compose silently falls back on invalid Skia data. Its public LoadedFont API retains
                 // the data supplier, so these bytes live with the family, not a separate source cache.
                 Data.makeFromBytes(bytes).use { data ->
-                    checkNotNull(FontMgr.default.makeFromData(data)) { "Invalid font data" }.close()
+                    checkNotNull(FontMgr.default.makeFromData(data)) { "Invalid font data" }.use { typeface ->
+                        val names =
+                            checkNotNull(typeface.getTableData("name")) { "Missing font naming table" }.use { it.bytes }
+                        val metrics =
+                            checkNotNull(typeface.getTableData("OS/2")) { "Missing OS/2 table" }.use { it.bytes }
+                        validation.validate(face, names, metrics)
+                    }
                 }
                 LoadedFont("$identity:${face.name}", { bytes }, face.weight, face.style)
             },

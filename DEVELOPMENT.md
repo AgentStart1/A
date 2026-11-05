@@ -2239,8 +2239,19 @@ only `kotlin-js-store/wasm/yarn.lock` after dependency changes.
 
 Browser ZIP processing permits at most 2048 file entries, 64 MiB of source data and 80 MiB of expanded data;
 native ZIP processing keeps its streaming implementation. Ordinary non-archive downloads stream
-to storage without that ZIP limit. Font bundles accept at most 18 faces, a 64 MiB source and 80 MiB of decoded faces. Account-session
-built-family cache retains at most 12 families and 48 loaded faces. These are object-count limits,
+to storage without that ZIP limit. Font bundles accept at most 18 faces, a 64 MiB source and 80 MiB of decoded faces.
+Before publishing a family on Android, JVM or Wasm, reject duplicate weight/style pairs and compare
+filename-inferred styles with original OpenType OS/2 `usWeightClass` and `fsSelection` (italic/oblique).
+Every face must have the same internal family: prefer Unicode `name` ID 16 (typographic family),
+falling back to ID 1 only when ID 16 is absent. Subfamily names are styles, not family identifiers.
+Name selection is platform-independent: Windows English, neutral Unicode, then a deterministic locale.
+Missing, malformed or ambiguous required metadata fails the whole bundle through the existing font
+failure/default-font path; faces are never deduplicated or skipped. Android reads just the SFNT metadata
+tables from the file; Skia platforms read the original tables during their existing validation parse.
+Collection entries continue to refer to face index zero. Synthetic test fonts explicitly encode their
+weight, slant and typographic family while retaining their distinct glyph advances.
+
+Account-session built-family cache retains at most 12 families and 48 loaded faces. These are object-count limits,
 not estimates of native allocation size. Live renderers and framework-internal caches may retain
 objects beyond these owned-cache limits. Native backing files remain in the download revision:
 another presentation resolver may need to load them again. Font-cache eviction does not delete

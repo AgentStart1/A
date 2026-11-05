@@ -67,12 +67,31 @@ internal fun buildTestCommunityFonts(
         code?.loaded ?: LoadedCommunityFont(null),
     )
 
-internal fun fontTestZip(vararg names: String): ByteArray {
+internal fun fontTestZip(vararg names: String): ByteArray =
+    fontTestArchive(
+        *names.map { name ->
+            val face = createFontFace(name)
+            val bytes =
+                when {
+                    face.weight.weight == 700 && face.style == androidx.compose.ui.text.font.FontStyle.Italic ->
+                        CommunityFontTestData.primaryBoldItalic
+
+                    face.weight.weight == 700 -> CommunityFontTestData.primaryBold
+
+                    face.style == androidx.compose.ui.text.font.FontStyle.Italic -> CommunityFontTestData.primaryItalic
+
+                    else -> CommunityFontTestData.primary
+                }
+            name to bytes
+        }.toTypedArray(),
+    )
+
+internal fun fontTestArchive(vararg entries: Pair<String, ByteArray>): ByteArray {
     val output = Buffer()
     ZipOutputStream(output).use { archive ->
-        names.forEach { name ->
+        entries.forEach { (name, bytes) ->
             archive.putNextEntry(ZipEntry(name))
-            archive.write(CommunityFontTestData.primary)
+            archive.write(bytes)
             archive.closeEntry()
         }
     }

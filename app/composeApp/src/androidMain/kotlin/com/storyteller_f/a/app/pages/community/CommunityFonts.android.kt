@@ -19,6 +19,10 @@ internal actual suspend fun buildCommunityFont(
     faces: List<CommunityFontFace>,
     files: DownloadFileStore,
 ): LoadedCommunityFont {
+    val validation = CommunityFontValidation(faces)
+    faces.forEach { face ->
+        readAndroidFontMetadata(face, validation)
+    }
     val context = checkNotNull(getAppContextRefValue()) { "Application context is not initialized" }
     val family =
         FontFamily(

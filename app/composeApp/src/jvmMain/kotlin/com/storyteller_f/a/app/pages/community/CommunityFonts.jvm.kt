@@ -10,6 +10,7 @@ import androidx.compose.ui.text.font.createFontFamilyResolver
 import androidx.compose.ui.text.platform.Font
 import com.storyteller_f.a.app.common.DownloadFileStore
 import org.jetbrains.skia.FontMgr
+import org.jetbrains.skia.impl.use
 import java.io.File
 
 @OptIn(ExperimentalTextApi::class)
@@ -18,9 +19,14 @@ internal actual suspend fun buildCommunityFont(
     faces: List<CommunityFontFace>,
     files: DownloadFileStore,
 ): LoadedCommunityFont {
+    val validation = CommunityFontValidation(faces)
     // Compose silently substitutes a system face on decode failure; validate file input first.
     faces.forEach { face ->
-        checkNotNull(FontMgr.default.makeFromFile(face.name)) { "Invalid font data" }.close()
+        checkNotNull(FontMgr.default.makeFromFile(face.name)) { "Invalid font data" }.use { typeface ->
+            val names = checkNotNull(typeface.getTableData("name")) { "Missing font naming table" }.use { it.bytes }
+            val metrics = checkNotNull(typeface.getTableData("OS/2")) { "Missing font metrics table" }.use { it.bytes }
+            validation.validate(face, names, metrics)
+        }
     }
     val family =
         FontFamily(
