@@ -18,9 +18,11 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
 import com.storyteller_f.a.app.pages.community.CommunityFontPresentation
+import fonts.CommunityFontFixture
 import fonts.CommunityFontTestData
 import fonts.buildTestCommunityFonts
-import fonts.testFontBundle
+import kotlinx.coroutines.test.runTest
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -28,6 +30,11 @@ import kotlin.test.assertNull
 
 @OptIn(ExperimentalTestApi::class)
 class CommunityFontRenderingUiTest {
+    private val fontFixture = CommunityFontFixture()
+
+    @AfterTest
+    fun cleanFontFiles() = runTest { fontFixture.close() }
+
     @Test
     fun absentFontsKeepTheApplicationDefaults() =
         runComposeUiTest {
@@ -86,9 +93,9 @@ class CommunityFontRenderingUiTest {
             assertEquals(30, measure(fonts.resolver ?: root, fonts.fonts.editor, "A"))
         }
 
-    private fun primary() = testFontBundle("primary", "Regular.ttf", CommunityFontTestData.primary)
-    private fun code() = testFontBundle("code", "Regular.ttf", CommunityFontTestData.code)
-    private fun invalid() = testFontBundle("invalid", "Regular.ttf", byteArrayOf(1, 2, 3))
+    private suspend fun primary() = fontFixture.testFontBundle("primary", "Regular.ttf", CommunityFontTestData.primary)
+    private suspend fun code() = fontFixture.testFontBundle("code", "Regular.ttf", CommunityFontTestData.code)
+    private suspend fun invalid() = fontFixture.testFontBundle("invalid", "Regular.ttf", byteArrayOf(1, 2, 3))
 
     private fun width(fonts: CommunityFontPresentation, text: String, root: FontFamily.Resolver): Int =
         measure(fonts.resolver ?: root, fonts.fonts.content, text)

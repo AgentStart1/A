@@ -18,9 +18,17 @@ import com.storyteller_f.shared.utils.md5
 import com.storyteller_f.storage.DownloadInfo
 import com.storyteller_f.storage.DownloadInfoStorage
 import com.storyteller_f.storage.DownloadStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 private const val MAX_FONT_FACES = 18
+
+internal expect suspend fun buildCommunityFont(
+    identity: String,
+    faces: List<CommunityFontFace>,
+    files: DownloadFileStore,
+): LoadedCommunityFont
 
 internal expect fun createCommunityFontStore(
     instance: IAccountInstance,
@@ -70,7 +78,14 @@ internal class CommunityFontDownload(
             }
         check(getDownloadRevision(record.fileInfo) == getDownloadRevision(file)) { "Font request was superseded" }
         check(record.status == DownloadStatus.PROCESSED) { "Font download has not completed: ${record.status}" }
-        val bundle = files.withLock(downloadTaskKey(namespace, file.id)) { readFontBundle(file, record, files) }
+        val bundle =
+            files.withLock(downloadTaskKey(namespace, file.id)) {
+                val current = records.getDocumentByFileId(file.id)
+                check(current?.status == DownloadStatus.PROCESSED && current.path == record.path) {
+                    "Font download changed before reading"
+                }
+                withContext(Dispatchers.Default) { readFontBundle(file, record, files) }
+            }
         onLoaded(record.path)
         return bundle
     }
@@ -100,14 +115,13 @@ private suspend fun readFontBundle(
             require(entries.size in 1..MAX_FONT_FACES) { "Font archive has no usable family or too many faces" }
             entries.map { entry ->
                 require(entry.size in 1..remaining) { "Font family exceeds the decoded size limit" }
-                val bytes = files.read(entry.path, entry.size)
-                check(bytes.size.toLong() == entry.size) { "Font size mismatch" }
-                remaining -= bytes.size
-                createFontFace(entry.path, bytes)
+                remaining -= entry.size
+                createFontFace(entry.path)
             }
         } else {
             require(isFontName(file.name)) { "Unsupported font format" }
-            listOf(createFontFace(file.name, files.read(record.path, remaining)))
+            listOf(createFontFace(file.name).copy(name = record.path))
         }
-    return CommunityFontBundle(fontFileKey(file), faces)
+    val uniqueFaces = faces.distinctBy { it.weight to it.style }
+    return CommunityFontBundle(uniqueFaces, buildCommunityFont(fontFileKey(file), uniqueFaces, files))
 }

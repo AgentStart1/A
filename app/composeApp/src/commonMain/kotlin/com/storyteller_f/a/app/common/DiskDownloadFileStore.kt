@@ -71,9 +71,8 @@ internal class DiskDownloadFileStore(private val dispatcher: CoroutineDispatcher
 
     override suspend fun extractArchive(path: String) =
         withContext(dispatcher) {
-            publishArchive(path) { directory ->
+            extractDownloadArchive(path) { directory ->
                 SystemFileSystem.unzipFrom(archive = Path(path), target = Path(directory))
-                listFiles(directory)
             }
         }
 }

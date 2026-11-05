@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 class FontArchiveMetadataTest {
     @Test
     fun windowsArchivePathPreservesWeightAndStyle() {
-        val face = createFontFace("""C:\download-cache\family\BoldItalic.ttf""", CommunityFontTestData.primary)
+        val face = createFontFace("""C:\download-cache\family\BoldItalic.ttf""")
         assertEquals(FontWeight.Bold, face.weight)
         assertEquals(FontStyle.Italic, face.style)
     }

@@ -699,7 +699,7 @@
   Expose per-file font flows to content; cancelling a subscriber must not cancel account-owned shared reads.
 
 - Wasm Default dispatching stays on the browser event loop. Keep ZIP processing in the dedicated
-  file worker, pass OPFS paths and manifests rather than Kotlin/Skia objects, and await worker
+  file worker, pass OPFS paths and in-memory file metadata rather than Kotlin/Skia objects, and await worker
   cancellation acknowledgement before deleting unpublished output or releasing download locks.
 - Windows Edge Karma runs must prevent compatibility-layer relaunch so Karma owns the actual
   browser process; otherwise launcher retries can delete a still-running browser's OPFS profile.
@@ -719,3 +719,9 @@
 
 - Keep font fixture builders in test source sets. Exercise ZIP loading through the production
   Downloader/storage/worker pipeline instead of retaining a separate production decoder only for tests.
+
+- Community font caches own built FontFamily/resolver objects; native platforms load local files.
+  Keep Wasm framework-retained bytes distinct from a separate source-byte cache. Extraction completion
+  belongs to the download record under the account/file lock; never add a second extraction manifest.
+  Keep native backing files available for resolution through another presentation resolver; owned-cache
+  eviction must not close framework resources still referenced by content.

@@ -13,7 +13,7 @@ function worker() {
 
 test('completion releases the worker and returns the extraction manifest', async () => {
   const target = worker();
-  const job = createExtractionJob(target, 'downloads/test/source', 'downloads/test/source.extract-1');
+  const job = createExtractionJob(target, 'downloads/test/source', 'downloads/test/source.extracted');
   assert.equal(target.messages[0].op, 'extract');
   target.onmessage({data: {result: '[{"path":"entry","size":3}]'}});
   assert.equal(await job.result(), '[{"path":"entry","size":3}]');

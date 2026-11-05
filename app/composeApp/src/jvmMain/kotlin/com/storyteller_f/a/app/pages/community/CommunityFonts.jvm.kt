@@ -7,19 +7,28 @@ package com.storyteller_f.a.app.pages.community
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.createFontFamilyResolver
-import androidx.compose.ui.text.platform.LoadedFont
-import org.jetbrains.skia.Data
+import androidx.compose.ui.text.platform.Font
+import com.storyteller_f.a.app.common.DownloadFileStore
 import org.jetbrains.skia.FontMgr
+import java.io.File
 
 @OptIn(ExperimentalTextApi::class)
-internal actual suspend fun buildCommunityFont(bundle: CommunityFontBundle?): LoadedCommunityFont =
-    buildSkiaCommunityFont(bundle, createFontFamilyResolver()) { loaded ->
+internal actual suspend fun buildCommunityFont(
+    identity: String,
+    faces: List<CommunityFontFace>,
+    files: DownloadFileStore,
+): LoadedCommunityFont {
+    // Compose silently substitutes a system face on decode failure; validate file input first.
+    faces.forEach { face ->
+        checkNotNull(FontMgr.default.makeFromFile(face.name)) { "Invalid font data" }.close()
+    }
+    val family =
         FontFamily(
-            loaded.faces.map { face ->
-                Data.makeFromBytes(face.bytes).use { data ->
-                    checkNotNull(FontMgr.default.makeFromData(data)) { "Invalid font data" }.close()
-                }
-                LoadedFont("${loaded.identity}:${face.name}", { face.bytes }, face.weight, face.style)
+            faces.map { face ->
+                Font(File(face.name), face.weight, face.style)
             },
         )
-    }
+    val resolver = createFontFamilyResolver()
+    resolver.preload(family)
+    return LoadedCommunityFont(family, resolver)
+}

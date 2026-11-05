@@ -2190,16 +2190,20 @@ DownloadFileStore. Android and desktop keep their disk cache; Wasm streams binar
 Displayed body/code families have independent content lifetimes. Content subscribes to per-file
 font flows with collectAsState; the store coordinates initial reads and targeted reloads. Font status
 rows use the same presentation flow, including explicit retry and validation failure. Unsubscribing
-stops observation without cancelling the account-owned shared read. Font-family construction runs
-upstream on the default dispatcher: Android/JVM use background threads, while Wasm still uses the
-browser event loop. Compose/Skia font objects remain in the page's rendering instance. Ordinary loads return results without broadcasting cache changes. Only a successful explicit retry publishes a per-file
-reload carrying its new bundle; matching views rebuild that family directly, without reloading the
-other family. Cache eviction affects future reuse, not already displayed fonts. Concurrent retries
+stops observation without cancelling the account-owned shared read. Font-family construction belongs to the account-owned shared load, on the default dispatcher:
+Android/JVM use background threads, while Wasm still uses the browser event loop. Consumers receive
+already-built families and their resolver through Flow; recomposition and additional consumers do
+not construct another family. Android/JVM use local-file Font constructors with weight/style metadata,
+without a full source ByteArray. Skia families preload into a family-owned resolver. Compose/Skia
+font objects remain in the page's rendering instance. Ordinary loads return results without broadcasting
+cache changes. Only a successful explicit retry publishes a per-file reload carrying its new built
+family; matching views adopt it without rebuilding or reloading the other family. Cache eviction affects future reuse, not already displayed fonts. Concurrent retries
 share one request; a retry arriving during an ordinary read runs after that read finishes.
 
 Font loading observes the database's terminal status. PROCESSED is saved only after writers close
-and a complete extraction manifest is published; fonts read those extracted files without decoding
-the ZIP again. Account/file locks serialize transfer, extraction and font reads. Browser Web Locks
+and extraction succeeds. The database status is the completion authority; there is no extraction
+manifest. Fonts recheck PROCESSED after acquiring the account/file lock, then load the extracted
+files without decoding the ZIP again. Account/file locks serialize transfer, extraction and font reads. Browser Web Locks
 also coordinate independent tabs and workers. Failures require an explicit retry.
 
 The task register tracks both executing and queued requests per account/file key. Pause cancels
@@ -2213,29 +2217,46 @@ could otherwise discard. Failed status writes remain suppressed on the original 
 caller, while caller/account cancellation continues to propagate as cancellation.
 
 New records use file IDs; updates preserve existing record IDs and native cache paths. Cache
-identity uses object metadata, so renewed signed URLs do not invalidate unchanged bytes. Missing
-extracted files are rebuilt from the cached ZIP; a missing source triggers a new download. Each
-extraction writes a new directory and publishes its manifest only when complete. Cancellation
-cleans unpublished output. OPFS replaces the previous browser Cache Storage font cache; existing
+identity uses object metadata, so renewed signed URLs do not invalidate unchanged bytes. Missing/empty
+extracted directories are rebuilt from the cached ZIP; a missing source triggers a new download. Each
+extraction first leaves PROCESSED, removes the previous `<source>.extracted` directory under the
+account/file lock, and writes into that fixed directory. Explicit retries rebuild even a nonempty
+partial extraction from the source archive. Failure/cancellation removes partial output; after a crash,
+a non-PROCESSED record forces directory replacement before reuse. A missing/empty directory also
+triggers repair. A nonempty directory alone never authorizes a font reader. OPFS replaces the previous browser Cache Storage font cache; existing
 browser entries are not reused. Storage denial or quota failures surface as download failures.
 Browser storage can be evicted, so persistent cache availability is never assumed.
 
 Wasm ZIP processing runs in a dedicated module Web Worker from `app/composeApp/file-worker`.
 The worker uses the pinned zip.js native-stream implementation, reads the source directly from OPFS,
 validates paths, duplicate names, declared/actual sizes and CRC, and closes all output writers before
-returning only a file manifest. It never transfers an entire archive through the page's Wasm heap.
-The page publishes the manifest and database completion after the worker succeeds. Cancellation
-waits for worker acknowledgement and closed writers before deleting the unpublished generation;
-workers are terminated after each operation. Worker errors fail processing without a main-thread
+returning file metadata in memory. It never transfers an entire archive through the page's Wasm heap.
+The page saves database completion after the worker succeeds; it does not persist that metadata as
+a second completion marker. Cancellation waits for worker acknowledgement and closed writers before
+deleting the partial extraction directory; workers are terminated after each operation. Worker errors fail processing without a main-thread
 extraction fallback. Local npm sources are inputs to Wasm installation and webpack tasks; regenerate
 only `kotlin-js-store/wasm/yarn.lock` after dependency changes.
 
 Browser ZIP processing permits at most 2048 file entries, 64 MiB of source data and 80 MiB of expanded data;
 native ZIP processing keeps its streaming implementation. Ordinary non-archive downloads stream
 to storage without that ZIP limit. Font bundles accept at most 18 faces, a 64 MiB source and 80 MiB of decoded faces. Account-session
-decoded bundles retain at most 12 files and 128 MiB; browser font retention tracks up to 12 successfully loaded OPFS
+built-family cache retains at most 12 families and 48 loaded faces. These are object-count limits,
+not estimates of native allocation size. Live renderers and framework-internal caches may retain
+objects beyond these owned-cache limits. Native backing files remain in the download revision:
+another presentation resolver may need to load them again. Font-cache eviction does not delete
+native files; Wasm retention may remove OPFS files because LoadedFont retains its supplied data.
+Families and resolvers retain the framework-managed native resources, which must not be closed on cache eviction
+while renderers may still use them. Skia's public loader silently substitutes a system face for invalid
+input, so explicit validation still precedes framework loading (a second parse per cache miss).
+Wasm LoadedFont retains its byte supplier: these arrays and Skia's native data live with the family,
+without an additional source-byte cache. ByteArray/JS/Skia conversion can still copy data. Browser font
+retention tracks up to 12 successfully loaded OPFS
 versions with separate 128 MiB source and expanded-data budgets. Retention applies only to
 font entries, not general downloads. System-font permission bytes remain separate.
+
+Native Android font loading and invalid-file rejection run on a device with
+`:app:composeApp:connectedAndroidDeviceTest -Pandroid.testInstrumentationRunnerArguments.class=fonts.AndroidCommunityFontTest`.
+Keep the normal flavor/build-type properties and device lease; these tests use the native font engine.
 
 Run `:app:composeApp:jvmTest --tests 'fonts.*'`,
 `:app:composeApp:adaptiveUiTest --tests 'device_based.Community*'` and

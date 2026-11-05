@@ -155,7 +155,7 @@ internal class DownloadEngine(
             }
         val next =
             when {
-                current.status == DownloadStatus.PROCESSED && sourcePresent && archivePresent -> current
+                current.status == DownloadStatus.PROCESSED && sourcePresent && archivePresent && !retry -> current
 
                 current.status == DownloadStatus.PROCESSED ->
                     current.copy(

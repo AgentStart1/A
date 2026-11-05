@@ -29,19 +29,24 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-private const val MAX_CACHED_FONT_BYTES = 128L * 1024 * 1024
-private const val MAX_CACHED_FONT_FILES = 12
+private const val MAX_CACHED_FONT_FACES = 48
+private const val MAX_CACHED_FONT_FAMILIES = 12
 
 /** One account/session owns this ephemeral cache. A cancelled reader does not cancel other readers. */
 internal class CommunityFontStore(
     private val scope: CoroutineScope,
-    private val maxCachedBytes: Long = MAX_CACHED_FONT_BYTES,
+    private val maxCachedFamilies: Int = MAX_CACHED_FONT_FAMILIES,
+    private val maxCachedFaces: Int = MAX_CACHED_FONT_FACES,
     private val fetch: suspend (FileInfo, Boolean) -> CommunityFontBundle,
 ) {
+    init {
+        require(maxCachedFamilies >= 0 && maxCachedFaces >= 0) { "Invalid font cache limits" }
+    }
+
     private val mutex = Mutex()
     private val cached = linkedMapOf<String, CommunityFontBundle>()
     private val pending = mutableMapOf<String, PendingFontLoad>()
-    private val reloadEvents = MutableSharedFlow<CommunityFontReloaded>(extraBufferCapacity = MAX_CACHED_FONT_FILES)
+    private val reloadEvents = MutableSharedFlow<CommunityFontReloaded>(extraBufferCapacity = MAX_CACHED_FONT_FAMILIES)
 
     /** Successful explicit retries only; ordinary cache fills and evictions do not request UI refreshes. */
     val reloads = reloadEvents.asSharedFlow()
@@ -66,6 +71,8 @@ internal class CommunityFontStore(
         }.distinctUntilChanged()
 
     suspend fun load(file: FileInfo, retry: Boolean = false): CommunityFontBundle? {
+        currentCoroutineContext().ensureActive()
+        scope.coroutineContext.ensureActive()
         val key = fontFileKey(file)
         val result =
             mutex.withLock {
@@ -132,7 +139,7 @@ internal class CommunityFontStore(
         }
 
     private fun trimCache() {
-        while (cached.size > MAX_CACHED_FONT_FILES || cached.values.sumOf { it.byteCount } > maxCachedBytes) {
+        while (cached.size > maxCachedFamilies || cached.values.sumOf { it.faces.size } > maxCachedFaces) {
             cached.remove(cached.keys.first())
         }
     }

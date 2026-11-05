@@ -4,11 +4,9 @@
 
 package com.storyteller_f.a.app.common
 
-import com.storyteller_f.shared.commonJson
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
 
 /** Files are private download-cache entries. A location is interpreted only by its platform store. */
 internal interface DownloadFileStore {
@@ -33,9 +31,6 @@ internal fun interface DownloadFileLease {
 
 @Serializable
 internal data class DownloadFileEntry(val path: String, val size: Long)
-
-@Serializable
-internal data class DownloadArchiveIndex(val directory: String, val entries: List<DownloadFileEntry>)
 
 internal expect fun createDownloadFileStore(): DownloadFileStore
 
@@ -84,19 +79,6 @@ internal suspend fun DownloadFileStore.write(path: String, bytes: ByteArray) {
     withWriter(path, append = false) { it.write(bytes) }
 }
 
-internal suspend fun DownloadFileStore.readArchiveIndex(path: String): DownloadArchiveIndex? {
-    val index = "$path.extracted.json"
-    if (size(index) == null) return null
-    return try {
-        commonJson.decodeFromString<DownloadArchiveIndex>(read(index, 64L * 1024 * 1024).decodeToString())
-    } catch (_: SerializationException) {
-        null
-    }
-}
-
-/** A complete manifest points to one fully written generation, never a partially extracted directory. */
-internal suspend fun DownloadFileStore.extractedFiles(path: String): List<DownloadFileEntry>? {
-    val index = readArchiveIndex(path)
-    val entries = index?.entries ?: listFiles("$path.extracted").takeIf { it.isNotEmpty() } ?: return null
-    return entries.takeIf { files -> files.all { size(it.path) == it.size } }
-}
+/** Callers hold the account/file lock and check PROCESSED before consuming this directory. */
+internal suspend fun DownloadFileStore.extractedFiles(path: String): List<DownloadFileEntry>? =
+    listFiles("$path.extracted").takeIf { it.isNotEmpty() }

@@ -22,12 +22,9 @@ import com.storyteller_f.shared.model.FontSettingsWithInfo
 import com.storyteller_f.shared.model.TopicDetail
 import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.map
 
 internal val LocalCommunityFontStore =
     staticCompositionLocalOf<CommunityFontStore> {
@@ -35,10 +32,6 @@ internal val LocalCommunityFontStore =
     }
 
 internal data class CommunityFontPresentation(val fonts: TopicContentFonts, val resolver: FontFamily.Resolver? = null)
-
-internal data class LoadedCommunityFont(val family: FontFamily?, val resolver: FontFamily.Resolver? = null)
-
-internal expect suspend fun buildCommunityFont(bundle: CommunityFontBundle?): LoadedCommunityFont
 
 internal fun combineCommunityFonts(body: LoadedCommunityFont, code: LoadedCommunityFont): CommunityFontPresentation =
     CommunityFontPresentation(
@@ -109,10 +102,8 @@ private fun rememberCommunityFont(file: FileInfo?, store: CommunityFontStore): L
         loaded
     }
 
-@OptIn(ExperimentalCoroutinesApi::class)
 internal fun observeCommunityFont(
     file: FileInfo,
     store: CommunityFontStore,
     retry: Boolean = false,
-): Flow<LoadedCommunityFont> =
-    store.observeFont(file, retry).mapLatest { buildCommunityFont(it) }.flowOn(Dispatchers.Default)
+): Flow<LoadedCommunityFont> = store.observeFont(file, retry).map { it?.loaded ?: LoadedCommunityFont(null) }

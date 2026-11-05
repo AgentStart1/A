@@ -41,13 +41,13 @@ function storage(source, onWrite = () => {}) {
   return {files, get open() { return open; }};
 }
 const source = 'downloads/test/source';
-const generation = source + '.extract-test';
+const directory = source + '.extracted';
 
 test('archive extraction returns only closed OPFS files with exact bytes', async () => {
   const data = new Uint8Array([1, 2, 3]);
   const target = storage(await zip([['family/Regular.ttf', data]]));
-  const entries = await extractArchive(source, generation, new AbortController().signal);
-  assert.deepEqual(entries, [{path: generation + '/family/Regular.ttf', size: 3}]);
+  const entries = await extractArchive(source, directory, new AbortController().signal);
+  assert.deepEqual(entries, [{path: directory + '/family/Regular.ttf', size: 3}]);
   assert.deepEqual(target.files.get(entries[0].path), data);
   assert.equal(target.open, 0);
 });
@@ -58,7 +58,7 @@ test('CRC corruption is rejected before an extraction can be published', async (
   const offset = 30 + header.getUint16(26, true) + header.getUint16(28, true);
   bytes[offset] ^= 0xff;
   const target = storage(bytes);
-  await assert.rejects(extractArchive(source, generation, new AbortController().signal));
+  await assert.rejects(extractArchive(source, directory, new AbortController().signal));
   assert.equal(target.open, 0);
 });
 
@@ -66,16 +66,16 @@ test('case insensitive duplicate paths are rejected before writing', async () =>
   const target = storage(await zip([
     ['Regular.ttf', new Uint8Array([1])], ['regular.ttf', new Uint8Array([2])],
   ]));
-  await assert.rejects(extractArchive(source, generation, new AbortController().signal), /Duplicate archive paths/);
+  await assert.rejects(extractArchive(source, directory, new AbortController().signal), /Duplicate archive paths/);
   assert.equal(target.files.size, 1);
 });
 
 test('cancellation closes an open OPFS writer before rejecting', async () => {
   const controller = new AbortController();
   const target = storage(await zip([['Regular.ttf', new Uint8Array(128 * 1024)]]), () => controller.abort());
-  await assert.rejects(extractArchive(source, generation, controller.signal), {name: 'AbortError'});
+  await assert.rejects(extractArchive(source, directory, controller.signal), {name: 'AbortError'});
   assert.equal(target.open, 0);
-  assert.equal(target.files.has(generation + '/Regular.ttf'), false);
+  assert.equal(target.files.has(directory + '/Regular.ttf'), false);
 });
 
 test('oversized entry metadata is rejected before allocating an output file', async () => {
@@ -85,18 +85,28 @@ test('oversized entry metadata is rejected before allocating an output file', as
     if (view.getUint32(offset, true) === 0x02014b50) view.setUint32(offset + 24, 80 * 1024 * 1024 + 1, true);
   }
   const target = storage(bytes);
-  await assert.rejects(extractArchive(source, generation, new AbortController().signal), /decoded size limit/);
+  await assert.rejects(extractArchive(source, directory, new AbortController().signal), /decoded size limit/);
   assert.equal(target.files.size, 1);
 });
 
 test('expanded font data above 64 MiB fits the bounded 80 MiB budget', async () => {
   const data = new Uint8Array(68 * 1024 * 1024).fill(65);
   const target = storage(await zip([['Regular.ttf', data]], 1));
-  const entries = await extractArchive(source, generation, new AbortController().signal);
-  assert.deepEqual(entries, [{path: generation + '/Regular.ttf', size: data.byteLength}]);
+  const entries = await extractArchive(source, directory, new AbortController().signal);
+  assert.deepEqual(entries, [{path: directory + '/Regular.ttf', size: data.byteLength}]);
   const output = target.files.get(entries[0].path);
   assert.equal(output.byteLength, data.byteLength);
   assert.equal(output[0], 65);
   assert.equal(output[output.byteLength - 1], 65);
+  assert.equal(target.open, 0);
+});
+
+test('extraction cannot write outside the source extraction directory', async () => {
+  const target = storage(await zip([['Regular.ttf', new Uint8Array([1])]]));
+  await assert.rejects(
+    extractArchive(source, source + '.extracted/other', new AbortController().signal),
+    /Invalid extraction directory/,
+  );
+  assert.equal(target.files.size, 1);
   assert.equal(target.open, 0);
 });

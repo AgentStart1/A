@@ -7,11 +7,11 @@ const MAX_SOURCE_BYTES = 64 * 1024 * 1024;
 const MAX_EXPANDED_BYTES = 80 * 1024 * 1024;
 const MAX_ENTRIES = 2048;
 
-// The caller owns the generation and publishes its manifest only after this returns.
+// The caller holds the file lock and saves database completion only after this returns.
 export async function extractArchive(path, directory, signal) {
   cacheParts(path);
   cacheParts(directory);
-  if (!directory.startsWith(path + '.extract-')) throw new Error('Invalid extraction generation');
+  if (directory !== path + '.extracted') throw new Error('Invalid extraction directory');
   signal.throwIfAborted();
   const source = await (await cacheFile(path)).getFile();
   if (source.size > MAX_SOURCE_BYTES) throw new Error('Archive exceeds the source size limit');

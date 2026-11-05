@@ -16,9 +16,9 @@ import androidx.compose.ui.unit.sp
 import com.storyteller_f.a.app.common.OpfsDownloadFileStore
 import com.storyteller_f.a.app.common.awaitExtraction
 import com.storyteller_f.a.app.common.extractArchiveInWorker
+import com.storyteller_f.a.app.common.extractDownloadArchive
 import com.storyteller_f.a.app.common.extractedFiles
 import com.storyteller_f.a.app.common.getDownloadRevision
-import com.storyteller_f.a.app.common.publishArchive
 import com.storyteller_f.a.app.common.withLock
 import com.storyteller_f.a.app.common.write
 import com.storyteller_f.a.app.pages.community.CommunityFontDownload
@@ -39,6 +39,7 @@ import kotlinx.coroutines.test.runTest
 import org.jetbrains.skiko.wasm.onWasmReady
 import kotlin.coroutines.resume
 import kotlin.js.toJsString
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -46,10 +47,16 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 class CommunityFontBrowserTest {
+    private val fontFixture = CommunityFontFixture()
+
+    @AfterTest
+    fun cleanFontFiles() = runTest { fontFixture.close() }
+
     @Test
     fun persistedZipLoadsIntoTheRealWasmResolver() =
         runTest {
@@ -73,6 +80,8 @@ class CommunityFontBrowserTest {
                         )
                     val store = CommunityFontStore(this) { requested, retry -> source.load(requested, retry) }
                     val first = assertNotNull(store.observeFont(file).first())
+                    assertSame(first.loaded.family, assertNotNull(store.load(file)).loaded.family)
+                    assertSame(first.loaded.resolver, assertNotNull(store.load(file)).loaded.resolver)
                     val original = assertNotNull(fixture.records.getDocumentByFileId(file.id))
                     val recreated =
                         DownloadTestFixture(
@@ -93,17 +102,9 @@ class CommunityFontBrowserTest {
                         fixture.files.extractedFiles(original.path),
                         recreated.files.extractedFiles(original.path),
                     )
-                    assertContentEquals(first.faces.single().bytes, bundle.faces.single().bytes)
-                    val fonts = buildTestCommunityFonts(bundle, null)
-                    val width =
-                        TextMeasurer(fonts.resolver ?: createFontFamilyResolver(), Density(1f), LayoutDirection.Ltr)
-                            .measure(
-                                AnnotatedString("A"),
-                                TextStyle(fontFamily = fonts.fonts.content, fontSize = 100.sp),
-                                softWrap = false,
-                            )
-                            .size.width
-                    assertEquals(30, width)
+                    assertNotNull(first.loaded.family)
+                    assertNotNull(bundle.loaded.family)
+                    assertEquals(30, measureFont(bundle.loaded))
                     assertEquals(1, requests)
                 } finally {
                     fixture.close()
@@ -115,8 +116,8 @@ class CommunityFontBrowserTest {
     fun independentlyLoadedFamiliesKeepTheirGlyphMetrics() =
         runTest {
             suspendCancellableCoroutine { continuation -> onWasmReady { continuation.resume(Unit) } }
-            val body = testFontBundle("body", "Regular.ttf", CommunityFontTestData.primary)
-            val code = testFontBundle("code", "Regular.ttf", CommunityFontTestData.code)
+            val body = fontFixture.testFontBundle("body", "Regular.ttf", CommunityFontTestData.primary)
+            val code = fontFixture.testFontBundle("code", "Regular.ttf", CommunityFontTestData.code)
             val fonts = buildTestCommunityFonts(body, code)
             val measurer = TextMeasurer(fonts.resolver ?: createFontFamilyResolver(), Density(1f), LayoutDirection.Ltr)
             val text = AnnotatedString("A")
@@ -199,14 +200,14 @@ class CommunityFontBrowserTest {
         }
 
     @Test
-    fun cancelledExtractionLeavesNoPublishedManifest() =
+    fun cancelledExtractionLeavesNoPartialDirectory() =
         runTest {
             val files = OpfsDownloadFileStore()
             val root = files.location("test-cancel-${Uuid.random().toHexString()}")
             val entered = CompletableDeferred<Unit>()
             val pending =
                 async {
-                    files.publishArchive("$root/source") { directory ->
+                    files.extractDownloadArchive("$root/source") { directory ->
                         files.write("$directory/Regular.ttf", CommunityFontTestData.primary)
                         entered.complete(Unit)
                         kotlinx.coroutines.awaitCancellation()
@@ -215,7 +216,6 @@ class CommunityFontBrowserTest {
             try {
                 entered.await()
                 pending.cancelAndJoin()
-                assertNull(files.size("$root/source.extracted.json"))
                 assertEquals(emptyList(), files.listFiles(root))
             } finally {
                 files.delete(root)
@@ -252,7 +252,7 @@ class CommunityFontBrowserTest {
                 files.write(source, CommunityFontTestData.primaryZip)
                 val pending =
                     async {
-                        files.publishArchive(source) { directory ->
+                        files.extractDownloadArchive(source) { directory ->
                             entered.complete(Unit)
                             extractArchiveInWorker(source, directory)
                         }
@@ -284,7 +284,7 @@ class CommunityFontBrowserTest {
                 files.write(source, CommunityFontTestData.primaryZip)
                 val pending =
                     async {
-                        cleanup.publishArchive(source) { directory ->
+                        cleanup.extractDownloadArchive(source) { directory ->
                             val job = startPausedExtraction(source.toJsString(), directory.toJsString())
                             started.complete(job)
                             job.awaitExtraction()
@@ -296,7 +296,6 @@ class CommunityFontBrowserTest {
                     assertTrue(written.bytes.toDouble() > 0)
                     assertFalse(pending.isCompleted)
                     assertTrue(files.listFiles(root).any { it.path.endsWith("/${written.name}") })
-                    assertNull(files.size("$source.extracted.json"))
                     pending.cancelAndJoin()
                     assertEquals("abort", awaitWorkerProbe(job.closed()).toString())
                     assertTrue(cleanup.cleaned)
@@ -324,7 +323,7 @@ class CommunityFontBrowserTest {
                 val pending =
                     async {
                         runCatching {
-                            cleanup.publishArchive(source) { directory ->
+                            cleanup.extractDownloadArchive(source) { directory ->
                                 val job = startInflightExtraction(source.toJsString(), directory.toJsString())
                                 started.complete(job)
                                 job.awaitExtraction()
@@ -426,4 +425,10 @@ class CommunityFontBrowserTest {
                 files.delete(root)
             }
         }
+    private fun measureFont(font: com.storyteller_f.a.app.pages.community.LoadedCommunityFont): Int =
+        TextMeasurer(font.resolver ?: createFontFamilyResolver(), Density(1f), LayoutDirection.Ltr).measure(
+            AnnotatedString("A"),
+            TextStyle(fontFamily = font.family, fontSize = 100.sp),
+            softWrap = false,
+        ).size.width
 }

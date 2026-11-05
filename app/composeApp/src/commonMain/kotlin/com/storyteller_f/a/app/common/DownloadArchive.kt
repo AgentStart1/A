@@ -4,7 +4,6 @@
 
 package com.storyteller_f.a.app.common
 
-import com.storyteller_f.shared.commonJson
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -13,27 +12,18 @@ import kotlinx.coroutines.yield
 import kotlinx.io.Buffer
 import kotlinx.io.Source
 import kotlinx.io.readByteArray
-import kotlin.uuid.Uuid
 
-internal suspend fun DownloadFileStore.publishArchive(
-    path: String,
-    extract: suspend (String) -> List<DownloadFileEntry>,
-) {
-    val old = readArchiveIndex(path)
-    val directory = "$path.extract-${Uuid.random().toHexString()}"
-    var published = false
-    withDownloadCleanup({ withContext(NonCancellable) { if (!published) delete(directory) } }) {
-        val entries = extract(directory)
+internal suspend fun DownloadFileStore.extractDownloadArchive(path: String, extract: suspend (String) -> Unit) {
+    // The download record has left PROCESSED, and the caller holds the file lock.
+    // A crash leaves an incomplete directory that must be removed before reprocessing.
+    val directory = "$path.extracted"
+    var completed = false
+    withDownloadCleanup({ withContext(NonCancellable) { if (!completed) delete(directory) } }) {
+        delete(directory)
+        extract(directory)
         currentCoroutineContext().ensureActive()
-        withContext(NonCancellable) {
-            write(
-                "$path.extracted.json",
-                commonJson.encodeToString(DownloadArchiveIndex(directory, entries)).encodeToByteArray(),
-            )
-            published = true
-        }
+        completed = true
     }
-    old?.directory?.takeIf { it != directory }?.let { delete(it) }
 }
 
 internal suspend fun Source.readDownloadBytes(limit: Long): ByteArray {

@@ -32,9 +32,8 @@ import com.storyteller_f.a.client.compose_core.components.customMarkdownTypograp
 import com.storyteller_f.shared.model.FileInfo
 import com.storyteller_f.shared.model.FontSettings
 import com.storyteller_f.shared.model.FontSettingsWithInfo
+import fonts.CommunityFontFixture
 import fonts.CommunityFontTestData
-import fonts.createFontStore
-import fonts.testFontBundle
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -44,6 +43,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -53,6 +54,11 @@ import kotlin.test.assertSame
 
 @OptIn(ExperimentalTestApi::class)
 class CommunityTopicFontsUiTest {
+    private val fontFixture = CommunityFontFixture()
+
+    @AfterTest
+    fun cleanFontFiles() = runTest { fontFixture.close() }
+
     @Test
     fun markdownFontsDoNotChangeTheApplicationTheme() =
         runComposeUiTest {
@@ -85,7 +91,7 @@ class CommunityTopicFontsUiTest {
             try {
                 val release = CompletableDeferred<Unit>()
                 val store =
-                    createFontStore(scope) {
+                    fontFixture.createFontStore(scope) {
                         release.await()
                         CommunityFontTestData.primary
                     }
@@ -120,7 +126,7 @@ class CommunityTopicFontsUiTest {
             try {
                 val second = CompletableDeferred<Unit>()
                 val store =
-                    createFontStore(scope) {
+                    fontFixture.createFontStore(scope) {
                         if (it.id == 1L) {
                             CommunityFontTestData.primary
                         } else {
@@ -156,17 +162,16 @@ class CommunityTopicFontsUiTest {
         }
 
     @Test
-    fun visibleFontsSurviveCombinedCacheBudgetEviction() =
+    fun visibleFontsSurviveFamilyCacheEviction() =
         runComposeUiTest {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
             try {
                 val reads = MutableStateFlow(emptyMap<Long, Int>())
-                val budget = maxOf(CommunityFontTestData.primary.size, CommunityFontTestData.code.size).toLong()
                 val store =
-                    CommunityFontStore(scope, maxCachedBytes = budget) { file, _ ->
+                    CommunityFontStore(scope, maxCachedFamilies = 1) { file, _ ->
                         reads.update { counts -> counts + (file.id to counts.getOrElse(file.id) { 0 } + 1) }
                         val bytes = if (file.id == 1L) CommunityFontTestData.primary else CommunityFontTestData.code
-                        testFontBundle(fontFileKey(file), file.name, bytes)
+                        fontFixture.testFontBundle(fontFileKey(file), file.name, bytes)
                     }
                 val selected = settings(1).copy(settings = FontSettings(1, 2), codeFont = settings(2).contentFont)
                 var fonts = TopicContentFonts()
@@ -202,7 +207,7 @@ class CommunityTopicFontsUiTest {
             try {
                 val reads = MutableStateFlow(emptyMap<Long, Int>())
                 val store =
-                    createFontStore(scope) { file ->
+                    fontFixture.createFontStore(scope) { file ->
                         val counts = reads.updateAndGet { it + (file.id to it.getOrElse(file.id) { 0 } + 1) }
                         if (file.id == 1L && counts[file.id] == 1) error("Synthetic initial font failure")
                         if (file.id == 1L) CommunityFontTestData.primary else CommunityFontTestData.code

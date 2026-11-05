@@ -9,9 +9,9 @@ import androidx.compose.ui.text.font.FontWeight
 import com.storyteller_f.a.app.common.DownloadFileStore
 import com.storyteller_f.a.app.common.createDownloadFileStore
 import com.storyteller_f.a.app.common.createDownloadRecord
+import com.storyteller_f.a.app.common.extractDownloadArchive
 import com.storyteller_f.a.app.common.extractedFiles
 import com.storyteller_f.a.app.common.getDownloadRevision
-import com.storyteller_f.a.app.common.publishArchive
 import com.storyteller_f.a.app.common.write
 import com.storyteller_f.a.app.pages.community.CommunityFontBundle
 import com.storyteller_f.a.app.pages.community.CommunityFontDownload
@@ -63,7 +63,7 @@ class DownloadEngineTest {
                     fixture.records.observeDocumentByFileId(file.id).first { it?.status == DownloadStatus.DOWNLOADING }
                     assertFalse(loaded.isCompleted)
                     release.complete(Unit)
-                    assertContentEquals(CommunityFontTestData.primary, loaded.await().faces.single().bytes)
+                    assertNotNull(loaded.await().loaded.family)
                     val record = assertNotNull(fixture.records.getDocumentByFileId(file.id))
                     assertEquals(DownloadStatus.PROCESSED, record.status)
                     assertNotNull(fixture.files.extractedFiles(record.path))
@@ -130,7 +130,10 @@ class DownloadEngineTest {
                     fixture.files.delete(face.path)
                     assertNotNull(load(fixture, file))
                     assertEquals(1, requests)
-                    assertNotEquals(face.path, assertNotNull(fixture.files.extractedFiles(path)).single().path)
+                    assertContentEquals(
+                        CommunityFontTestData.primary,
+                        fixture.files.read(face.path, CommunityFontTestData.primary.size.toLong()),
+                    )
                 } finally {
                     fixture.close()
                 }
@@ -282,7 +285,7 @@ class DownloadEngineTest {
             val entered = CompletableDeferred<Unit>()
             val pending =
                 async {
-                    files.publishArchive("$root/source") { directory ->
+                    files.extractDownloadArchive("$root/source") { directory ->
                         files.write("$directory/Regular.ttf", CommunityFontTestData.primary)
                         entered.complete(Unit)
                         kotlinx.coroutines.awaitCancellation()
@@ -291,7 +294,6 @@ class DownloadEngineTest {
             try {
                 entered.await()
                 pending.cancelAndJoin()
-                assertNull(files.size("$root/source.extracted.json"))
                 assertEquals(emptyList(), files.listFiles(root))
             } finally {
                 files.delete(root)
@@ -305,14 +307,16 @@ class DownloadEngineTest {
             val root = disk.location("test-cleanup-${kotlin.uuid.Uuid.random().toHexString()}")
             val files =
                 object : DownloadFileStore by disk {
+                    private var deletes = 0
                     override suspend fun delete(path: String) {
-                        error("cleanup")
+                        if (++deletes > 1) error("cleanup")
+                        disk.delete(path)
                     }
                 }
             try {
                 val failure =
                     assertFailsWith<IllegalStateException> {
-                        files.publishArchive("$root/source") { error("primary") }
+                        files.extractDownloadArchive("$root/source") { error("primary") }
                     }
                 val chain = generateSequence<Throwable>(failure) { it.cause }.toList()
                 assertEquals("primary", chain.last().message)
@@ -363,6 +367,107 @@ class DownloadEngineTest {
     fun downloadedArchiveWithoutFontEntriesIsRejected() =
         runTest {
             assertFailsWith<IllegalArgumentException> { downloadFont(fontTestZip("README.txt"), "family.zip") }
+        }
+
+    @Test
+    fun nativeFontLoadingNeverReadsTheSourceIntoBytes() =
+        runTest {
+            val disk = createDownloadFileStore()
+            val files =
+                object : DownloadFileStore by disk {
+                    override suspend fun read(path: String, limit: Long): ByteArray =
+                        error("Unexpected byte-array read")
+                }
+            HttpClient(MockEngine { respond(CommunityFontTestData.primary) }).use { client ->
+                val fixture = DownloadTestFixture(this, files, client)
+                try {
+                    assertNotNull(load(fixture, fontFile(CommunityFontTestData.primary)).loaded.family)
+                } finally {
+                    fixture.close()
+                }
+            }
+        }
+
+    @Test
+    fun retryLeavesCompletedStateBeforeReplacingPartialExtraction() =
+        runTest {
+            val bytes = fontTestZip("Regular.ttf", "Bold.ttf")
+            val disk = createDownloadFileStore()
+            val records = DownloadTestRecords()
+            var extractions = 0
+            val files =
+                object : DownloadFileStore by disk {
+                    override suspend fun extractArchive(path: String) {
+                        assertEquals(DownloadStatus.DOWNLOADED, records.getDocumentByFileId(1)?.status)
+                        extractions++
+                        disk.extractArchive(path)
+                    }
+                }
+            HttpClient(MockEngine { respond(bytes) }).use { client ->
+                val fixture = DownloadTestFixture(this, files, client, records = records)
+                try {
+                    val file = fontFile(bytes, "family.zip")
+                    load(fixture, file)
+                    val path = assertNotNull(records.getDocumentByFileId(file.id)).path
+                    files.delete("$path.extracted/Bold.ttf")
+                    files.write("$path.extracted/stale.ttf", byteArrayOf(1, 2, 3))
+                    val repaired = load(fixture, file, retry = true)
+                    assertEquals(2, repaired.faces.size)
+                    assertEquals(2, extractions)
+                    assertNull(files.size("$path.extracted/stale.ttf"))
+                    assertEquals(DownloadStatus.PROCESSED, records.getDocumentByFileId(file.id)?.status)
+                } finally {
+                    fixture.close()
+                }
+            }
+        }
+
+    @Test
+    fun unfinishedDirectoryIsDiscardedBeforeRestartedExtraction() =
+        runTest {
+            val bytes = CommunityFontTestData.primaryZip
+            HttpClient(MockEngine { error("The complete source must be reused") }).use { client ->
+                val fixture = DownloadTestFixture(this, createDownloadFileStore(), client)
+                try {
+                    val file = fontFile(bytes, "family.zip")
+                    val path = fixture.files.location("${fixture.namespace}/1/${getDownloadRevision(file)}/source")
+                    fixture.files.write(path, bytes)
+                    fixture.files.write("$path.extracted/partial.ttf", byteArrayOf(1, 2, 3))
+                    fixture.records.save(createDownloadRecord(file, path).copy(status = DownloadStatus.DOWNLOADED))
+                    assertNotNull(load(fixture, file).loaded.family)
+                    assertNull(fixture.files.size("$path.extracted/partial.ttf"))
+                    assertEquals(1, assertNotNull(fixture.files.extractedFiles(path)).size)
+                } finally {
+                    fixture.close()
+                }
+            }
+        }
+
+    @Test
+    fun readerRechecksCompletionAfterEnteringTheFileLock() =
+        runTest {
+            val records = DownloadTestRecords()
+            val file = fontFile(CommunityFontTestData.primary)
+            val record = createDownloadRecord(file, "synthetic/source").copy(status = DownloadStatus.PROCESSED)
+            records.save(record)
+            val disk = createDownloadFileStore()
+            val files =
+                object : DownloadFileStore by disk {
+                    override suspend fun acquire(key: String): com.storyteller_f.a.app.common.DownloadFileLease {
+                        records.save(record.copy(status = DownloadStatus.DOWNLOADED))
+                        return com.storyteller_f.a.app.common.DownloadFileLease { }
+                    }
+                }
+            val downloader =
+                object : com.storyteller_f.a.app.common.Downloader {
+                    override suspend fun download(fileInfo: com.storyteller_f.shared.model.FileInfo, retry: Boolean) =
+                        record
+                    override fun resume(id: Long) = error("Unused")
+                    override fun pause(id: Long) = error("Unused")
+                }
+            val source = CommunityFontDownload(records, downloader, files, "synthetic")
+            val failure = assertFailsWith<IllegalStateException> { source.load(file) }
+            assertEquals("Font download changed before reading", failure.message)
         }
 
     private suspend fun CoroutineScope.downloadFont(bytes: ByteArray, name: String): CommunityFontBundle =

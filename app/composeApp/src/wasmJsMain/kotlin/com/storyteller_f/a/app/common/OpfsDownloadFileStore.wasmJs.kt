@@ -99,7 +99,7 @@ internal class OpfsDownloadFileStore : DownloadFileStore {
 
     override suspend fun extractArchive(path: String) =
         opfsCall {
-            publishArchive(path) { directory -> extractArchiveInWorker(path, directory) }
+            extractDownloadArchive(path) { directory -> extractArchiveInWorker(path, directory) }
         }
 
     /** Only explicitly registered font entries participate in this cache budget. */
@@ -236,10 +236,10 @@ private val opfsBridge: OpfsBridge =
                     await lease.ready();
                     const indexPath = 'downloads/' + account + '/font-cache.json';
                     const index = (await readJson(indexPath, [])).filter(item => item.path !== path);
-                    const manifest = await readJson(path + '.extracted.json', null);
+                    const entries = JSON.parse(await list(path + '.extracted'));
                     const sourceBytes = await size(path);
                     if (sourceBytes === null) return;
-                    const decodedBytes = manifest ? manifest.entries.reduce((n, item) => n + item.size, 0) : 0;
+                    const decodedBytes = entries.reduce((n, item) => n + item.size, 0);
                     index.push({path, sourceBytes, decodedBytes});
                     let sources = index.reduce((n, item) => n + item.sourceBytes, 0);
                     let decoded = index.reduce((n, item) => n + item.decodedBytes, 0);

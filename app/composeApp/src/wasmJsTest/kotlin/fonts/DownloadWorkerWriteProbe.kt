@@ -56,9 +56,12 @@ internal class WorkerCleanupProbe(
         private set
 
     override suspend fun delete(path: String) {
-        assertTrue(started.isCompleted, "Worker must exist before generation cleanup")
-        assertTrue(started.await().isClosed(), "Real OPFS writer must close before generation cleanup")
-        files.delete(path)
-        cleaned = true
+        if (started.isCompleted) {
+            assertTrue(started.await().isClosed(), "Real OPFS writer must close before extraction cleanup")
+            files.delete(path)
+            cleaned = true
+        } else {
+            files.delete(path)
+        }
     }
 }
