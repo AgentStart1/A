@@ -8,48 +8,30 @@ package com.storyteller_f.a.client.compose_core.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.Button
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeImageBitmap
 import androidx.compose.ui.graphics.skiaCanvas
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.storyteller_f.a.client.compose_core.Res
-import com.storyteller_f.a.client.compose_core.media_failed
-import com.storyteller_f.a.client.compose_core.media_loading
-import com.storyteller_f.a.client.compose_core.media_mute
-import com.storyteller_f.a.client.compose_core.media_pause
-import com.storyteller_f.a.client.compose_core.media_play
-import com.storyteller_f.a.client.compose_core.media_position
-import com.storyteller_f.a.client.compose_core.media_unmute
-import com.storyteller_f.a.client.compose_core.media_volume
-import com.storyteller_f.a.client.compose_core.utils.appiumSemantics
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.ColorAlphaType
 import org.jetbrains.skia.ColorSpace
@@ -74,9 +56,8 @@ private external fun createHost(
 private external interface BrowserMediaHost : JsAny {
     fun start(): Promise<JsAny?>
     fun togglePlayback(): Promise<JsAny?>
-    fun toggleMute()
     fun seek(time: Double): Promise<JsAny?>
-    fun setVolume(volume: Double)
+    fun setVolume(volume: Double, muted: Boolean)
     fun failRendering()
     fun close(): Promise<JsAny?>
 }
@@ -99,7 +80,7 @@ internal external interface PixelFrame : JsAny {
 }
 
 @Composable
-internal fun WasmMediaPlayer(item: RemoteMediaItem, modifier: Modifier, video: Boolean, fill: Boolean = false) {
+internal fun WasmMediaPlayer(item: RemoteMediaItem, modifier: Modifier, video: Boolean) {
     val gpu = remember { useGpuTextures() }
     val profiling = remember { profileMediaFrames() }
     val textureRenderer = remember(item.url, gpu) { if (gpu && video) WasmTextureRenderer() else null }
@@ -132,73 +113,60 @@ internal fun WasmMediaPlayer(item: RemoteMediaItem, modifier: Modifier, video: B
         }
     }
     SideEffect { bitmapOwner.retain(bitmap) }
-    Column(if (fill) modifier else Modifier) {
-        if (video) {
-            val videoModifier = if (fill) Modifier.weight(1f).fillMaxWidth() else modifier
-            Box(videoModifier.background(Color.Black), contentAlignment = Alignment.Center) {
-                val frame = bitmap
-                if (textureRenderer != null) {
-                    Canvas(Modifier.fillMaxSize()) {
-                        textureRenderer.draw(drawContext.canvas.skiaCanvas, size) { host.failRendering() }
-                    }
-                } else if (frame != null) {
-                    val composeImage = remember(frame) { frame.asComposeImageBitmap() }
-                    Image(composeImage, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-                } else {
-                    AsyncImage(item.cover?.url, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-                }
-            }
+    val actions = rememberBrowserMediaActions(host) { state }
+    val surfaceModifier = if (video) modifier else modifier.fillMaxWidth().heightIn(min = 224.dp)
+    key(item.url) {
+        MediaPlayerSurface(
+            item.title ?: item.name,
+            state.toControlState(),
+            actions,
+            surfaceModifier,
+            video,
+            sourceUrl = item.url,
+            artwork = item.cover?.url,
+        ) {
+            WasmMediaFrame(item, bitmap, textureRenderer, host)
         }
-        MediaControls(state, host)
     }
 }
 
 @Composable
-private fun MediaControls(state: MediaSnapshot?, host: BrowserMediaHost) {
-    val status = state?.status ?: "loading"
-    var seekDraft by remember { mutableStateOf<Float?>(null) }
-    val positionLabel = stringResource(Res.string.media_position)
-    val volumeLabel = stringResource(Res.string.media_volume)
-    val playbackLabel =
-        stringResource(
-            if (status in listOf("playing", "buffering")) Res.string.media_pause else Res.string.media_play,
+private fun rememberBrowserMediaActions(
+    host: BrowserMediaHost,
+    readSnapshot: () -> MediaSnapshot?,
+): MediaControlActions {
+    val snapshot = rememberUpdatedState(readSnapshot)
+    return remember(host) {
+        val volume = MediaVolumeControl { level, muted -> host.setVolume(level.toDouble(), muted) }
+        MediaControlActions(
+            { host.togglePlayback() },
+            { host.seek(it) },
+            volume::setVolume,
+            {
+                val state = snapshot.value()
+                volume.toggleMute(state?.volume?.toFloat() ?: 1f, state?.muted ?: false)
+            },
         )
-    val togglePlayback = {
-        host.togglePlayback()
-        Unit
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Button(
-            onClick = togglePlayback,
-            modifier = Modifier.appiumSemantics(text = playbackLabel, onClick = togglePlayback),
-            enabled = status in listOf("playing", "buffering", "paused", "ended"),
-        ) {
-            Text(playbackLabel)
+}
+
+@Composable
+private fun WasmMediaFrame(
+    item: RemoteMediaItem,
+    frame: Bitmap?,
+    textureRenderer: WasmTextureRenderer?,
+    host: BrowserMediaHost,
+) {
+    if (textureRenderer != null) {
+        Canvas(Modifier.fillMaxSize()) {
+            textureRenderer.draw(drawContext.canvas.skiaCanvas, size) { host.failRendering() }
         }
-        Button(onClick = { host.toggleMute() }) {
-            Text(stringResource(if (state?.muted == true) Res.string.media_unmute else Res.string.media_mute))
-        }
-        val progress = "${state?.position?.toInt() ?: 0} / ${state?.duration?.toInt() ?: 0} s"
-        Text(progress, Modifier.appiumSemantics(text = progress))
+    } else if (frame != null) {
+        val composeImage = remember(frame) { frame.asComposeImageBitmap() }
+        Image(composeImage, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+    } else {
+        AsyncImage(item.cover?.url, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
     }
-    Slider(
-        value = seekDraft ?: state?.position?.toFloat() ?: 0f,
-        onValueChange = { seekDraft = it },
-        onValueChangeFinished = {
-            seekDraft?.let { host.seek(it.toDouble()) }
-            seekDraft = null
-        },
-        valueRange = 0f..(state?.duration?.toFloat()?.takeIf { it > 0f } ?: 1f),
-        enabled = status in listOf("playing", "buffering", "paused", "ended"),
-        modifier = Modifier.fillMaxWidth().semantics { contentDescription = positionLabel },
-    )
-    Slider(
-        value = state?.volume?.toFloat() ?: 1f,
-        onValueChange = { host.setVolume(it.toDouble()) },
-        modifier = Modifier.semantics { contentDescription = volumeLabel },
-    )
-    if (!state?.error.isNullOrEmpty()) Text(stringResource(Res.string.media_failed))
-    if (status in listOf("loading", "buffering")) Text(stringResource(Res.string.media_loading))
 }
 
 @OptIn(ExperimentalSkikoApi::class)
@@ -257,3 +225,17 @@ private external fun recordPixelStage(stage: String, timestamp: Double)
 
 private fun profileMediaFrames(): Boolean =
     js("new URLSearchParams(globalThis.location.search).get('mediaProfile') === 'true'")
+
+private fun MediaSnapshot?.toControlState(): MediaControlState {
+    val status = this?.status ?: "loading"
+    return MediaControlState(
+        playing = status in listOf("playing", "buffering"),
+        loading = status in listOf("loading", "buffering"),
+        failed = !this?.error.isNullOrEmpty(),
+        enabled = status in listOf("playing", "buffering", "paused", "ended"),
+        position = this?.position ?: 0.0,
+        duration = this?.duration ?: 0.0,
+        volume = this?.volume?.toFloat() ?: 1f,
+        muted = this?.muted == true || this?.volume == 0.0,
+    )
+}

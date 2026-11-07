@@ -11,11 +11,17 @@ import com.storyteller_f.a.test.useBackendFixture
 internal suspend fun runAppiumTestEnvironment(
     report: AppiumTestReport,
     allowedOrigins: String = "",
+    filesystemPublicUrl: String? = null,
     block: suspend (AppiumPorts) -> Unit,
 ) {
     useBackendFixture(
         report.directory.resolve("logs"),
-        environment = { mapOf("SIGNIN_ALLOWED_ORIGINS" to allowedOrigins) },
+        environment = {
+            buildMap {
+                put("SIGNIN_ALLOWED_ORIGINS", allowedOrigins)
+                filesystemPublicUrl?.let { put("FILESYSTEM_PUBLIC_URL", it) }
+            }
+        },
     ) { backend ->
         block(createAppiumPorts(backend))
     }

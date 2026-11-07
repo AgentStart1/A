@@ -1,4 +1,5 @@
 /* This is a private project. All rights reserved. */
+import { toggleMediaPlayback } from "./media-controls.mjs";
 import { runCase, launchBrowser, ownSite } from "./verification-runner.mjs";
 import { getReportDirectory } from "./verification-reports.mjs";
 import assert from "node:assert/strict";
@@ -53,7 +54,7 @@ await runCase("verify-gpu-lifecycle", async () => {
           await runCase("resize playback", async () => {
             const { page, errors } = await open();
             try {
-              await page.mouse.click(50, 452);
+              await toggleMediaPlayback(page);
               await page.waitForFunction(() => mediaTest.decoded.length > 10);
               for (const [width, height] of [
                 [1000, 850],
@@ -133,7 +134,7 @@ await runCase("verify-gpu-lifecycle", async () => {
           await runCase("context loss cleanup", async () => {
             const { page, errors } = await open();
             try {
-              await page.mouse.click(50, 452);
+              await toggleMediaPlayback(page);
               await page.waitForFunction(() => mediaTest.decoded.length > 10);
               await page.evaluate(() =>
                 mediaTest.canvas

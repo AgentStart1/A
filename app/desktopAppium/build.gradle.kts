@@ -8,6 +8,7 @@ plugins {
 }
 
 val appiumTest = sourceSets.create("appiumTest")
+val windowsMediaTest = sourceSets.create("windowsMediaTest")
 
 kotlin {
     jvmToolchain(21)
@@ -18,20 +19,29 @@ dependencies {
     testImplementation(projects.dev.appiumCore)
 }
 
-configurations.named(appiumTest.implementationConfigurationName) {
-    extendsFrom(configurations.testImplementation.get())
-}
-
-configurations.named(appiumTest.runtimeOnlyConfigurationName) {
-    extendsFrom(configurations.testRuntimeOnly.get())
+listOf(appiumTest, windowsMediaTest).forEach { tests ->
+    configurations.named(tests.implementationConfigurationName) {
+        extendsFrom(configurations.testImplementation.get())
+    }
+    configurations.named(tests.runtimeOnlyConfigurationName) {
+        extendsFrom(configurations.testRuntimeOnly.get())
+    }
 }
 
 tasks.register<Test>("appiumTest") {
-    group = "verification"
     description = "Runs the App Desktop Appium tests."
+}
+
+tasks.register<Test>("windowsMediaTest") {
+    description = "Runs full-application Windows media controls with real VLC."
+}
+
+tasks.withType<Test>().matching { it.name in setOf("appiumTest", "windowsMediaTest") }.configureEach {
+    group = "verification"
     outputs.upToDateWhen { false }
-    testClassesDirs = appiumTest.output.classesDirs
-    classpath = appiumTest.runtimeClasspath
+    val tests = if (name == "windowsMediaTest") windowsMediaTest else appiumTest
+    testClassesDirs = tests.output.classesDirs
+    classpath = tests.runtimeClasspath
     dependsOn(
         ":cloud:server:buildTestDockerImage",
         ":cloud:worker:buildTestDockerImage",

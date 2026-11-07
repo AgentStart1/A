@@ -23,6 +23,7 @@ const batches = [
       "rgba-failure",
       "bitmap-ownership",
       "gpu-lifecycle",
+      "player-expansion",
     ],
     {},
   ],

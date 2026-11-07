@@ -38,7 +38,6 @@ import com.storyteller_f.a.client.compose_core.CoreStrings
 import com.storyteller_f.a.client.compose_core.Res
 import com.storyteller_f.a.client.compose_core.cancel
 import com.storyteller_f.a.client.compose_core.confirm
-import com.storyteller_f.a.client.compose_core.copied
 import com.storyteller_f.a.client.compose_core.copy
 import com.storyteller_f.a.client.compose_core.edit_private_key
 import com.storyteller_f.a.client.compose_core.generate
@@ -52,7 +51,6 @@ import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.openFilePicker
 import io.github.vinceglb.filekit.readBytes
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -259,8 +257,7 @@ fun PrivateKeyTools(currentKey: String, enableRandom: Boolean, algo: AlgoType, o
 
         IconButton(onClick = {
             scope.launch {
-                clipboard.setText(currentKey)
-                toast.showMessage(getString(Res.string.copied))
+                clipboard.copyText(currentKey, toast)
             }
         }) {
             Icon(Icons.Default.ContentCopy, stringResource(Res.string.copy))

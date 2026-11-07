@@ -24,6 +24,7 @@ class DesktopAppTestDriver internal constructor(
         } else {
             null
         }
+    internal val media = DesktopMediaControls(driver) { windows?.synchronizeWindow() }
     private val nameAttribute =
         when (platform) {
             DesktopTestPlatform.Windows -> "Name"
@@ -82,7 +83,13 @@ class DesktopAppTestDriver internal constructor(
                     ?: driver.findElements(AppiumBy.iOSNsPredicateString(macTextPredicate(description, false)))
                         .lastOrNull()
             } else {
-                driver.findElements(By.xpath("//*[@$nameAttribute='$description']")).firstOrNull()
+                val exact =
+                    if (platform == DesktopTestPlatform.Windows) {
+                        driver.findElements(By.name(description)).firstOrNull()
+                    } else {
+                        driver.findElements(By.xpath("//*[@$nameAttribute='$description']")).firstOrNull()
+                    }
+                exact
                     // Incoming content follows the outgoing scene during Compose navigation transitions.
                     ?: driver.findElements(By.xpath("//*[${namePredicate(description)}]")).lastOrNull()
             }
@@ -227,8 +234,13 @@ class DesktopAppTestDriver internal constructor(
                         ?: if (contains) findMacValueContaining(text) else null
                 } else {
                     val predicate = if (contains) "contains(@$nameAttribute,'$text')" else namePredicate(text)
-                    driver.findElements(By.xpath("//*[@$nameAttribute='$text']")).lastOrNull()
-                        ?: driver.findElements(By.xpath("//*[$predicate]")).lastOrNull()
+                    val exact =
+                        if (platform == DesktopTestPlatform.Windows) {
+                            driver.findElements(By.name(text)).lastOrNull()
+                        } else {
+                            driver.findElements(By.xpath("//*[@$nameAttribute='$text']")).lastOrNull()
+                        }
+                    exact ?: driver.findElements(By.xpath("//*[$predicate]")).lastOrNull()
                         ?: if (platform == DesktopTestPlatform.Windows) {
                             driver.findElements(By.xpath("//Text | //Edit | //Unknown")).lastOrNull { element ->
                                 val value = element.text

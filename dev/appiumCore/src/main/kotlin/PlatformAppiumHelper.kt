@@ -343,7 +343,10 @@ class AndroidAppiumHelper : PlatformAppiumHelper {
     }
 }
 
-class DesktopAppiumHelper(private val protectedStoreLibrary: String? = null) : PlatformAppiumHelper {
+class DesktopAppiumHelper(
+    private val protectedStoreLibrary: String? = null,
+    private val filesystemPublicUrl: String? = null,
+) : PlatformAppiumHelper {
     private val platform = DesktopTestPlatform.current()
 
     init {
@@ -397,7 +400,7 @@ class DesktopAppiumHelper(private val protectedStoreLibrary: String? = null) : P
         browserCapture: DesktopBrowserCapture?,
         block: suspend (AppiumDriver, T, Long?, suspend () -> DesktopAppTestDriver) -> Unit,
     ) {
-        runAppiumTestEnvironment(report) { ports ->
+        runAppiumTestEnvironment(report, filesystemPublicUrl = filesystemPublicUrl) { ports ->
             val sessionFile = report.temporaryPath("private-session.json")
             val runtimeDir = report.temporaryPath("runtime")
             val logDir = report.directory.resolve("application").also { it.mkdirs() }
@@ -612,6 +615,8 @@ class DesktopAppiumHelper(private val protectedStoreLibrary: String? = null) : P
                 }
                 add("-XX:ErrorFile=${appLogFile.parentFile.canonicalPath}/hs_err_pid%p.log")
                 if (platform == DesktopTestPlatform.Windows) {
+                    // Resolve declared JNI resources instead of unrelated EGL DLLs on developer PATH.
+                    add("-Djava.library.path=")
                     add("-Djava.util.prefs.PreferencesFactory=${DesktopTestPreferences::class.java.name}")
                 }
                 add("-Dappium.desktop.tmpdir=${tmpDir.canonicalPath}")

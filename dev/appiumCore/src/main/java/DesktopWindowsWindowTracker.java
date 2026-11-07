@@ -22,7 +22,9 @@ public final class DesktopWindowsWindowTracker {
     }
 
     public void synchronizeWindow() {
-        List<Map<String, Object>> windows = windows();
+        // Tao's visible message-dispatch HWND has no application content or input surface.
+        List<Map<String, Object>> windows = windows().stream()
+                .filter(window -> !"Tao Thread Event Target".equals(window.get("className"))).toList();
         Map<String, Object> state = inspect(windows.stream().map(window -> (String) window.get("handle")).toList());
         List<?> owned = (List<?>) state.get("ownedHandles");
         String foreground = (String) state.get("foregroundHandle");

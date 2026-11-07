@@ -1,4 +1,5 @@
 /* This is a private project. All rights reserved. */
+import { toggleMediaPlayback } from "./media-controls.mjs";
 import { runCase, launchBrowser, ownSite } from "./verification-runner.mjs";
 import { getReportDirectory } from "./verification-reports.mjs";
 import assert from "node:assert/strict";
@@ -96,7 +97,7 @@ await runCase("verify-rgba-failure", async () => {
                   await page.waitForFunction(
                     () => mediaTest.decoded.length > 0,
                   );
-                  await page.mouse.click(50, 452);
+                  await toggleMediaPlayback(page);
                   await page.waitForFunction(
                     () =>
                       mediaTest.decoded.length > 6 &&
@@ -150,7 +151,7 @@ await runCase("verify-rgba-failure", async () => {
                       ),
                     ),
                 );
-                await page.mouse.click(50, 452);
+                await toggleMediaPlayback(page);
                 await page.waitForFunction(
                   (before) =>
                     mediaTest.decoded.length > before.frames + 6 &&

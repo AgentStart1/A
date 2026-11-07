@@ -82,15 +82,17 @@ fun AppiumTestBase<AppAppiumHelper, WasmAppiumHelper>.testUploadedDownload(topic
 internal fun AppiumTestBase<AppAppiumHelper, PlatformAppiumHelper>.withUploadedFile(
     kind: PreviewFile,
     topic: Boolean,
+    platform: PlatformAppiumHelper = platformHelper,
+    fixtureName: String = kind.filename,
     block: suspend (AppiumTestScope, UploadedFileScenario) -> Unit,
 ) = runAppiumBlockingTest {
-    platformHelper.runTest(testName, targetHelper, setup = { ports ->
+    platform.runTest(testName, targetHelper, setup = { ports ->
         val user = targetHelper.createAuthenticatedSession(ports)
         var prepared = false
         try {
             val bytes =
-                checkNotNull(PreviewFile::class.java.getResourceAsStream("/media/${kind.filename}")) {
-                    "Missing synthetic media fixture: ${kind.filename}"
+                checkNotNull(PreviewFile::class.java.getResourceAsStream("/media/$fixtureName")) {
+                    "Missing synthetic media fixture: $fixtureName"
                 }.buffered().use { it.readBytes() }
             val uid = requireNotNull(user.sessionManager.model.uid)
             val upload =
@@ -208,16 +210,22 @@ private suspend fun assertUploadedPreview(
                 driver.clickByText("Pause")
                 driver.assertVisibleByText("Play")
             } else if (driver is AndroidAppTestDriver) {
-                driver.clickByDescription("play")
+                driver.clickByDescription("Play")
                 if (kind == PreviewFile.VIDEO) {
                     driver.assertVideoPlaying(file.name)
                 } else {
-                    driver.assertVisibleByDescription("pause")
+                    driver.assertVisibleByDescription("Pause")
                 }
             } else {
-                if (kind == PreviewFile.AUDIO) driver.clickByDescription("play")
-                driver.assertVisibleByDescription("pause")
-                if (kind == PreviewFile.VIDEO) driver.assertVisibleByDescription("video frame ${file.name}")
+                if (kind == PreviewFile.AUDIO) driver.clickByDescription("Play")
+                driver.assertVisibleByDescription("Pause")
+                if (kind == PreviewFile.VIDEO) {
+                    if (DesktopTestPlatform.current() == DesktopTestPlatform.Windows) {
+                        (driver as DesktopAppTestDriver).media.assertVideoFrame()
+                    } else {
+                        driver.assertVisibleByDescription("video frame ${file.name}")
+                    }
+                }
             }
         }
     }

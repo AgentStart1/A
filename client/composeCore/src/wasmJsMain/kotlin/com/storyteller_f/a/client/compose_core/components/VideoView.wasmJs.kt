@@ -17,12 +17,12 @@ actual fun VideoViewEmbed(remoteMediaItem: RemoteMediaItem) {
 
 @Composable
 actual fun VideoViewFilled(remoteMediaItem: RemoteMediaItem) {
-    WasmMediaPlayer(remoteMediaItem, Modifier.fillMaxSize(), video = true, fill = true)
+    WasmMediaPlayer(remoteMediaItem, Modifier.fillMaxSize(), video = true)
 }
 
 @Composable
 actual fun VideoViewFullScreen(remoteMediaItem: RemoteMediaItem) {
-    WasmMediaPlayer(remoteMediaItem, Modifier.fillMaxSize(), video = true, fill = true)
+    WasmMediaPlayer(remoteMediaItem, Modifier.fillMaxSize(), video = true)
 }
 
 @Composable

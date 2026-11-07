@@ -18,7 +18,7 @@ val platformTestService = gradle.sharedServices.registerIfAbsent(
     maxParallelUsages = 1
 }
 
-tasks.withType<Test>().matching { it.name == "appiumTest" }.configureEach {
+tasks.withType<Test>().matching { it.name in setOf("appiumTest", "windowsMediaTest") }.configureEach {
     usesService(platformTestService)
     maxParallelForks = 1
 }

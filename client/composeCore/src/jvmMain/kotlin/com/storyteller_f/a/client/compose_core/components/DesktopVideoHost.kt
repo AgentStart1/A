@@ -13,8 +13,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.nio.ByteBuffer
@@ -45,6 +47,9 @@ internal sealed interface DesktopVideoState {
         val buffering: Boolean = false,
         val frame: DesktopVideoFrame? = null,
         val aspectRatio: Float? = null,
+        val position: Double = 0.0,
+        val duration: Double = 0.0,
+        val volume: Float = 1f,
     ) : DesktopVideoState
     data object Failed : DesktopVideoState
 }
@@ -57,6 +62,11 @@ internal interface DesktopVideoPlayer : AutoCloseable {
     fun aspectRatio(): Float?
     fun play()
     fun pause()
+    fun position(): Double
+    fun duration(): Double
+    fun volume(): Float
+    fun seek(seconds: Double)
+    fun setVolume(volume: Float)
 }
 
 /** Owns native lifetime without UI objects. State is confined to the injected serial dispatcher. */
@@ -104,6 +114,12 @@ internal class DesktopVideoHost(
     fun pause() {
         events.trySend(Event.Pause)
     }
+    fun seek(seconds: Double) {
+        events.trySend(Event.Seek(seconds))
+    }
+    fun setVolume(volume: Float) {
+        events.trySend(Event.Volume(volume))
+    }
     fun close() {
         scope.cancel()
     }
@@ -117,10 +133,38 @@ internal class DesktopVideoHost(
                     if (current is DesktopVideoState.Ready) mutableState.value = current.copy(frame = frame)
                 }
             }
+            launch {
+                while (isActive) {
+                    events.send(Event.Tick)
+                    delay(250)
+                }
+            }
             for (event in events) {
                 when (event) {
                     Event.Play -> withContext(worker) { player.play() }
+
                     Event.Pause -> withContext(worker) { player.pause() }
+
+                    is Event.Seek -> withContext(worker) { player.seek(event.seconds) }
+
+                    is Event.Volume -> withContext(worker) { player.setVolume(event.volume) }
+
+                    Event.Tick -> {
+                        val progress =
+                            withContext(worker) {
+                                Triple(player.position(), player.duration(), player.volume())
+                            }
+                        val current = mutableState.value as? DesktopVideoState.Ready
+                        if (current != null) {
+                            mutableState.value =
+                                current.copy(
+                                    position = progress.first,
+                                    duration = progress.second,
+                                    volume = progress.third,
+                                )
+                        }
+                    }
+
                     is Event.Playback -> publishPlayback(event.value, player, worker)
                 }
             }
@@ -150,6 +194,9 @@ internal class DesktopVideoHost(
     }
 
     private sealed interface Event {
+        data object Tick : Event
+        data class Seek(val seconds: Double) : Event
+        data class Volume(val volume: Float) : Event
         data object Play : Event
         data object Pause : Event
         data class Playback(val value: DesktopPlayback) : Event

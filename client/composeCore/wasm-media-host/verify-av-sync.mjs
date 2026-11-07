@@ -1,4 +1,5 @@
 /* This is a private project. All rights reserved. */
+import { toggleMediaPlayback } from "./media-controls.mjs";
 import { runCase, launchBrowser, ownSite } from "./verification-runner.mjs";
 import { getReportDirectory } from "./verification-reports.mjs";
 import assert from "node:assert/strict";
@@ -67,7 +68,7 @@ await runCase("verify-av-sync", async () => {
                 requestAnimationFrame(() => requestAnimationFrame(resolve)),
               ),
           );
-          await page.mouse.click(50, 452);
+          await toggleMediaPlayback(page);
           await page.waitForFunction(() =>
             mediaTest.contexts.some((c) => c.state === "running"),
           );
@@ -156,7 +157,7 @@ await runCase("verify-av-sync", async () => {
           const pausedWorker = await page.evaluate(
             () => mediaTest.workers.length,
           );
-          await page.mouse.click(50, 452);
+          await toggleMediaPlayback(page);
           await page.waitForFunction(
             (worker) =>
               mediaTest.connected.size === 0 &&
@@ -183,7 +184,7 @@ await runCase("verify-av-sync", async () => {
             audio: syncProbe.audio.length,
             video: syncProbe.video.length,
           }));
-          await page.mouse.click(50, 452);
+          await toggleMediaPlayback(page);
           await page.waitForFunction(
             (counts) =>
               syncProbe.audio.length >= counts.audio + 3 &&

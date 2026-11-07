@@ -11,7 +11,7 @@ abstract class TestArtifactFiles {
 
 plugins.withId("java") {
     extensions.getByType<JavaPluginExtension>().sourceSets.matching {
-        it.name in setOf("test", "appiumTest", "e2eTest")
+        it.name in setOf("test", "appiumTest", "windowsMediaTest", "e2eTest")
     }.all {
         val sourceSet = this
         val taskName = name

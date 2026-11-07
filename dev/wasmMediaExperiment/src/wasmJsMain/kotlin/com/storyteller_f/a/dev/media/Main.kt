@@ -37,6 +37,7 @@ import kotlinx.browser.window
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
+    enableMediaTestControls()
     ComposeViewport(document.body!!) {
         MaterialTheme {
             var mounted by remember { mutableStateOf(true) }
@@ -91,7 +92,7 @@ fun main() {
 }
 
 private fun createFixtureItem(audio: Boolean, alternate: Boolean): RemoteMediaItem {
-    val requested = window.location.search.substringAfter("media=", "").substringBefore('&')
+    val requested = readRequestedMedia()
     val source =
         if (alternate) {
             if (audio) "/fixture-alt.wav" else "/silent.webm"
@@ -106,3 +107,13 @@ private enum class OverlayMode {
     MENU,
     DIALOG,
 }
+
+@OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+@JsFun(
+    "() => { const url = new URL(location.href); url.searchParams.set('appium', 'true'); history.replaceState(null, '', url); }",
+)
+private external fun enableMediaTestControls()
+
+@OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+@JsFun("() => new URL(location.href).searchParams.get('media') ?? ''")
+private external fun readRequestedMedia(): String
