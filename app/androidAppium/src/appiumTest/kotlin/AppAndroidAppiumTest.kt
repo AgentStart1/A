@@ -12,6 +12,24 @@ class AppAndroidAppiumTest :
         AndroidAppiumHelper(),
     ) {
     @Test
+    fun `test video network error recovers after user retry`() = testAndroidMediaRetry(PreviewFile.VIDEO)
+
+    @Test
+    fun `test audio network error recovers after user retry`() = testAndroidMediaRetry(PreviewFile.AUDIO)
+
+    @Test
+    fun `test audio volume restores after native mute`() = testAndroidAudioVolume()
+
+    @Test
+    fun `test audio seeks and replays after native playback ends`() = testAndroidAudioReplay()
+
+    @Test
+    fun `test video playlist selection resumes native playback`() = testAndroidVideoPlaylist()
+
+    @Test
+    fun `test video expansion preserves native frames and playback position`() = testAndroidVideoExpansion()
+
+    @Test
     fun `test native download cancellation returns to file preview`() = testNativeDownloadCancellation()
 
     @Test

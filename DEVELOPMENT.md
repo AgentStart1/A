@@ -628,6 +628,13 @@ Appium selectors use English consistently. Desktop JVMs set en/US; browser E2E v
 
 Browser suites use Chrome Headless; install Chrome or set `CHROME_BIN` before running the Wasm browser test tasks. Compose UI test targets declare `binaries.executable()` so the Compose plugin can bundle Skiko with the test runtime.
 
+The shared Karma configuration serves the compiled Wasm test package's Compose resources
+over HTTP. This keeps compiled string offsets paired with current translations. `:client:composeCore:wasmJsBrowserTest --tests '*BrowserClipboardTest*'`
+(with `-Pserver.flavor=dev -Pserver.buildType=debug`) exercises the mounted player through
+its actual Wasm clipboard adapter: rejection feedback, a second successful click, and cancellation.
+The browser clipboard is replaced by a controlled Promise fixture; native permission dialogs are
+outside this suite. UI copy actions use `Clipboard.copyText`; raw `setText` still throws on failure.
+
 The `wasm-browser-test-interop` convention is applied to `shared` and `client/room`. It lowers only the `kotlinx-io` Node `createRequire` getter in generated `.import-object.mjs` files, preserving its module URL while preventing a bare `import.meta` alias from reaching Karma classic-script bundles. The loader is tracked as a test input and has regression coverage via `node --test config/webpack/wasm-node-import-meta.test.cjs`. It does not patch cached dependencies or generated files.
 
 Browser activity resize scenarios use a strict 504px compact content viewport: Windows Chrome enforces that minimum (522px outer width with 18px frame), while Firefox permits 500px. The 504px case still exercises bottom navigation, alongside 900px and 1600px layouts; viewport equality and draft preservation assertions remain strict.
@@ -1604,6 +1611,73 @@ of network reads and native decoder resources; samples copied inside the audio W
 are also closed explicitly. The adapter disposes Skia bitmaps on replacement/removal.
 Hiding the page pauses playback; returning to it requires an explicit Play action.
 The existing media-item contract has no loop option; ended playback can be replayed.
+
+### Shared player presentation
+
+Android, desktop and Wasm render their transport controls through `MediaPlayerSurface`.
+Keep visual layout, time formatting, seeking, volume menus and expanded-player behavior
+in this common component; adapters only translate engine state and commands. Expansion
+retains the caller-owned playback engine. Android adds playlist and picture-in-picture
+entries to the shared options menu, without a separate toolbar below the player.
+Desktop progress is sampled by `DesktopVideoHost` on its worker dispatcher; media time
+uses seconds and volume uses 0..1 at the shared UI boundary. Desktop Retry replaces the
+failed native player and resumes playback; initial audio previews remain paused. Default
+Android playlist entries use the media title or filename rather than the source URL.
+
+Android native playback regressions live in `:app:androidAppium:appiumTest`: filter by
+`*video expansion*`, `*video playlist*`, `*picture in picture*`, `*audio seeks*` and
+`*audio volume restores*`. They use the bundled real media fixtures, decoded RGB frame
+checks and native progress/volume state. Keep the normal device lease, Appium/backend
+prerequisites and flavor/build-type properties. Expanded Android SurfaceViews may not
+appear in the accessibility tree; frame checks inspect the verified dialog screenshot.
+
+Run the focused `:client:composeCore:jvmTest` cases `*MediaTimeTest`, `*MediaVolumeControlTest`,
+`*MediaPlayerSurfaceTest` and `*DesktopVideoHostTest` with the standard flavor/build-type
+properties. Surface tests use synthetic media state and save layout captures under
+`client/composeCore/build/test-results/jvmTest/media-ui`; they require no account or player.
+
+Run `:client:composeCore:nativeMediaTest` separately for real VLC playback. This explicit
+integration task requires discoverable VLC native libraries and a working desktop graphics
+runtime; it is excluded from ordinary JVM tests and fails when its runtime is unavailable.
+It checks compact video controls, seek/pause, expansion continuity, audio end/replay,
+volume restoration and explicit audio/video recovery after HTTP 503. The task serves the
+bundled synthetic fixtures locally and saves captures under
+`client/composeCore/build/test-results/nativeMediaTest/media`. Run it sequentially with
+other desktop UI tasks, using the standard flavor/build-type properties.
+
+Windows Tao loads EGL/GLES from the system library path before extracting its bundled ANGLE
+runtime. Keep unrelated toolchain EGL/GLES DLL directories out of the application process
+PATH; mixing a system EGL with bundled GLES can crash during native window attachment.
+Windows Appium JVMs clear the developer JNI search path (`-Djava.library.path=`), using
+classpath-packaged native resources; VLC retains its separate JNA discovery configuration.
+Use JVM native-library loading diagnostics to verify both library origins before changing
+rendering settings. The desktop window tracker excludes Tao's message-dispatch window
+from application-window selection. Desktop video acceptance checks the synthetic RGB
+pattern in the composed screenshot because native UIA may merge an inline image into
+its containing content control. Exact Windows controls use native name/control-type
+selectors: XPath materializes the entire native tree, which can consume the assertion
+budget while inline video updates. Keep timeout budgets unchanged.
+
+Run `:app:desktopAppium:windowsMediaTest` with the standard flavor/build-type
+properties on Windows for real full-application video pause/expansion continuity, audio/video seek and
+end/replay, volume/mute restoration and explicit HTTP 503 recovery. The retry fixtures
+advertise an owned loopback HTTP endpoint through the backend filesystem public URL;
+they restore successful media responses only after the UI displays Retry. This explicit
+suite shares the desktop serialization service and always executes when requested.
+Video volume acceptance uses `sample-with-audio.mp4`: its video track is copied from
+`sample.mp4` and its AAC audio is encoded from `sample.wav`. The original silent video
+fixture remains unchanged; a silent clip has no VLC audio output to adjust. Run the four
+`*test audio fullscreen*` / `*test video fullscreen*` cases for attachment/list navigation.
+
+The isolated experiment explicitly enables the test-only semantics bridge. Browser checks
+locate transport controls by name and seek through the located slider bounds, so visual
+layout changes do not require fixed-coordinate updates. Production player pages keep
+the bridge disabled unless their test mode explicitly enables it.
+
+The `player-expansion` browser suite checks that expansion and collapse retain the
+engine, worker and audio context on Chrome, Edge and Firefox for both RGBA and GPU paths.
+Run it through `node client/composeCore/wasm-media-host/run-browser-tests.mjs player-expansion`
+with the existing browser-test prerequisites.
 
 ### Reproduce the isolated experiment
 

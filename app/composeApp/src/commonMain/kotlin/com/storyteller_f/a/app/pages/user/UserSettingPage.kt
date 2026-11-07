@@ -60,10 +60,10 @@ import com.storyteller_f.a.client.compose_core.CoreStrings
 import com.storyteller_f.a.client.compose_core.components.CustomAlertDialog
 import com.storyteller_f.a.client.compose_core.components.CustomAlertDialogController
 import com.storyteller_f.a.client.compose_core.components.LocalToaster
+import com.storyteller_f.a.client.compose_core.components.copyText
 import com.storyteller_f.a.client.compose_core.components.emitEvent
 import com.storyteller_f.a.client.compose_core.components.rememberAlertDialogController
 import com.storyteller_f.a.client.compose_core.components.request
-import com.storyteller_f.a.client.compose_core.components.setText
 import com.storyteller_f.a.client.compose_core.utils.ImageFormat
 import com.storyteller_f.a.client.compose_core.utils.getRemoteImageBitmap
 import com.storyteller_f.a.client.compose_core.utils.saveImageBitmap
@@ -471,8 +471,7 @@ private fun kotlinx.coroutines.CoroutineScope.rememberTwoFactorActions(
         },
         copyUri = { uri ->
             launch {
-                clipboard.setText(uri)
-                toaster.showMessage("copied")
+                clipboard.copyText(uri, toaster)
             }
         },
         enableTotp = {

@@ -6,6 +6,7 @@ package com.storyteller_f.a.client.compose_core.components
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import java.nio.ByteBuffer
@@ -91,7 +92,41 @@ class DesktopVideoHostTest {
             host.close()
         }
 
+    @Test
+    fun `seek commands update the displayed position`() =
+        runTest {
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            val player = FakePlayer()
+            val host = DesktopVideoHost("media", backgroundScope, dispatcher, dispatcher) { player }
+            runCurrent()
+            host.seek(42.0)
+            runCurrent()
+            advanceTimeBy(250)
+            runCurrent()
+            assertEquals(listOf(42.0), player.seeks)
+            assertEquals(42.0, assertIs<DesktopVideoState.Ready>(host.state.value).position)
+            host.close()
+        }
+
+    @Test
+    fun `volume commands update the displayed volume`() =
+        runTest {
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            val player = FakePlayer()
+            val host = DesktopVideoHost("media", backgroundScope, dispatcher, dispatcher) { player }
+            runCurrent()
+            host.setVolume(0.25f)
+            runCurrent()
+            advanceTimeBy(250)
+            runCurrent()
+            assertEquals(0.25f, assertIs<DesktopVideoState.Ready>(host.state.value).volume)
+            host.close()
+        }
+
     private class FakePlayer : DesktopVideoPlayer {
+        val seeks = mutableListOf<Double>()
+        private var currentPosition = 5.0
+        private var currentVolume = 0.5f
         var url = ""
         var pauses = 0
         var plays = 0
@@ -111,6 +146,16 @@ class DesktopVideoHostTest {
         override fun pause() {
             pauses++
             playback(DesktopPlayback.Paused)
+        }
+        override fun position(): Double = currentPosition
+        override fun duration(): Double = 60.0
+        override fun volume(): Float = currentVolume
+        override fun seek(seconds: Double) {
+            seeks += seconds
+            currentPosition = seconds
+        }
+        override fun setVolume(volume: Float) {
+            currentVolume = volume
         }
         override fun close() {
             closes++

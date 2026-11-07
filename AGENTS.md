@@ -753,3 +753,20 @@
 
 - Refresh expired signed resource URLs once before transferring bytes, not when reading a complete cache.
   Preserve the requested file revision and partial source; guest refresh failure must not block post reading.
+
+- Keep media transport visuals and interactions in the shared MediaPlayerSurface; platform adapters retain engine ownership across player expansion and contribute extra actions through its options menu.
+
+- Shared media actions must preserve native prepare/retry semantics; browser clipboard actions must await the actual write instead of using a no-op platform implementation.
+
+- Native media acceptance must check decoded frames and advancing positions through expansion and return.
+  Android dialog surfaces need screenshot-based frame checks because SurfaceView may be absent from UIA.
+  Construct Selenium screenshot rectangles from Point and Dimension to avoid its height/width argument order.
+  User-triggered desktop retries must replace and dispose the failed native player; never replay automatically.
+
+- Diagnose Windows Tao native startup crashes using loaded EGL/GLES origins before changing rendering.
+  Keep unrelated toolchain DLL directories out of the application runtime PATH and exclude Tao message
+  dispatch windows from Appium content-window selection.
+
+- UI clipboard actions use `Clipboard.copyText` for localized outcome feedback and failure isolation.
+  Keep `setText` failures observable, normalize Wasm `JsException` at the browser boundary,
+  and propagate cancellation without feedback or automatic retries.

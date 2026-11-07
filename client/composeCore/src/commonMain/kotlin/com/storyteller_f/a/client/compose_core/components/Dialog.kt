@@ -88,11 +88,12 @@ fun CustomAlertDialogInternal(dialogState: CustomAlertDialogState?, dismiss: () 
     }, confirmButton = {
         if (dialogState.enableCopy) {
             val clipboardManager = LocalClipboard.current
+            val toast = LocalToaster.current
             val scope = rememberCoroutineScope()
             Button({
                 dismiss()
                 scope.launch {
-                    clipboardManager.setText(dialogState.message)
+                    clipboardManager.copyText(dialogState.message, toast)
                 }
             }) {
                 Text("Copy")

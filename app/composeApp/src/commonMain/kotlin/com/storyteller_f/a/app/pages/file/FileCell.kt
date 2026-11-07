@@ -47,7 +47,8 @@ import com.storyteller_f.a.app.view
 import com.storyteller_f.a.client.compose_core.components.CustomIcon
 import com.storyteller_f.a.client.compose_core.components.FileIcon
 import com.storyteller_f.a.client.compose_core.components.IconRes
-import com.storyteller_f.a.client.compose_core.components.setText
+import com.storyteller_f.a.client.compose_core.components.LocalToaster
+import com.storyteller_f.a.client.compose_core.components.copyText
 import com.storyteller_f.a.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.shared.model.Dimension
 import com.storyteller_f.shared.model.FileInfo
@@ -143,6 +144,7 @@ fun FileCellMenu(expanded: Boolean, updateExpanded: (Boolean) -> Unit, fileInfo:
             },
         )
         val clipboardManager = LocalClipboard.current
+        val toast = LocalToaster.current
         val scope = rememberCoroutineScope()
         DropdownMenuItem(
             leadingIcon = {
@@ -152,7 +154,7 @@ fun FileCellMenu(expanded: Boolean, updateExpanded: (Boolean) -> Unit, fileInfo:
             onClick = {
                 updateExpanded(false)
                 scope.launch {
-                    clipboardManager.setText(fileInfo.name)
+                    clipboardManager.copyText(fileInfo.name, toast)
                 }
             },
         )

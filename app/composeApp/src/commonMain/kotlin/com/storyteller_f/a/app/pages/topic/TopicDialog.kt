@@ -66,8 +66,8 @@ import com.storyteller_f.a.client.compose_core.components.FavoriteButton
 import com.storyteller_f.a.client.compose_core.components.LocalToaster
 import com.storyteller_f.a.client.compose_core.components.SheetContainer
 import com.storyteller_f.a.client.compose_core.components.SubscriptionButton
+import com.storyteller_f.a.client.compose_core.components.copyText
 import com.storyteller_f.a.client.compose_core.components.request
-import com.storyteller_f.a.client.compose_core.components.setText
 import com.storyteller_f.a.client.compose_core.utils.getCurrentLanguage
 import com.storyteller_f.a.client.core.createTopicSnapshot
 import com.storyteller_f.a.client.core.pinTopic
@@ -153,8 +153,7 @@ private fun CopyButton(content: TopicContent) {
     ) {
         scope.launch {
             if (content is TopicContent.Plain) {
-                clipboardManager.setText(content.plain)
-                toast.showMessage("success")
+                clipboardManager.copyText(content.plain, toast)
             } else {
                 toast.showMessage("failed")
             }

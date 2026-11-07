@@ -27,4 +27,4 @@ object DefaultMediaPlayListHandlerProvider : MediaPlayListHandlerProvider {
 }
 
 private fun loadMediaPlayList(remoteMediaItem: RemoteMediaItem): List<ConstPlayItem> =
-    listOf(ConstPlayItem(remoteMediaItem.url, title = remoteMediaItem.url))
+    listOf(ConstPlayItem(remoteMediaItem.url, title = remoteMediaItem.title ?: remoteMediaItem.name))

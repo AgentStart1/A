@@ -1,4 +1,5 @@
 /* This is a private project. All rights reserved. */
+import { toggleMediaPlayback } from "./media-controls.mjs";
 import { runCase, launchBrowser, ownSite } from "./verification-runner.mjs";
 import { getReportDirectory } from "./verification-reports.mjs";
 import assert from "node:assert/strict";
@@ -134,7 +135,7 @@ await runCase("verify-bitmap-ownership", async () => {
                   );
                 else await settle(page);
                 if (scenario === "playing-dispose") {
-                  await page.mouse.click(50, 452);
+                  await toggleMediaPlayback(page);
                   await page.waitForFunction(
                     () =>
                       bitmapProbe.installed >= 15 &&

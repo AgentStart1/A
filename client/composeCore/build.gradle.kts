@@ -196,7 +196,7 @@ compose.resources {
 
 // Platform integration is explicit; ordinary JVM checks remain portable.
 tasks.named<Test>("jvmTest") {
-    exclude("**/WindowsProtectedStoreTest*", "**/MacProtectedStoreTest*")
+    exclude("**/WindowsProtectedStoreTest*", "**/MacProtectedStoreTest*", "**/NativeMediaPlaybackTest*")
 }
 tasks.register<Test>("windowsProtectedStoreTest") {
     group = "verification"
@@ -235,3 +235,16 @@ val testFontGateRuntime =
     }
 
 tasks.named("check") { dependsOn(testFontGateRuntime) }
+
+tasks.register<Test>("nativeMediaTest") {
+    group = "verification"
+    description = "Verifies real VLC playback, native controls, expansion and explicit network-error recovery."
+    dependsOn("jvmTestClasses")
+    val hostTest = tasks.named<Test>("jvmTest").get()
+    testClassesDirs = hostTest.testClassesDirs
+    classpath = hostTest.classpath
+    useJUnit()
+    filter { includeTestsMatching("*.NativeMediaPlaybackTest") }
+    maxParallelForks = 1
+    outputs.upToDateWhen { false }
+}

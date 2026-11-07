@@ -36,6 +36,7 @@
     <string name="input_search_user_created_titles">Input to search received titles</string>
     <string name="refresh">Refresh</string>
     <string name="no_content_yet">No content yet ┑(￣Д ￣)┍</string>
+    <string name="copy_failed">Unable to copy. Please try again.</string>
     <string name="copy">Copy</string>
     <string name="snapshot">Snapshot</string>
     <string name="select_file">Select File</string>
@@ -59,4 +60,11 @@
     <string name="media_loading">Loading media…</string>
     <string name="media_failed">Unable to play this file. You can download it and open it in another app.</string>
     <string name="media_playback_error">Unable to play this media</string>
+    <string name="media_fullscreen">Expand player</string>
+    <string name="media_exit_fullscreen">Exit expanded player</string>
+    <string name="media_options">Media options</string>
+    <string name="media_playlist">Playlist</string>
+    <string name="media_pip">Picture in picture</string>
+    <string name="media_download">Download</string>
+    <string name="media_retry">Retry</string>
 </resources>

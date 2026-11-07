@@ -4,21 +4,12 @@
 
 package com.storyteller_f.a.client.compose_core.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.TapAndPlay
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -34,7 +25,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -61,9 +51,7 @@ fun MediaPlayerEmbed(
     remoteMediaItem: RemoteMediaItem,
     block: @Composable ((MediaPlaySession?, LocalMediaPlaySession) -> Unit),
 ) {
-    MediaPlayerInternal(remoteMediaItem, false) { session, localSession ->
-        EmbedMediaPlayerContainer(session, localSession, block)
-    }
+    MediaPlayerInternal(remoteMediaItem, false, block)
 }
 
 @Composable
@@ -119,50 +107,6 @@ fun MediaPlayerInternal(
     block(playingSession, localMediaPlaySession)
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalUuidApi::class)
-@Composable
-fun EmbedMediaPlayerContainer(
-    playingSession: MediaPlaySession?,
-    localMediaPlaySession: LocalMediaPlaySession,
-    block: @Composable (MediaPlaySession?, LocalMediaPlaySession) -> Unit,
-) {
-    var showSheet by remember {
-        mutableStateOf(false)
-    }
-    MediaObjectBlock {
-        Box(modifier = Modifier.weight(1f)) {
-            block(playingSession, localMediaPlaySession)
-        }
-        EmbedMediaPlayerMenus(
-            localMediaPlaySession,
-            playingSession,
-        ) {
-            showSheet = true
-        }
-    }
-    val sheetState = rememberModalBottomSheetState()
-    val mediaPlayerService = LocalMediaPlayerService.current
-    if (playingSession?.lastUuid == localMediaPlaySession.uuid) {
-        VideoPlaylistPicker(
-            showSheet,
-            sheetState,
-            {
-                showSheet = false
-            },
-            playingSession.playList,
-        ) { _, i ->
-            switchPlaylist(i, mediaPlayerService)
-        }
-    }
-}
-
-private fun switchPlaylist(i: Int, mediaPlayerService: MediaPlayerService) {
-    val player = mediaPlayerService.controller.value ?: return
-
-    player.seekTo(i, 0)
-    player.play()
-}
-
 @Composable
 fun BoxScope.PlayerOccupy(localMediaPlaySession: LocalMediaPlaySession) {
     val mediaPlayerService = LocalMediaPlayerService.current
@@ -177,54 +121,46 @@ fun BoxScope.PlayerOccupy(localMediaPlaySession: LocalMediaPlaySession) {
 }
 
 @Composable
-fun BoxScope.PlayerWaiting(localMediaPlaySession: LocalMediaPlaySession, remoteMediaItem: RemoteMediaItem) {
-    val playListHandler = LocalMediaPlayListHandlerProvider.current.playListHandler(remoteMediaItem)
-    val playList by playListHandler.data.collectAsState()
-    val loadingState by playListHandler.state.collectAsState()
-    val coverMediaInfo = remoteMediaItem.cover
-    if (coverMediaInfo != null) {
-        val request = imageRequestInMarkdown(coverMediaInfo)
-        AsyncImage(request, contentDescription = "cover", modifier = Modifier.fillMaxSize())
-    } else {
-        Box(modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh).fillMaxSize())
-    }
-    PlayerWaitingState(loadingState, playListHandler::refresh)
-    val mediaPlayerService = LocalMediaPlayerService.current
+fun BoxScope.PlayerWaiting(
+    localMediaPlaySession: LocalMediaPlaySession,
+    remoteMediaItem: RemoteMediaItem,
+    video: Boolean = true,
+) {
+    val handler = LocalMediaPlayListHandlerProvider.current.playListHandler(remoteMediaItem)
+    val playList by handler.data.collectAsState()
+    val loading by handler.state.collectAsState()
+    val service = LocalMediaPlayerService.current
     val scope = rememberCoroutineScope()
-    val availablePlayList = playList.orEmpty()
-    if (loadingState !is LoadingState.Error && loadingState != LoadingState.Loading) {
-        IconButton({
-            scope.launch {
-                mediaPlayerService.start(remoteMediaItem, localMediaPlaySession, availablePlayList)
-            }
-        }, modifier = Modifier.align(Alignment.Center), enabled = availablePlayList.isNotEmpty()) {
-            Icon(Icons.Default.PlayArrow, "play")
-        }
-    }
-    Text(
+    val available = playList.orEmpty()
+    val failed = loading is LoadingState.Error
+    val state =
+        MediaControlState(
+            loading = loading == LoadingState.Loading,
+            failed = failed,
+            enabled = loading != LoadingState.Loading && !failed && available.isNotEmpty(),
+            volumeEnabled = false,
+            expansionEnabled = false,
+        )
+    val actions =
+        MediaControlActions(
+            { scope.launch { service.start(remoteMediaItem, localMediaPlaySession, available) } },
+            {},
+            {},
+            {},
+            retry = if (failed) handler::refresh else null,
+        )
+    MediaPlayerSurface(
         remoteMediaItem.title ?: remoteMediaItem.name,
-        modifier =
-        Modifier
-            .align(Alignment.BottomStart)
-            .padding(10.dp),
-        maxLines = 2,
-    )
-}
-
-@Composable
-private fun BoxScope.PlayerWaitingState(loadingState: LoadingState?, refresh: () -> Unit) {
-    if (loadingState is LoadingState.Error) {
-        Box(
-            modifier =
-            Modifier
-                .align(Alignment.Center)
-                .padding(16.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            ExceptionCell(loadingState.e, refresh)
+        state,
+        actions,
+        Modifier.fillMaxSize(),
+        video = video,
+        sourceUrl = remoteMediaItem.url,
+        artwork = remoteMediaItem.cover?.url,
+    ) {
+        remoteMediaItem.cover?.let { cover ->
+            AsyncImage(imageRequestInMarkdown(cover), null, Modifier.fillMaxSize())
         }
-    } else if (loadingState == LoadingState.Loading) {
-        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
     }
 }
 

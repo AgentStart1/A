@@ -1,5 +1,10 @@
 /* This is a private project. All rights reserved. */
 import {
+  toggleFirefoxPlayback,
+  toggleFirefoxMute,
+  seekFirefoxMidpoint,
+} from "./media-controls.mjs";
+import {
   runCase,
   launchFirefoxDriver,
   ownSite,
@@ -120,8 +125,7 @@ await runCase("verify-compose-firefox", async () => {
           ),
           { width: 900, height: 800 },
         );
-        const playY = kind === "audio" ? 108 : 452;
-        await click(50, playY);
+        await toggleFirefoxPlayback(driver);
         await wait("return mediaTest.contexts.some(c=>c.state==='running')");
         const first = await shot();
         await new Promise((r) => setTimeout(r, 1200));
@@ -136,18 +140,18 @@ await runCase("verify-compose-firefox", async () => {
           assert.ok(measured.decoded > 10);
           assert.ok(measured.uploads > 10);
         }
-        await click(130, playY);
+        await toggleFirefoxMute(driver);
         assert.equal(
           await evaluate("return mediaTest.gains.at(-1).gain.value"),
           0,
         );
-        await click(130, playY);
+        await toggleFirefoxMute(driver);
         assert.equal(
           await evaluate("return mediaTest.gains.at(-1).gain.value"),
           1,
         );
         const pausedWorker = await evaluate("return mediaTest.workers.length");
-        await click(50, playY);
+        await toggleFirefoxPlayback(driver);
         await wait(
           `return mediaTest.connected.size===0&&${kind === "audio" ? "mediaTest.audio" : "mediaTest.decoded"}.at(-1)?.worker===${pausedWorker}`,
         );
@@ -157,7 +161,7 @@ await runCase("verify-compose-firefox", async () => {
           await new Promise((r) => setTimeout(r, 180));
           assert.equal(regionHash(paused), regionHash(await shot()));
           const target = kind === "av" ? 3 : 2;
-          await click(320, 502);
+          await seekFirefoxMidpoint(driver);
           await wait(
             `return Math.abs(mediaTest.decoded.at(-1).timestamp-${target})<0.2`,
           );
@@ -214,7 +218,7 @@ await runCase("verify-compose-firefox", async () => {
           resolve(await getReportDirectory(), `${prefix}-firefox-${kind}.png`),
           await shot(),
         );
-        await click(50, playY);
+        await toggleFirefoxPlayback(driver);
         await wait("return mediaTest.contexts.at(-1).state==='running'");
         const nextWorker = await evaluate("return mediaTest.workers.length");
         await click(235, 64);

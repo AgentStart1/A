@@ -4,41 +4,20 @@
 
 package com.storyteller_f.a.client.compose_core.components
 
-import android.app.PictureInPictureParams
-import android.content.ClipData
 import android.util.Rational
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.PictureInPicture
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ClipEntry
-import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.PictureInPictureModeChangedInfo
 import androidx.core.util.Consumer
@@ -46,7 +25,6 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.ui.PlayerView
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.launch
 import kotlin.uuid.ExperimentalUuidApi
 
 // Constant for broadcast receiver
@@ -67,14 +45,14 @@ actual fun VideoViewEmbed(remoteMediaItem: RemoteMediaItem) {
 @Composable
 actual fun VideoViewFullScreen(remoteMediaItem: RemoteMediaItem) {
     MediaPlayerFullScreen(remoteMediaItem) { playingSession, localMediaPlaySession ->
-        VideoPlayer(playingSession, localMediaPlaySession, remoteMediaItem)
+        VideoPlayer(playingSession, localMediaPlaySession, remoteMediaItem, fill = true)
     }
 }
 
 @Composable
 actual fun VideoViewFilled(remoteMediaItem: RemoteMediaItem) {
     MediaPlayerFilled(remoteMediaItem) { playingSession, localMediaPlaySession ->
-        VideoPlayer(playingSession, localMediaPlaySession, remoteMediaItem)
+        VideoPlayer(playingSession, localMediaPlaySession, remoteMediaItem, fill = true)
     }
 }
 
@@ -84,6 +62,7 @@ private fun VideoPlayer(
     playingSession: MediaPlaySession?,
     localMediaPlaySession: LocalMediaPlaySession,
     remoteMediaItem: RemoteMediaItem,
+    fill: Boolean = false,
 ) {
     val mediaPlayerService = LocalMediaPlayerService.current
     val player by mediaPlayerService.controller.collectAsState()
@@ -110,7 +89,7 @@ private fun VideoPlayer(
     EnablePipPre31(enablePip, localMediaPlaySession)
     Box(
         modifier =
-        pipModifier.aspectRatio(ratio.toFloat()),
+        if (fill) pipModifier.fillMaxSize() else pipModifier.aspectRatio(ratio.toFloat()),
     ) {
         when {
             player == null -> PlayerWaiting(localMediaPlaySession, remoteMediaItem)
@@ -119,9 +98,10 @@ private fun VideoPlayer(
 
             playingSession.lastUuid == localMediaPlaySession.uuid ->
                 VideoPlayerInternal(
-                    localMediaPlaySession,
                     player,
-                    remoteMediaItem.name,
+                    remoteMediaItem,
+                    localMediaPlaySession,
+                    playingSession,
                 )
 
             playingSession.id == localMediaPlaySession.id -> PlayerOccupy(localMediaPlaySession)
@@ -135,81 +115,28 @@ private fun VideoPlayer(
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 private fun BoxScope.VideoPlayerInternal(
-    localMediaPlaySession: LocalMediaPlaySession,
     player: MediaController?,
-    name: String,
+    item: RemoteMediaItem,
+    localSession: LocalMediaPlaySession,
+    playingSession: MediaPlaySession,
 ) {
     player ?: return
     AndroidPlayerContainer(player) {
-        val playerState by rememberPlayerState(player, localMediaPlaySession)
         val isPip = rememberIsInPipMode()
-        Box(
-            Modifier.fillMaxSize().semantics {
-                contentDescription =
-                    "video playback $name: ${if (playerState.currentIsPlaying) "playing" else "paused"}"
-            },
+        AndroidMediaSurface(
+            item,
+            player,
+            localSession,
+            playingSession,
+            Modifier.fillMaxSize(),
+            controlsVisible = !isPip,
         ) {
             AndroidView(
-                factory = { PlayerView(it) },
+                factory = { PlayerView(it).apply { useController = false } },
                 modifier = Modifier.fillMaxSize(),
                 onReset = null,
                 onRelease = { it.player = null },
-            ) {
-                it.player = player
-                it.useController = !isPip
-            }
-            if (playerState.currentLoading) {
-                CircularProgressIndicator(Modifier.align(Alignment.Center).height(40.dp))
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalUuidApi::class)
-@Composable
-fun EmbedMediaPlayerMenus(
-    localMediaPlaySession: LocalMediaPlaySession,
-    playingSession: MediaPlaySession?,
-    showSheet: () -> Unit,
-) {
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val toasterState = LocalToaster.current
-    FlowRow {
-        val clipboardManager = LocalClipboard.current
-        val isActive = localMediaPlaySession.uuid == playingSession?.lastUuid
-
-        IconButton(showSheet, enabled = isActive) {
-            Icon(Icons.AutoMirrored.Default.List, "playlist")
-        }
-        IconButton({
-            scope.launch {
-                clipboardManager.setClipEntry(ClipEntry(ClipData.newPlainText("text", localMediaPlaySession.id)))
-                toasterState.showMessage("copied")
-            }
-        }) {
-            Icon(Icons.Default.ContentCopy, "copy list")
-        }
-        val uriHandler = LocalUriHandler.current
-        IconButton({
-            uriHandler.openUri(localMediaPlaySession.id)
-        }) {
-            Icon(Icons.Default.Download, "download")
-        }
-        IconButton({
-            context.findActivity().enterPictureInPictureMode(
-                PictureInPictureParams.Builder().build(),
-            )
-        }, enabled = isActive) {
-            Icon(Icons.Default.PictureInPicture, "pip")
-        }
-        val mediaPlayerService = LocalMediaPlayerService.current
-        IconButton({
-            if (localMediaPlaySession.uuid == playingSession?.lastUuid) {
-                mediaPlayerService.fullscreen(playingSession.remoteMediaItem)
-            }
-        }, enabled = isActive) {
-            Icon(Icons.Default.Fullscreen, "fullscreen")
+            ) { it.player = player }
         }
     }
 }

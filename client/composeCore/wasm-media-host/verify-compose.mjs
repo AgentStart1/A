@@ -1,4 +1,9 @@
 /* This is a private project. All rights reserved. */
+import {
+  toggleMediaPlayback,
+  toggleMediaMute,
+  seekMediaMidpoint,
+} from "./media-controls.mjs";
 import { runCase, launchBrowser, ownSite } from "./verification-runner.mjs";
 import { getReportDirectory } from "./verification-reports.mjs";
 import assert from "node:assert/strict";
@@ -129,9 +134,7 @@ await runCase("verify-compose", async () => {
                   })();
                 });
               }
-              // This fixture has fixed dp dimensions and an explicit en-US locale.
-              const playY = kind === "audio" ? 108 : 452;
-              await page.mouse.click(50, playY);
+              await toggleMediaPlayback(page);
               await waitFor(() =>
                 mediaTest.contexts.some((c) => c.state === "running"),
               );
@@ -206,12 +209,12 @@ await runCase("verify-compose", async () => {
                 assert.ok(measured.decoded > 10);
                 assert.ok(measured.matchingUploads > 10);
               }
-              await page.mouse.click(130, playY);
+              await toggleMediaMute(page);
               assert.equal(
                 await page.evaluate(() => mediaTest.gains.at(-1).gain.value),
                 0,
               );
-              await page.mouse.click(130, playY);
+              await toggleMediaMute(page);
               assert.equal(
                 await page.evaluate(() => mediaTest.gains.at(-1).gain.value),
                 1,
@@ -220,7 +223,7 @@ await runCase("verify-compose", async () => {
               const pausedWorker = await page.evaluate(
                 () => mediaTest.workers.length,
               );
-              await page.mouse.click(50, playY);
+              await toggleMediaPlayback(page);
               await waitFor(
                 ({ pausedWorker, kind }) =>
                   (kind === "audio" ? mediaTest.audio : mediaTest.decoded).at(
@@ -247,7 +250,7 @@ await runCase("verify-compose", async () => {
                   createHash("sha256").update(pauseB).digest("hex"),
                 );
                 const target = kind === "av" ? 3 : 2;
-                await page.mouse.click(320, 502);
+                await seekMediaMidpoint(page);
                 await waitFor(
                   (target) =>
                     Math.abs(mediaTest.decoded.at(-1).timestamp - target) < 0.2,
@@ -295,7 +298,7 @@ await runCase("verify-compose", async () => {
                   `${prefix}-${browserName}-${kind}.png`,
                 ),
               });
-              await page.mouse.click(50, playY);
+              await toggleMediaPlayback(page);
               await waitFor(
                 () => mediaTest.contexts.at(-1).state === "running",
               );

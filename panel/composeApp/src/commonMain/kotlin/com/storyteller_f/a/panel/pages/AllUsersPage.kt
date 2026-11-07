@@ -57,9 +57,9 @@ import com.storyteller_f.a.client.compose_core.components.GlobalDialogContext
 import com.storyteller_f.a.client.compose_core.components.LocalToaster
 import com.storyteller_f.a.client.compose_core.components.StateView
 import com.storyteller_f.a.client.compose_core.components.Toast
+import com.storyteller_f.a.client.compose_core.components.copyText
 import com.storyteller_f.a.client.compose_core.components.pagingItems
 import com.storyteller_f.a.client.compose_core.components.safeArea
-import com.storyteller_f.a.client.compose_core.components.setText
 import com.storyteller_f.a.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.a.client.core.addUser
 import com.storyteller_f.a.panel.CustomPanelSessionManager
@@ -214,6 +214,7 @@ fun AddUserInternal(dismiss: () -> Unit) {
 @Suppress("LongMethod")
 @Composable
 private fun AddUserPrivateKeyPage(addUserViewModel: AddUserViewModel, goBack: () -> Unit) {
+    val toast = LocalToaster.current
     val privateKey by addUserViewModel.privateKey.collectAsState()
     val encryptionPrivateKey by addUserViewModel.encryptionPrivateKey.collectAsState()
     val scope = rememberCoroutineScope()
@@ -250,7 +251,7 @@ private fun AddUserPrivateKeyPage(addUserViewModel: AddUserViewModel, goBack: ()
             val clipboard = LocalClipboard.current
             IconButton({
                 scope.launch {
-                    clipboard.setText(privateKey)
+                    clipboard.copyText(privateKey, toast)
                 }
             }) {
                 Icon(Icons.Default.ContentCopy, "copy")

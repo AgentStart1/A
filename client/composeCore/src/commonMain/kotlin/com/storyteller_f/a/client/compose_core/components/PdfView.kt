@@ -73,8 +73,7 @@ fun PdfViewBlock(fileInfo: FileInfo, onClick: (FileInfo) -> Unit) {
             val clipboardManager = LocalClipboard.current
             IconButton({
                 scope.launch {
-                    clipboardManager.setText(url)
-                    toasterState.showMessage("copied")
+                    clipboardManager.copyText(url, toasterState)
                 }
             }) {
                 Icon(Icons.Default.ContentCopy, "copy list")

@@ -122,6 +122,123 @@ class AndroidAppTestDriver internal constructor(
         restoreWait.use { block() }
     }
 
+    internal fun playbackPositionSeconds(): Int {
+        val progress =
+            driver.findElement(
+                AppiumBy.androidUIAutomator("""new UiSelector().textMatches("[0-9]+:[0-9]{2} / [0-9]+:[0-9]{2}")"""),
+            ).text
+        val parts = progress.substringBefore(" / ").split(':').map(String::toInt)
+        return parts[0] * 60 + parts[1]
+    }
+
+    internal fun assertPlaybackAdvancesAfter(position: Int) {
+        WebDriverWait(driver, Duration.ofSeconds(UI_WAIT_SECONDS))
+            .ignoring(StaleElementReferenceException::class.java).until {
+                playbackPositionSeconds() > position
+            }
+    }
+
+    internal fun assertExpandedVideoFrame() {
+        WebDriverWait(driver, Duration.ofSeconds(UI_WAIT_SECONDS)).until {
+            val size = driver.manage().window().size
+            hasVideoTestPattern(
+                driver.getScreenshotAs(OutputType.BYTES),
+                org.openqa.selenium.Rectangle(org.openqa.selenium.Point(0, 0), size),
+            )
+        }
+    }
+
+    internal fun seekPlaybackNearEnd() {
+        val bounds = driver.findElement(AppiumBy.accessibilityId("Playback position")).rect
+        driver.executeScript(
+            "mobile: dragGesture",
+            mapOf(
+                "startX" to bounds.x + bounds.width / 25,
+                "startY" to bounds.y + bounds.height / 2,
+                "endX" to bounds.x + bounds.width * 85 / 100,
+                "endY" to bounds.y + bounds.height / 2,
+                "speed" to 1000,
+            ),
+        )
+        WebDriverWait(driver, Duration.ofSeconds(UI_WAIT_SECONDS))
+            .ignoring(StaleElementReferenceException::class.java).until { playbackPositionSeconds() in 48..55 }
+    }
+
+    internal fun assertPlaybackRestarted() {
+        WebDriverWait(driver, Duration.ofSeconds(UI_WAIT_SECONDS))
+            .ignoring(StaleElementReferenceException::class.java).until { playbackPositionSeconds() in 1..10 }
+    }
+
+    internal fun lowerPlaybackVolume(): Float {
+        var previousBounds: org.openqa.selenium.Rectangle? = null
+        val bounds =
+            WebDriverWait(driver, Duration.ofSeconds(UI_WAIT_SECONDS))
+                .ignoring(StaleElementReferenceException::class.java).until {
+                    val slider =
+                        driver.findElements(By.className("android.widget.SeekBar")).lastOrNull()
+                            ?: return@until null
+                    val current = slider.rect
+                    val stable = slider.isDisplayed && current.width > 0 && current == previousBounds
+                    previousBounds = current
+                    current.takeIf { stable }
+                }
+        driver.executeScript(
+            "mobile: dragGesture",
+            mapOf(
+                "startX" to bounds.x + bounds.width * 9 / 10,
+                "startY" to bounds.y + bounds.height / 2,
+                "endX" to bounds.x + bounds.width / 4,
+                "endY" to bounds.y + bounds.height / 2,
+                "speed" to 1000,
+            ),
+        )
+        return WebDriverWait(driver, Duration.ofSeconds(UI_WAIT_SECONDS))
+            .ignoring(StaleElementReferenceException::class.java)
+            .until { playbackVolume()?.takeIf { it in 0.1f..0.4f } }
+    }
+
+    internal fun assertPlaybackVolume(expected: Float) {
+        WebDriverWait(driver, Duration.ofSeconds(UI_WAIT_SECONDS))
+            .ignoring(StaleElementReferenceException::class.java).until {
+                playbackVolume()?.let { kotlin.math.abs(it - expected) < 0.01f } == true
+            }
+    }
+
+    private fun playbackVolume(): Float? =
+        driver.findElements(By.className("android.widget.SeekBar")).lastOrNull()?.text?.toFloatOrNull()
+
+    internal suspend fun withFailedMediaResponse(bytes: ByteArray, block: suspend (() -> Unit) -> Unit) {
+        val previous =
+            runAdbCommand(listOf("reverse", "--list")).lineSequence()
+                .map { it.trim().split(Regex("\\s+")) }
+                .single { it.size == 3 && it[1] == "tcp:8822" }[2]
+        val ready = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val server = com.sun.net.httpserver.HttpServer.create(java.net.InetSocketAddress("127.0.0.1", 0), 0)
+        val restore =
+            AutoCloseable {
+                try {
+                    runAdbCommand(listOf("reverse", "tcp:8822", previous))
+                } finally {
+                    server.stop(0)
+                }
+            }
+        restore.use {
+            server.createContext("/") { exchange ->
+                exchange.use {
+                    if (ready.isCompleted) {
+                        it.sendResponseHeaders(200, bytes.size.toLong())
+                        it.responseBody.buffered().use { output -> output.write(bytes) }
+                    } else {
+                        it.sendResponseHeaders(503, -1)
+                    }
+                }
+            }
+            server.start()
+            runAdbCommand(listOf("reverse", "tcp:8822", "tcp:${server.address.port}"))
+            block { ready.complete(Unit) }
+        }
+    }
+
     internal suspend fun pauseVideo(name: String) {
         withAnimatedMediaControls {
             driver.findElements(AppiumBy.accessibilityId("Show player controls")).singleOrNull()?.click()

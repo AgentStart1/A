@@ -115,8 +115,7 @@ private fun AsciidocPreviewCard(source: String, openPreview: () -> Unit) {
             val clipboardManager = LocalClipboard.current
             IconButton({
                 scope.launch {
-                    clipboardManager.setText(source)
-                    toasterState.showMessage("copied")
+                    clipboardManager.copyText(source, toasterState)
                 }
             }) {
                 Icon(Icons.Default.ContentCopy, "copy source")

@@ -106,6 +106,15 @@ internal class VlcMediaPlayer(private val autoPlay: Boolean) : DesktopVideoPlaye
     override fun pause() {
         player.controls().pause()
     }
+    override fun position(): Double = player.status().time().coerceAtLeast(0) / 1000.0
+    override fun duration(): Double = player.status().length().coerceAtLeast(0) / 1000.0
+    override fun volume(): Float = player.audio().volume().coerceIn(0, 100) / 100f
+    override fun seek(seconds: Double) {
+        if (player.status().isSeekable) player.controls().setTime((seconds * 1000).toLong())
+    }
+    override fun setVolume(volume: Float) {
+        player.audio().setVolume((volume.coerceIn(0f, 1f) * 100).toInt())
+    }
     override fun close() {
         try {
             player.release()

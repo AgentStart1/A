@@ -36,6 +36,7 @@
     <string name="input_search_user_created_titles">输入以搜索创建的头衔</string>
     <string name="refresh">刷新</string>
     <string name="no_content_yet">暂无内容 ┑(￣Д ￣)┍</string>
+    <string name="copy_failed">复制失败，请重试。</string>
     <string name="copy">复制</string>
     <string name="snapshot">快照</string>
     <string name="select_file">选择文件</string>
@@ -55,4 +56,11 @@
     <string name="media_loading">正在加载媒体…</string>
     <string name="media_failed">无法播放此文件。可以下载后使用其他应用打开。</string>
     <string name="media_playback_error">无法播放此媒体</string>
+    <string name="media_fullscreen">展开播放器</string>
+    <string name="media_exit_fullscreen">退出展开播放器</string>
+    <string name="media_options">媒体选项</string>
+    <string name="media_playlist">播放列表</string>
+    <string name="media_pip">画中画</string>
+    <string name="media_download">下载</string>
+    <string name="media_retry">重试</string>
 </resources>
