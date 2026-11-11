@@ -16,7 +16,8 @@ from reporting import write_junit
 
 SUITES = {"build-and-test": "test_build_and_test", "images": "test_images",
           "cli": "test_cli", "compose": "test_compose", "desktop": "test_desktop",
-          "infrastructure": "test_infrastructure"}
+          "infrastructure": "test_infrastructure", "prebuilt-deploy": "test_prebuilt_deploy",
+          "named-options": "test_named_options"}
 
 
 def flatten(suite):
@@ -57,7 +58,7 @@ class ReportResult(unittest.TextTestResult):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("tests", nargs="*", help="Dotted unittest IDs; default discovers every contract")
+    parser.add_argument("--tests", nargs="+", help="Dotted unittest IDs; default discovers every contract")
     parser.add_argument("--suite", choices=SUITES)
     parser.add_argument("--list", action="store_true", help="List selected test IDs without running them")
     args = parser.parse_args()

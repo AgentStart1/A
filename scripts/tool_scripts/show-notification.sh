@@ -1,10 +1,14 @@
 #!/bin/bash
 # 跨平台通知显示脚本
-# 参数: $1=标题, $2=消息, $3=是否成功(true/false)
-
-title="$1"
-message="$2"
-is_success="$3"
+set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/named-options.sh"
+title=
+message=
+is_success=
+parse_named_options 'Usage: show-notification.sh --title <title> --message <message> --success true|false' \
+    'title:title message:message success:is_success' "$@"
+require_named_options title message is_success
+[[ $is_success == true || $is_success == false ]] || { echo '--success must be true or false' >&2; exit 1; }
 
 if [[ "$(uname -s)" =~ MINGW|CYGWIN|MSYS ]]; then
   # Windows Dialog

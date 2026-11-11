@@ -12,7 +12,7 @@ PATCH = "deploy/docker-compose/docker-compose.generated-patch.yml"
 class ComposeFixture(ShellCase):
     def setUp(self):
         super().setUp()
-        for path in (COMPOSE, START, "scripts/service_scripts/service-env.sh"):
+        for path in (COMPOSE, START, "scripts/service_scripts/service-env.sh", "scripts/tool_scripts/named-options.sh"):
             self.copy(path)
         (self.root / "deploy/docker-compose").mkdir(parents=True)
         self.recorder("gradlew")
@@ -39,7 +39,7 @@ WS_SERVER_URL=ws://localhost:8813
 
     def configure(self, profiles, build_on=None):
         path = self.write_env(profiles)
-        self.run_script(COMPOSE, "sample", "false", "config",
+        self.run_script(COMPOSE, "--env", "sample", "--command", "config",
                         env={} if build_on is None else {"BUILD_ON": build_on})
         self.assert_compose_calls(profiles, path, [["config"]])
         return self.yaml(PATCH)
@@ -108,7 +108,7 @@ class ComposeTests(ComposeFixture):
         profiles = "pg,elastic,minio,certs_bind,grafana,dicebear,etcd,cli,server,worker,bunker"
         path = self.write_env(profiles)
         bunker = self.copy("deploy/bunker.env.example")
-        self.run_script(COMPOSE, shell_path(path), "false", "config",
+        self.run_script(COMPOSE, "--env", shell_path(path), "--command", "config",
                         env={"BUNKER_ENV_FILE": shell_path(bunker), "BUILD_ON": "local"})
         self.assert_compose_calls(profiles, path, [["config"]])
         generated = self.yaml(PATCH)
@@ -151,16 +151,16 @@ class ComposeTests(ComposeFixture):
             commands = [["build", "filesystem", "lucene", "cli", "worker", "server", "ws",
                          "app-wasm", "panel-wasm"], ["up", "-d", "--no-build"],
                         ["exec", "-T", "bunkerweb", "nginx", "-s", "reload"]]
-        self.run_script(START if deploy else COMPOSE, selector,
-                        *([] if deploy else ["false", "config"]),
+        self.run_script(START if deploy else COMPOSE,
+                        *([selector] if deploy else ["--env", selector, "--command", "config"]),
                         cwd=path.parent if relative else None)
         self.assert_compose_calls(profiles, path, commands)
         self.assertEqual(self.yaml(PATCH)["services"]["bunkerweb"]["env_file"],
                          [{"path": shell_path(bunker), "format": "raw"}])
 
     def test_missing_explicit_env_path_is_rejected(self):
-        self.run_script(COMPOSE, shell_path(self.root / "external config/missing.env"),
-                        "false", "config", expected=1)
+        self.run_script(COMPOSE, "--env", shell_path(self.root / "external config/missing.env"),
+                        "--command", "config", expected=1)
         self.assertEqual(self.calls("docker"), [])
         self.assertFalse((self.root / PATCH).exists())
 

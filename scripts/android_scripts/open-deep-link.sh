@@ -1,15 +1,12 @@
-#!/bin/sh
-# 参数校验
-if [ $# -lt 3 ]; then
-  echo "❌ 用法错误："
-  echo "   ./deeplink.sh <scheme> <host> <path>"
-  echo "   示例: ./deeplink.sh dev.win-debug localhost /room/100"
-  exit 1
-fi
-
-SCHEME=$1
-HOST=$2
-LINK_PATH=$3
+#!/usr/bin/env bash
+set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../tool_scripts/named-options.sh"
+SCHEME=
+HOST=
+LINK_PATH=
+parse_named_options 'Usage: open-deep-link.sh --scheme <flavor-build> --host <host> --path <path>' \
+    'scheme:SCHEME host:HOST path:LINK_PATH' "$@"
+require_named_options SCHEME HOST LINK_PATH
 
 # 构造完整 URL
 URI="a-${SCHEME}://${HOST}${LINK_PATH}"

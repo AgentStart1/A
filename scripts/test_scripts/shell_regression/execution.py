@@ -85,8 +85,9 @@ def run_owned(command, *, cwd, env, output, timeout=45, cleanup_timeout=5, lease
         # Ownership is pending before launch, including interruption during startup.
         lease.begin()
         owner = subprocess.Popen(
-            [sys.executable, str(CONTAINER), str(status_file), token,
-             str(int(cleanup_timeout * 1000)), str(os.getpid()), *command],
+            [sys.executable, str(CONTAINER), '--status-file', str(status_file), '--token', token,
+             '--timeout-ms', str(int(cleanup_timeout * 1000)), '--parent-pid', str(os.getpid()),
+             '--command', *command],
             cwd=cwd, env=env | {"PYTHONDONTWRITEBYTECODE": "1"},
             stdin=subprocess.PIPE, stdout=stdout, stderr=stderr,
         )

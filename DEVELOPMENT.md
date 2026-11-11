@@ -360,7 +360,7 @@ python scripts/test_scripts/run-shell-tests.py
 python scripts/test_scripts/run-shell-tests.py --list
 python scripts/test_scripts/run-shell-tests.py --suite compose
 python scripts/test_scripts/run-shell-tests.py --suite infrastructure
-python scripts/test_scripts/run-shell-tests.py test_compose.ComposeTests.test_build_mode_comes_from_env
+python scripts/test_scripts/run-shell-tests.py --tests test_compose.ComposeTests.test_build_mode_comes_from_env
 ```
 
 `sh scripts/test_scripts/run-shell-tests.sh` 是可移植 Shell 入口，必要时通过 `PYTHON_COMMAND` 指定解释器可执行文件。`SHELL_TEST_BASH` 选择 Python 子进程使用的 Bash。已有五个 `*-test.sh` 入口分别选择对应 unittest 模块，并转发额外参数。`build-and-test.sh --compose --plain` 现在在 Detekt 后执行完整 Shell 回归套件，不启动真实 Docker、Android 或桌面 UI 会话。
@@ -942,3 +942,7 @@ Worker 协议、归档验证和 writer 取消测试先运行 `npm --prefix app/c
 `name` 选择输出文件名。可选 `sourceName` 选择共享原始下载缓存名，默认 `name`。全部 Noto 输出复用 `download/Noto.zip`，在 `download/processed` 保留独立文件。在 font provider 的 file preset 注册各配置路径，导入独立输出。环境专用预设账户信息留在仓库之外。
 
 当前 Compose Markdown renderer 不解释 HTML/CSS `font-weight`；行内强调选择 italic/bold，标题字重来自应用字体。预设省略 Medium 等可选字重；引入 HTML weight 支持或其他作者可控字重机制后，补充对应 face。80 MiB 解码上限容纳 MapleMono 四种 normal/bold/italic face，同时源上限保持 64 MiB，各 OPFS retention 预算保持 128 MiB。
+
+### 脚本命名参数接口
+
+运行 `python scripts/test_scripts/run-shell-tests.py --suite named-options`，检查参数验证、调用方引号、产物选择，以及旧位置参数的拒绝行为。使用 `--tests <dotted-id> [<dotted-id> ...]` 选择 Shell 契约测试，不再接受裸测试 ID。进程所有权协议使用 `--status-file`、`--token`、`--timeout-ms`、`--parent-pid`，最后以 `--command` 传入子进程 argv；调用方与进程释放测试应同步维护。参数超过两个的 PowerShell helper 禁用位置绑定，调用方使用命名参数。

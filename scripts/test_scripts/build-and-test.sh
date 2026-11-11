@@ -113,7 +113,7 @@ showNotification() {
     message="$2"
     success="$3"
     if [ -x ./scripts/tool_scripts/show-notification.sh ]; then
-        ./scripts/tool_scripts/show-notification.sh "$title" "$message" "$success"
+        ./scripts/tool_scripts/show-notification.sh --title "$title" --message "$message" --success "$success"
     fi
 }
 

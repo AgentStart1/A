@@ -1,9 +1,14 @@
 #!/bin/bash
+set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../tool_scripts/named-options.sh"
+AVD_NAME=
+SYSTEM_IMAGE=
+DEVICE=
+parse_named_options 'Usage: create-avd.sh --name <avd> --system-image <package> --device <device>' \
+    'name:AVD_NAME system-image:SYSTEM_IMAGE device:DEVICE' "$@"
+require_named_options AVD_NAME SYSTEM_IMAGE DEVICE
 
 # Set emulator name and device parameters
-AVD_NAME=$1
-SYSTEM_IMAGE=$2
-DEVICE=$3
 
 # Detect OS and set command suffix
 if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "win32" ]] || [[ -n "$WINDIR" ]]; then

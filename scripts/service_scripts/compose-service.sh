@@ -3,10 +3,16 @@
 set -euo pipefail
 
 . "$(dirname "${BASH_SOURCE[0]}")/service-env.sh"
-resolve_service_env "${1:-}"
+. "$(dirname "${BASH_SOURCE[0]}")/../tool_scripts/named-options.sh"
+ENV_SELECTOR=
+USE_PREBUILD=false
+CUSTOM_COMMAND=
+parse_named_options 'Usage: compose-service.sh --env <name-or-path> [--prebuild true|false] [--command "compose arguments"]' \
+    'env:ENV_SELECTOR prebuild:USE_PREBUILD command:CUSTOM_COMMAND' "$@"
+require_named_options ENV_SELECTOR
+[[ $USE_PREBUILD == true || $USE_PREBUILD == false ]] || { echo '--prebuild must be true or false' >&2; exit 1; }
+resolve_service_env "$ENV_SELECTOR"
 cd "$SERVICE_PROJECT_ROOT"
-USE_PREBUILD=${2:-false}
-CUSTOM_COMMAND=${3:-}
 
 # 默认 compose 命令
 if [ -z "$CUSTOM_COMMAND" ]; then

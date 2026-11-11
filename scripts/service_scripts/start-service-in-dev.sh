@@ -8,4 +8,4 @@ fi
 # 设置日志路径
 source ./scripts/tool_scripts/set-log-path.sh
 
-./scripts/service_scripts/compose-service.sh "$FLAVOR" false 'up -d --build'
+./scripts/service_scripts/compose-service.sh --env "$FLAVOR" --command 'up -d --build'

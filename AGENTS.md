@@ -19,6 +19,7 @@
 - 不使用未缓冲的 `InputStream`/`OutputStream`，改用 `BufferedInputStream`/`BufferedOutputStream`。
 - 代码中不使用 `println` 或 `System.out.println`。
 - 编辑文件时保留已有换行格式。
+- 参数超过两个的脚本接口必须使用命名选项，同时更新调用方、用法说明和回归测试，不保留含义不明确的位置参数接口。
 - 添加依赖时，从 GitHub 或上游仓库核实正确 group 和 artifact。找不到依赖时，不通过降版本解决。
 
 ## 模块职责

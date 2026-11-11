@@ -1,0 +1,34 @@
+map $http_origin $stage_allowed_origin {
+    default "";
+    "http://127.0.0.1:__APP_PORT__" $http_origin;
+    "http://localhost:__APP_PORT__" $http_origin;
+    "http://127.0.0.1:__PANEL_PORT__" $http_origin;
+    "http://localhost:__PANEL_PORT__" $http_origin;
+}
+
+server {
+    listen 80;
+    server_name _;
+    resolver 127.0.0.11 valid=5s ipv6=off;
+    set $stage_backend server;
+    # Application quotas own upload limits; preserve streaming chunk requests.
+    client_max_body_size 0;
+
+    location / {
+        add_header Access-Control-Allow-Origin $stage_allowed_origin always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        add_header Access-Control-Allow-Methods "GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS" always;
+        add_header Access-Control-Allow-Headers $http_access_control_request_headers always;
+        add_header Access-Control-Expose-Headers "Content-Length, Content-Range, WWW-Authenticate, X-Request-ID" always;
+        if ($request_method = OPTIONS) {
+            return 204;
+        }
+        proxy_http_version 1.1;
+        proxy_request_buffering off;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://$stage_backend:80;
+    }
+}

@@ -1,6 +1,7 @@
 # This is a private project. All rights reserved.
 """Own a verification worker and all descendants until the container is empty."""
 import ctypes
+import argparse
 import json
 import os
 from pathlib import Path
@@ -194,11 +195,20 @@ def main():
         raise RuntimeError("Verification process ownership requires Python 3.10+")
     if os.name != "nt" and sys.platform != "linux":
         raise RuntimeError("Verification containers support Windows and Linux")
-    status_file = Path(sys.argv[1])
-    token = sys.argv[2]
-    timeout = float(sys.argv[3]) / 1000
-    parent_pid = int(sys.argv[4])
-    command = sys.argv[5:]
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--status-file', required=True, type=Path)
+    parser.add_argument('--token', required=True)
+    parser.add_argument('--timeout-ms', required=True, type=float)
+    parser.add_argument('--parent-pid', required=True, type=int)
+    parser.add_argument('--command', required=True, nargs=argparse.REMAINDER)
+    args = parser.parse_args()
+    if not args.command:
+        parser.error('--command requires an executable and its arguments')
+    status_file = args.status_file
+    token = args.token
+    timeout = args.timeout_ms / 1000
+    parent_pid = args.parent_pid
+    command = args.command
     stopped = threading.Event()
 
     def control():

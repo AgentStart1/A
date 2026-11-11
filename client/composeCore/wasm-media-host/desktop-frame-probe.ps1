@@ -1,4 +1,5 @@
 # This is a private project. All rights reserved.
+[CmdletBinding(PositionalBinding=$false)]
 param([int]$BrowserProcess,[int]$SourceWidth,[switch]$NoSampling)
 $ErrorActionPreference='Stop'
 Add-Type -Path (Join-Path $PSScriptRoot 'DesktopFrameProbe.cs')

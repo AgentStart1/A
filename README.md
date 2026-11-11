@@ -169,13 +169,47 @@ Initialized LiteRT LLM client with CPU backend
 
 容器健康后，在 `http://localhost:8080` 打开用户应用，在 `http://localhost:8081` 打开面板。省略 `app` 可跳过两个 Wasm 构建及服务。
 
-`compose-service.sh` 和 `start-service-in-docker.sh` 都接受环境名称（`alpha` 或 `alpha.env`）或文件路径（`~/deploy/alpha.env`）。名称先解析为 `~/deploy/<name>.env`，再尝试 `deploy/<name>.env`。以 `deploy/sample.env` 为参考，必须设置 `BUILD_TYPE`，`COMPOSE_FILE_LIST` 选择栈中服务。Server、Worker、WebSocket server 和 CLI 镜像共用根 `Dockerfile` 的 JDK 21 builder，分别打包为 `server`、`worker`、`ws` 和 `cli` target。
+`compose-service.sh` 使用命名选项：`--env <name-or-path>`，以及可选的 `--prebuild true|false` 和 `--command "compose arguments"`，例如 `./scripts/service_scripts/compose-service.sh --env sample --command config`。`start-service-in-docker.sh` 保留两个参数的接口：环境名称或文件路径，以及可选的 `--no-build`。名称先解析为 `~/deploy/<name>.env`，再尝试 `deploy/<name>.env`。以 `deploy/sample.env` 为参考，必须设置 `BUILD_TYPE`，`COMPOSE_FILE_LIST` 选择栈中服务。Server、Worker、WebSocket server 和 CLI 镜像共用根 `Dockerfile` 的 JDK 21 builder，分别打包为 `server`、`worker`、`ws` 和 `cli` target。
 
 `COMPOSE_FILE_LIST` 包含 `bunker` 时，将 `deploy/bunker.env.example` 复制到项目之外的 `~/deploy/bunker.env`，替换示例域名和凭据。在所选应用 env 文件设置 `BUNKER_ENV_FILE=/home/<user>/deploy/bunker.env` 可改用其他路径；相对路径相对于该 env 文件解析，shell 覆盖优先。此文件只通过 `env_file` 注入 BunkerWeb 容器，不参与 Compose 插值，也不覆盖 flavor 配置。要求 Docker Compose 2.30+ 的 raw env-file 格式，按字面保留凭据而不插值。它使用最终 BunkerWeb 名称，如 `SERVER_NAME`、`ADMIN_USERNAME`、`ADMIN_PASSWORD` 和 `api.example.com_REVERSE_PROXY_HOST`，而非旧 `BUNKER_*` 变量。
 
 文件系统存储中，将 `FILESYSTEM_PUBLIC_URL` 设置为外部可达媒体 origin（例如 `https://media.example.com`），`FILESYSTEM_EXPOSE_PORT` 设置为发布的 HTTP 端口（默认 `8822`）。客户端直接从该服务下载 `/objects/<bucket>/<name>`。使用 BunkerWeb 时，媒体域名将此路径转发到 filesystem 端口 8822；8820 是内部管理 RPC 端点，必须保持私有。包括 BunkerWeb 部署在内，都在 `deploy/{flavor}.env` 设置 `FILESYSTEM_PUBLIC_URL=https://<media-domain>`。启动脚本向 filesystem 和应用服务传递相同解析后的 origin。
 
 `PRESET_PATH=/home/<user>/data` 将宿主预设目录绑定挂载到 Server 和 CLI 的 `/app/deploy/preset_data`。CLI 从中读取编号 JSON 预设及引用的本地文件。仅在有意初始化数据时启用 `CLI_INIT_ENABLE=true`，完成后禁用。
+
+### 本地构建并通过 SSH 部署隔离验证环境
+
+目标服务器无法编译应用时，可使用 Bash、Python 3.11+ 和本地 Linux/amd64 Docker 后端构建镜像。远端需要 Python 3.11+、Bash、Docker、Compose，以及可免密登录、执行 Docker 并设置隔离挂载目录所有权的部署用户。
+
+可通过 `--ssh-config /path/to/private/connection.conf` 为 SSH 和 SCP 指定独立的 OpenSSH 配置，包括跳板连接。连接配置只保存在本机，不进入运行文件包。
+
+```bash
+./scripts/service_scripts/deploy-prebuilt-to-remote.sh \
+  --ssh <ssh-alias> --env /path/to/local-stage.env \
+  --remote-env /path/to/remote-stage.env --remote-dir /opt/a-stage/releases \
+  --project example-stage --mode stage
+```
+
+以 `deploy/sample.env` 为字段参考，在本机和远端分别创建精简的 stage 环境文件，放在发行包之外。设置 `DEPLOYMENT_MODE=stage`、`COMPOSE_FILE_LIST=pg,server,worker,cli,filesystem,lucene,app`、`INIT_ENABLE=false`、`CLI_INIT_ENABLE=false`、`DATABASE_URI=r2dbc:postgresql://pg:5432/stage` 和 `DATABASE_DB=stage`。使用新测试数据库及会话凭据、本机测试 URL、空预置目录，并填写必需的 flavor 和 build type。不要复制生产 env；脚本会拒绝提供商凭据、公网端点及不支持的设置。两端需选择相同 profile；本机配置仅提供构建参数，运行配置独立读取远端文件。
+
+先审查并提交改动，再运行部署。脚本在 Docker 内构建八个业务镜像，保存 PostgreSQL 17、Redis、Adminer 和 PostgreSQL exporter 四个依赖镜像，按发行版本标记。它传输带 SHA256 校验的镜像归档和明确允许的运行文件，不传输仓库或环境文件。清单记录提交、镜像 ID 和运行文件哈希，远端校验镜像 ID 后才启动；生成的 Compose 配置移除全部构建定义并禁用拉取镜像。
+
+仅支持隔离 stage：不包含 BunkerWeb、共享网络、生产卷、数据复制或入口切换。发布端口仅绑定回环地址，由 Docker 分配；在远端运行 `docker compose -f <release>/runtime.json ps` 查看端口。轻量 `stage-api` 网关复用 Wasm Nginx 镜像，仅允许 `APP_WASM_PORT` 和 `PANEL_WASM_PORT` 指定的 `localhost`、`127.0.0.1` 来源携带凭据跨域访问。将本机 `SERVER_URL` 对应端口转发到 `stage-api`，不要直接转发到 `server`；WebSocket 和 filesystem 端口分别转发到各自服务。stage 从相同浏览器端口生成后端登录来源白名单，并为回环 HTTP 使用开发 Cookie，不改变生产来源策略。前端构建 URL 必须与浏览器的本机转发端口一致。项目名必须以 `-stage` 结尾；命名卷在该项目内持久保存，需要空数据库时选择新项目名。发行版挂载目录互相隔离且初始为空。PostgreSQL 17 直接挂载实际数据目录，避免数据落入匿名卷。
+
+命令等待容器就绪；浏览器登录、文件传输、WebSocket 和完整 Wasm 读取仍需另行验收。失败时保留发行版和容器供排障，日志可能包含敏感信息，应私下检查。本机归档位于 `build/prebuilt-deploy`，远端发行版位于 `--remote-dir`；脚本不自动回退、删除卷、迁移生产数据或切换流量。
+
+### 脚本参数
+
+参数超过两个的脚本使用命名选项，旧位置参数会在构建、设备操作或通知执行前被拒绝。
+
+```bash
+./scripts/android_scripts/create-avd.sh --name example --system-image 'system-images;android-36;google_apis;x86_64' --device pixel
+./scripts/android_scripts/open-deep-link.sh --scheme dev-debug --host localhost --path /room/100
+./scripts/build_scripts/build-app-on-ci.sh --flavor sample --url api.example.com --target desktop-deb
+./scripts/tool_scripts/show-notification.sh --title 'Build complete' --message 'Artifacts are ready' --success true
+```
+
+这些接口可通过 `--help` 查看用法。只有一两个参数的脚本保留已有接口；转发给 Gradle 或应用 CLI 的参数保留对应工具的语法。
 
 ## 许可证
 

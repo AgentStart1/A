@@ -1,13 +1,17 @@
 #!/bin/bash
 set -e
+. "$(dirname "${BASH_SOURCE[0]}")/../tool_scripts/named-options.sh"
+FLAVOR=
+URL=
+TARGET=
+parse_named_options 'Usage: build-app-on-ci.sh --flavor <flavor> --url <API-host> --target <platform>' \
+    'flavor:FLAVOR url:URL target:TARGET' "$@"
+require_named_options FLAVOR URL TARGET
 
 mkdir -p ~/.gradle
 echo "gpr.user=$ORG_GRADLE_PROJECT_gpr_user" >> ~/.gradle/gradle.properties
 echo "gpr.key=$ORG_GRADLE_PROJECT_gpr_key" >> ~/.gradle/gradle.properties
 
-FLAVOR=$1
-URL=$2
-TARGET=$3
 BUILD_TYPE="prod"
 
 cat > "./deploy/${FLAVOR}.env" <<EOF

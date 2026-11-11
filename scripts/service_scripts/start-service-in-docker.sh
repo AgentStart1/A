@@ -7,7 +7,7 @@ cd "$SERVICE_PROJECT_ROOT"
 # Configuration-only refresh keeps existing Docker-built artifacts.
 case "${2:-}" in
   --no-build)
-    ./scripts/service_scripts/compose-service.sh "$ENV_FILE" false 'up -d --no-build'
+    ./scripts/service_scripts/compose-service.sh --env "$ENV_FILE" --command 'up -d --no-build'
     exit 0
     ;;
   '') ;;
@@ -42,7 +42,7 @@ if has_profile app; then
 fi
 
 if [[ ${#BUILD_SERVICES[@]} -gt 0 ]]; then
-  ./scripts/service_scripts/compose-service.sh "$ENV_FILE" false "build ${BUILD_SERVICES[*]}"
+  ./scripts/service_scripts/compose-service.sh --env "$ENV_FILE" --command "build ${BUILD_SERVICES[*]}"
 fi
 
-./scripts/service_scripts/compose-service.sh "$ENV_FILE" false 'up -d --no-build'
+./scripts/service_scripts/compose-service.sh --env "$ENV_FILE" --command 'up -d --no-build'
