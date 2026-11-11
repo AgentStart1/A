@@ -1,772 +1,331 @@
-# Project Development Rules
-
-## Global Principles
-- Use JDK 21. All modules must target Kotlin/JVM 21.
-- Prefer KMP-shareable code. Handle platform differences with `expect`/`actual` or platform source directories.
-- Keep the Gradle configuration cache enabled (`org.gradle.configuration-cache=true`) and avoid side effects or IO during configuration.
-- Logging: use Napier in shared/app code. Initialize a logging tree only when needed for tests or debugging.
-- Use the canonical imported-class Logback XML form documented in DEVELOPMENT.md.
-- Static analysis: run Detekt with `config/detekt/detekt.yml`. Do not create or use Detekt baseline files; every active finding must be fixed in source code. Do not add or broaden suppressions to bypass findings. When Detekt rules conflict, disable only the conflicting rule or narrowly scoped configuration necessary to resolve the conflict.
-
-- Diagnose Detekt type-resolution warnings with debug enabled and autoCorrect disabled; rerun the selected task because debug is not a cache input. Preserve KMP source coverage and active rules. Keep autoCorrect disabled by default; opt in with --auto-correct for a dedicated correction run. Do not force a single Gradle worker for Detekt. See DEVELOPMENT.md for known expect/actual and generated-serializer limitations.
-- Detekt permits public library entities and public data classes only in the configured `api` and `shared.model` protocol/model scopes and the `client/core` request boundary; keep these exceptions narrowly scoped in `config/detekt/detekt.yml`.
-- New Kotlin source files must start with the private-project license header configured by Detekt.
-- Coverage: generate Kover reports when needed.
-- Environment/secrets: `app/composeApp` and `panel/composeApp` inject values from `deploy/{flavor}.env` through BuildKonfig. `app/androidApp` reads the same env file for deep links. `app/androidApp` and `panel/androidApp` use flavor/buildType values to configure application IDs and build types. Always pass `-Pserver.flavor` and `-Pserver.buildType`.
-- Commit messages: start with a verb in English or Chinese and include the module/scope, for example `client/core: add getAllUsers request`.
-- Do not use Chinese method names.
-- Do not use bare `InputStream`/`OutputStream`; use `BufferedInputStream`/`BufferedOutputStream`.
-- Do not use `println` or `System.out.println` in code.
-- When editing files, preserve the existing line endings.
-- When adding dependencies, verify the correct group and artifact from GitHub or the upstream repository. If the dependency cannot be found, do not downgrade versions.
-
-## Module Responsibilities
-- **api**: Defines REST API endpoints, query/path models, and the admin `AdminApi` (`/admin/*`).
-- **client/core**: Session management and request wrappers using unified `serviceCatching`.
-- **client/composeCore**: Shared Compose UI components, media helpers, cross-platform UI utilities, and related actual implementations.
-- **client/asciidoc-parser**: AsciiDoc preview HTML generation used by markdown rendering.
-- **client/model-storage**: Abstract storage interfaces and collection identifiers.
-- **client/room**: Room-based storage implementation and aggregation entry points.
-- **result**: Business-independent KMP result container and error diagnostic contracts.
-- **shared**: Cross-platform business models and utilities.
-- **app/composeApp**: Shared user-facing Compose UI, actual implementations, and services.
-- **app/androidApp** / **app/desktopApp** / **app/cliApp**: User-facing platform entry points.
-- **panel/composeApp**: Shared Compose UI for the admin panel.
-- **panel/androidApp** / **panel/desktopApp** / **panel/cliApp**: Admin panel platform entry points.
-- **backend/***: Backend core functionality, storage, search, and related services.
-- **cloud/***: Core service modules that integrate backend functionality.
-- **bot/***: Bot modules.
-
-## Code Style And Practices
-- **Kotlin**: Do not expose mutable collections in public APIs. Prefer `data class`, `sealed interface`/`sealed class`, and `suspend` + `CustomResult<T, ScenarioError>`. Use verb-object naming for functions.
-- **Compose**: Name `@Composable` functions in PascalCase. The general lowercase function-naming checks exclude `composeApp` source trees because Compose uses a different naming convention.
-- **Architecture**: UI -> `SessionManager` request extensions -> API endpoint. Add local storage and paging when appropriate.
-- **GlobalDialog vs GlobalTask**: Use `GlobalDialog` for user-initiated actions where success or failure is important to the user (e.g., sign-in, publishing content, profile updates). Use `GlobalTask` for user-initiated actions where failure can be tolerated but the operation must not be cancelled by scrolling or page switching (e.g., adding reactions, toggling favorites). When implementing client UI handlers, consider adding `GlobalDialog` or `GlobalTask` as fields in the handler/controller class.
-- **Paging**: Store cursors consistently in `RemoteKeyStorage` (`PRE_COLLECTION`/`NEXT_COLLECTION`).
-- **Logging**: Instrument external network requests through `serviceCatching`. Avoid noisy logging in hot paths.
-- **Tests**: Write tests whenever possible. Client-side non-UI tests go under `src/headlessTest/kotlin`. Compose tests should follow https://kotlinlang.org/docs/multiplatform/compose-test.html. End-to-end tests use `scripts/test_scripts/build-and-test.sh --e2e`, which runs the Appium runner modules' explicit `appiumTest` tasks and CLI E2E tasks; no Gradle property is required.
-
-## Static Checks
-- After code changes, compile the affected modules and platform source sets with scoped Gradle tasks. Include downstream consumers when changing shared or protocol types; see DEVELOPMENT.md's Build verification section for task selection.
-- For repository-wide compilation validation, use the existing `compileAllNoRelease` task.
-- Do not use root `assemble` as a routine compilation check: it also builds unrelated modules and release artifacts, including Wasm production linking and optimization. Run artifact/release tasks only when explicitly requested or needed to verify affected packaging, optimization, signing or distribution behavior.
-- When an Android artifact is needed for ordinary development or tests, select the affected Debug variant; do not build Benchmark/Release variants by default.
-- After compilation checks, run `./gradlew detekt --console=plain` for static code style checks.
-  - On Windows, run this through Git Bash.
-- Detekt limits production function names to 50 characters. Test source sets (`src/test` and `src/*Test`) are exempt from the maximum function-name length so test names can describe behavior completely. Preserve the separately configured naming-style checks and keep production function names concise.
-
-## Tests
-- Actively test affected modules.
-    * For small changes, use `./gradlew :module:test --console=plain`.
-    * For the full regular unit test suite, use `./gradlew check --console=plain` (excluding device-dependent Compose and Appium tests).
-    * For end-to-end tests, use `./scripts/test_scripts/build-and-test.sh --e2e --plain`; this runs Appium and CLI E2E suites.
-    * For Compose common tests under `device_based`, use a real device with `./gradlew :module:connectedAndroidTest` or run `./gradlew :module:jvmTest`.
-    * For Compose UI changes, run `./gradlew validateDebugScreenshotTest` for snapshot tests.
-- Keep Compose screenshot tests context-free: do not inject app runtime `CompositionLocal` dependencies such as session managers, dialog controllers, or navigation contexts. Cover components that require those dependencies in another test layer.
-- Tests are meant to reveal problems. If a test finds a problem, fix the problem instead of working around it in the test.
-- Do not add extra test steps into a test case unless there is an actual dependency between the steps.
-- Extract repeated test steps into helper methods.
-- Android Appium tests require a real device or emulator and cannot run concurrently on the same device. The caller must keep the device-side lock leased for the entire `--e2e` Appium sequence and refresh its expiry until release; `build-and-test.sh` does not acquire or release that lock.
-- `build-and-test.sh` only orchestrates device/UI and end-to-end tests through `--android`, `--desktop`, `--compose`, and `--e2e`; run ordinary unit tests directly with Gradle.
-- Appium sources and runners belong to the independent `*Appium` modules under `src/appiumTest/kotlin`. They depend on built or installed application artifacts, not application implementation code.
-- Appium `appiumTest` tasks must disable Gradle up-to-date reuse so every explicit E2E invocation drives the target again.
-- Appium tests pass target/platform helpers to the typed `AppiumTestBase` constructor. Shared test flows are base extension functions that read its helpers and JUnit test name; concrete test methods pass only scenario options. Target helpers create sessions and platform helpers own launch, cleanup, and log collection.
-- Cloud server integration tests and Appium E2E tests use PostgreSQL with dedicated filesystem RPC and Lucene RPC containers. Do not reintroduce H2, MinIO, or Elasticsearch into these test topologies.
-- Keep filesystem and Lucene RPC services business-independent. Translate business search models in backend adapters; clients download object contents directly from filesystem HTTP rather than through server.
-- Define filesystem and Lucene RPC contracts in their respective `services/*-protocol` modules. Service runtime code must not depend on `backend/core`, `shared`, or `api`; map business storage/search types in backend adapters. Keep service configuration independent of flavor env files.
-- Lucene RPC uses explicit named fields with independent indexing, storage and DocValues settings, not business JSON payloads. Do not inject fixed ID fields or expose ID-specific RPC operations; adapters declare business identifiers, queries and sort fields. Keep `Lucene*Document` conversion classes in backend adapters.
-- Gradle owns test image construction: `distTar` -> `copyTestDockerDistribution` -> `buildTestDockerImage`, using the root Dockerfile. Testcontainers only starts the resulting images. Keep image tasks in the shared convention plugin, and use the configured Docker-compatible backend rather than a separate test Dockerfile.
-- Do not reintroduce the removed H2 service or Docker target; `r2dbc-h2` supports only file and memory protocols, not the remote database topology required here.
-
-## Additional AI Collaboration Rules
-- Deploy through `scripts/service_scripts/start-service-in-docker.sh`; compile deployment artifacts inside Docker, not on the host.
-- Make the smallest necessary changes. Prefer extending `client/core` and `api`; do not casually change public models.
-- Do not create files outside the repository. Do not expose sensitive values from `deploy/*.env` in logs, documentation, or commits. Source-transfer archives must also exclude `dev/preset/secrets`, credential files and private-key contents; inspect the final archive before transfer and preserve Git executable modes.
-- For changes involving the configuration cache, avoid reading external environment state during Gradle configuration.
-- Configure shared Kotlin/JS and Wasm Yarn root extensions only in the root build; subprojects must not override lockfile locations. Keep JS and Wasm lockfiles separate under `kotlin-js-store` and regenerate the affected lockfile after npm dependency changes.
-- Keep existing tests compatible. If tests must be updated, explain the migration reason and steps.
-- Save rule-related knowledge learned while coding or scanning the project to this file.
-
-- Android KMP device tests must include `commonTest` when exercising shared Compose tests and declare their test-only host activity in `src/androidDeviceTest/AndroidManifest.xml`. Keep the device awake during UI testing and restore temporary power settings before releasing its lease.
-
-## Troubleshooting Quick Reference
-- Network errors: check `client/core/*Request.kt` `serviceCatching` logs and `AdminApi`/`CustomApi` routes.
-- Paging errors: check how `RemoteKeyStorage`/`RemoteKeyRoomStorage` saves and reads cursors.
-- Data not persisted: check `*RoomStorage.save`/`observeData` implementations and `commonJson` serialization.
-
-- Desktop Appium suites must run sequentially on one desktop. Windows uses DesktopDriver native UIA (`javaSwing=false`) and a JVM-local Preferences factory; do not rely on java.util.prefs.userRoot to isolate Windows test state. Do not reintroduce the removed AWT agent/bytecode compatibility patch. Set app.protected.storage.dir inside the test runtime directory; the Preferences factory does not isolate protected-value files.
-- Linux Appium must enable session accessibility and query every AT-SPI provider owned by the launched PID. Element handles must retain the D-Bus connection and stable object path; object paths alone can collide across providers. When a target disappears during navigation, return a stale-element error and re-locate the control; never fall back to cached coordinates for a disappeared target. Text input must pass and resolve the saved object path directly; never reselect by result index or fall back to another editable control.
-- Shared Wasm browser test configuration belongs to the wasm-browser-test-interop convention. A later useKarma call replaces the framework configuration, so do not override it in consuming modules; track loader files as task inputs and preserve the configuration cache.
-
-- JUnit host test initialization bases must be abstract so test discovery does not run the base itself. Keep the two conflicting Detekt abstract-class rule exceptions scoped to PlatformHeadlessTest files.
-
-- Diagnose remote service forwarding with target/host application probes and the installed transport's polling capacity. Listener binding or successful TCP connect alone does not prove forwarding; do not report SSH bridging as a fix for direct-forward failures.
-- For intermittent connection-refused/reset failures, compare guest health with concurrent host connection probes. Serial health or passing focused reruns alone does not establish cross-test state interference; distinguish per-listener backlog from total polling capacity.
-
-- When an external Docker backend uses gvproxy over loopback TCP, Keep Docker automatic publish ranges aligned with explicit gvproxy rules, use gvproxy DNS for guest/containers, and coordinate both processes during recovery. Confirm the shared VM is idle before migration/restart. Never use SSH networking bridges, diagnostic DLL replacement, added connection retries, skipped tests or relaxed timeouts as a permanent forwarding fix.
-
-- Preserve Git executable modes when copying Windows sources into an isolated Linux test checkout; ordinary Windows archive metadata can remove launcher execution permissions.
-- Keep Android test app shutdown and reverse-port replacement in the fixture order documented in DEVELOPMENT.md; noReset must not leave an old app requesting removed host targets.
-
-- Run unattended Linux desktop E2E through the isolated display runner documented in DEVELOPMENT.md. Do not use a zero-size/disconnected Xwayland session or change render settings, retries, skips, or timeouts to hide an unresponsive accessibility tree.
-
-- Resumable upload sessions require real SHA256 and CRC32C values. Keep generic file-operation quota locks separate; never fill required digest fields with dummy values. OSS compose owns backend-specific verification; follow DEVELOPMENT.md for MinIO's verified-source CRC32C combination and filesystem's streaming SHA256 check.
-
-- RPC adapters acquire a valid connection once per business operation. Pin upload/download sequences to that proxy, preserve caller cancellation, and never automatically replay failed operations. Recovery tests must reuse the same adapter across independent service restarts.
-
-- Authentication uses Redis-backed opaque Cookie sessions. Never restore revoked/expired sessions by silently
-  signing in with saved keys, replay mutations, or renew activity from background polling/WS heartbeats.
-  Keep user and panel session namespaces separate and use protected native Cookie storage.
-
-- Persist GUI private keys/account history through the protected-value boundary. Do not read or migrate old
-  Settings history; new records must verify encrypted writes before reporting success. Never
-  downgrade to plaintext when an OS secret store is unavailable. Browser private-key encryption does not
-  replace the HttpOnly Cookie boundary. Run Windows Detekt separately from compilation; use Gradle's default worker capacity.
-
-- Provide sign-in storage through backend/core's SigninSessionServiceFactory registration. Keep driver
-  dependencies and the Redis implementation in backend/redis; cloud/runtime owns only the Ktor adapter.
-
-- Keep host E2E runtime JARs immutable for the entire test process. Finish compilation before UI execution; do not rebuild shared fixtures from another command while tests run in the same checkout.
-
-- Keep host-test fork increases scoped to the reviewed allowlist in root build.gradle.kts. Preserve shared-device/desktop serialization. Test image contexts must be isolated per module and immutable during each build; keep source-build shared writable cache locks. Detekt 2.0.0-alpha.6 Worker API cannot configure its process heap and fails Compose analysis; keep it disabled until that upstream limitation is resolved.
-
-- Before expanding host-test concurrency, verify temporary paths, ports and persistent namespaces are isolated. A module with a pure test and Docker/native-model integration tests is not a pure-test module; do not expand its entire test task without reviewing those fixtures. Inactive modules excluded by settings.gradle.kts do not need concurrency configuration.
-
-- Compare build concurrency using the same explicit tasks and rerun/cache policy. Two-module compilation, six-module compilation and full assemble timings are different workloads and cannot establish a parallelism speedup or regression.
-
-- Verify VM state with sufficient read permissions before concluding it is stopped; sandbox probes can report inaccessible services. When applying skill templates to a legacy idle guest, normalize generated Linux scripts to LF and preserve the default Docker publish pool while restoring disjoint outbound ports. Verify the installed environment tooling independently of project configuration.
-
-- Create upload and chunk staging files atomically with unique names per request; client filenames and upload IDs are not unique across processes. Keep body reception inside the cleanup boundary. Real RPC shutdown waits invoked from runTest must use a real dispatcher so virtual time cannot expire before IO completes; preserve the existing timeout duration.
-
-- Linux AT-SPI can append comma-separated badge suffixes to accessible labels. Match whole labels within the merged name, not arbitrary substrings. Authentication E2E needs secret-tool and an unlocked native keyring on the isolated test D-Bus session with isolated data directories.
-
-- Keep E2E selector text in English and configure test locales explicitly. Restore temporary app-language overrides; preserve product translations. Capture Android app locales before clearing data, because pm clear also removes the override.
-
-- Never pop the last root navigation entry. Dismiss modals through platform back/Escape; do not make an entire dialog surface clickable solely for tests, because the Wasm overlay can intercept child controls.
-
-- Account-menu confirmations must replace the current modal instead of nesting another Dialog inside it. Keep sign-out request ownership outside the dismissed modal; clear protected active-session history only after server sign-out succeeds.
-
-- Keep private deployment host aliases, addresses, usernames, absolute host paths and session-specific verification records out of tracked files, commit messages and public PR text. Record reusable findings with generic environment names and placeholders.
-
-- Preserve raw ML-DSA/ML-KEM key bodies and ciphertext layout during crypto changes.
-  JVM KEM uses Java 21 `javax.crypto.KEM`; Android uses BC `KeyGenerator` with
-  `withNoKdf()` because its SDK lacks that API. Keep cross-platform compatibility
-  coverage in shared headless tests; do not silently introduce KDF or DER encoding changes.
-
-- Shared Android device tests reuse headless tests through the test source-set tree;
-  configure `withDeviceTestBuilder { sourceSetTreeName = "test" }` and provide
-  a device-specific abstract PlatformHeadlessTest actual without Robolectric.
-
-- Read-only users retain authentication and read access. Enforce write restrictions for HTTP mutations and WebSocket topic creation; notification-room recipients remain invited, with disabled message input.
-
-- Snapshot PKCS#12 Base64 is secret configuration. Preserve existing key bytes during migration, validate supplied credentials without a file fallback or replacement-key generation, and keep decoded Base64 key material in memory.
-
-- Keep crypto tests self-contained with synthetic vectors or generated keys; missing external preset directories must not silently pass a test. Legacy CryptoJvm ECIES/CBC and shared P256 encryption use different ciphertext formats, so verify each format independently unless an explicit compatibility contract exists.
-
-- Adaptive Home uses one section pager across rail/bottom navigation. Measure shared lists and search
-  results against their own content constraints, and preserve mounted reading state across resizes.
-  Keep Home context out of shared lists. Run `:app:composeApp:adaptiveUiTest` for isolated layout/state
-  fixtures; regular host tests continue excluding device-based UI tests.
-
-- On Windows, run assembly, Detekt and screenshot/host UI verification sequentially when they share
-  Android runtime JARs. R8 and preview renderers can hold those files open during another build.
-
-- Room activity is an API projection, not a RoomInfo schema extension. Filter joined membership before
-  grouped unread pagination; apply activity cursors to the per-room maximum message ID, not individual
-  message rows. Preserve unread-room versus unread-message count meanings and existing private-topic
-  decryption. See DEVELOPMENT.md for the data contract and integration checks.
-
-- Activity previews must remain ephemeral and session-keyed. Room lists/search return activity with
-  the same page; never add a second viewport/batch fetch or persist decrypted previews. Preserve local
-  RoomInfo caching and route successful pin/read changes through the event bus. Total unread messages
-  come from the backend's complete joined-room aggregate, never a client sum of loaded pages.
-
-- Keep a permanent latest-edge anchor before conditional room loading rows, so new messages remain
-  visible at the latest edge while history keeps its message-key anchor.
-- Update room read markers from the maximum visible topic item key, not LazyColumn indices or the
-  first displayed row; paging spacers and loading rows occupy indices. New messages can replace the
-  visible topic without changing the scroll index.
-- Verify an interactive, unlocked foreground desktop before Windows Appium keyboard tests. An accessible
-  native tree does not prove OS input is available; do not bypass empty-editor failures with fake content.
-- Refresh the Home unread navigation badge on read/message/membership events and lifecycle resume;
-  keep badge labels localized and test their presence/absence alongside row counts.
-- Keep read-marker upserts monotonic and atomic; history navigation and late requests must not rewind
-  the stored marker. Verify both exact counts and the legacy unread-room aggregate.
-- Native room-cell accessibility must preserve merged visible content. Room names must contribute
-  to merged native descriptions when previews supply descriptions; keep browser-only labels separate.
-  Resize Windows native test windows through their verified native handle and convert viewport
-  dimensions for window DPI.
-
-- Browser Appium previews need explicit text/action bridge nodes; keep the bridge disabled outside test
-  mode and preserve native merged accessibility. Select equal-stack overlay nodes in foreground paint
-  order so dialog controls win over identically labelled background controls.
-- Measure actual browser content dimensions after responsive chrome settles. Native Firefox compact
-  windows may be limited to 500px; keep strict viewport/draft assertions and document the tested sizes.
-
-- Collection refresh must clean the requested named collection, never its default detail cache. Verify
-  selected-list deletion while preserving detail IDs/aliases and unrelated lists using real SQLite.
-  Keep host-test database scopes unique and temporary storage under the module build directory.
-
-- Browser semantics must publish changed labels even when geometry is unchanged.
-- Wasm E2E runs every scenario on Chrome, Edge and Firefox sequentially with isolated profiles.
-  Prefer installed browsers through Selenium Manager discovery; keep per-browser binary overrides
-  separate and never reuse a personal browser profile or skip an unavailable matrix entry.
-- Async SQLite transaction finalizers must complete under cancellation so Room can recycle its pool
-  permit. Close allocated connections/statements when cancellation prevents delivery; new operations
-  still honor cancellation, and cleanup must not replay business writes.
-
-- Treat server paging tokens as opaque and preserve server item order. Keep database offset keys
-  separate from network tokens. Refresh through the existing Pager/RemoteMediator, retain the loaded
-  range and placeholder counts, and atomically replace room rows before publishing preview state.
-  Anchor-preserving mapped PagingSources calculate refresh keys from previous-generation pages
-  without relying on per-instance caches. Verify multi-page event refresh with shuffled IDs and opaque tokens.
-
-- Fingerprint deployed Wasm entry scripts and require cache validation for HTML. During
-  upgrade acceptance, compare browser-loaded Wasm filenames with the image; a successful
-  fresh HTTP probe does not prove an existing tab has loaded the new client.
-
-- Isolated deployment checkouts must reconnect existing filesystem/Lucene bind mounts
-  before startup. Reload BunkerWeb upstream resolution after container replacement;
-  container health alone cannot establish correct domain routing or data continuity.
-
-- Version Compose web resource URLs as well as the entry script. Cached translation
-  files paired with new generated byte offsets can display unrelated strings or corrupted text.
-
-- Pin external Dockerfile base images and build frontends by verified manifest digest.
-  Treat transient Docker Hub failures with bounded retries before changing build configuration.
-
-- RTC ICE candidates must remain queued until their peer remote description is ready. Keep peer
-  queues independent, and guard completion cleanup against replacing a newer connection for the same user.
-
-- Ktor RTC JVM shutdown must detach sender tracks before closing the connection and disposing
-  local media. Remote JVM tracks are borrowed; video renderers must remove sinks before
-  track disposal. Keep native negotiation tests on a real dispatcher, including cancellation cleanup.
-- Android Ktor remote tracks are owned by native receivers. Remove renderer sinks before
-  PeerConnection disposal and avoid separately disposing those receiver-owned tracks.
-
-- Normalize browser RTC capture `JsException` at the platform boundary; it is not an `Exception`.
-  DOM failures can lack JavaScript stacks, so preserve their message without retaining an unsafe
-  JS cause. Verify missing-device errors exit the joining state and cancellation remains cancellation.
-
-- Verify compression for cold Wasm client loads before diagnosing a blank page as RTC failure.
-  Browser session fixtures must populate storage on a static same-origin bootstrap document
-  before opening the app, so setup never aborts its first Wasm download with a reload.
-
-- Check Wasm runtime dependency resolution as well as compile classpaths. Ktor 3.6.0's browser
-  adapter retains the Wrappers 2026.1.9 ABI; newer transitive wrappers can remove inlined
-  symbols while compilation still succeeds. Preserve the recorder's newer URL API when resolving
-  primitive ABI compatibility. Exercise real browser constraint conversion,
-  synthetic track capture, SDP creation and cleanup when changing RTC dependencies.
-
-- Browser ICE events can contain an empty candidate string before the final null event. Treat
-  this as an end-of-candidates marker at the RTC boundary; native Ktor adapters reject it.
-  Preserve failures for non-empty invalid candidates and verify media still flows after the marker.
-
-- Shared RTC dispatch must distinguish a recipient channel cancellation from caller cancellation.
-  Check the caller context before propagating cancellation; one closed WebSocket must not
-  cancel the global signaling or negotiation jobs.
-
-- Verify browser WebRTC presentation with requestVideoFrameCallback presentedFrames. Firefox can
-  report zero VideoPlaybackQuality totalVideoFrames for a MediaStream while actual frames
-  are being presented; do not infer a frozen stream from that counter alone.
-
-- Adaptive form fields must emit one layout root per item, including their dividers. Keep editor draft
-  and mode state outside responsive width branches; measure breakpoints after pane padding.
-
-- Resolve direct-provider Koog model names only by exact catalog IDs through modelsById();
-  reject unlisted IDs and never add manual aliases, model substitutions or metadata fallbacks.
-  OpenRouter is a router exception: accept nonblank IDs through LLModel without catalog lookup
-  or guessed token limits, and let the remote API validate model support.
-
-- OpenAI-compatible endpoints share only the HTTP protocol. Treat model IDs as opaque strings;
-  never resolve them through the OpenAI catalog or infer OpenAI model metadata.
-
-- Pair GoogleModels with native GoogleLLMClient and a native API root; Google definitions lack
-  OpenAI endpoint capabilities. Verify request execution, not only model lookup or client construction.
-
-- Use native Bedrock Converse for schema-based generation. DeepSeek JSON-object mode must receive
-  the response schema in its system prompt because the native adapter omits it from the API payload.
-
-- Bedrock API keys must take priority over ambient AWS signing credentials. Let the runtime SDK
-  construct and own its default credential chain so credential requests inherit the configured region
-  and service shutdown closes the credential cache and HTTP engine. Exercise the production factory
-  in authentication, region propagation and resource-lifecycle tests.
-
-- Appium artifacts belong to the case's raw `AppiumTestReport` directory. Let Gradle clear task outputs,
-  preserve the original test failure during collection, and register private runtime paths for cleanup
-  before raw result metadata is written. Link artifacts through static HTML viewers so server MIME defaults cannot force
-  downloads. See DEVELOPMENT.md for the report entry point and isolation contract.
-
-- Filesystem/Lucene use SLF4J directly, without Napier or shared/business dependencies. Keep their Logback
-  provider, container-owned `LOG_PATH` directories and Appium file-log archives aligned; validate
-  service startup records rather than treating nonempty provider-warning output as collected logs.
-
-- Appium 11 does not transitively provide Selenium support utilities. Declare selenium-support explicitly
-  when using Selenium waits; Appium elements are AppiumWebElement, not RemoteWebElement. Treat a missing
-  page source as a diagnostic collection failure instead of writing an empty artifact.
-
-- Keep server/Appium/CLI Testcontainers topology in dev/testInfrastructure. Callers own Ktor test-host,
-  platform forwarding and business assertions; use explicit host versus container environments.
-  Register resources before startup, export logs before Testcontainers removes failed containers,
-  and preserve the original failure while completing cancellation-safe cleanup.
-
-- Normalize Linux test-image shell scripts to LF in copyTestDockerDistribution, preserving source
-  line endings so Windows checkouts cannot break container entrypoints. Track the filtering policy
-  as a task input so existing Sync contexts are regenerated when the policy changes.
-
-- JVM coroutine stack-trace recovery can copy exceptions across dispatchers; verify the original
-  failure through its cause chain and check that cleanup failures remain suppressed on it.
-
-- Initialize Edge with a browser-level DevTools blank target and close its isolated startup tabs
-  before page-scoped WebDriver commands, which can wait on the external MSN new-tab navigation.
-  A bare about:blank arg is parsed as a switch. Verify one blank target on fresh launch and restart;
-  preserve normal browser windows, viewport checks and page-load timeouts.
-- Current Windows Chrome can enforce a 504px content minimum. Browser activity resize tests use that explicit compact width across the matrix and retain exact viewport/draft assertions; see DEVELOPMENT.md.
-
-- Keep raw Appium/CLI/server artifacts under build/test-results/<task>/artifacts/<class>/<test>;
-  Appium adds its platform. The test-artifact-reports convention clears raw files before Test executes
-  and finalizes each task with one reports/<task>/index.html. Do not scan or render reports inside cases.
-  Keep report generation independent of live fixtures and serialize independent builds sharing outputs.
-  Do not add hashes, counters, random suffixes or container startup retries. See DEVELOPMENT.md.
-
-- E2E read completion must identify the expected persisted message as well as zero unread;
-  optimistic local echoes can precede server persistence.
-
-- Close the panel modal navigation drawer when authentication is cleared so sign-out or
-  revocation exposes the sign-in page rather than leaving an anonymous navigation overlay. Keep
-  its account actions outside the scrolling navigation list so compact windows expose sign-out.
-
-- Prepare authentication/socket E2E community and room fixtures before application launch;
-  cached pagers need not observe setup writes performed through another client after Home mounts.
-
-- Desktop window discovery/focus must use remote Appium interfaces. Keep process/thread ownership, DPI-aware resizing and physical-pixel screenshot capture in dev/appium-windows-plugin on the Appium host; do not restore host User32/JNA calls. Remote diagnostics must never attach to a guest PID on the host. Keep environment-provider installation and private connection profiles outside the project. Project JSON declares artifact/service roles only; the external environment runner owns staging, forwards and private-session cleanup. Collect native page source and screenshots through Appium; keep test methods free of SSH/VM transport code. See DEVELOPMENT.md for the environment contract.
-
-- Work VMs are test/runtime environments. Unless the user explicitly requests guest compilation, build applications, test code and dependencies on the host or the existing designated build environment, then stage prebuilt artifacts. Installing Appium/VMs or requesting E2E tests does not authorize guest builds, including native dependency install hooks. Do not silently fall back to guest compilation or enlarge VM resources for it.
-
-- Run macOS desktop E2E only on a qualified hardware renderer. Do not restore local Skiko class replacements/frame caps or treat historical patched-runtime reports as current acceptance. Keep the original test budgets and assertions. See DEVELOPMENT.md#macos-e2e-pause-and-skiko-investigation for evidence and qualification criteria. Verify visible navigation, edited text, dialogs and resizing against native accessibility state; a rendered first frame, Metal library load or successful accessibility action alone is insufficient. Keep provider qualification outside the project and do not add unconditional bypass flags.
-- Mac2 coordinate clicks must wait for visible, enabled controls with stable bounds during Compose navigation. For text containers, prefer their own uncovered area over a center point inside a nested interactive control; keep this geometry covered by unit tests.
-- Desktop WebView requires the pinned Nucleus Tao runtime and native window entry points. Do not restore the removed Swing/Wry transform or embed SwingPanel in a Tao window. Keep video native lifetime in DesktopVideoHost and copied-frame rendering in the Compose adapter. Observe asynchronous sign-out completion before testing restart persistence; do not extend UI timeouts or remove post-restart assertions.
-
-- Linux desktop E2E requires graphical Tao/X11 and AT-SPI runtime libraries. Window geometry commands must target the launched PID and reject ambiguous visible windows, never the focused desktop window. Preserve native screenshot failures as collection errors; see DEVELOPMENT.md for driver dependencies.
-
-- Tao desktop windows must bind Escape to the composition's NavigationEventDispatcher with a lifecycle-owned NavigationEventInput, matching Compose's AWT mediator. Preserve overlay priority and disabled root navigation; do not replace dialog dismissal with test-only UI controls.
-- Merged clickable activity/room cards must retain message previews and unread counts in their accessible description. Native providers may expose only the first merged contentDescription; provide a complete row description and match whole label parts in automation.
-
-- Windows and Linux desktop E2E share the quoted JVM argument-file launch contract. Keep Linux Appium arguments as an array and honor its working directory. Remote environment runners translate paths and provide prebuilt target JDK/native dependencies; keep Gradle tests and backend fixtures on the host and provider connections outside the project.
-
-- Declare desktop runtime dependencies and optional project setup hooks in dev/test-environments/desktop-requirements.json. Keep VM hardware, credentials and provider launch commands outside the project. Host preparation may build; guest initialization hooks remain limited to runtime configuration and prebuilt dependency installation.
-
-- Return `CustomResult<T, ScenarioError>` with a scenario-owned sealed error interface. Convert errors explicitly
-  when crossing scenarios; `FailureDetails` is only a diagnostic/terminal-consumer contract, never a business return type.
-  Capture exceptions at explicit boundaries, propagate cancellation, and do not restore the removed Kotlin Result helpers.
-- Endpoint server bindings are owned by cloud/runtime's `EndpointResultRouting.kt`; use its `invoke` extension
-  so typed failures stay intact without passing through endpoint4k's Kotlin Result-based invocation overloads.
-
-- Preserve typed failure categories through `fromError` conversions; do not infer authentication or permission
-  failures solely from the diagnostic exception class. PDF tests use installed fonts and public HarfBuzz core/subset libraries (8.3.1+, 13.0+ for CFF2); never bundle PDF font binaries or register test fonts.
-
-- PDF font selection prefers static weight faces; pin all remaining VF axes explicitly before OpenPDF embedding. Cache font bytes only and create document-owned OpenPDF objects. Discover installed SFNT/TTC metadata without loading unused font contents; preserve collection face indices. See DEVELOPMENT.md for installation and native-library setup.
-
-- Read backup variable-font data only when a missing static weight needs it; unused fallback IO failures must not block available static faces.
-
-- Keep verification worktrees outside directories named `build`; Detekt excludes source files by absolute `/build/` path.
-
-- Convert pinned CFF2 instances to CFF1 with the public HarfBuzz downgrade flag before OpenPDF embedding; preserve subset flags and reject residual CFF2/variation tables.
-
-- Native cancellation tests must synchronize from inside the real C call, keep callbacks reachable until face destruction, release gates in finally, and join cleanup on a real dispatcher. Distinguish a thrown cancellation from caller Job cancellation of an uninterruptible synchronous conversion.
-
-- Multi-axis font regressions must hold other axes fixed and verify each requested axis through independent observable output; compare real outlines/metrics or reliable weight metadata, not only outputs from the same converter.
-
-- PDF syntax highlights may overlap and leave an unhighlighted suffix; emit each source character once and retain the tail. Check rendered pages as well as extracted text after layout changes.
-
-- Keep snapshot timestamp rendering independent of the host default timezone; PdfGenerationSpec carries UTC calendar values. Label the displayed UTC offset explicitly.
-
-- Keep FunctionSignature.functionBodyExpressionWrapping=multiline while MultilineExpressionWrapping is active, so the two rules agree on multiline function bodies.
-
-- Wasm media experiments must distinguish Host frame dispatch from actual Compose rendering
-  and physical sound/display output. Keep synthetic fixtures and session metrics under build;
-  do not infer a shared Skiko GPU context from snapshot API docs or replace the copy path
-  with a DOM media/canvas overlay. See DEVELOPMENT.md for ownership and verification.
-
-- Track local Wasm npm module implementation files as npm-install task inputs and refresh
-  Yarn's copied file dependencies when those inputs change; package.json alone is insufficient.
-  Verify the installed module and bundled Worker, not just Kotlin compilation.
-
-- If screenshot reference PNGs are Git LFS pointers in an isolated worktree, restore the
-  original LFS objects before validation. Never regenerate golden images to mask missing
-  reference content.
-
-- Match Skiko source/API investigation to the version actually resolved for Wasm (including
-  the imported npm runtime metadata), not an arbitrary version found first in the Gradle cache.
-
-- Wasm texture experiments use the source-built Skiko patch in dev/skikoMediaRuntime;
-  keep its Kotlin API and published native runtime at the same verified upstream version.
-  Never create a second DirectContext over Compose's WebGL context or transfer an adopted
-  texture back to JavaScript ownership. Verify same-canvas uploads, GL state restoration,
-  resize/context loss, and zero live frame/texture resources after disposal.
-
-- dev/skikoMediaRuntime/patches contains the active 0.150.2 source overlays;
-  upstream-patches contains unapplied forward-port candidates. Keep LICENSE/NOTICE
-  and source pins with the local build; removing a single upstream workaround does
-  not authorize dropping the renderer-context/lifecycle integration. See DEVELOPMENT.md.
-
-- Emscripten external-texture registration must update both GL.textures[id] and
-  texture.name; the latter is used by native glGet binding queries. Reset both on
-  unregister and verify positive native handles while the texture is alive.
-
-- When source-built Skiko invalidates several Wasm release links, diagnose compiler
-  heap/GC pressure before treating a long build as a media defect. Bound Gradle workers
-  for validation when concurrent links exhaust the shared Kotlin compiler heap; do not
-  stop shared daemons, skip checks, or infer a speedup from different task workloads.
-
-- Current KGP Wasm development and production graphs share the generated npm `kotlin`
-  directory. Run their distribution tasks in separate Gradle invocations and test the
-  copied immutable distribution, not the mutable package staging directory.
-
-- Diagnose media cadence with source frame IDs and separate decoded/delivered, imported,
-  submitted-draw and observed-canvas counts. A 30fps fixture cannot establish headroom;
-  validate the actual drawing bounds and keep observer readback/CPU overhead explicit.
-- Guarded uploads of fresh textures restore GL state exactly; do not add unconditional
-  flush/full-context reset per frame, or reuse this exception to mutate adopted textures.
-- Cull samples against the media clock before expensive raster conversion/readback and
-  retain the post-transfer lateness check. Close skipped samples; never relax the budget
-  or let repeated processing of expired frames build an unrecoverable live-playback debt.
-
-- Normalize nullish framebuffer arguments in WebGL diagnostics: Emscripten can pass
-  undefined for the default target. Verify tracked targets against actual bindings
-  before attributing media draws to offscreen layers or the final canvas.
-
-- Headed media cadence checks require foreground ownership and calibrated physical video bounds;
-  a large emulated viewport alone does not prove on-screen visibility. Keep desktop-readback
-  and tracing-off controls because observers can perturb captureStream.
-- Correlate source frame IDs with AnimationFrame presentation feedback and desktop observations.
-  Shared presentation timestamps and NO_UPDATE_DESIRED reporters are not independent video
-  presentations or dropped video frames. Preserve 64-bit trace IDs without numeric rounding.
-- Some Chromium builds return an empty Tracing.getCategories list. Select explicit traceConfig
-  categories and validate GPU/compositor events; an empty filter can enable unrelated tracing.
-  Namespace trace artifacts by the output dataset so probe runs cannot overwrite study evidence.
-
-- When frames disappear before texture upload, trace VideoFrame.close call sites with an
-  uploaded-frame WeakSet. Distinguish pending replacement from Host tick closures; do not
-  infer a late-frame drop solely from an outer tick entry in the stack.
-
-- Preserve GPU frame ownership under backpressure: a rejected offer remains Host-owned; only generation cancellation may supersede a pending renderer frame. Keep UI acceptance, canvas capture and desktop observation counters distinct; see DEVELOPMENT.md.
-
-- Distinguish GPU surface canvases from PictureRecorder/RenderNode canvases when evaluating Canvas.recordingContext; direct SkiaLayer success does not establish Compose interop. When inspecting Wasm imports, skip accessor properties: enumerating GOT getters can mark weak imports required and cause diagnostic-only linker failures.
-
-- Use captureStream() without an explicit request-rate timer for canvas frame-ID observation, and record the capture policy. A high timer rate is not a guarantee that every video update is sampled; never compare historical timer-gated datasets as if their observation policy were unchanged.
-
-- Verify media network-failure behavior against the pinned decoder API, not only a mocked Worker. Preserve skipped-sample counters through EOF responses without counting EOF as a frame; exercise both RGBA and GPU wire paths.
-
-- Keep Web Audio scheduling/starvation on render time and video/progress/end detection on output time. Output timestamp extrapolation must stop at suspended render progress and reset on seek; test reported queue latency without treating analyser onset as speaker output.
-
-- Route Wasm RGBA bitmap-import failures through Host cleanup. Rethrow cancellation and check coroutine activity before reporting errors from a superseded effect; verify preview/playback failures leave Compose responsive and release media resources.
-
-- Give published native media bitmaps a stable lifecycle owner; per-value DisposableEffect cleanup misses publications superseded before commit. Retain displayed/pending frames until commit, and verify explicit native cleanup with GC finalizers deferred during remove/source-replacement races.
-
-- Android Kover coverage can use pre-DEX offline instrumentation with the matching offline runtime; do not infer runtime incompatibility from missing Gradle device-test integration. Use D8 compatible with the project Kotlin metadata, export from the app process before force-stop, and report against the matching original class files. Keep minimal probes distinct from full APK/E2E support.
-
-- Measure Kotlin/Wasm coverage in the Wasm module, not only its JavaScript loader. Preserve WasmGC/EH and the browser-supported output features during binary instrumentation; enabling every Binaryen feature can introduce unsupported output encodings. Export counters before navigation/restart/quit, keep source-map/build identity and linked-code denominator explicit, and distinguish fixed-fixture probes from general Kotlin line/branch coverage.
-
-- Offline E2E coverage is opt-in through `-Pe2e.coverage=true`. Finish all selected
-  application/classpath/image preparation before live tests, snapshot before teardown
-  and restart, and preserve collection failures. Keep JVM/Android bytecode variants
-  separate; Wasm reports mapped linked source lines only. Match original bytecode,
-  source fingerprints and browser build identities before merging artifacts.
-- Kover 0.9.11's single-class Features instrumentation wrapper can assert on engine-
-  filtered generated classes; use the official batch instrumentation API rather than
-  swallowing that exception. Wasm rewrites invalidate sourceMappingURL/DWARF offsets;
-  remove those stale custom sections from covered binaries.
-- Keep Windows coverage launchers below cmd.exe's command-length limit using an
-  ordered manifest classpath JAR. Keep native graphics bundles consistent; an
-  unrelated EGL DLL on PATH can crash Tao before a coverage snapshot is possible.
-- Desktop coverage must select the current launch PID after every restart. A driver
-  force-quit can leave its old running marker behind; retain previously exported
-  snapshots without requesting those retired processes again.
-
-- Combined unit/E2E coverage unions repository source paths and executable lines;
-  retain independent platform metrics. Run ordinary Kover tasks before immutable
-  E2E preparation, and reject ambiguous source ownership instead of guessing.
-- Coverage-enabled builds must still refresh ordinary backend test images. Keep
-  latest and e2e-coverage image contexts separate so host tests never consume stale
-  normal images while only instrumented images are rebuilt.
-- Keep original CFF2 test fonts, OFL licenses and pinned checksums under openpdf test
-  resources; generated subsets stay in memory/build outputs. OS-backed session
-  storage tests belong to JVM/device source sets, not a fake Android host keystore.
-
-- Wasm source maps can assign synthetic operators to an empty EOF line. Exclude
-  anchors beyond physical source lines and retain unmapped barriers; never inherit
-  the previous executable line across those ranges.
-
-- Use Yarn lock Provider properties in the root build and explicit Gradle create/register
-  APIs. Attribute remaining deprecations with --warning-mode all --stacktrace before
-  claiming Gradle compatibility; preserve separate JS/Wasm lock locations.
-- Panel view-model factories require an owner-provided scope; do not restore GlobalScope
-  or opt into delicate APIs to hide missing lifecycle ownership.
-
-- When inline-return raw strings make Indentation and StringTemplateIndent disagree,
-  use an indented local value before returning it and verify the rendered content;
-  do not alternate formatting or suppress either rule.
-- API relations belong directly on scenario-specific wrappers around base models. Use TopicCreated
-  for creation/WS, TopicReplyPreview for nested replies, TopicActivity for activity previews, and
-  TopicDetail for full queries. Pin responses update the nested base without discarding relations.
-  During alpha, do not add client database compatibility migrations for retired projection formats.
-- Pin/unpin events carry identifiers and the returned pin flag only. Patch each current cached
-  projection without persisting UI summaries or replacing unrelated fields.
-
-- Track test contracts and platform boundaries in DEVELOPMENT.md separately from executed acceptance.
-  Keep activity read/send, navigation, layout and draft-resize cases independently discoverable;
-  restore temporary Android screen overrides after the dedicated wide-context case.
-
-- Browser bridge callbacks can leave keyboard focus on the document body. Focus the real Compose
-  canvas before sending Escape and verify modal dismissal; do not add a clickable dialog surface.
-
-- Drive browser action bridges with real WebDriver pointer clicks. Synthetic JavaScript clicks do not
-  provide user activation and can cancel Compose effects on Chromium. Focus the renderer before Escape.
-
-- Browser injected-session readiness must wait for restored user info, not only account-instance
-  creation. User info changes avatar/create placement. Wait for committed, stable semantics geometry
-  before resolving pointer targets; preserve normal timeouts and do not retry actions.
-
-- CLI terminal event delivery must preserve pasted input under backpressure. Keep the pinned,
-  archive-verified Mosaic source rebuild until an upstream release passes the real multiline
-  login and command tests; do not hide dropped events with input delays.
-- Browser RTC capture owns every track in the returned stream until delivery. Disable unused
-  media kinds and stop surplus or late tracks after cancellation; verify presented frames
-  and track release independently of signaling connectivity.
-- Batch member insertion must preserve each member's joinedTime. Invited notification
-  recipients remain INVITED with no joined timestamp; joined creators retain their timestamp.
-- Recommendation fixtures need another author's topic in a joined community. A user's own
-  topics are deliberately excluded; wait for search visibility before driving the CLI list.
-- RTC acquisition under NonCancellable must retain the caller context and check it between
-  audio/video acquisition and before delivery. Returning on the same browser dispatcher does
-  not perform the cancellation check that a dispatcher switch would perform.
-- Browser test bridges must use clipped window bounds for controls inside scrolling panes;
-  viewport bounds alone can place an offscreen menu target over a pinned action.
-- CachedLoadingHandler requires onSave to publish into its observed data flow. Use
-  SimpleLoadingHandler for ephemeral results instead of a null flow and an empty saver.
-
-- Wasm test semantics must detach HTML controls when Compose nodes become unplaced, including
-  retained lazy-list cache entries. Let real WebDriver wheel input reach the renderer beneath transparent test controls;
-  match an unobscured interactive target and resolve editors independently from search fields.
-- Browser uploaders belong to the account scope. Retain selected files only for pending work,
-  release them after success or abort, and do not claim path-based resume after page reload.
-  File-input fixtures must use the real FileKit change handler and shared upload pipeline.
-
-- Room renames must refresh room and joined-member search documents; exclude invited or departed
-  memberships and paginate member/user joins using the query's user-ID cursor. Search refresh
-  assertions must use current indexed results and a fully visible row as the scroll anchor.
-
-- Replace changed Lucene documents atomically with an adapter-declared query; plain append keeps
-  stale keyword matches. Keep the service operation generic and roll back failed index writes.
-- Own Ktor test applications explicitly and stop them on failures before container teardown.
-  Preserve the original error and suppressed cleanup failures so one failed case cannot leave
-  a signaling listener consuming a later case's frames.
-
-- Browser E2E fetch/media probes must preserve the page's native Promise realm. Firefox WebDriver
-  sandbox async functions can produce incompatible Promise values for Wasm casts; chain native results
-  or construct page Promises. Preserve actual responses, AbortSignal and capture ownership.
-- Wait for successful form exit before navigating away after submission. A modal hiding the submit
-  control does not prove completion. Restart checks that expect authentication must await loaded user
-  data and clear stale test readiness markers before restarting the process.
-
-- Creation events must update the named collection observed by the visible list as well as its detail
-  cache. Verify creation from an already-loaded empty collection without a manual refresh; submission
-  completion alone does not prove cached lists receive the new record.
-
-- Cross-platform E2E validation must assert visible localized results or actual derived values.
-  Browser-only Appium bridge descriptions are not native selectors. Preserve displayed account
-  addresses in native accessibility instead of replacing their values with machine labels.
-
-- Linux protected values use libsecret binary APIs, not secret-tool stdin (which truncates at 8 KiB).
-  Keep native calls on IO with per-operation GCancellable ownership and cancellation-safe argument
-  lifetime. Preserve raw stored bytes and stable production names; scope explicit test storage roots
-  on Linux as on macOS. Cover large Unicode values and unavailable libraries against a real keyring.
-
-- Resolve uploaded attachment MIME types from FileInfo; keep Markdown object blocks free of duplicate
-  contentType metadata and preserve legacy unknown-field decoding. Generate object JSON through the
-  serializer so file names containing quotes remain valid.
-- Keep License.name in generated AboutLibraries metadata; omitting it makes the runtime parser return
-  an empty library list. Verify bundled dependencies and their license associations after export changes.
-- Dependency removal must cover every consuming module and unused version-catalog entries. Regenerate
-  bundled license metadata and verify the affected runtime classpaths before reporting cleanup complete.
-- Native keychain failure tests must use a private temporary keychain and restore the original default,
-  search list and interaction policy. Keep these OS-specific tests explicit and serialize account access.
-
-- Native uploaded-file rows must merge the filename and visible metadata into their actionable
-  accessibility label. Test file selectors match the complete filename boundary, including escaped
-  punctuation, rather than an arbitrary substring. Refuse clicks on zero-size native elements.
-- Mac2 text input must use native typeText for the complete string and verify the exact multiline
-  value. Reserve the key-chord API for shortcuts; per-character XCTest key operations can overrun
-  the transport timeout even after the visible text is complete.
-- AppKit exposes Save/Cancel controls in both the file dialog and Touch Bar. Scope native picker
-  actions to the save-panel accessibility identifier and its buttons, then verify panel dismissal.
-- Collect native fatal-error dialogs before cleanup. Close only newly created reporters belonging
-  to the test launch, rechecking process identity; refuse unexplained pre-existing dialogs.
-- Browser PDF preview owners must abort pending requests and revoke their Blob URLs on disposal.
-  Verify actual document bytes and rendered pages under the application's cross-origin isolation.
-
-- Bind ZoomImage main-thread checks to the actual desktop window UI thread. Its Swing default
-  does not recognize the native Tao event loop; retain rejection of worker-thread access.
-
-- Browser object reads need GET/HEAD CORS preflights and readable missing-object responses;
-  keep mutation preflights denied and RPC routes outside this public read boundary.
-- Browser audio acceptance requires a working default output device. A trusted click and allowed
-  autoplay do not prove that audio hardware is available; keep real playback-progress assertions
-  and diagnose zero output channels separately from application input or decoding failures.
-
-- Windows native file dialogs may run on a dedicated STA thread. Validate window ownership by the launched application process and visibility; do not require the main window thread ID when selecting owned foreground dialogs.
-
-- UiAutomator2 selector string arguments unescape quotes only. Preserve regex backslashes instead of JSON-escaping the expression; test matching after selector argument parsing, including merged filename metadata. Close the Appium driver before collecting long Android bugreports.
-
-- Reveal native player controls only when their accessibility state says they are hidden; an unconditional surface tap can hide an already-visible controller. Preserve platform default control visibility timing rather than shortening it below normal touch/accessibility interaction time.
-
-- Native Media3 progress updates can keep UiAutomator busy until its controls disappear. Disable UiAutomator idle waiting only during animated media interaction, restore the prior setting with cancellation/failure-safe cleanup, and preserve explicit state assertions and deadlines.
-
-- Android native clicks wait for visible, enabled controls with stable bounds before issuing one click. Presence alone does not establish that a navigation drawer is ready for input; do not retry the click or alter animation settings to hide a missed action.
-
-- Keep Android PlayerView inside its page component; do not introduce an activity-root video overlay to eliminate transient Surface black frames. Brief black frames during navigation/PiP transitions are accepted. Detach the controller on final view release. Preserve PiP E2E checks for decoded frames after transitions settle, including re-entry; do not accept persistent black output or replace pixel assertions with system state alone.
-
-- Linux/X11 portal dialogs require a live parent XID and may belong to another process. Verify native transient ownership before admitting their AT-SPI nodes; reject ambiguous/shared portal windows, retain D-Bus/object-path identities, and keep portal activation on the same isolated accessibility bus as the test application.
-
-- Filter `tasks.names` before obtaining individual `tasks.named` providers for aggregate dependencies.
-  Keep excluded variants unrealized; see DEVELOPMENT.md for the AGP Compose Preview constraint.
-
-- Browser protected-storage regressions must call the compiled Wasm production store. Use the isolated browser runner for per-case origin storage isolation; never extract JavaScript from Kotlin source strings.
-- Karma Edge launches on Windows must disable compatibility-shim relaunch so the launcher can own and terminate the browser. Reject missing, skipped or duplicate cases in isolated browser contract runs.
-- Wasm browser-test helpers should pass arguments through typed external interfaces; parameters used only inside js string literals trigger Detekt UnusedParameter findings.
-
-- Wasm media verify suites use node:test; preserve independent child-case reporting and dependent playback/recovery flows. Run the browser matrix through wasm-media-host npm test:browser; keep benchmarks standalone.
-
-- Wasm media reports write to isolated raw run/batch/suite directories first; collect completed runs into immutable build/reports/wasm-media snapshots only after all child processes close. Never write live reports into a shared collected directory.
-
-- Wasm verification fixtures must bound diagnostics and native close operations separately. Defer cleanup errors until the case outcome is known; preserve original failures, record cleanup errors separately, and fail cleanup-only errors. Register every acquired site/driver/page/browser before subsequent setup can fail.
-
-- Browser verification must own native termination capabilities, not just race close promises against timers. Use the supervised suite entry for owned-container fallback, preserve independent trace-finalization budgets, and verify forced cleanup with active child processes while preserving unrelated processes.
-
-- Every browser verify module must await its root runCase. The worker completion notification marks the end of that awaited flow; do not replace it with unawaited top-level test registrations.
-
-- Verification completion requires an empty owned Job/subreaper container, confirmed root exit and bounded pipe closure. Keep the container owner alive across root exit; never infer descendant release from PID exit or process-group kill. Test detached descendants and root-first exits with inherited pipes.
-
-- Verification JUnit must record abnormal worker exits as lifecycle failures even when reporter output is complete; retain completed test cases alongside the process failure.
-
-- Shell tool regressions use `python scripts/test_scripts/run-shell-tests.py`; keep each independent contract/parameter row discoverable and reportable. Execute real scripts in per-case fixture repositories, parse argv/YAML precisely, and never write or glob-clean the working checkout's deployment env files. See DEVELOPMENT.md for dependencies and report paths.
-
-- Shell regression argv transport must preserve the production shebang/explicit interpreter. Share `scripts/tool_scripts/process_container.py` with browser verification; require empty-container and owner-exit acknowledgement before fixture removal, and sanitize XML only at the report serialization boundary while retaining raw diagnostics.
-
-- Track fixture release with a per-command process lease registered before launch, not by catching selected exception types. Require all leases to be released before deletion, including when caller failure and cleanup failure occur together. Verify Shell compatibility entries as original bytes/executables and keep their LF rules in `.gitattributes`.
-
-- Finalize process termination and control-pipe closure under one exception-priority boundary. Attempt all cleanup steps, preserve the original caller failure, retain every cleanup error, and test real disconnected buffered pipes rather than only BytesIO stubs.
-
-- Bind Wasm page stacks through the shared browser-history controller, using root-scoped nested IDs.
-  App Back must traverse existing History API entries so browser Forward remains usable; preserve the
-  last root route, current URL, and unrelated history state. Keep modal dismissal in the platform
-  dispatcher and keep drafts/credentials out of navigation history.
-  Use discriminator-safe route encoding because destination payloads can contain a `type` field.
-
-- Parent navigation return positions must follow the latest descendant snapshot. Keep responsive
-  file navigation and its pager mounted across rail/bottom layouts; browser restores must not be
-  echoed back as new pager navigation. Verify resizing and history restoration during a drag.
-
-- Gate authenticated file previews before creating their detail ViewModels, including restored routes.
-  Navigation actions must check the current session at click time so sign-in and sign-out take effect.
-  Protected-action prompts share one sign-in confirmation; explicit sign-in buttons navigate directly.
-
-- Compose blocking-font preloading can silently fall back after decoding errors. Strictly decode browser-local
-  font bytes before accepting preload completion, and invalidate pending confirmation when permission resets.
-
-- Wasm font preference is intent, not permission. Mount business content only after explicit opt-out
-  or successful authorized font preloading. Keep the startup gate readable with native HTML fonts.
-  Prepare ordinary browser E2E font preferences on the static same-origin bootstrap after clearing
-  storage; font-flow tests must exercise the gate itself without a test-mode bypass.
-
-- Build production Wasm distributions and Appium development distributions in separate Gradle
-  invocations; their CompileSync tasks share generated npm package directories.
-
-- Community fonts belong to topic/editor content, not the enclosing application theme. Reuse native
-  Downloader disk caches; Wasm uploaded-font caching is separate from system-font permission access.
-  Community settings expose content/code fonts only; leave missing-glyph fallback to the platform.
-  Key uploaded-font caches by object version rather than expiring signed URLs. Verify real glyph metrics
-  because resolver preload may silently resolve an invalid font to a default.
-- Internal downloads are application-owned and shared across accounts. Use guest database collections
-  and paths in the public resource namespace, separated by server and file identity. Ignore legacy
-  collections/directories without migration, deletion or reset; keep Room version 2 and entity schemas.
-  OPFS retention indexes/budgets are server-scoped inside the new namespace; eviction must acquire the
-  same server/file lease as Downloader and must never read legacy retention indexes.
-- Downloader owns admission, transfer, processing and status publication; FileEngine owns platform IO,
-  leases and archive primitives. Snapshot request Cookie/account context into an admission-owned client,
-  close it on completion, and never retain an account session in the public service.
-- `download(file)` never retries failed/paused tasks; use `resume(id)`. Publish PROCESSED with a persisted
-  successful generation after writers/extraction close, under the shared server/file lease. Recheck
-  revision/path/generation/status under that lease before building fonts. Database Flow may skip states.
-- Cache one stateIn font flow per public file revision, with shared upstream construction and recoverable
-  failure states. Do not add finished-bundle/pending caches or reload events. Active registry entries
-  cannot be evicted; release idle replay and entries after the subscription grace period. Retry success
-  must rebuild from a new generation even if every intermediate status was missed.
-
-- Wasm Default dispatching stays on the browser event loop. Keep ZIP processing in the dedicated
-  file worker, pass OPFS paths and in-memory file metadata rather than Kotlin/Skia objects, and await worker
-  cancellation acknowledgement before deleting unpublished output or releasing download locks.
-- Windows Edge Karma runs must prevent compatibility-layer relaunch so Karma owns the actual
-  browser process; otherwise launcher retries can delete a still-running browser's OPFS profile.
-  Keep browser launcher setup in the shared Wasm test convention and track configuration inputs.
-- Browser Worker cancellation tests must synchronize at observed native OPFS phases (a pending
-  Promise or a completed write), rather than before Worker startup. Keep instrumentation in test-only
-  entries, reuse production protocol/cleanup, and deliver cancellation before releasing a paused write.
-  Retain page-initiated cancellation coverage alongside worker-local cancellation at the pending phase.
-- Atomically ignore same-server/file download and resume duplicates while a task is preparing,
-  executing or stopping, including requests with a different URL. Never queue these duplicates;
-  keep different files concurrent. Pause waits for cleanup and status publication before admission
-  reopens. Handle ordinary failures at the owned request boundary; preserve caller cancellation.
-- Keep retry controls busy until registry activity ends, including terminal database writes and cleanup.
-  Publish font loading state during retries and before generation construction, even when database
-  observers skip intermediate snapshots. Only successful processing generations construct fonts.
-
-- Font preset ZIPs must contain a single family. Preserve available regular/bold/italic faces,
-  exclude Condensed, and use sourceName to share raw downloads across separately filtered outputs.
-  Recheck author-controlled Markdown weight support before removing or restoring extra weights.
-
-- Keep font fixture builders in test source sets. Exercise ZIP loading through the production
-  Downloader/storage/worker pipeline instead of retaining a separate production decoder only for tests.
-
-- Community font stateIn replay owns built FontFamily/resolver objects; native platforms load local files.
-  Keep Wasm framework-retained bytes distinct from a separate source-byte cache. Extraction completion
-  belongs to the download record under the server/file lock; never add a second extraction manifest.
-  Keep native backing files available for resolution through another presentation resolver; idle-flow
-  removal must not close framework resources still referenced by content.
-
-- Validate community font bundles before publication on every platform: reject duplicate weight/style pairs,
-  compare filename styles with original OS/2 metadata, and compare typographic family (name ID 16,
-  otherwise ID 1). Never compare style names or overridden platform attributes, deduplicate, or skip failed faces.
-
-- Cap ZIP archives at 128 total entries, counting both files and directories on every platform.
-- Bound native ZIP extraction while writing, including non-font data. Reject duplicate normalized
-  target paths before opening sinks; post-extraction font validation cannot detect overwritten entries.
-  Reject trailing dots/spaces in every native archive path component, including parent directories,
-  because Windows can fold them into existing targets.
-
-- Create native ZIP output files exclusively with CREATE_NEW. String-based path normalization cannot
-  detect every filesystem alias; never open an existing extraction target with truncation.
-
-- Keep font identity independent of expiring transport URLs. Pass current FileInfo to explicit resume,
-  refresh only matching-revision URLs under the shared file lease, and preserve newer stored revisions.
-
-- Refresh expired signed resource URLs once before transferring bytes, not when reading a complete cache.
-  Preserve the requested file revision and partial source; guest refresh failure must not block post reading.
-
-- Keep media transport visuals and interactions in the shared MediaPlayerSurface; platform adapters retain engine ownership across player expansion and contribute extra actions through its options menu.
-
-- Shared media actions must preserve native prepare/retry semantics; browser clipboard actions must await the actual write instead of using a no-op platform implementation.
-
-- Native media acceptance must check decoded frames and advancing positions through expansion and return.
-  Android dialog surfaces need screenshot-based frame checks because SurfaceView may be absent from UIA.
-  Construct Selenium screenshot rectangles from Point and Dimension to avoid its height/width argument order.
-  User-triggered desktop retries must replace and dispose the failed native player; never replay automatically.
-
-- Diagnose Windows Tao native startup crashes using loaded EGL/GLES origins before changing rendering.
-  Keep unrelated toolchain DLL directories out of the application runtime PATH and exclude Tao message
-  dispatch windows from Appium content-window selection.
-
-- UI clipboard actions use `Clipboard.copyText` for localized outcome feedback and failure isolation.
-  Keep `setText` failures observable, normalize Wasm `JsException` at the browser boundary,
-  and propagate cancellation without feedback or automatic retries.
+# 项目开发规则
+
+## 全局原则
+
+- 使用 JDK 21，所有模块必须以 Kotlin/JVM 21 为目标。
+- 优先编写可在 KMP 共享的代码，通过 `expect`/`actual` 或平台源码目录处理差异。
+- 保持 Gradle 配置缓存开启（`org.gradle.configuration-cache=true`），配置阶段避免副作用和 I/O。
+- 日志：共享和应用代码使用 Napier。只有测试或调试需要时才初始化日志树。
+- 使用 DEVELOPMENT.md 记录的规范 Logback XML 写法，通过导入类引用。
+- 静态分析：使用 `config/detekt/detekt.yml` 运行 Detekt。不创建或使用 Detekt baseline 文件，所有生效的诊断都必须在源码中修复。不得添加或扩大抑制范围以绕过诊断。Detekt 规则冲突时，只禁用解决冲突所必需的规则或最小配置范围。
+
+- 诊断 Detekt 类型解析警告时启用 debug、关闭 autoCorrect；debug 不属于缓存输入，因此重新执行所选任务。保留 KMP 源码覆盖和生效规则。默认关闭 autoCorrect，专门修正时通过 `--auto-correct` 明确启用。不要强制 Detekt 使用单个 Gradle worker。已知 expect/actual 和生成 serializer 限制见 DEVELOPMENT.md。
+- Detekt 只在配置的 `api` 和 `shared.model` 协议／模型范围及 `client/core` 请求边界允许公共库实体和公共 data class；在 `config/detekt/detekt.yml` 中严格限制这些例外范围。
+- 新 Kotlin 源文件必须以 Detekt 配置的私有项目许可证头开头。
+- 覆盖率：按需生成 Kover 报告。
+- 环境与机密：`app/composeApp` 和 `panel/composeApp` 通过 BuildKonfig 注入 `deploy/{flavor}.env` 的值。`app/androidApp` 读取相同 env 文件配置深链接。`app/androidApp` 和 `panel/androidApp` 使用 flavor/buildType 配置 application ID 和构建类型。始终传入 `-Pserver.flavor` 和 `-Pserver.buildType`。
+- 提交信息：以中文或英文动词开头，包含模块或范围，例如 `client/core: add getAllUsers request`。
+- 不使用中文方法名。
+- 不使用未缓冲的 `InputStream`/`OutputStream`，改用 `BufferedInputStream`/`BufferedOutputStream`。
+- 代码中不使用 `println` 或 `System.out.println`。
+- 编辑文件时保留已有换行格式。
+- 添加依赖时，从 GitHub 或上游仓库核实正确 group 和 artifact。找不到依赖时，不通过降版本解决。
+
+## 模块职责
+
+- **api**：定义 REST API 端点、query/path 模型和管理接口 `AdminApi`（`/admin/*`）。
+- **client/core**：会话管理和使用统一 `serviceCatching` 的请求封装。
+- **client/composeCore**：共享 Compose UI 组件、媒体辅助程序、跨平台 UI 工具及相关 actual 实现。
+- **client/asciidoc-parser**：为 Markdown 渲染生成 AsciiDoc 预览 HTML。
+- **client/model-storage**：抽象存储接口和集合标识。
+- **client/room**：基于 Room 的存储实现和聚合入口。
+- **result**：与业务无关的 KMP 结果容器和错误诊断约定。
+- **shared**：跨平台业务模型和工具。
+- **app/composeApp**：面向用户的共享 Compose UI、actual 实现和服务。
+- **app/androidApp** / **app/desktopApp** / **app/cliApp**：用户应用平台入口。
+- **panel/composeApp**：管理面板共享 Compose UI。
+- **panel/androidApp** / **panel/desktopApp** / **panel/cliApp**：管理面板平台入口。
+- **backend/***：后端核心功能、存储、搜索及相关服务。
+- **cloud/***：集成后端功能的核心服务模块。
+- **bot/***：机器人模块。
+
+## 代码风格与实践
+
+- **Kotlin**：公共 API 不暴露可变集合。优先使用 `data class`、`sealed interface`/`sealed class`，以及 `suspend` + `CustomResult<T, ScenarioError>`。函数采用动词加宾语命名。
+- **Compose**：`@Composable` 函数使用 PascalCase。通用小写函数命名检查排除 `composeApp` 源码树，因为 Compose 采用不同命名约定。
+- **架构**：UI -> `SessionManager` 请求扩展 -> API 端点。适当添加本地存储和分页。
+- **GlobalDialog 与 GlobalTask**：用户主动操作且成功或失败对用户很重要时（如登录、发布、更新个人资料），使用 `GlobalDialog`。失败可容忍，但操作不能因滚动或切页取消时（如添加回应、切换收藏），使用 `GlobalTask`。实现客户端 UI handler 时，可考虑将 `GlobalDialog` 或 `GlobalTask` 作为 handler/controller 类字段。
+- **分页**：统一将游标保存在 `RemoteKeyStorage`（`PRE_COLLECTION`/`NEXT_COLLECTION`）。
+- **日志**：通过 `serviceCatching` 为外部网络请求记录诊断，避免热路径噪声日志。
+- **测试**：尽可能编写测试。客户端非 UI 测试放在 `src/headlessTest/kotlin`。Compose 测试遵循 https://kotlinlang.org/docs/multiplatform/compose-test.html 。端到端测试使用 `scripts/test_scripts/build-and-test.sh --e2e`，运行 Appium runner 模块明确的 `appiumTest` 任务和 CLI E2E 任务，无需 Gradle 属性。
+
+## 静态检查
+
+- 修改代码后，通过范围明确的 Gradle 任务编译受影响模块和平台源码集。修改共享或协议类型时，包含下游使用方；任务选择见 DEVELOPMENT.md 的构建验证部分。
+- 全仓库编译验证使用已有 `compileAllNoRelease` 任务。
+- 不把根 `assemble` 用作常规编译检查：它还构建无关模块和 release 产物，包括 Wasm 正式链接与优化。只有用户明确要求，或需要验证受影响打包、优化、签名或分发行为时，才运行产物或 release 任务。
+- 常规开发或测试需要 Android 产物时，选择受影响 Debug 变体，默认不构建 Benchmark/Release。
+- 编译检查后，运行 `./gradlew detekt --console=plain` 检查静态代码风格。
+  - Windows 通过 Git Bash 运行。
+- Detekt 限制正式代码函数名最多 50 字符。测试源码集（`src/test` 和 `src/*Test`）不受函数名长度上限约束，以便完整描述行为。保留单独配置的命名风格检查，正式代码函数名保持简洁。
+
+## 测试
+
+- 主动测试受影响模块。
+  - 小改动使用 `./gradlew :module:test --console=plain`。
+  - 完整常规单元测试使用 `./gradlew check --console=plain`（不含依赖设备的 Compose 和 Appium 测试）。
+  - 端到端测试使用 `./scripts/test_scripts/build-and-test.sh --e2e --plain`，运行 Appium 和 CLI E2E 套件。
+  - `device_based` 下的 Compose common 测试使用真实设备运行 `./gradlew :module:connectedAndroidTest`，或运行 `./gradlew :module:jvmTest`。
+  - Compose UI 改动运行 `./gradlew validateDebugScreenshotTest` 进行快照测试。
+- Compose 截图测试保持无上下文：不注入会话管理器、对话框控制器、导航上下文等应用运行时 `CompositionLocal` 依赖。依赖这些内容的组件在其他测试层覆盖。
+- 测试用于发现问题。测试发现问题时，修复问题，不在测试中绕过。
+- 用例中的步骤确有依赖时，才添加额外测试步骤。
+- 将重复步骤提取为辅助方法。
+- Android Appium 测试需要真实设备或模拟器，同一设备不能并发运行。调用方必须在完整 `--e2e` Appium 序列期间持有设备端锁租约，并持续刷新到释放；`build-and-test.sh` 不获取或释放锁。
+- `build-and-test.sh` 仅通过 `--android`、`--desktop`、`--compose` 和 `--e2e` 编排设备、UI 和端到端测试；普通单元测试直接使用 Gradle。
+- Appium 源码和运行器位于独立 `*Appium` 模块的 `src/appiumTest/kotlin`，依赖已构建或安装的应用产物，而非应用实现代码。
+- Appium `appiumTest` 任务必须禁用 Gradle up-to-date 复用，让每次明确 E2E 调用都重新驱动目标。
+- Appium 测试将目标和平台 helper 传给带类型的 `AppiumTestBase` 构造函数。共享测试流程是基类扩展函数，读取其 helper 和 JUnit 测试名；具体测试方法只传场景选项。目标 helper 创建会话，平台 helper 管理启动、清理和日志收集。
+- Cloud server 集成测试和 Appium E2E 使用 PostgreSQL、独立 filesystem RPC 和 Lucene RPC 容器。不要重新引入 H2、MinIO 或 Elasticsearch。
+- filesystem 和 Lucene RPC 服务保持业务无关。业务搜索模型在 backend adapter 转换；客户端直接从 filesystem HTTP 下载对象内容，不经 server。
+- filesystem 和 Lucene RPC 约定分别定义在 `services/*-protocol`。服务运行代码不依赖 `backend/core`、`shared` 或 `api`，业务存储和搜索类型在 backend adapter 映射。服务配置独立于 flavor env 文件。
+- Lucene RPC 使用明确命名的字段，独立配置索引、存储和 DocValues，不使用业务 JSON payload。不要注入固定 ID 字段或暴露 ID 专用 RPC 操作；adapter 声明业务标识、查询和排序字段。`Lucene*Document` 转换类保留在 backend adapter。
+- Gradle 管理测试镜像构建：`distTar` -> `copyTestDockerDistribution` -> `buildTestDockerImage`，使用根 Dockerfile。Testcontainers 只启动生成镜像。镜像任务放在共享 convention 插件，使用已配置 Docker 兼容后端，而非独立测试 Dockerfile。
+- 不重新引入已删除 H2 服务或 Docker target；`r2dbc-h2` 只支持文件和内存协议，不能提供此处要求的远程数据库拓扑。
+
+## 其他 AI 协作规则
+
+- 通过 `scripts/service_scripts/start-service-in-docker.sh` 部署，在 Docker 内编译部署产物，不在宿主编译。
+- 做最小必要修改，优先扩展 `client/core` 和 `api`，不随意改动公共模型。
+- 不在仓库外创建文件。不得在日志、文档或提交泄露 `deploy/*.env` 敏感值。源码传输归档还须排除 `dev/preset/secrets`、凭据文件和私钥正文；传输前检查最终归档，并保留 Git 可执行模式。
+- 涉及配置缓存时，避免在 Gradle 配置阶段读取外部环境状态。
+- 共享 Kotlin/JS 和 Wasm Yarn root extension 只在根构建配置；子项目不覆盖 lockfile 位置。JS 和 Wasm lockfile 分别保存在 `kotlin-js-store`，npm 依赖变化后重新生成受影响 lockfile。
+- 保持现有测试兼容。必须更新测试时，解释迁移原因和步骤。
+- 将编码或扫描项目时学到的规则知识保存到本文件。
+- Android KMP 设备测试覆盖共享 Compose 测试时必须包含 `commonTest`，在 `src/androidDeviceTest/AndroidManifest.xml` 声明仅供测试的宿主 Activity。UI 测试保持设备唤醒，释放租约前恢复临时电源设置。
+
+## 排障速查
+
+- 网络错误：检查 `client/core/*Request.kt` 的 `serviceCatching` 日志，以及 `AdminApi`/`CustomApi` 路由。
+- 分页错误：检查 `RemoteKeyStorage`/`RemoteKeyRoomStorage` 保存和读取游标的方式。
+- 数据未持久化：检查 `*RoomStorage.save`/`observeData` 实现和 `commonJson` 序列化。
+
+- 同一桌面的 Desktop Appium 套件必须顺序运行。Windows 使用 DesktopDriver 原生 UIA（`javaSwing=false`）和 JVM 内 Preferences factory；不要依赖 java.util.prefs.userRoot 隔离 Windows 测试状态。不要重新引入已删除 AWT agent／字节码兼容补丁。将 app.protected.storage.dir 设在测试运行目录内；Preferences factory 不隔离保护值文件。
+- Linux Appium 必须启用会话无障碍，并查询启动 PID 所有 AT-SPI 提供方。元素句柄保留 D-Bus 连接和稳定对象路径，单独对象路径可能跨提供方冲突。导航中目标消失时返回 stale-element 错误并重新定位，不得对已消失目标回退缓存坐标。文本输入直接传递并解析保存的对象路径，不按结果索引重新选择，也不回退到其他可编辑控件。
+- 共享 Wasm 浏览器测试配置归 wasm-browser-test-interop convention 管理。后续 useKarma 调用会替换框架配置，因此使用模块不能覆盖；加载器文件作为任务输入，并保留配置缓存。
+- JUnit 宿主测试初始化基类必须为抽象类，避免被独立发现执行。两个冲突 Detekt 抽象类规则的例外仅限 PlatformHeadlessTest 文件。
+- 诊断远程服务转发时，使用目标和宿主应用探测，并检查已安装传输的 polling 容量。监听绑定或 TCP 连接成功不能单独证明转发正常；不要将 SSH 桥接报告为直接转发失败的修复。
+- 间歇性 connection-refused/reset 失败时，对比 guest 健康与并发宿主连接探测。串行健康检查或聚焦重跑通过，不能单独证明跨测试状态干扰；区分单监听器 backlog 与总 polling 容量。
+- 外部 Docker 后端经回环 TCP 使用 gvproxy 时，保持 Docker 自动发布范围与显式 gvproxy 规则一致，guest 和容器使用 gvproxy DNS，恢复时协调两个进程。迁移或重启共享 VM 前确认空闲。不得以 SSH 网络桥接、诊断 DLL 替换、增加重试、跳过测试或放宽超时，作为永久转发修复。
+- 将 Windows 源码复制到隔离 Linux 测试检出目录时，保留 Git 可执行模式；普通 Windows 归档元数据可能丢失启动器执行权限。
+- Android 测试应用关闭和 reverse 端口替换遵循 DEVELOPMENT.md 中的夹具顺序；noReset 不能让旧应用继续请求已移除宿主目标。
+- 无人值守 Linux 桌面 E2E 使用 DEVELOPMENT.md 中的隔离显示运行器。不要使用零尺寸或断连 Xwayland 会话，也不通过修改渲染、重试、跳过或超时掩盖无响应无障碍树。
+- 可恢复上传会话需要真实 SHA256 和 CRC32C。通用文件操作配额锁独立保留，不用假值填充必需摘要字段。OSS compose 管理后端专用验证；MinIO 已验证源 CRC32C 合并和 filesystem 流式 SHA256 检查遵循 DEVELOPMENT.md。
+- RPC adapter 每次业务操作获取一次有效连接，上传和下载序列固定使用该代理，保留调用方取消，绝不自动重放失败操作。恢复测试在各服务独立重启时复用同一 adapter。
+- 认证使用 Redis 支持的不透明 Cookie 会话。不得通过保存密钥静默登录恢复已撤销或过期会话，不重放 mutation，也不通过后台轮询或 WS 心跳续期活动。用户与面板会话命名空间分开，使用原生保护 Cookie 存储。
+- GUI 私钥和账户历史通过保护值边界持久化。不读取或迁移旧 Settings 历史，新记录须验证加密写入成功后才报告成功。系统 secret store 不可用时不得降级明文。浏览器私钥加密不能替代 HttpOnly Cookie 边界。Windows 的 Detekt 与编译分别运行，使用 Gradle 默认 worker 容量。
+- 通过 backend/core 的 SigninSessionServiceFactory 注册提供登录存储。驱动依赖和 Redis 实现保留在 backend/redis，cloud/runtime 只管理 Ktor adapter。
+- 宿主 E2E 运行时 JAR 在整个测试进程存活期间保持不可变。UI 执行前完成编译；同一检出目录测试运行时，不从另一命令重建共享夹具。
+- 增加宿主测试 fork 仅限根 build.gradle.kts 已审阅白名单，保留共享设备和桌面串行。测试镜像上下文按模块隔离，构建期间不可变；保留源码构建共享可写缓存锁。Detekt 2.0.0-alpha.6 Worker API 不能配置进程堆且 Compose 分析失败，上游限制解决前保持禁用。
+- 扩大宿主测试并发前，核实临时路径、端口和持久命名空间隔离。包含纯测试及 Docker／原生模型集成测试的模块不是纯测试模块，未审阅夹具前不扩大整个测试任务并发。settings.gradle.kts 排除的非活动模块不需要并发配置。
+- 使用相同显式任务及重跑、缓存策略比较构建并发。双模块编译、六模块编译和全 assemble 是不同负载，不能证明并行加速或回归。
+- 判定 VM 停止前，使用足够读取权限核实状态；受限探测可能只反映无法访问服务。对旧版空闲 guest 应用 skill 模板时，将生成 Linux 脚本规范为 LF，保留默认 Docker 发布池并恢复互不重叠的出站端口。独立于项目配置验证已安装环境工具。
+- 上传和分块暂存文件按请求使用唯一名称原子创建；客户端文件名和上传 ID 跨进程不唯一。正文接收放在清理边界内。runTest 中真实 RPC 关闭等待使用真实调度器，避免虚拟时间在 I/O 完成前到期，保留已有超时。
+- Linux AT-SPI 可能向无障碍标签追加逗号分隔的徽标后缀。在合并名称中匹配完整标签，不匹配任意子串。认证 E2E 需要 secret-tool，并在隔离测试 D-Bus 会话中运行已解锁原生 keyring，数据目录隔离。
+- E2E 选择器文字保留英语，明确设置测试 locale。恢复临时应用语言覆盖，保留产品翻译。清空数据前捕获 Android 应用 locale，因为 pm clear 也会删除该覆盖。
+- 不弹出最后一个根导航项。通过平台返回或 Escape 关闭模态框，不仅为测试将整个对话框表面设为可点击，否则 Wasm overlay 可能拦截子控件。
+- 账户菜单确认应替换当前模态框，不在其中嵌套另一个 Dialog。退出登录请求的管理责任放在已关闭模态框之外；只有服务器退出成功后才清除受保护的活动会话历史。
+- 私有部署主机别名、地址、用户名、绝对宿主路径和会话专用验证记录不得进入已跟踪文件、提交信息或公开 PR。可复用发现使用通用环境名和占位符记录。
+- 修改加密实现时保留原始 ML-DSA/ML-KEM 密钥正文和密文布局。JVM KEM 使用 Java 21 `javax.crypto.KEM`；Android SDK 缺少该 API，使用 BC `KeyGenerator` 和 `withNoKdf()`。共享 headless 测试保留跨平台兼容覆盖，不静默引入 KDF 或 DER 编码变化。
+
+- 共享 Android 设备测试通过测试源码集树复用 headless 测试；配置 `withDeviceTestBuilder { sourceSetTreeName = "test" }`，提供不含 Robolectric 的设备专用抽象 PlatformHeadlessTest actual。
+- 只读用户保留认证和读取权限。对 HTTP mutation 和 WebSocket 话题创建实施写限制；通知房间接收者保持 invited 状态，消息输入禁用。
+- 快照 PKCS#12 Base64 属于机密配置。迁移时保留已有密钥字节，验证所提供凭据，不回退文件、不生成替代密钥，解码后的 Base64 密钥材料仅保留在内存。
+- 加密测试使用合成向量或生成密钥，保持自包含。外部 preset 目录缺失不能让测试静默通过。旧 CryptoJvm ECIES/CBC 与共享 P256 加密的密文格式不同，除非存在明确兼容约定，否则分别验证。
+- 自适应首页在侧栏与底部导航之间使用同一分区 pager。共享列表和搜索结果按自身内容约束测量，缩放时保留已挂载阅读状态。Home 上下文不放入共享列表。运行 `:app:composeApp:adaptiveUiTest` 检查隔离布局和状态夹具；常规宿主测试继续排除依赖设备的 UI 测试。
+- Windows 上，共用 Android runtime JAR 的 assemble、Detekt 和截图／宿主 UI 验证顺序运行。另一构建运行时，R8 和 preview renderer 可能持有这些文件。
+- 房间活动是 API 投影，不是 RoomInfo schema 扩展。分组未读分页前过滤已加入成员关系；活动游标应用到每房间最大消息 ID，而非单条消息行。保留未读房间数与未读消息数的含义和已有私密话题解密。数据约定和集成检查见 DEVELOPMENT.md。
+- 活动预览保持临时且按会话键隔离。房间列表和搜索在同一页返回活动，不额外添加 viewport/batch 拉取，也不持久化解密预览。保留本地 RoomInfo 缓存，成功置顶或已读修改经事件总线传递。未读消息总数来自后端完整已加入房间聚合，不能由客户端已加载页面求和。
+- 在条件式房间加载行之前保留永久最新边缘锚点，让新消息在最新边缘保持可见，历史保留消息键锚点。
+- 从最大可见话题 item key 更新房间已读标记，不用 LazyColumn 索引或第一显示行；分页 spacer 和加载行也占索引。新消息可能替换可见话题却不改变滚动索引。
+- Windows Appium 键盘测试前，核实前台桌面可交互且已解锁。存在无障碍原生树不代表 OS 输入可用，不用伪造内容绕过空编辑器失败。
+- 在已读、消息、成员事件和生命周期恢复时刷新首页未读导航徽标；徽标标签本地化，并结合行计数测试其出现和消失。
+- 已读标记 upsert 保持单调、原子；历史导航和迟到请求不能倒退已保存标记。同时验证精确计数和旧未读房间聚合。
+- 原生房间单元无障碍必须保留合并的可见内容。预览提供描述时，房间名也必须参与合并原生描述；浏览器专用标签分开保留。Windows 原生测试窗口通过已核实原生句柄缩放，并按窗口 DPI 转换 viewport 尺寸。
+- 浏览器 Appium 预览需要明确 text/action 桥接节点；非测试模式禁用桥接，保留原生合并无障碍。同层叠节点按前景绘制顺序选择，让对话框控件优先于同名背景控件。
+- 响应式浏览器 chrome 稳定后测量真实内容尺寸。原生 Firefox 紧凑窗口可能受 500px 下限限制；保留严格 viewport 和草稿断言，记录受测尺寸。
+- 集合刷新只清理请求的具名集合，不能清理默认详情缓存。使用真实 SQLite 验证选中列表删除，同时保留详情 ID／别名及无关列表。宿主测试数据库作用域唯一，临时存储位于模块 build 目录。
+- 即使几何信息未变，浏览器 semantics 也必须发布变化的标签。
+- Wasm E2E 在 Chrome、Edge 和 Firefox 上逐一顺序运行每个场景，使用隔离 profile。优先通过 Selenium Manager 发现已安装浏览器；各浏览器二进制覆盖分别设置，不复用个人 profile，也不跳过不可用矩阵项。
+- 异步 SQLite 事务 finalizer 必须在取消下完成，让 Room 归还连接池 permit。取消阻止资源交付时关闭已分配连接和 statement；新操作仍遵守取消，清理不重放业务写入。
+- 将服务器分页 token 视为不透明值，保留服务器条目顺序。数据库 offset key 与网络 token 分开。通过现有 Pager/RemoteMediator 刷新，保留已加载范围和 placeholder 数量，先原子替换房间行，再发布预览状态。保留锚点的映射 PagingSource 根据上一代页面计算 refresh key，不依赖实例缓存。使用乱序 ID 和不透明 token 验证多页事件刷新。
+- 为部署的 Wasm 入口脚本添加内容指纹，并要求 HTML 缓存验证。升级验收比较浏览器加载的 Wasm 文件名与镜像；新的 HTTP 探测成功不能证明已有标签页加载了新客户端。
+- 隔离部署检出目录启动前，重新接入已有 filesystem/Lucene 绑定挂载。容器替换后重新加载 BunkerWeb 上游解析；容器健康不能单独证明域名路由或数据连续性正确。
+- Compose Web 资源 URL 和入口脚本都需版本化。缓存翻译文件与新生成字节偏移配对，可能显示无关字符串或损坏文本。
+- 外部 Dockerfile 基础镜像和构建 frontend 按已验证 manifest digest 固定。临时 Docker Hub 故障先有限重试，再考虑改构建配置。
+- RTC ICE candidate 在对应 peer remote description 就绪前必须排队。各 peer 队列独立，完成清理时防止替换同用户较新的连接。
+- Ktor RTC JVM 关闭时先分离 sender track，再关闭连接、释放本地媒体。远程 JVM track 是借用资源，视频 renderer 在 track 释放前移除 sink。原生协商测试使用真实调度器，含取消清理。
+- Android Ktor remote track 归原生 receiver 管理。PeerConnection 释放前移除 renderer sink，不单独释放 receiver 所管理的 track。
+- 浏览器 RTC capture 的 `JsException` 在平台边界规范化，它不是 `Exception`。DOM 失败可能没有 JavaScript 栈，保留消息，不保留不安全 JS cause。验证缺设备错误能退出 joining 状态，取消仍为取消。
+- 将空白页面诊断为 RTC 故障前，验证冷加载 Wasm 客户端的压缩。浏览器会话夹具先在同源静态 bootstrap 文档中填充存储，再打开应用，避免准备阶段通过重载中止首次 Wasm 下载。
+- 同时检查 Wasm 运行时依赖解析和编译 classpath。Ktor 3.6.0 浏览器适配器保留 Wrappers 2026.1.9 ABI，较新传递 wrappers 可能移除内联符号而编译仍成功。解决 primitive ABI 兼容时，保留 recorder 较新的 URL API。修改 RTC 依赖时，验证真实浏览器 constraint 转换、合成 track capture、SDP 创建和清理。
+- 浏览器 ICE 事件可能在最终 null 事件前包含空 candidate 字符串。RTC 边界将其作为 end-of-candidates 标记，原生 Ktor adapter 会拒绝它。非空无效 candidate 仍须失败，并验证标记后媒体继续传输。
+- 共享 RTC 分发必须区分接收 channel 取消与调用方取消。传播前检查调用方上下文；单个 WebSocket 关闭不能取消全局信令或协商 job。
+- 通过 requestVideoFrameCallback 的 presentedFrames 验证浏览器 WebRTC 呈现。Firefox 对 MediaStream 可能报告 VideoPlaybackQuality totalVideoFrames 为零，但实际仍在显示帧；不能仅据该计数判断视频冻结。
+- 自适应表单每个 item 只产生一个布局根节点，包含分隔线。编辑器草稿与模式状态放在响应式宽度分支外；扣除面板 padding 后测量断点。
+- 直接提供方 Koog 模型名只通过 modelsById() 按精确目录 ID 解析；拒绝未列出 ID，不添加手动别名、模型替换或元数据回退。OpenRouter 是路由例外：通过 LLModel 接受非空白 ID，不查目录、不猜 token 上限，让远端 API 验证模型支持。
+- OpenAI 兼容端点只共享 HTTP 协议。模型 ID 视为不透明字符串，不通过 OpenAI 目录解析，也不推断 OpenAI 模型元数据。
+- GoogleModels 配合原生 GoogleLLMClient 和原生 API 根地址；Google 定义缺少 OpenAI endpoint capability。验证请求实际执行，不只检查模型查找或客户端构造。
+- 基于 schema 生成时使用原生 Bedrock Converse。DeepSeek JSON-object 模式必须在 system prompt 提供 response schema，因为原生 adapter 不把它放进 API payload。
+- Bedrock API key 优先于环境 AWS 签名凭据。由 runtime SDK 构造并管理默认凭据链，让凭据请求继承配置的 region，并在服务关闭时关闭凭据缓存和 HTTP 引擎。认证、region 传播和资源生命周期测试应执行正式 factory。
+
+- Appium 产物位于用例原始 `AppiumTestReport` 目录。由 Gradle 清理任务输出，收集时保留原测试失败，写原始结果元数据前先登记私有运行路径用于清理。通过静态 HTML viewer 链接产物，避免服务器默认 MIME 强制下载。报告入口与隔离约定见 DEVELOPMENT.md。
+- Filesystem/Lucene 直接使用 SLF4J，不依赖 Napier、shared 或业务模块。保持 Logback provider、容器管理的 `LOG_PATH` 目录和 Appium 文件日志归档一致；验证服务启动记录，不把非空 provider 警告输出视为已收集日志。
+- Appium 11 不再传递提供 Selenium support 工具。使用 Selenium wait 时明确声明 selenium-support；Appium 元素为 AppiumWebElement，而非 RemoteWebElement。页面源码缺失应作为诊断收集失败，不写空产物。
+- server/Appium/CLI Testcontainers 拓扑保留在 dev/testInfrastructure。调用方管理 Ktor test-host、平台转发和业务断言，显式区分宿主与容器环境。启动前登记资源，Testcontainers 删除失败容器前导出日志，在保留原失败的同时完成取消安全清理。
+- copyTestDockerDistribution 中将 Linux 测试镜像 shell 脚本规范为 LF，保留源码换行，避免 Windows 检出破坏容器入口。过滤策略作为任务输入，变化时重新生成已有 Sync 上下文。
+- JVM 协程栈恢复可能跨调度器复制异常。沿 cause 链核实原始失败，并检查清理失败仍作为 suppressed 保留。
+- Edge 初始化先创建浏览器级 DevTools 空白目标，页面级 WebDriver 命令前关闭隔离启动标签页，否则可能等待外部 MSN 新标签导航。裸 about:blank 参数会被解析为开关。首次启动和重启都验证只有一个空白目标，保留正常浏览器窗口、viewport 检查和页面加载超时。
+- 当前 Windows Chrome 可能强制最小内容宽度 504px。浏览器活动缩放测试在整个矩阵中使用该明确紧凑宽度，并保留精确 viewport 和草稿断言，见 DEVELOPMENT.md。
+- 原始 Appium/CLI/server 产物保留在 build/test-results/<task>/artifacts/<class>/<test>；Appium 额外添加平台。test-artifact-reports convention 在 Test 执行前清理原始文件，每个任务结束生成一个 reports/<task>/index.html。用例内部不扫描或渲染报告。报告生成独立于活动夹具，共享输出的独立构建串行运行。不添加哈希、计数器、随机后缀或容器启动重试，见 DEVELOPMENT.md。
+- E2E 已读完成验证必须识别预期已持久化消息，同时确认未读为零；乐观本地回显可能早于服务器持久化。
+- 认证清除时关闭 Panel 模态导航抽屉，让退出或撤销显示登录页，不留下匿名导航遮罩。账户操作放在可滚动导航列表外，使紧凑窗口仍能看到退出。
+- 认证和 socket E2E 的社区、房间夹具在启动应用前准备；Home 挂载后，缓存 pager 不一定观察到其他客户端执行的准备写入。
+- 桌面窗口发现和聚焦必须使用远端 Appium 接口。进程与线程归属、感知 DPI 的缩放和物理像素截图留在 Appium 宿主的 dev/appium-windows-plugin，不恢复宿主 User32/JNA 调用。远程诊断不能在宿主附加 guest PID。环境提供方安装和私有连接 profile 放在项目外。项目 JSON 只声明 artifact/service 角色，外部环境运行器管理暂存、转发和私有会话清理。通过 Appium 收集原生页面源码和截图，测试方法不含 SSH/VM 传输代码。环境约定见 DEVELOPMENT.md。
+- 工作 VM 是测试和运行环境。除非用户明确要求 guest 编译，否则应用、测试代码和依赖都在宿主或已有指定构建环境构建，再暂存预构建产物。安装 Appium/VM 或请求 E2E 不授权 guest 构建，包括原生依赖安装 hook。不得静默回退 guest 编译，或为此扩大 VM 资源。
+- macOS 桌面 E2E 只在合格硬件渲染器上运行。不恢复本地 Skiko 类替换或帧率上限，不将历史补丁运行时报告视为当前验收。保留原测试预算和断言。证据和资格标准见 DEVELOPMENT.md#macos-e2e-pause-and-skiko-investigation。结合原生无障碍状态验证可见导航、编辑文字、对话框和缩放；首帧已渲染、Metal 库加载或无障碍操作成功都不足。提供方资格验证留在项目外，不添加无条件绕过参数。
+- Compose 导航期间，Mac2 坐标点击必须等待控件可见、启用且边界稳定。文本容器优先点击自身未被遮挡区域，不点击落在嵌套交互控件内的中心点；用单元测试覆盖该几何规则。
+- Desktop WebView 要求固定版本 Nucleus Tao runtime 和原生窗口入口。不恢复已移除 Swing/Wry transform，不在 Tao 窗口嵌入 SwingPanel。视频原生生命周期保留在 DesktopVideoHost，复制帧渲染保留在 Compose adapter。验证重启持久化前等待异步退出完成，不延长 UI 超时或删除重启后断言。
+- Linux 桌面 E2E 要求图形 Tao/X11 和 AT-SPI 运行库。窗口几何命令针对启动 PID，并拒绝多个可见窗口的歧义情况，不能针对当前桌面焦点窗口。原生截图失败保留为收集错误，驱动依赖见 DEVELOPMENT.md。
+- Tao 桌面窗口通过生命周期管理的 NavigationEventInput，将 Escape 绑定到 composition 的 NavigationEventDispatcher，与 Compose AWT mediator 一致。保留遮罩优先级和根导航禁用，不用测试专用 UI 控件替代关闭对话框。
+- 合并可点击活动或房间卡片的无障碍描述必须保留消息预览和未读数。原生 provider 可能只暴露首个合并 contentDescription，应提供完整行描述，自动化匹配完整标签片段。
+- Windows 和 Linux 桌面 E2E 共用带引号的 JVM argument-file 启动约定。Linux Appium 参数保留数组形式，并遵循工作目录。远程环境运行器转换路径，提供预构建目标 JDK 和原生依赖；Gradle 测试和后端夹具留在宿主，提供方连接信息留在项目外。
+- 在 dev/test-environments/desktop-requirements.json 声明桌面运行依赖和可选项目 setup hook。VM 硬件、凭据和提供方启动命令留在项目外。宿主准备可构建，guest 初始化 hook 仅用于运行配置和预构建依赖安装。
+- 返回 `CustomResult<T, ScenarioError>`，错误接口为场景自身管理的 sealed interface。跨场景显式转换错误；`FailureDetails` 只用于诊断或最终消费者约定，绝不是业务返回类型。在明确边界捕获异常、传播取消，不恢复已删除 Kotlin Result helper。
+- Endpoint server 绑定由 cloud/runtime 的 `EndpointResultRouting.kt` 管理，使用其 `invoke` 扩展，保留带类型失败，不经过 endpoint4k 基于 Kotlin Result 的调用重载。
+- `fromError` 转换保留带类型失败分类，不仅凭诊断异常类推断认证或权限失败。PDF 测试使用已安装字体和公开 HarfBuzz core/subset 库（8.3.1+，CFF2 要求 13.0+），不得内置 PDF 字体二进制或注册测试字体。
+- PDF 字体选择优先静态字重；OpenPDF 嵌入前明确固定所有剩余 VF axis。只缓存字体字节，OpenPDF 对象按文档创建。发现已安装 SFNT/TTC 元数据时不加载未使用字体内容，保留 collection face index。安装和原生库配置见 DEVELOPMENT.md。
+- 仅当缺少静态字重确需补充时读取备用可变字体数据；未使用回退的 I/O 失败不能阻止可用静态字体。
+- 验证 worktree 不放在名为 `build` 的目录下；Detekt 按绝对 `/build/` 路径排除源码。
+- OpenPDF 嵌入前，使用公开 HarfBuzz downgrade 标志将固定 CFF2 实例转换为 CFF1，保留 subset 标志，拒绝残留 CFF2 和 variation table。
+- 原生取消测试在真实 C 调用内部同步，face 销毁前保持回调可达，在 finally 释放 gate，并在真实调度器等待清理。区分抛出取消异常与调用方 Job 对不可中断同步转换的取消。
+- 多轴字体回归固定其他 axis，通过独立可观察输出验证每个请求 axis；比较真实轮廓、度量或可靠字重元数据，不只比较同一转换器输出。
+- PDF 语法高亮可能重叠或留下未高亮尾部。每个源字符只输出一次，保留尾部。布局变化后同时检查渲染页面和提取文字。
+- 快照时间戳渲染独立于宿主默认时区；PdfGenerationSpec 携带 UTC calendar 值，明确标注显示的 UTC offset。
+- MultilineExpressionWrapping 启用时保持 FunctionSignature.functionBodyExpressionWrapping=multiline，让两条规则对多行函数体保持一致。
+- Wasm 媒体实验区分 Host 帧分发、实际 Compose 渲染和物理声音／显示输出。合成夹具和会话指标保留在 build 下；不从 snapshot API 文档推断共享 Skiko GPU context，不以 DOM media/canvas overlay 取代复制路径。归属和验证见 DEVELOPMENT.md。
+- 本地 Wasm npm 模块实现文件作为 npm-install 任务输入，变化时刷新 Yarn 复制的 file dependency；仅 package.json 不足。验证已安装模块和打包 Worker，而不只编译 Kotlin。
+- 隔离 worktree 的截图参考 PNG 是 Git LFS 指针时，验证前恢复原始 LFS 对象。不得重新生成 golden 来掩盖参考内容缺失。
+- Skiko 源码和 API 调查应匹配 Wasm 实际解析版本（含导入的 npm runtime 元数据），不能使用 Gradle 缓存里最先找到的任意版本。
+- Wasm texture 实验使用 dev/skikoMediaRuntime 中的源码构建 Skiko 补丁；Kotlin API 与发布原生运行时保持同一已验证上游版本。不要在 Compose WebGL context 上创建第二个 DirectContext，也不将已接管 texture 转回 JavaScript 管理。验证同 canvas 上传、GL 状态恢复、缩放和 context loss，以及释放后活动 frame/texture 资源归零。
+- dev/skikoMediaRuntime/patches 包含当前生效的 0.150.2 source overlay；upstream-patches 是尚未应用的 forward-port 候选。本地构建保留 LICENSE/NOTICE 和 source pin；移除单个上游变通不授权删除 renderer-context/lifecycle 集成，见 DEVELOPMENT.md。
+- Emscripten 外部 texture 注册同时更新 GL.textures[id] 和 texture.name，后者用于原生 glGet binding 查询。注销时同时重置，texture 存活时验证原生句柄为正数。
+- 源码构建 Skiko 使多个 Wasm release link 失效时，先诊断编译器堆和 GC 压力，不把长构建直接视为媒体缺陷。并发链接耗尽共享 Kotlin 编译器堆时，验证可限制 Gradle worker；不停止共享 daemon、跳过检查，也不从不同任务负载推断加速。
+- 当前 KGP Wasm 开发和生产图共享生成的 npm `kotlin` 目录。发行任务在不同 Gradle 调用中运行，测试复制后的不可变发行物，不测试可变包暂存目录。
+- 通过源 frame ID 以及解码／交付、导入、提交绘制和观察 canvas 的独立计数诊断媒体节奏。30fps 夹具不能证明性能余量；验证实际绘制边界，明确观察器回读和 CPU 开销。
+- 受保护的新 texture 上传精确恢复 GL 状态；不为每帧无条件 flush 或全 context reset，也不借此修改已接管 texture。
+- 昂贵栅格转换或回读前，按媒体时钟剔除样本，并保留传输后迟到检查。关闭跳过样本，不放宽预算，也不让反复处理过期帧累积为无法恢复的实时播放欠账。
+- WebGL 诊断将 nullish framebuffer 参数规范化；Emscripten 可能为默认目标传 undefined。将媒体绘制归因于离屏层或最终 canvas 前，核对跟踪目标与实际 binding。
+- 有界面媒体节奏检查需要前台管理权和校准的物理视频边界；大的模拟 viewport 不代表屏幕可见。保留桌面回读和关闭 tracing 的对照，因为观察器可能影响 captureStream。
+- 将源 frame ID 与 AnimationFrame 呈现反馈和桌面观察关联。共享呈现时间戳和 NO_UPDATE_DESIRED reporter 不是独立视频呈现，也不是视频丢帧。64 位 trace ID 不经数字舍入。
+- 部分 Chromium 构建返回空 Tracing.getCategories 列表。选择明确 traceConfig 分类并验证 GPU/compositor 事件，空过滤可能开启无关 tracing。Trace 产物按输出数据集分命名空间，防止探测覆盖研究证据。
+- texture 上传前帧消失时，通过已上传帧 WeakSet 跟踪 VideoFrame.close 调用位置。区分 pending replacement 与 Host tick 关闭，不仅凭栈中外层 tick 入口推断迟到帧丢弃。
+
+- 背压下保留 GPU 帧归属：被拒绝的 offer 仍由 Host 管理，只有代次取消才能取代待 renderer 处理的帧。UI 接受、canvas capture 和桌面观察计数分别保留，见 DEVELOPMENT.md。
+- 评估 Canvas.recordingContext 时，区分 GPU surface canvas 和 PictureRecorder/RenderNode canvas；直接 SkiaLayer 成功不能证明 Compose 互操作。检查 Wasm import 时跳过 accessor 属性：枚举 GOT getter 可能将弱导入标为必需，造成仅由诊断引入的链接失败。
+- canvas frame-ID 观察使用不带显式请求频率计时器的 captureStream()，记录 capture 策略。高频计时器不保证每次视频更新都被采样，不把历史 timer-gated 数据集当作观察策略未变进行比较。
+- 媒体网络失败行为针对固定 decoder API 验证，不只模拟 Worker。EOF 响应保留跳过样本计数，不将 EOF 算作帧；同时测试 RGBA 和 GPU wire 路径。
+- Web Audio 调度和饥饿判断使用 render time，视频、进度和结束检测使用 output time。输出时间戳外推必须在 render 进度暂停时停止，seek 时重置；验证报告的队列延迟，不将 analyser onset 视为扬声器输出。
+- Wasm RGBA bitmap 导入失败通过 Host 清理。重新抛出取消，并在报告被取代 effect 的错误前检查协程活动；验证预览和播放失败后 Compose 仍有响应，媒体资源被释放。
+- 已发布原生媒体 bitmap 需要稳定生命周期管理者；按值 DisposableEffect 清理会遗漏提交前被取代的发布。显示和待处理帧保留到 commit，并在移除／源替换竞态中推迟 GC finalizer，验证明确的原生清理。
+- Android Kover 可通过匹配离线 runtime 在 DEX 前离线插桩；不能因缺少 Gradle 设备测试集成就推断 runtime 不兼容。使用兼容项目 Kotlin 元数据的 D8，force-stop 前从应用进程导出，并对照匹配的原始 class 文件生成报告。最小探测与完整 APK/E2E 支持分开。
+- Kotlin/Wasm 覆盖率应在 Wasm 模块内测量，不只测 JavaScript loader。二进制插桩保留 WasmGC/EH 及浏览器支持的输出特性；开启全部 Binaryen feature 可能引入不支持编码。导航、重启或退出前导出计数，明确 source-map/build 身份和 linked-code 分母，区分固定夹具探测与通用 Kotlin 行／分支覆盖率。
+- 离线 E2E 覆盖率通过 `-Pe2e.coverage=true` 显式开启。活动测试前完成所有所选应用、classpath 和镜像准备，teardown 和重启前快照，保留收集失败。JVM/Android 字节码变体分开；Wasm 仅报告映射后的已链接源代码行。合并产物前匹配原始字节码、源指纹和浏览器构建身份。
+- Kover 0.9.11 单类 Features 插桩 wrapper 可能对引擎过滤的生成类触发断言；使用官方批量插桩 API，不吞异常。Wasm 重写使 sourceMappingURL/DWARF offset 失效，从覆盖率二进制移除这些过时自定义节。
+- Windows 覆盖率启动器使用有序 manifest classpath JAR，保持在 cmd.exe 命令长度上限内。原生图形 bundle 保持一致，PATH 中无关 EGL DLL 可能在可生成覆盖率快照前使 Tao 崩溃。
+- 桌面覆盖率每次重启后选择当前启动 PID。驱动 force-quit 可能留下旧 running marker，保留已导出快照，不再次请求已退出进程。
+- 单元与 E2E 合并覆盖率对仓库源码路径和可执行行取并集，同时保留独立平台指标。普通 Kover 任务在不可变 E2E 准备前运行，源归属含糊时拒绝而不猜测。
+- 开启覆盖率的构建仍须刷新普通后端测试镜像。latest 和 e2e-coverage 镜像上下文分开，避免只重建插桩镜像时宿主测试使用过时普通镜像。
+- 原始 CFF2 测试字体、OFL 许可证和固定校验值保留在 openpdf 测试资源，生成子集留在内存或 build 输出。OS 会话存储测试属于 JVM／设备源码集，不用模拟 Android host keystore。
+- Wasm source map 可能把合成操作符映射到空 EOF 行。排除物理源文件行之外的锚点，保留未映射屏障，不跨这些区域继承先前可执行行。
+- 根构建使用 Yarn lock Provider 属性和明确 Gradle create/register API。声称 Gradle 兼容前，使用 --warning-mode all --stacktrace 定位剩余弃用来源，保留独立 JS/Wasm lock 位置。
+- Panel view-model factory 需要调用方提供 scope，不恢复 GlobalScope，也不通过 opt-in delicate API 掩盖生命周期管理缺失。
+- inline-return 原始字符串使 Indentation 和 StringTemplateIndent 冲突时，先赋给缩进后的局部值再返回，并验证渲染内容；不来回切换格式，也不抑制任何一条规则。
+- API 关联直接放在基础模型的场景专用 wrapper。创建和 WS 用 TopicCreated，嵌套回复用 TopicReplyPreview，活动预览用 TopicActivity，完整查询用 TopicDetail。置顶响应更新嵌套基础模型，不丢弃关联。Alpha 期间不为已停用投影格式添加客户端数据库兼容迁移。
+- 置顶／取消置顶事件只携带标识和返回的 pin 标志。补丁更新每个当前缓存投影，不持久化 UI 摘要，也不替换无关字段。
+- DEVELOPMENT.md 中测试约定和平台边界与已执行验收分开记录。活动已读和发送、导航、布局、草稿缩放用例独立发现；专门宽屏上下文用例后恢复 Android 临时屏幕覆盖。
+- 浏览器 bridge 回调可能将键盘焦点留在 document body。发送 Escape 前聚焦真实 Compose canvas，并验证模态框关闭；不添加可点击对话框表面。
+- 浏览器 action bridge 通过真实 WebDriver 指针点击驱动。合成 JavaScript 点击不提供用户激活，可能在 Chromium 取消 Compose effect。Escape 前聚焦 renderer。
+- 浏览器注入会话就绪必须等待用户信息恢复，不只等待 account instance 创建。用户信息会改变头像和创建入口位置。解析指针目标前等待已提交、稳定的 semantics 几何信息，保留常规超时，不重试动作。
+- CLI 终端事件交付必须在背压下保留粘贴输入。上游版本通过真实多行登录和命令测试前，保留固定、归档校验的 Mosaic 源码重建，不通过输入延迟掩盖事件丢失。
+- 浏览器 RTC capture 在交付前管理返回 stream 中每个 track。禁用未用媒体类型，取消后停止多余或迟到 track；呈现帧和 track 释放独立于信令连接验证。
+- 批量成员插入保留各成员 joinedTime。受邀通知接收者保持 INVITED，无加入时间戳；已加入创建者保留其时间戳。
+- 推荐夹具需要已加入社区中其他作者的话题。用户自己的话题被有意排除；驱动 CLI 列表前等待搜索可见。
+- NonCancellable 下 RTC 获取保留调用方上下文，在音视频获取之间和交付前检查。返回相同浏览器调度器不会执行切换调度器本会执行的取消检查。
+- 滚动面板内控件的浏览器测试 bridge 使用裁剪后的窗口边界；仅 viewport 边界可能将屏外菜单目标放到固定操作上。
+- CachedLoadingHandler 要求 onSave 发布到其观察的数据流。临时结果使用 SimpleLoadingHandler，不用 null flow 加空 saver。
+- Compose 节点变为未放置时，Wasm 测试 semantics 必须分离 HTML 控件，包括保留的 lazy-list 缓存项。真实 WebDriver 滚轮输入应穿过透明测试控件到达下层 renderer；匹配未遮挡交互目标，编辑器与搜索框分别解析。
+- 浏览器 uploader 归账户 scope 管理。仅为待处理工作保留所选文件，成功或中止后释放；不声称页面重载后可按路径恢复。文件输入夹具必须使用真实 FileKit change handler 和共享上传流程。
+- 房间改名必须刷新房间和已加入成员的搜索文档，排除受邀或已离开成员关系，member/user join 按查询 user-ID 游标分页。搜索刷新断言使用当前索引结果，并以完全可见行作滚动锚点。
+- 通过 adapter 声明的查询原子替换变化的 Lucene 文档；单纯追加会保留旧关键词匹配。服务操作保持通用，索引写失败时回滚。
+- 明确管理 Ktor 测试应用，失败时在容器 teardown 前停止。保留原始错误和 suppressed 清理失败，避免失败用例留下信令 listener 消费后续用例帧。
+- 浏览器 E2E fetch/media 探测保留页面原生 Promise realm。Firefox WebDriver 沙箱 async 函数可能产生不兼容 Wasm cast 的 Promise，串联原生结果或构造页面 Promise。保留实际响应、AbortSignal 和 capture 归属。
+- 提交后离开页面前等待表单成功退出。模态框遮住 submit 不证明完成。预期认证保留的重启检查必须等待用户数据加载，并在重启进程前清除旧测试就绪标记。
+- 创建事件必须同时更新可见列表观察的具名集合及其详情缓存。验证已加载空集合中无需手动刷新即可看到创建结果；提交完成不代表缓存列表收到新记录。
+- 跨平台 E2E 验证必须断言可见本地化结果或实际派生值。浏览器专用 Appium bridge 描述不是原生选择器。原生无障碍保留显示的账户地址，不用机器标签替换其值。
+- Linux 保护值使用 libsecret 二进制 API，不使用 secret-tool stdin（会在 8 KiB 截断）。原生调用放在 IO，每次操作独立管理 GCancellable，并保证取消时参数生命周期安全。保留原始存储字节和稳定正式名称；Linux 如 macOS 一样明确限定测试存储根。在真实 keyring 验证大 Unicode 值和库不可用情况。
+- 从 FileInfo 解析上传附件 MIME 类型；Markdown object 块不重复放 contentType 元数据，保留旧 unknown-field 解码。对象 JSON 经 serializer 生成，保证带引号文件名仍有效。
+- 生成 AboutLibraries 元数据时保留 License.name，省略它会让 runtime parser 返回空库列表。导出变化后验证内置依赖和许可证关联。
+- 删除依赖覆盖每个使用模块和未用 version-catalog 条目。重新生成内置许可证元数据，并验证受影响 runtime classpath，再报告清理完成。
+- 原生 keychain 失败测试使用私有临时 keychain，恢复原默认 keychain、搜索列表和交互策略。这些 OS 专用测试明确保留，账户访问串行。
+- 原生上传文件行将文件名和可见元数据合并到可操作无障碍标签。文件选择器匹配完整文件名边界，包括转义标点，而非任意子串。拒绝点击零尺寸原生元素。
+- Mac2 文本输入用原生 typeText 传入完整字符串，验证精确多行值。key-chord API 只用于快捷键；逐字符 XCTest 按键可能在可见文本已完整后仍超过传输超时。
+- AppKit 同时在文件对话框和 Touch Bar 暴露 Save/Cancel。原生 picker 操作限定到 save-panel 无障碍标识及其按钮，再验证面板关闭。
+- 清理前收集原生 fatal-error 对话框。只关闭本次测试启动新建的 reporter，并重新检查进程身份；存在无法解释的旧对话框时拒绝处理。
+- 浏览器 PDF preview 管理者在释放时中止待请求并撤销 Blob URL。在应用跨源隔离条件下验证真实文档字节和渲染页面。
+- ZoomImage 主线程检查绑定到实际桌面窗口 UI 线程。默认 Swing 检查不认识原生 Tao 事件循环；保留拒绝 worker 线程访问。
+
+- 浏览器对象读取需要 GET/HEAD CORS 预检和可读的缺失对象响应；mutation 预检仍拒绝，RPC 路由不属于此公开读取边界。
+- 浏览器音频验收需要可用默认输出设备。可信点击和允许 autoplay 不能证明音频硬件可用；保留真实播放进度断言，将零输出 channel 与应用输入或解码失败分别诊断。
+- Windows 原生文件对话框可能运行在专用 STA 线程。通过启动应用进程和可见性验证窗口归属，选择所属前台对话框时不要求主窗口线程 ID。
+- UiAutomator2 选择器字符串参数只反转义引号。保留 regex 反斜杠，不对表达式做 JSON 转义；测试选择器参数解析后的匹配，包括合并文件名元数据。收集耗时 Android bugreport 前关闭 Appium driver。
+- 原生播放器控件的无障碍状态明确表示隐藏时才显示；无条件点击表面可能隐藏已可见控制器。保留平台默认控件显示时长，不缩短到低于正常触摸或无障碍交互所需时间。
+- 原生 Media3 进度更新可能使 UiAutomator 一直繁忙，直到控件消失。只在动态媒体交互期间禁用 UiAutomator idle waiting，通过取消和失败安全清理恢复原设置，保留显式状态断言和截止时间。
+- Android 原生点击等待控件可见、启用且边界稳定，再发出一次点击。仅存在控件不代表导航抽屉可接收输入；不重试点击或改动画设置来掩盖遗漏动作。
+- Android PlayerView 保留在页面组件内，不为消除短暂 Surface 黑帧而引入 Activity 根视频 overlay。接受导航或 PiP 转换期间短暂黑帧。最终 view 释放时分离控制器。保留转换稳定后的解码帧 PiP E2E 检查，含重新进入；不接受持续黑画面，也不用系统状态单独替换像素断言。
+- Linux/X11 portal 对话框要求有效父 XID，也可能属于其他进程。接纳其 AT-SPI 节点前，验证原生 transient 归属；拒绝含糊或共享 portal 窗口，保留 D-Bus／对象路径身份，portal 激活与测试应用使用同一隔离无障碍 bus。
+- 为聚合依赖获取各 `tasks.named` provider 前，先过滤 `tasks.names`。排除变体保持未实例化；AGP Compose Preview 约束见 DEVELOPMENT.md。
+- 浏览器保护存储回归必须调用已编译 Wasm 正式 store。通过隔离浏览器运行器按用例隔离 origin 存储，绝不从 Kotlin 源字符串提取 JavaScript。
+- Windows Karma Edge 启动必须禁用兼容 shim 重启，使 launcher 能管理和终止浏览器。隔离浏览器约定运行拒绝缺失、跳过或重复用例。
+- Wasm 浏览器测试 helper 通过带类型 external interface 传参；仅在 js 字符串字面量中使用参数会触发 Detekt UnusedParameter。
+- Wasm 媒体 verify 套件使用 node:test，保留独立子用例报告及有依赖的播放／恢复流程。浏览器矩阵通过 wasm-media-host npm test:browser 运行，benchmark 保持独立。
+- Wasm 媒体报告先写入隔离 raw run/batch/suite 目录，所有子进程关闭后，才将完成的运行收集为不可变 build/reports/wasm-media 快照。绝不将活动报告写入共享收集目录。
+- Wasm 验证夹具分别限定诊断和原生关闭操作预算。清理错误延后到用例结果确定后处理，保留原失败、单独记录清理错误，仅清理失败也须失败。每次获取 site/driver/page/browser 后，在后续准备可能失败前登记。
+- 浏览器验证必须拥有原生终止能力，不能只让 close promise 与计时器竞速。使用受监督 suite 入口提供所管理容器的回退终止，保留独立 trace finalization 预算，并在有活动子进程时验证强制清理、保留无关进程。
+- 每个浏览器 verify 模块必须 await 根 runCase。worker 完成通知标志该等待流程结束，不能替换成未等待的顶层 test 注册。
+- 验证完成要求所属 Job/subreaper 容器为空、确认根进程退出且管道在限定时间关闭。容器管理者在根进程退出后继续存活，不从 PID 退出或 process-group kill 推断后代已释放。测试脱离的后代和带继承管道的根先退出情况。
+- 验证 JUnit 即使 reporter 输出完整，也须将异常 worker 退出记为生命周期失败，并保留已完成用例和进程失败。
+- Shell 工具回归使用 `python scripts/test_scripts/run-shell-tests.py`，每个独立约定或参数行都可发现、可报告。在逐用例夹具仓库执行真实脚本，精确解析 argv/YAML，绝不写入或通配清理工作检出目录的部署 env。依赖和报告路径见 DEVELOPMENT.md。
+- Shell 回归 argv 传输保留正式 shebang 或显式解释器。与浏览器验证共用 `scripts/tool_scripts/process_container.py`，删除夹具前要求空容器和管理者退出确认，只在报告序列化边界清理 XML，保留原始诊断。
+- 通过启动前登记的每命令进程租约跟踪夹具释放，不靠捕获部分异常类型。删除前要求所有租约释放，包括调用方失败与清理失败同时发生。Shell 兼容入口按原始字节和可执行文件验证，LF 规则保留在 `.gitattributes`。
+- 进程终止和控制管道关闭在统一异常优先级边界完成。尝试所有清理步骤，保留原调用方失败和每个清理错误，测试真实断开的缓冲管道，不仅使用 BytesIO stub。
+- Wasm 页面栈通过共享浏览器 history controller 绑定，嵌套 ID 以 root 为作用域。App Back 遍历已有 History API 条目，保持浏览器 Forward 可用；保留最后根路由、当前 URL 和无关 history state。模态关闭留在平台 dispatcher，草稿和凭据不进入导航历史。路由编码避免 discriminator 冲突，因为 destination payload 可能包含 `type` 字段。
+- 父导航返回位置跟随最新后代快照。响应式文件导航和 pager 在 rail/bottom 布局切换时保持挂载；浏览器恢复不能回显为新的 pager 导航。验证拖动期间缩放和历史恢复。
+- 认证文件预览在创建详情 ViewModel 前设认证门控，包括恢复的路由。导航动作点击时检查当前会话，让登录和退出立即生效。受保护操作共用一个登录确认；明确登录按钮直接导航。
+- Compose 阻塞字体预加载在解码错误后可能静默回退。接受预加载完成前严格解码浏览器本地字体字节，权限重置时使待确认失效。
+- Wasm 字体偏好表示意图，不是权限。只有明确放弃或成功完成获授权字体预加载后，才挂载业务内容。启动门控使用原生 HTML 字体保证可读。普通浏览器 E2E 清空存储后，在同源静态 bootstrap 准备字体偏好；字体流程测试必须实际执行门控，不使用测试模式绕过。
+- 正式 Wasm 发行物和 Appium 开发发行物在不同 Gradle 调用构建，CompileSync 任务共享生成 npm 包目录。
+- 社区字体属于话题和编辑器内容，不属于外围应用主题。复用原生 Downloader 磁盘缓存；Wasm 上传字体缓存与系统字体权限访问分开。社区设置只提供内容和代码字体，缺字回退由平台处理。上传字体缓存按对象版本作 key，不按会过期签名 URL。验证真实字形度量，因为 resolver preload 可能将无效字体静默解析成默认字体。
+- 内部下载由应用管理，跨账户共享。使用 guest 数据库集合和公共资源命名空间路径，按服务器及文件身份隔离。忽略旧集合和目录，不迁移、删除或重置，保持 Room version 2 和 entity schema。OPFS 保留索引和预算在新命名空间内按服务器隔离；淘汰必须获取与 Downloader 相同的 server/file 租约，绝不读取旧保留索引。
+- Downloader 管理准入、传输、处理和状态发布，FileEngine 管理平台 I/O、租约和归档原语。将请求 Cookie 和账户上下文快照到准入管理的客户端，完成后关闭，不在公共服务保留账户会话。
+- `download(file)` 不重试失败或暂停任务，使用 `resume(id)`。writer 和解压关闭后，在共享 server/file 租约内发布带已持久化成功代次的 PROCESSED。构造字体前在该租约内重新检查 revision/path/generation/status。数据库 Flow 可能跳过状态。
+- 每个公共文件 revision 缓存一条 stateIn 字体 flow，共享上游构造并提供可恢复失败状态。不添加 finished-bundle/pending 缓存或 reload 事件。活动 registry 条目不能淘汰；订阅宽限期后释放空闲 replay 和条目。即使错过全部中间状态，重试成功仍须从新代次重新构建。
+- Wasm Default 调度仍在浏览器事件循环。ZIP 处理留在专用 file worker，传 OPFS 路径和内存文件元数据，不传 Kotlin/Skia 对象；删除未发布输出或释放下载锁前，等待 worker 取消确认。
+- Windows Edge Karma 运行必须阻止兼容层重启，使 Karma 管理实际浏览器进程；否则 launcher 重试可能删除仍在运行的浏览器 OPFS profile。浏览器 launcher 配置放在共享 Wasm 测试 convention，并跟踪配置输入。
+- 浏览器 Worker 取消测试在观察到的原生 OPFS 阶段同步（待 Promise 或已完成写入），不在 Worker 启动前同步。插桩仅放测试入口，复用正式协议和清理，释放暂停写入前先交付取消。待处理阶段同时保留页面发起和 worker 本地取消覆盖。
+- 任务准备、执行或停止期间，原子忽略同 server/file 的重复 download 和 resume，包括 URL 不同的请求。绝不排队这些重复请求，不同文件仍并发。暂停须等清理和状态发布完成后才重新开放准入。普通失败在所属请求边界处理，保留调用方取消。
+- 重试控件在 registry 活动结束前保持忙碌，包括终态数据库写入和清理。重试期间及代次构造前发布字体加载状态，即使数据库观察者跳过中间快照也一样。仅成功处理的代次可构造字体。
+- 字体 preset ZIP 必须只含单一家族，保留可用 regular/bold/italic，排除 Condensed，并通过 sourceName 在单独筛选输出之间共享原始下载。删除或恢复额外字重前，重新核实作者可控制的 Markdown 字重支持。
+- 字体夹具 builder 放在测试源码集。通过正式 Downloader/storage/worker 流程测试 ZIP 加载，不保留仅供测试的独立正式 decoder。
+- 社区字体 stateIn replay 管理已构建 FontFamily/resolver 对象；原生平台加载本地文件。Wasm 框架保留字节与独立 source-byte 缓存分开。解压完成状态属于 server/file 锁下的下载记录，绝不添加第二份解压 manifest。保留原生 backing file，供其他 presentation resolver 解析；空闲 flow 移除不能关闭仍被内容引用的框架资源。
+- 所有平台发布前验证社区字体包：拒绝重复 weight/style 组合，比较文件名样式与原始 OS/2 元数据，并比较 typographic family（name ID 16，否则 ID 1）。不得比较 style name 或覆盖的平台属性，也不去重或跳过失败字体。
+- 所有平台 ZIP 最多 128 个条目，文件和目录都计数。
+- 原生 ZIP 解压在写入时限定规模，包括非字体数据。打开 sink 前拒绝重复规范化目标路径，事后字体验证无法发现已被覆盖条目。每个原生归档路径部分（含父目录）拒绝尾随点和空格，因为 Windows 可能将它们折叠到已有目标。
+- 原生 ZIP 输出通过 CREATE_NEW 排他创建。基于字符串的路径规范化不能发现全部文件系统别名，不得以截断方式打开已有解压目标。
+- 字体身份独立于会过期传输 URL。显式 resume 传当前 FileInfo，在共享文件租约内只刷新匹配 revision 的 URL，保留已存储更新 revision。
+- 传输字节前刷新一次过期签名资源 URL，读取完整缓存时不刷新。保留请求文件 revision 和部分源数据，guest 刷新失败不能阻止阅读帖子。
+- 媒体传输视觉与交互保留在共享 MediaPlayerSurface；平台 adapter 在播放器展开期间保留引擎管理责任，通过选项菜单提供额外操作。
+- 共享媒体操作保留原生 prepare/retry 语义；浏览器剪贴板操作必须等待实际写入，不能使用无操作的平台实现。
+- 原生媒体验收在展开和返回过程中检查解码帧和推进的播放位置。Android 对话框 surface 通过截图检查帧，因为 SurfaceView 可能不在 UIA 中。Selenium 截图矩形通过 Point 和 Dimension 构造，避免 height/width 参数顺序问题。用户主动桌面重试必须替换并释放失败原生播放器，不自动重放。
+- Windows Tao 原生启动崩溃先检查已加载 EGL/GLES 来源，再考虑改渲染。应用运行 PATH 排除无关工具链 DLL 目录，Appium 内容窗口选择排除 Tao 消息分发窗口。
+- UI 剪贴板操作使用 `Clipboard.copyText`，提供本地化结果反馈并隔离失败。`setText` 失败保持可观察，在浏览器边界规范化 Wasm `JsException`，取消继续传播，不反馈也不自动重试。
