@@ -6,8 +6,8 @@
 
 package com.storyteller_f.a.panel
 
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -62,6 +62,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -71,6 +72,8 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
+import androidx.navigationevent.compose.rememberNavigationEventDispatcherOwner
 import androidx.savedstate.serialization.SavedStateConfiguration
 import androidx.window.core.layout.WindowSizeClass
 import androidx.window.core.layout.computeWindowSizeClass
@@ -230,11 +233,17 @@ private fun PanelNavigationDrawer(
             content = content,
         )
     } else {
+        val contentDispatcher = rememberNavigationEventDispatcherOwner(enabled = !drawerState.isOpen)
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = { drawerContent(false) },
-            content = content,
+            content = {
+                CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides contentDispatcher) {
+                    content()
+                }
+            },
         )
+        PanelDrawerBackHandler(drawerState)
     }
 }
 
@@ -244,7 +253,7 @@ private fun mainPanelPage(backStack: NavBackStack<NavKey>, nav: PanelNav) {
     val account by LocalPanelUiViewModel.current.instance.collectAsState()
     BoxWithConstraints(
         modifier =
-        Modifier.fillMaxSize().signinActivity(
+        Modifier.fillMaxSize().clipToBounds().signinActivity(
             account.sessionManager,
             panel = true,
         ),
@@ -266,13 +275,13 @@ private fun mainPanelPage(backStack: NavBackStack<NavKey>, nav: PanelNav) {
             ),
             sceneStrategies = listOf(listDetailSceneStrategy),
             transitionSpec = {
-                slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
+                slideInVertically { it } togetherWith slideOutVertically { -it }
             },
             popTransitionSpec = {
-                slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
+                slideInVertically { -it } togetherWith slideOutVertically { it }
             },
             predictivePopTransitionSpec = {
-                slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
+                slideInVertically { -it } togetherWith slideOutVertically { it }
             },
             entryProvider = rootEntryProvider(nav),
         )

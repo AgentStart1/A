@@ -35,6 +35,16 @@ class AndroidAppTestDriver internal constructor(
     private val report: AppiumTestReport,
     private val runAdbCommand: (List<String>) -> String,
 ) : AppTestDriver {
+    /** Requires a compact API 34+ device configured for gesture navigation. */
+    fun assertPredictiveBackCancellation(fromRight: Boolean) {
+        verifyAndroidPredictiveBackCancellation(
+            fromRight = fromRight,
+            adb = runAdbCommand,
+            screenshot = { driver.getScreenshotAs(OutputType.BYTES) },
+            output = report.directory,
+        )
+    }
+
     suspend fun cancelNativeSaveDialog(appPackageName: String) {
         val pickerPackage =
             WebDriverWait(driver, Duration.ofSeconds(15)).until {

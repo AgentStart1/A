@@ -497,6 +497,10 @@ GoogleLlmExecutionTest 和 OfficialProviderExecutionTest 在临时 loopback HTTP
 
 运行 `./gradlew :cloud:worker:test -Pserver.flavor=dev -Pserver.buildType=debug --console=plain`。
 
+### Panel Android 返回回归
+
+`:panel:androidAppium:appiumTest` 的 `*drawer back*` 用例在窄屏验证系统 Back 先关闭抽屉、保留用户列表，下一次 Back 才回概览。`*predictive back*` 两项用例要求 API 34+、窄屏及系统手势导航（`navigation_mode=2`）；运行前由设备管理者配置，持有设备租约并在结束后恢复设置。用例比较排除系统栏与边缘箭头的页面区域，断言手势中页面发生变化、取消后恢复原帧且页面栈不退，输出起始、进度与恢复 PNG。它们不能由三键导航或普通 Back 替代。
+
 ### Appium 产物报告
 
 每次 Android、桌面和 Wasm 辅助方法调用，都在执行模块 `build/reports/<test task>/index.html` 写报告。打开索引可查看准确测试名、平台、结果、失败栈和全部收集产物。各用例报告链接可读后端控制台日志、服务日志归档、应用日志、截图或 page source、Android 录像和可用失败诊断。收集错误与原测试失败分别显示。

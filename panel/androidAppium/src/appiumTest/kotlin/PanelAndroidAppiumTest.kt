@@ -21,5 +21,16 @@ class PanelAndroidAppiumTest :
     fun `test panel sign in by injected private session`() = testPanelInjectedSessionByHelper()
 
     @Test
+    fun `test left predictive back animates page and cancels without popping`() =
+        testAndroidPanelPredictiveCancel(false)
+
+    @Test
+    fun `test right predictive back animates page and cancels without popping`() =
+        testAndroidPanelPredictiveCancel(true)
+
+    @Test
+    fun `test drawer back closes overlay before navigating`() = testAndroidPanelDrawerBack()
+
+    @Test
     fun `test panel uploaded video preview renders and returns`() = testAndroidPanelVideoPreview()
 }
