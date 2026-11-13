@@ -1,10 +1,11 @@
 name: Release
 
 on:
+  release:
+    types: [published]
   workflow_dispatch:
   push:
     branches: [ "main" ]
-    tags: [ "*" ]
     paths:
       - '.github/workflows/release.yml'
       - 'app/**'
@@ -23,6 +24,9 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  RELEASE_TAG: ${{ github.event.release.tag_name }}
 
 jobs:
   build-android:
@@ -191,7 +195,7 @@ jobs:
   release:
     name: Upload release assets
     needs: [build-android, build-desktop-deb]
-    if: startsWith(github.ref, 'refs/tags/')
+    if: (github.event_name == 'release')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -206,13 +210,6 @@ jobs:
           pattern: Signed Alpha Heart * Bundle
           merge-multiple: true
 
-      - name: Create release when missing
-        shell: bash
-        run: |
-          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
-          fi
-
       - name: Upload release assets
         shell: bash
         run: |
@@ -221,4 +218,4 @@ jobs:
             echo "No release assets found" >&2
             exit 1
           fi
-          gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
+          gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
