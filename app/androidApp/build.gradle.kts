@@ -39,13 +39,13 @@ val deepLinkHost =
     (properties["SERVER_URL"] as? String)?.let {
         URI.create(it).host
     } ?: "storyteller_f.com"
-val deepLinkSchemePrefix = "a-$flavorStr"
+val deepLinkSchemePrefix = "alphaheart-$flavorStr"
 android {
-    namespace = "com.storyteller_f.a.app"
+    namespace = "com.storyteller_f.alphaheart.app"
     experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
     defaultConfig {
-        applicationId = "com.storyteller_f.a.app.$flavorId"
+        applicationId = "com.storyteller_f.alphaheart.app.$flavorId"
     }
     buildTypes {
         debug {

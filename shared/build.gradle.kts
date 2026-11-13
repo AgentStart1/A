@@ -24,7 +24,7 @@ kotlin {
     }
 
     android {
-        namespace = "com.storyteller_f.a.shared"
+        namespace = "com.storyteller_f.alphaheart.shared"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         compilerOptions {

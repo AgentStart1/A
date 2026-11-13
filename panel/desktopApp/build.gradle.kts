@@ -38,11 +38,11 @@ composeCompiler {
 
 compose.desktop {
     application {
-        mainClass = "com.storyteller_f.a.panel.PanelMainKt"
+        mainClass = "com.storyteller_f.alphaheart.panel.PanelMainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.storyteller_f.a.panel"
+            packageName = "com.storyteller_f.alphaheart.panel"
             packageVersion = "1.0.0"
         }
         buildTypes.release.proguard {

@@ -39,12 +39,12 @@ composeCompiler {
 
 compose.desktop {
     application {
-        mainClass = "com.storyteller_f.a.app.JvmMainKt"
+        mainClass = "com.storyteller_f.alphaheart.app.JvmMainKt"
         jvmArgs += "--enable-native-access=ALL-UNNAMED"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.storyteller_f.a.app"
+            packageName = "com.storyteller_f.alphaheart.app"
             packageVersion = "1.0.0"
         }
         buildTypes.release.proguard {

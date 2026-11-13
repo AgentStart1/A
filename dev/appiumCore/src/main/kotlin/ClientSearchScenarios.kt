@@ -2,15 +2,15 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.dev.appium
+package com.storyteller_f.alphaheart.dev.appium
 
-import com.storyteller_f.a.api.NewCommunity
-import com.storyteller_f.a.api.NewRoom
-import com.storyteller_f.a.client.core.UserSessionManager
-import com.storyteller_f.a.client.core.createCommunity
-import com.storyteller_f.a.client.core.createRoom
-import com.storyteller_f.a.client.core.searchCurrentUserRooms
-import com.storyteller_f.a.client.core.updateRoomInfo
+import com.storyteller_f.alphaheart.api.NewCommunity
+import com.storyteller_f.alphaheart.api.NewRoom
+import com.storyteller_f.alphaheart.client.core.UserSessionManager
+import com.storyteller_f.alphaheart.client.core.createCommunity
+import com.storyteller_f.alphaheart.client.core.createRoom
+import com.storyteller_f.alphaheart.client.core.searchCurrentUserRooms
+import com.storyteller_f.alphaheart.client.core.updateRoomInfo
 import com.storyteller_f.result.getOrThrow
 import com.storyteller_f.shared.model.RoomInfo
 import com.storyteller_f.shared.obj.UpdateRoomBody

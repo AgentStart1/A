@@ -18,7 +18,7 @@ plugins {
 val buildIosTarget = project.findProperty("target.ios") == "true"
 kotlin {
     android {
-        namespace = "com.storyteller_f.a.client.compose_core"
+        namespace = "com.storyteller_f.alphaheart.client.compose_core"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         androidResources {
@@ -190,7 +190,7 @@ dependencies {
 
 compose.resources {
     publicResClass = false
-    packageOfResClass = "com.storyteller_f.a.client.compose_core"
+    packageOfResClass = "com.storyteller_f.alphaheart.client.compose_core"
     generateResClass = auto
 }
 

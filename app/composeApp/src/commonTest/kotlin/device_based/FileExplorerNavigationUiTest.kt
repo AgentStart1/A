@@ -41,11 +41,11 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigationevent.DirectNavigationEventInput
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.rememberNavigationEventDispatcherOwner
-import com.storyteller_f.a.app.pages.file.FileExplorerNavigation
-import com.storyteller_f.a.app.pages.file.FileExplorerRoute
-import com.storyteller_f.a.app.pages.file.FilePreviewToolbar
-import com.storyteller_f.a.app.pages.file.rememberFileExplorerBackStack
-import com.storyteller_f.a.client.compose_core.components.NavRoute
+import com.storyteller_f.alphaheart.app.pages.file.FileExplorerNavigation
+import com.storyteller_f.alphaheart.app.pages.file.FileExplorerRoute
+import com.storyteller_f.alphaheart.app.pages.file.FilePreviewToolbar
+import com.storyteller_f.alphaheart.app.pages.file.rememberFileExplorerBackStack
+import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
 import com.storyteller_f.shared.model.FileInfo
 import kotlin.test.Test
 import kotlin.test.assertEquals

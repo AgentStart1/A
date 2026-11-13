@@ -27,7 +27,7 @@ abstract class MergeServicesTask : DefaultTask() {
                 !file.isFile || !file.name.endsWith(".jar") -> emptyList()
                 file.canonicalPath.contains("backend") -> extractServiceContent(
                     file,
-                    "com.storyteller_f.a.backend.core.service"
+                    "com.storyteller_f.alphaheart.backend.core.service"
                 )
 
                 file.name.startsWith("lucene-") -> extractServiceContent(

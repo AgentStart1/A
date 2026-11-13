@@ -2,7 +2,7 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.cloud.cli
+package com.storyteller_f.alphaheart.cloud.cli
 
 import com.storyteller_f.result.getOrThrow
 import com.storyteller_f.shared.CryptoJvm

@@ -11,7 +11,7 @@ plugins {
     alias(libs.plugins.kotlinBuildConfig)
 }
 
-group = "com.storyteller_f.a.cloud"
+group = "com.storyteller_f.alphaheart.cloud"
 version = "unspecified"
 
 dependencies {
@@ -42,6 +42,6 @@ kotlin {
 }
 
 application {
-    mainClass = "com.storyteller_f.a.cloud.cli.CliMainKt"
+    mainClass = "com.storyteller_f.alphaheart.cloud.cli.CliMainKt"
     applicationDefaultJvmArgs = listOf("--add-modules", "jdk.incubator.vector")
 }

@@ -2,10 +2,10 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.dev.appium
+package com.storyteller_f.alphaheart.dev.appium
 
-import com.storyteller_f.a.test.BackendFixture
-import com.storyteller_f.a.test.useBackendFixture
+import com.storyteller_f.alphaheart.test.BackendFixture
+import com.storyteller_f.alphaheart.test.useBackendFixture
 
 /** Starts the backend topology shared by desktop and browser Appium tests. */
 internal suspend fun runAppiumTestEnvironment(

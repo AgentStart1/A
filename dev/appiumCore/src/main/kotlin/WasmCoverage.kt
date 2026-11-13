@@ -2,10 +2,10 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.dev.appium
+package com.storyteller_f.alphaheart.dev.appium
 
-import com.storyteller_f.a.test.createTestArtifactDirectory
-import com.storyteller_f.a.test.testArtifactRoot
+import com.storyteller_f.alphaheart.test.createTestArtifactDirectory
+import com.storyteller_f.alphaheart.test.testArtifactRoot
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull

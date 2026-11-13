@@ -2,9 +2,9 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.dev.appium
+package com.storyteller_f.alphaheart.dev.appium
 
-import com.storyteller_f.a.api.NewTopic
+import com.storyteller_f.alphaheart.api.NewTopic
 import com.storyteller_f.shared.commonJson
 import com.storyteller_f.shared.model.TopicContent
 import com.storyteller_f.shared.obj.NewRoomTopic

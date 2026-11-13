@@ -6,7 +6,7 @@ package fonts
 
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import com.storyteller_f.a.app.pages.community.createFontFace
+import com.storyteller_f.alphaheart.app.pages.community.createFontFace
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

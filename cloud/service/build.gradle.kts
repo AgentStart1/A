@@ -9,7 +9,7 @@ plugins {
     id("me.champeau.jmh") version "0.7.4"
 }
 
-group = "com.storyteller_f.a.cloud"
+group = "com.storyteller_f.alphaheart.cloud"
 version = "1.0.0"
 
 kotlin {

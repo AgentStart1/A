@@ -4,7 +4,7 @@
 
 package fonts
 
-import com.storyteller_f.a.app.common.SimpleTaskRegister
+import com.storyteller_f.alphaheart.app.common.SimpleTaskRegister
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable

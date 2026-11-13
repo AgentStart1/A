@@ -16,6 +16,7 @@
 - 环境与机密：`app/composeApp` 和 `panel/composeApp` 通过 BuildKonfig 注入 `deploy/{flavor}.env` 的值。`app/androidApp` 读取相同 env 文件配置深链接。`app/androidApp` 和 `panel/androidApp` 使用 flavor/buildType 配置 application ID 和构建类型。始终传入 `-Pserver.flavor` 和 `-Pserver.buildType`。
 - 提交信息：以中文或英文动词开头，包含模块或范围，例如 `client/core: add getAllUsers request`。
 - 不使用中文方法名。
+- 产品名称为 Alpha Heart，产品包名前缀为 `com.storyteller_f.alphaheart`；重命名时同步维护 ServiceLoader 文件名、启动类、资源包、平台标识和测试工具中的类路径。
 - 不使用未缓冲的 `InputStream`/`OutputStream`，改用 `BufferedInputStream`/`BufferedOutputStream`。
 - 代码中不使用 `println` 或 `System.out.println`。
 - 编辑文件时保留已有换行格式。

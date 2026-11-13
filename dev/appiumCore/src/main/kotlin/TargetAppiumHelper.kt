@@ -2,20 +2,20 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.dev.appium
+package com.storyteller_f.alphaheart.dev.appium
 
-import com.storyteller_f.a.client.core.AuthKey
-import com.storyteller_f.a.client.core.PanelSessionManager
-import com.storyteller_f.a.client.core.SimplePassHolder
-import com.storyteller_f.a.client.core.UserSessionManager
-import com.storyteller_f.a.client.core.buildWebSocketUrl
-import com.storyteller_f.a.client.core.createSimplePanelSessionManager
-import com.storyteller_f.a.client.core.createSimpleUserSessionManager
-import com.storyteller_f.a.client.core.defaultClientConfigure
-import com.storyteller_f.a.client.core.defaultClientConfigureForPanel
-import com.storyteller_f.a.client.core.getClient
-import com.storyteller_f.a.client.core.panelSignUp
-import com.storyteller_f.a.client.core.userSignUp
+import com.storyteller_f.alphaheart.client.core.AuthKey
+import com.storyteller_f.alphaheart.client.core.PanelSessionManager
+import com.storyteller_f.alphaheart.client.core.SimplePassHolder
+import com.storyteller_f.alphaheart.client.core.UserSessionManager
+import com.storyteller_f.alphaheart.client.core.buildWebSocketUrl
+import com.storyteller_f.alphaheart.client.core.createSimplePanelSessionManager
+import com.storyteller_f.alphaheart.client.core.createSimpleUserSessionManager
+import com.storyteller_f.alphaheart.client.core.defaultClientConfigure
+import com.storyteller_f.alphaheart.client.core.defaultClientConfigureForPanel
+import com.storyteller_f.alphaheart.client.core.getClient
+import com.storyteller_f.alphaheart.client.core.panelSignUp
+import com.storyteller_f.alphaheart.client.core.userSignUp
 import com.storyteller_f.result.getOrThrow
 import com.storyteller_f.shared.getAlgo
 import com.storyteller_f.shared.loadCryptoLibIfNeed
@@ -92,14 +92,14 @@ class AppAppiumHelper : TargetAppiumHelper() {
                     File("app/androidApp/build/outputs/apk/debug/output-metadata.json"),
                 ),
             ),
-            mainActivityClassName = "com.storyteller_f.a.app.MainActivity",
+            mainActivityClassName = "com.storyteller_f.alphaheart.app.MainActivity",
         )
     }
     override val desktopRuntimeConfig =
         DesktopAppiumRuntimeConfig(
             suiteName = "DesktopAppiumTest",
             appLabel = "Desktop app",
-            mainClassName = "com.storyteller_f.a.app.JvmMainKt",
+            mainClassName = "com.storyteller_f.alphaheart.app.JvmMainKt",
             runtimeClasspathCandidates =
             listOf(
                 File("../../app/desktopApp/build/appium/runtimeClasspath.txt"),
@@ -168,14 +168,14 @@ class PanelAppiumHelper : TargetAppiumHelper() {
                     File("panel/androidApp/build/outputs/apk/debug/output-metadata.json"),
                 ),
             ),
-            mainActivityClassName = "com.storyteller_f.a.panel.MainActivity",
+            mainActivityClassName = "com.storyteller_f.alphaheart.panel.MainActivity",
         )
     }
     override val desktopRuntimeConfig =
         DesktopAppiumRuntimeConfig(
             suiteName = "DesktopPanelAppiumTest",
             appLabel = "Desktop panel app",
-            mainClassName = "com.storyteller_f.a.panel.PanelMainKt",
+            mainClassName = "com.storyteller_f.alphaheart.panel.PanelMainKt",
             runtimeClasspathCandidates =
             listOf(
                 File("../../panel/desktopApp/build/appium/runtimeClasspath.txt"),

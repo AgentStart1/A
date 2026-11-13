@@ -33,7 +33,7 @@ class NamedOptionsTests(ShellCase):
         self.run_script(script, "--path", "/room/100?label=two words", "--host", "localhost",
                         "--scheme", "dev-debug")
         self.assertEqual(self.calls("adb")[0][0], ["shell", "am", "start", "-a",
-            "android.intent.action.VIEW", "-d", "a-dev-debug://localhost/room/100?label=two words"])
+            "android.intent.action.VIEW", "-d", "alphaheart-dev-debug://localhost/room/100?label=two words"])
 
     @cases({"missing_value": ("--title",), "unknown": ("--unknown", "value"),
             "missing_required": ("--title", "title"),

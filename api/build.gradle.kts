@@ -22,7 +22,7 @@ kotlin {
     }
 
     android {
-        namespace = "com.storyteller_f.a.api"
+        namespace = "com.storyteller_f.alphaheart.api"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         compilerOptions {

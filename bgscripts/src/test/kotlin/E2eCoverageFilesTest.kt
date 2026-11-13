@@ -2,7 +2,7 @@
  * This is a private project. All rights reserved.
  */
 
-import com.storyteller_f.a.coverage.CoverageRuntime
+import com.storyteller_f.alphaheart.coverage.CoverageRuntime
 import kotlinx.kover.features.jvm.ClassFilters
 import kotlinx.kover.features.jvm.KoverLegacyFeatures
 import org.junit.Assert.assertArrayEquals

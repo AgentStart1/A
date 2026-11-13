@@ -2,21 +2,21 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.dev.appium
+package com.storyteller_f.alphaheart.dev.appium
 
-import com.storyteller_f.a.api.NewCommunity
-import com.storyteller_f.a.api.NewRoom
-import com.storyteller_f.a.api.PaginationQuery
-import com.storyteller_f.a.client.core.addReadLog
-import com.storyteller_f.a.client.core.createCommunity
-import com.storyteller_f.a.client.core.createRoom
-import com.storyteller_f.a.client.core.createTopic
-import com.storyteller_f.a.client.core.getRoomMembersPublicKeys
-import com.storyteller_f.a.client.core.getUserRooms
-import com.storyteller_f.a.client.core.joinCommunity
-import com.storyteller_f.a.client.core.joinRoom
-import com.storyteller_f.a.client.core.pinTopic
-import com.storyteller_f.a.client.core.sendMessage
+import com.storyteller_f.alphaheart.api.NewCommunity
+import com.storyteller_f.alphaheart.api.NewRoom
+import com.storyteller_f.alphaheart.api.PaginationQuery
+import com.storyteller_f.alphaheart.client.core.addReadLog
+import com.storyteller_f.alphaheart.client.core.createCommunity
+import com.storyteller_f.alphaheart.client.core.createRoom
+import com.storyteller_f.alphaheart.client.core.createTopic
+import com.storyteller_f.alphaheart.client.core.getRoomMembersPublicKeys
+import com.storyteller_f.alphaheart.client.core.getUserRooms
+import com.storyteller_f.alphaheart.client.core.joinCommunity
+import com.storyteller_f.alphaheart.client.core.joinRoom
+import com.storyteller_f.alphaheart.client.core.pinTopic
+import com.storyteller_f.alphaheart.client.core.sendMessage
 import com.storyteller_f.result.getOrThrow
 import com.storyteller_f.shared.model.TopicContent
 import com.storyteller_f.shared.obj.ObjectTuple

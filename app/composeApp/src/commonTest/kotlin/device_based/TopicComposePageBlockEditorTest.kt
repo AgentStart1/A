@@ -13,7 +13,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.runComposeUiTest
-import com.storyteller_f.a.app.pages.topic.BlockEditTopicPage
+import com.storyteller_f.alphaheart.app.pages.topic.BlockEditTopicPage
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

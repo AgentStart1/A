@@ -2,12 +2,12 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.app
+package com.storyteller_f.alphaheart.app
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
-import com.storyteller_f.a.app.utils.AppPreferences
+import com.storyteller_f.alphaheart.app.utils.AppPreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first

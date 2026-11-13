@@ -1,6 +1,8 @@
-# A
+# Alpha Heart
 
 面向 Android、Desktop、CLI 和 Web 的 Kotlin Multiplatform 应用，配套云服务和管理面板。
+
+产品包名前缀为 `com.storyteller_f.alphaheart`。Android 用户端和管理端分别使用 `.app` 与 `.panel`，并保留环境及 Debug 后缀。新 application ID 会作为独立应用安装；旧版本的本地数据和登录状态不会自动迁移。
 
 构建、测试和独立服务配置说明见 [DEVELOPMENT.md](DEVELOPMENT.md)。
 

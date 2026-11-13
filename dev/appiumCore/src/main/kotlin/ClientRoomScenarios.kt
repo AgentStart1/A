@@ -2,22 +2,22 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.dev.appium
+package com.storyteller_f.alphaheart.dev.appium
 
-import com.storyteller_f.a.api.NewCommunity
-import com.storyteller_f.a.api.NewRoom
-import com.storyteller_f.a.api.NewTitle
-import com.storyteller_f.a.api.PaginationQuery
-import com.storyteller_f.a.api.RoomActivityInfo
-import com.storyteller_f.a.client.core.ServerErrorException
-import com.storyteller_f.a.client.core.createCommunity
-import com.storyteller_f.a.client.core.createRoom
-import com.storyteller_f.a.client.core.createTitle
-import com.storyteller_f.a.client.core.getRoomTopics
-import com.storyteller_f.a.client.core.getUserRooms
-import com.storyteller_f.a.client.core.joinCommunity
-import com.storyteller_f.a.client.core.joinRoom
-import com.storyteller_f.a.client.core.updateUserStatus
+import com.storyteller_f.alphaheart.api.NewCommunity
+import com.storyteller_f.alphaheart.api.NewRoom
+import com.storyteller_f.alphaheart.api.NewTitle
+import com.storyteller_f.alphaheart.api.PaginationQuery
+import com.storyteller_f.alphaheart.api.RoomActivityInfo
+import com.storyteller_f.alphaheart.client.core.ServerErrorException
+import com.storyteller_f.alphaheart.client.core.createCommunity
+import com.storyteller_f.alphaheart.client.core.createRoom
+import com.storyteller_f.alphaheart.client.core.createTitle
+import com.storyteller_f.alphaheart.client.core.getRoomTopics
+import com.storyteller_f.alphaheart.client.core.getUserRooms
+import com.storyteller_f.alphaheart.client.core.joinCommunity
+import com.storyteller_f.alphaheart.client.core.joinRoom
+import com.storyteller_f.alphaheart.client.core.updateUserStatus
 import com.storyteller_f.result.exceptionOrNull
 import com.storyteller_f.result.getOrThrow
 import com.storyteller_f.shared.model.TitleType

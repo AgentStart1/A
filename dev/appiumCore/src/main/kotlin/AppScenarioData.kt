@@ -2,19 +2,19 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.dev.appium
+package com.storyteller_f.alphaheart.dev.appium
 
-import com.storyteller_f.a.api.NewCommunity
-import com.storyteller_f.a.api.NewRoom
-import com.storyteller_f.a.client.core.UserSessionManager
-import com.storyteller_f.a.client.core.createCommunity
-import com.storyteller_f.a.client.core.createRoom
-import com.storyteller_f.a.client.core.createTopic
-import com.storyteller_f.a.client.core.getCommunityInfo
-import com.storyteller_f.a.client.core.getTopicInfo
-import com.storyteller_f.a.client.core.joinCommunity
-import com.storyteller_f.a.client.core.joinRoom
-import com.storyteller_f.a.test.ArtifactCollectionError
+import com.storyteller_f.alphaheart.api.NewCommunity
+import com.storyteller_f.alphaheart.api.NewRoom
+import com.storyteller_f.alphaheart.client.core.UserSessionManager
+import com.storyteller_f.alphaheart.client.core.createCommunity
+import com.storyteller_f.alphaheart.client.core.createRoom
+import com.storyteller_f.alphaheart.client.core.createTopic
+import com.storyteller_f.alphaheart.client.core.getCommunityInfo
+import com.storyteller_f.alphaheart.client.core.getTopicInfo
+import com.storyteller_f.alphaheart.client.core.joinCommunity
+import com.storyteller_f.alphaheart.client.core.joinRoom
+import com.storyteller_f.alphaheart.test.ArtifactCollectionError
 import com.storyteller_f.result.captureFailure
 import com.storyteller_f.result.getOrThrow
 import com.storyteller_f.result.onFailure

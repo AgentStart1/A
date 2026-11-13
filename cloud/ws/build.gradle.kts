@@ -14,11 +14,11 @@ plugins {
     id("merge-services")
 }
 
-group = "com.storyteller_f.a.cloud"
+group = "com.storyteller_f.alphaheart.cloud"
 version = "unspecified"
 
 application {
-    mainClass.set("com.storyteller_f.a.cloud.ws.WsApplicationKt")
+    mainClass.set("com.storyteller_f.alphaheart.cloud.ws.WsApplicationKt")
     applicationDefaultJvmArgs = listOf("--add-modules", "jdk.incubator.vector")
 }
 

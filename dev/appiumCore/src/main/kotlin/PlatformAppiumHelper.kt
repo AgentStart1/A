@@ -2,10 +2,10 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.dev.appium
+package com.storyteller_f.alphaheart.dev.appium
 
-import com.storyteller_f.a.test.E2eCoverage
-import com.storyteller_f.a.test.useBackendFixture
+import com.storyteller_f.alphaheart.test.E2eCoverage
+import com.storyteller_f.alphaheart.test.useBackendFixture
 import io.appium.java_client.AppiumDriver
 import io.appium.java_client.android.AndroidDriver
 import io.appium.java_client.android.options.UiAutomator2Options
@@ -203,7 +203,7 @@ class AndroidAppiumHelper : PlatformAppiumHelper {
                         "am",
                         "broadcast",
                         "-n",
-                        "${app.packageName}/com.storyteller_f.a.coverage.CoverageReceiver",
+                        "${app.packageName}/com.storyteller_f.alphaheart.coverage.CoverageReceiver",
                     ),
                 )
             check(

@@ -2,7 +2,7 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.dev.appium
+package com.storyteller_f.alphaheart.dev.appium
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -42,7 +42,7 @@ internal enum class DesktopTestPlatform {
                         setCapability("appium:appPath", launchFile.canonicalPath)
                         setCapability(
                             "appium:bundleId",
-                            "com.storyteller_f.a.desktoptest.${launchFile.nameWithoutExtension}",
+                            "com.storyteller_f.alphaheart.desktoptest.${launchFile.nameWithoutExtension}",
                         )
                     }
                 }
@@ -116,7 +116,7 @@ internal fun buildDesktopMacBundle(script: File, arguments: List<String>, javaEx
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
         <plist version="1.0"><dict>
-          <key>CFBundleIdentifier</key><string>com.storyteller_f.a.desktoptest.${script.nameWithoutExtension}</string>
+          <key>CFBundleIdentifier</key><string>com.storyteller_f.alphaheart.desktoptest.${script.nameWithoutExtension}</string>
           <key>CFBundleExecutable</key><string>desktop-test</string>
           <key>CFBundlePackageType</key><string>APPL</string>
           <key>CFBundleName</key><string>Desktop test</string>

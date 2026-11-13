@@ -18,7 +18,7 @@ kotlin {
         browser()
     }
     android {
-        namespace = "com.storyteller_f.a.client.model_storage"
+        namespace = "com.storyteller_f.alphaheart.client.model_storage"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         compilerOptions {

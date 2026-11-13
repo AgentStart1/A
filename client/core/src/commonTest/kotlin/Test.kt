@@ -2,8 +2,9 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.client.core
+package com.storyteller_f.alphaheart.client.core
 
+import com.storyteller_f.alphaheart.api.CustomApi.Accounts.ChildAccounts.AddChildAccountRequest
 import com.storyteller_f.result.CustomResult
 import com.storyteller_f.result.mapError
 import com.storyteller_f.shared.model.AlgoType
@@ -153,7 +154,7 @@ private class CountingUserPass(private val initialResponsesReleased: Completable
 
     override suspend fun encryptChildAccount(
         childAlgoType: AlgoType,
-    ): CustomResult<com.storyteller_f.a.api.CustomApi.Accounts.ChildAccounts.AddChildAccountRequest, CredentialError> =
+    ): CustomResult<AddChildAccountRequest, CredentialError> =
         CustomResult.Failure(
             CredentialError.from(UnsupportedOperationException()),
         ).mapError(CredentialError::fromError)

@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		4669401E21E98CE8388E2F21 /* Panel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Panel.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4669401E21E98CE8388E2F21 /* Alpha Heart Panel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Alpha Heart Panel.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -59,7 +59,7 @@
 		2AF7AD2422DB428249A385B7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				4669401E21E98CE8388E2F21 /* Panel.app */,
+				4669401E21E98CE8388E2F21 /* Alpha Heart Panel.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -87,7 +87,7 @@
 			packageProductDependencies = (
 			);
 			productName = iosApp;
-			productReference = 4669401E21E98CE8388E2F21 /* Panel.app */;
+			productReference = 4669401E21E98CE8388E2F21 /* Alpha Heart Panel.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */

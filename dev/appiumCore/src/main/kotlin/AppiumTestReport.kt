@@ -2,13 +2,13 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.dev.appium
+package com.storyteller_f.alphaheart.dev.appium
 
-import com.storyteller_f.a.test.TestArtifactResult
-import com.storyteller_f.a.test.TestArtifactStatus
-import com.storyteller_f.a.test.createTestArtifactDirectory
-import com.storyteller_f.a.test.testArtifactRoot
-import com.storyteller_f.a.test.writeTestArtifactResult
+import com.storyteller_f.alphaheart.test.TestArtifactResult
+import com.storyteller_f.alphaheart.test.TestArtifactStatus
+import com.storyteller_f.alphaheart.test.createTestArtifactDirectory
+import com.storyteller_f.alphaheart.test.testArtifactRoot
+import com.storyteller_f.alphaheart.test.writeTestArtifactResult
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import org.openqa.selenium.OutputType

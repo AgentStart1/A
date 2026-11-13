@@ -4,13 +4,13 @@
 
 package fonts
 
-import com.storyteller_f.a.app.common.createFileEngine
-import com.storyteller_f.a.app.common.downloadTaskKey
-import com.storyteller_f.a.app.common.withLock
-import com.storyteller_f.a.app.pages.community.CommunityFontDownload
-import com.storyteller_f.a.app.pages.community.CommunityFontState
-import com.storyteller_f.a.app.pages.community.CommunityFontStore
-import com.storyteller_f.a.app.pages.community.fontFileKey
+import com.storyteller_f.alphaheart.app.common.createFileEngine
+import com.storyteller_f.alphaheart.app.common.downloadTaskKey
+import com.storyteller_f.alphaheart.app.common.withLock
+import com.storyteller_f.alphaheart.app.pages.community.CommunityFontDownload
+import com.storyteller_f.alphaheart.app.pages.community.CommunityFontState
+import com.storyteller_f.alphaheart.app.pages.community.CommunityFontStore
+import com.storyteller_f.alphaheart.app.pages.community.fontFileKey
 import com.storyteller_f.shared.commonJson
 import com.storyteller_f.storage.DownloadStatus
 import io.ktor.client.HttpClient

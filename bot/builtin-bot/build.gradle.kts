@@ -7,10 +7,10 @@ plugins {
     application
 }
 
-group = "com.storyteller_f.a.bot"
+group = "com.storyteller_f.alphaheart.bot"
 version = "unspecified"
 application {
-    mainClass.set("com.storyteller_f.a.built_in_bot.BuiltInBotKt")
+    mainClass.set("com.storyteller_f.alphaheart.built_in_bot.BuiltInBotKt")
 }
 
 kotlin {

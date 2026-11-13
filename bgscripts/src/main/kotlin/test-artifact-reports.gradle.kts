@@ -21,7 +21,7 @@ plugins.withId("java") {
             group = "verification"
             description = "Generates collected artifact reports after $taskName."
             classpath = sourceSet.runtimeClasspath
-            mainClass.set("com.storyteller_f.a.test.TestArtifactReportMain")
+            mainClass.set("com.storyteller_f.alphaheart.test.TestArtifactReportMain")
             args(raw.get().asFile.absolutePath, report.get().asFile.absolutePath)
             inputs.files(raw.map { it.asFileTree }).withPathSensitivity(PathSensitivity.RELATIVE)
             outputs.dir(report)

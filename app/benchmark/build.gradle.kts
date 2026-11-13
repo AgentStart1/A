@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "com.storyteller_f.a.app.benchmark"
+    namespace = "com.storyteller_f.alphaheart.app.benchmark"
     compileSdk {
         version = release(36)
     }

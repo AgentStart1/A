@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.kotlinJvm)
 }
 
-group = "com.storyteller_f.a.backend"
+group = "com.storyteller_f.alphaheart.backend"
 version = "unspecified"
 
 dependencies {

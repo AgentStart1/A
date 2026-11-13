@@ -2,7 +2,7 @@
  * This is a private project. All rights reserved.
  */
 
-import com.storyteller_f.a.coverage.CoverageRuntime
+import com.storyteller_f.alphaheart.coverage.CoverageRuntime
 import kotlinx.kover.offline.runtime.api.KoverRuntime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

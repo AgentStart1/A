@@ -13,16 +13,16 @@ import androidx.compose.ui.text.font.createFontFamilyResolver
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
-import com.storyteller_f.a.app.common.OpfsFileEngine
-import com.storyteller_f.a.app.common.awaitExtraction
-import com.storyteller_f.a.app.common.extractArchiveInWorker
-import com.storyteller_f.a.app.common.extractDownloadArchive
-import com.storyteller_f.a.app.common.extractedFiles
-import com.storyteller_f.a.app.common.getDownloadRevision
-import com.storyteller_f.a.app.common.withLock
-import com.storyteller_f.a.app.common.write
-import com.storyteller_f.a.app.pages.community.CommunityFontDownload
-import com.storyteller_f.a.app.pages.community.CommunityFontStore
+import com.storyteller_f.alphaheart.app.common.OpfsFileEngine
+import com.storyteller_f.alphaheart.app.common.awaitExtraction
+import com.storyteller_f.alphaheart.app.common.extractArchiveInWorker
+import com.storyteller_f.alphaheart.app.common.extractDownloadArchive
+import com.storyteller_f.alphaheart.app.common.extractedFiles
+import com.storyteller_f.alphaheart.app.common.getDownloadRevision
+import com.storyteller_f.alphaheart.app.common.withLock
+import com.storyteller_f.alphaheart.app.common.write
+import com.storyteller_f.alphaheart.app.pages.community.CommunityFontDownload
+import com.storyteller_f.alphaheart.app.pages.community.CommunityFontStore
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -486,7 +486,7 @@ class CommunityFontBrowserTest {
             val root = "public-resources-v1/$server"
             val first = files.location("$root/1/revision/source")
             val second = files.location("$root/2/revision/source")
-            val key = com.storyteller_f.a.app.common.downloadTaskKey(server, 1)
+            val key = com.storyteller_f.alphaheart.app.common.downloadTaskKey(server, 1)
             try {
                 files.write(first, byteArrayOf(1))
                 files.retainFont(first, maxFiles = 1)
@@ -508,7 +508,7 @@ class CommunityFontBrowserTest {
             }
         }
 
-    private fun measureFont(font: com.storyteller_f.a.app.pages.community.LoadedCommunityFont): Int =
+    private fun measureFont(font: com.storyteller_f.alphaheart.app.pages.community.LoadedCommunityFont): Int =
         TextMeasurer(font.resolver ?: createFontFamilyResolver(), Density(1f), LayoutDirection.Ltr).measure(
             AnnotatedString("A"),
             TextStyle(fontFamily = font.family, fontSize = 100.sp),

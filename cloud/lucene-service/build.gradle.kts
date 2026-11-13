@@ -10,11 +10,11 @@ plugins {
     alias(libs.plugins.serialization)
 }
 
-group = "com.storyteller_f.a.cloud"
+group = "com.storyteller_f.alphaheart.cloud"
 version = "unspecified"
 
 application {
-    mainClass.set("com.storyteller_f.a.cloud.lucene.LuceneServiceKt")
+    mainClass.set("com.storyteller_f.alphaheart.cloud.lucene.LuceneServiceKt")
     applicationDefaultJvmArgs = listOf("--add-modules", "jdk.incubator.vector")
 }
 

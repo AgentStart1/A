@@ -8,7 +8,7 @@ plugins {
     alias(libs.plugins.serialization)
 }
 
-group = "com.storyteller_f.a.cloud"
+group = "com.storyteller_f.alphaheart.cloud"
 version = "unspecified"
 
 kotlin {

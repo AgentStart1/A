@@ -17,7 +17,7 @@ kotlin {
         withHostTest {
             isIncludeAndroidResources = true
         }
-        namespace = "com.storyteller_f.a.client.sqlitenow"
+        namespace = "com.storyteller_f.alphaheart.client.sqlitenow"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         compilerOptions {
@@ -70,7 +70,7 @@ kotlin {
 sqliteNow {
     databases {
         create("AppDatabase") {
-            packageName = "com.storyteller_f.a.client.sqlitenow.db"
+            packageName = "com.storyteller_f.alphaheart.client.sqlitenow.db"
             debug = false
         }
     }

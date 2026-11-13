@@ -31,7 +31,7 @@ kotlin {
     }
 
     android {
-        namespace = "com.storyteller_f.a.client.asciidoc_parser"
+        namespace = "com.storyteller_f.alphaheart.client.asciidoc_parser"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         androidResources {
@@ -143,7 +143,7 @@ dependencies {
 
 compose.resources {
     publicResClass = false
-    packageOfResClass = "com.storyteller_f.a.client.asciidoc_parser"
+    packageOfResClass = "com.storyteller_f.alphaheart.client.asciidoc_parser"
     generateResClass = auto
 }
 

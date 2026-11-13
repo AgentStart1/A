@@ -19,11 +19,11 @@ val flavorId = CaseFormat.LOWER_HYPHEN.converterTo(CaseFormat.LOWER_UNDERSCORE).
 val buildType = project.findProperty("server.buildType") as String
 
 android {
-    namespace = "com.storyteller_f.a.panel"
+    namespace = "com.storyteller_f.alphaheart.panel"
     experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
     defaultConfig {
-        applicationId = "com.storyteller_f.a.panel.$flavorId"
+        applicationId = "com.storyteller_f.alphaheart.panel.$flavorId"
     }
     buildTypes {
         create("benchmark") {

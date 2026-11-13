@@ -18,7 +18,7 @@ kotlin {
     }
 
     android {
-        namespace = "com.storyteller_f.a.client.bot_lib"
+        namespace = "com.storyteller_f.alphaheart.client.bot_lib"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         compilerOptions {

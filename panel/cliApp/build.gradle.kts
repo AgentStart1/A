@@ -9,11 +9,11 @@ plugins {
     application
 }
 
-group = "com.storyteller_f.a.panel"
+group = "com.storyteller_f.alphaheart.panel"
 version = "1.0.0"
 
 application {
-    mainClass.set("com.storyteller_f.a.panel_cli_app.MainKt")
+    mainClass.set("com.storyteller_f.alphaheart.panel_cli_app.MainKt")
 }
 dependencies {
     implementation(libs.mosaic.runtime)

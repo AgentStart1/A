@@ -2,9 +2,9 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.dev.appium
+package com.storyteller_f.alphaheart.dev.appium
 
-import com.storyteller_f.a.test.ArtifactCollectionError
+import com.storyteller_f.alphaheart.test.ArtifactCollectionError
 import com.storyteller_f.result.captureFailure
 import com.storyteller_f.result.getOrElse
 import org.openqa.selenium.By

@@ -58,7 +58,7 @@ val buildType = project.findProperty("server.buildType") as String
 
 kotlin {
     android {
-        namespace = "com.storyteller_f.a.app.android_library"
+        namespace = "com.storyteller_f.alphaheart.app.android_library"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         compilerOptions {
@@ -300,7 +300,7 @@ val deepLinkHost =
     } ?: "storyteller_f.com"
 
 buildkonfig {
-    packageName = "com.storyteller_f.a.app"
+    packageName = "com.storyteller_f.alphaheart.app"
     objectName = "AppConfig"
 
     val isDebug = properties["app.DEBUG"] as? String ?: "false"
@@ -311,7 +311,7 @@ buildkonfig {
         buildConfigField(STRING, "FLAVOR", flavorStr, const = true)
         buildConfigField(BOOLEAN, "ENABLE_LOGIN_CHECK", "false", const = true)
         buildConfigField(STRING, "DEEP_LINK_HOST", deepLinkHost, const = true)
-        buildConfigField(STRING, "DEEP_LINK_SCHEME_PREFIX", "a-$flavorStr", const = true)
+        buildConfigField(STRING, "DEEP_LINK_SCHEME_PREFIX", "alphaheart-$flavorStr", const = true)
         buildConfigField(BOOLEAN, "DEBUG", isDebug, const = true)
     }
 }
@@ -423,7 +423,7 @@ tasks.withType<Test> {
 
 compose.resources {
     publicResClass = false
-    packageOfResClass = "com.storyteller_f.a.app"
+    packageOfResClass = "com.storyteller_f.alphaheart.app"
     generateResClass = auto
 }
 

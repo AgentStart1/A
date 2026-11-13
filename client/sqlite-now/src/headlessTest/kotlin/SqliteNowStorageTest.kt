@@ -1,8 +1,8 @@
-package com.storyteller_f.a.client.sqlitenow
+package com.storyteller_f.alphaheart.client.sqlitenow
 
 import PlatformHeadlessTest
-import com.storyteller_f.a.client.sqlitenow.db.AppDatabase
-import com.storyteller_f.a.client.sqlitenow.db.VersionBasedDatabaseMigrations
+import com.storyteller_f.alphaheart.client.sqlitenow.db.AppDatabase
+import com.storyteller_f.alphaheart.client.sqlitenow.db.VersionBasedDatabaseMigrations
 import com.storyteller_f.shared.model.UserInfo
 import com.storyteller_f.storage.ModelStorage
 import com.storyteller_f.storage.UserCollection

@@ -27,7 +27,7 @@ val flavorId = CaseFormat.LOWER_HYPHEN.converterTo(CaseFormat.LOWER_UNDERSCORE).
 val buildType = project.findProperty("server.buildType") as String
 kotlin {
     android {
-        namespace = "com.storyteller_f.a.panel.android_library"
+        namespace = "com.storyteller_f.alphaheart.panel.android_library"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         compilerOptions {
@@ -199,7 +199,7 @@ dependencies {
 }
 
 buildkonfig {
-    packageName = "com.storyteller_f.a.panel"
+    packageName = "com.storyteller_f.alphaheart.panel"
     objectName = "PanelConfig"
     val properties =
         Properties().apply {
@@ -223,7 +223,7 @@ buildkonfig {
 
 compose.resources {
     publicResClass = false
-    packageOfResClass = "com.storyteller_f.a.panel"
+    packageOfResClass = "com.storyteller_f.alphaheart.panel"
     generateResClass = auto
 }
 

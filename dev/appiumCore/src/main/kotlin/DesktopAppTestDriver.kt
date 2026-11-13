@@ -2,7 +2,7 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.dev.appium
+package com.storyteller_f.alphaheart.dev.appium
 
 import io.appium.java_client.AppiumBy
 import io.appium.java_client.AppiumDriver

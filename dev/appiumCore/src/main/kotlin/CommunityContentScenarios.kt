@@ -2,12 +2,12 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.dev.appium
+package com.storyteller_f.alphaheart.dev.appium
 
-import com.storyteller_f.a.api.PaginationQuery
-import com.storyteller_f.a.client.core.getCommunityInfo
-import com.storyteller_f.a.client.core.getCommunityInfoByAid
-import com.storyteller_f.a.client.core.getTopicTopics
+import com.storyteller_f.alphaheart.api.PaginationQuery
+import com.storyteller_f.alphaheart.client.core.getCommunityInfo
+import com.storyteller_f.alphaheart.client.core.getCommunityInfoByAid
+import com.storyteller_f.alphaheart.client.core.getTopicTopics
 import com.storyteller_f.result.getOrThrow
 import com.storyteller_f.shared.model.MemberPolicy
 import com.storyteller_f.shared.model.TopicContent

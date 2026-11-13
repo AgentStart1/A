@@ -2,7 +2,7 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.dev.appium
+package com.storyteller_f.alphaheart.dev.appium
 
 fun AppiumTestBase<AppAppiumHelper, PlatformAppiumHelper>.testProjectLibraries() =
     runAppiumBlockingTest {
@@ -29,9 +29,5 @@ fun AppiumTestBase<AppAppiumHelper, WasmAppiumHelper>.testProjectRepository() =
     }
 
 private suspend fun openProjectMenu(driver: AppTestDriver) {
-    if (driver is AndroidAppTestDriver) {
-        driver.clickByText("A")
-    } else {
-        driver.clickByDescription("about project")
-    }
+    driver.clickByDescription("about project")
 }

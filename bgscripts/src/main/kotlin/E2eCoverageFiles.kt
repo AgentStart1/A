@@ -85,7 +85,7 @@ internal class E2eCoverageFiles(sources: Set<File>, private val originals: File,
 
     private fun collect(bytes: ByteArray) {
         val reader = ClassReader(bytes)
-        if (reader.className.startsWith("com/storyteller_f/a/coverage/")) return
+        if (reader.className.startsWith("com/storyteller_f/alphaheart/coverage/")) return
         var sourceName: String? = null
         reader.accept(object : ClassVisitor(Opcodes.ASM9) {
             override fun visitSource(source: String?, debug: String?) { sourceName = source }
@@ -121,7 +121,7 @@ private class CounterStores(writer: ClassWriter) : ClassVisitor(Opcodes.ASM9, wr
         return object : MethodVisitor(Opcodes.ASM9, target) {
             override fun visitInsn(opcode: Int) {
                 if (opcode == Opcodes.BASTORE) {
-                    super.visitMethodInsn(Opcodes.INVOKESTATIC, "com/storyteller_f/a/coverage/CoverageRuntime",
+                    super.visitMethodInsn(Opcodes.INVOKESTATIC, "com/storyteller_f/alphaheart/coverage/CoverageRuntime",
                         "store", "(Ljava/lang/Object;II)V", false)
                 } else {
                     super.visitInsn(opcode)

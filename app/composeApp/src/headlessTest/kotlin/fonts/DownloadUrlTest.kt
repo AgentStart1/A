@@ -4,7 +4,7 @@
 
 package fonts
 
-import com.storyteller_f.a.app.common.isDownloadUrlExpired
+import com.storyteller_f.alphaheart.app.common.isDownloadUrlExpired
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

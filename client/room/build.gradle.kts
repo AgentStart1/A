@@ -22,7 +22,7 @@ kotlin {
     }
 
     android {
-        namespace = "com.storyteller_f.a.client.room"
+        namespace = "com.storyteller_f.alphaheart.client.room"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         compilerOptions {

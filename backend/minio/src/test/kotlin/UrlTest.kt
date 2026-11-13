@@ -2,7 +2,7 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.backend.minio
+package com.storyteller_f.alphaheart.backend.minio
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

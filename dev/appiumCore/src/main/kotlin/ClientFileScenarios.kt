@@ -2,12 +2,12 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.dev.appium
+package com.storyteller_f.alphaheart.dev.appium
 
-import com.storyteller_f.a.client.core.getChunkStatus
-import com.storyteller_f.a.client.core.getFileList
-import com.storyteller_f.a.client.core.getMediaByName
-import com.storyteller_f.a.client.core.getQuotaInfo
+import com.storyteller_f.alphaheart.client.core.getChunkStatus
+import com.storyteller_f.alphaheart.client.core.getFileList
+import com.storyteller_f.alphaheart.client.core.getMediaByName
+import com.storyteller_f.alphaheart.client.core.getQuotaInfo
 import com.storyteller_f.result.getOrThrow
 import com.storyteller_f.shared.obj.ObjectTuple
 import com.storyteller_f.shared.type.ObjectType

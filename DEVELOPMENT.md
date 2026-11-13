@@ -1,5 +1,11 @@
 # 开发指南
 
+## 产品标识
+
+产品名称为 Alpha Heart，主产品包名前缀为 `com.storyteller_f.alphaheart`。Android application ID 保留 `.app.<flavor>` 和 `.panel.<flavor>`，Debug 额外追加 `.debug`。Android 深链接 scheme 使用 `alphaheart-<flavor>`，Debug 追加 `-debug`。
+
+包迁移包含 API、客户端、服务端和测试入口，客户端与服务端需要一起重建部署。Android 旧包与新包视为独立应用，不自动迁移本地数据或登录状态。
+
 ## 构建验证
 
 常规代码验证先编译受影响模块和平台 source set，再执行 Detekt 与相关测试。根 `assemble` 是完整产物构建，不是仅编译检查：它可能涉及无关模块、Android Benchmark/Release 打包，以及 Wasm 生产链接和 Binaryen 优化。用户要求相应产物，或受影响的打包、优化、签名或分发约定需要验证时，才使用这些任务。
@@ -76,7 +82,7 @@ Settings 和创建表单使用 AdaptiveFormLayout，最大 1200dp；扣除内容
 
 服务端批量读取房间、成员、计数、主题和作者数据。无访问权限或未加入的房间 ID 被忽略，不泄露其是否存在。私有正文在线上保持加密，只携带当前成员的加密密钥。客户端请求复用 `processEncryptedTopic`；密钥缺失或解密失败时保留已有不可用或失败表示，不回退到明文。不新增后台轮询或会话续期。使用者在显式刷新或已有功能事件时请求新数据；标记已读、退出、取消置顶或删除之后，下一次请求反映当前状态。
 
-使用常规 dev/debug 属性，在配置的 Docker 兼容后端上执行 `:cloud:server:test --tests com.storyteller_f.a.cloud.server.RoomActivityTest`。PostgreSQL 加已有 filesystem 和 Lucene RPC 容器，覆盖房间页面活动排序、超出已加载页的总数、直接消息计数和已读标记、双向游标、只读房间、删除、私有消息线上与客户端内容、成员关系丢失、置顶范围和请求限制。
+使用常规 dev/debug 属性，在配置的 Docker 兼容后端上执行 `:cloud:server:test --tests com.storyteller_f.alphaheart.cloud.server.RoomActivityTest`。PostgreSQL 加已有 filesystem 和 Lucene RPC 容器，覆盖房间页面活动排序、超出已加载页的总数、直接消息计数和已读标记、双向游标、只读房间、删除、私有消息线上与客户端内容、成员关系丢失、置顶范围和请求限制。
 
 ## 活动预览集成
 
@@ -613,7 +619,7 @@ WebView AppKit run-loop 适配层是独立依赖修复，与 Skiko 分开，后�
 
 场景之间通过显式 `mapError(ScenarioError::fromError)` 转换。异常分类使用 `ScenarioError.from`；带类型的错误转换保留认证、权限、输入和约束类别，与诊断异常类相互独立。数据库认证拒绝经服务和 HTTP 转换后仍保持认证类别。Reviewer 构造在 factory 边界捕获提供方初始化失败，使 worker 可重试初始化，而不取消同级任务。纯映射或组合不捕获异常。`captureFailure` 必须接收边界错误 mapper，捕获普通异常，传播协程取消和致命错误。浏览器加密在平台边界规范化 JavaScript 异常。基于异常的互操作使用 `getOrThrow`，新业务决策应检查带类型的变体。旧 shared Kotlin Result 工具已移除，不保留兼容别名。
 
-`cloud/runtime` 管理 CustomResult endpoint 绑定，复用 endpoint4k 参数解码与 HTTP 方法绑定。服务端路由应导入 `com.storyteller_f.a.cloud.server.common.invoke`，不使用依赖中基于 Kotlin Result 的调用。错误容器和平台密钥编码不改变外部 API 约定。
+`cloud/runtime` 管理 CustomResult endpoint 绑定，复用 endpoint4k 参数解码与 HTTP 方法绑定。服务端路由应导入 `com.storyteller_f.alphaheart.cloud.server.common.invoke`，不使用依赖中基于 Kotlin Result 的调用。错误容器和平台密钥编码不改变外部 API 约定。
 
 结果、加密边界和请求错误测试覆盖 null 成功、错误转换、诊断 cause、普通失败、取消，以及业务 401 与会话认证失败的区别。已有宿主和集成测试直接使用 CustomResult，业务断言仍适用。
 

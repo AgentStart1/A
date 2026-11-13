@@ -1129,7 +1129,7 @@ libraries:
     ignorePackages:
       - '*.internal'
       - '*.internal.*'
-      - 'com.storyteller_f.a.api'
+      - 'com.storyteller_f.alphaheart.api'
       - 'com.storyteller_f.shared.model'
   LibraryCodeMustSpecifyReturnType:
     # This monorepo contains applications as well as libraries; application declarations are

@@ -9,7 +9,7 @@ parse_named_options 'Usage: open-deep-link.sh --scheme <flavor-build> --host <ho
 require_named_options SCHEME HOST LINK_PATH
 
 # 构造完整 URL
-URI="a-${SCHEME}://${HOST}${LINK_PATH}"
+URI="alphaheart-${SCHEME}://${HOST}${LINK_PATH}"
 
 echo "🚀 正在启动 Deep Link: ${URI}"
 adb shell am start -a android.intent.action.VIEW -d "${URI}"

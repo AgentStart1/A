@@ -10,11 +10,11 @@ plugins {
     alias(libs.plugins.serialization)
 }
 
-group = "com.storyteller_f.a.cloud"
+group = "com.storyteller_f.alphaheart.cloud"
 version = "unspecified"
 
 application {
-    mainClass.set("com.storyteller_f.a.cloud.filesystem.FileSystemServiceKt")
+    mainClass.set("com.storyteller_f.alphaheart.cloud.filesystem.FileSystemServiceKt")
 }
 
 kotlin { jvmToolchain(21) }

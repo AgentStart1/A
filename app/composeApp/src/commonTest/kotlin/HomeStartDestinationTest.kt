@@ -2,22 +2,22 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.app
+package com.storyteller_f.alphaheart.app
 
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.storyteller_f.a.app.common.CommunityScreen
-import com.storyteller_f.a.app.common.HomeScreen
-import com.storyteller_f.a.app.common.RoomScreen
-import com.storyteller_f.a.app.common.TopicScreen
-import com.storyteller_f.a.app.common.UserScreen
-import com.storyteller_f.a.app.common.newAppNav
-import com.storyteller_f.a.app.pages.HOME_START_DESTINATION_COMMUNITIES
-import com.storyteller_f.a.app.pages.HOME_START_DESTINATION_ROOMS
-import com.storyteller_f.a.app.pages.HOME_START_DESTINATION_WORLD
-import com.storyteller_f.a.app.pages.HomeRoute
-import com.storyteller_f.a.app.pages.homePageFromPreference
-import com.storyteller_f.a.app.pages.homeRouteFromPreference
+import com.storyteller_f.alphaheart.app.common.CommunityScreen
+import com.storyteller_f.alphaheart.app.common.HomeScreen
+import com.storyteller_f.alphaheart.app.common.RoomScreen
+import com.storyteller_f.alphaheart.app.common.TopicScreen
+import com.storyteller_f.alphaheart.app.common.UserScreen
+import com.storyteller_f.alphaheart.app.common.newAppNav
+import com.storyteller_f.alphaheart.app.pages.HOME_START_DESTINATION_COMMUNITIES
+import com.storyteller_f.alphaheart.app.pages.HOME_START_DESTINATION_ROOMS
+import com.storyteller_f.alphaheart.app.pages.HOME_START_DESTINATION_WORLD
+import com.storyteller_f.alphaheart.app.pages.HomeRoute
+import com.storyteller_f.alphaheart.app.pages.homePageFromPreference
+import com.storyteller_f.alphaheart.app.pages.homeRouteFromPreference
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -40,7 +40,7 @@ class HomeStartDestinationTest {
 
     @Test
     fun homeNavigationPushesIndependentDestinations() {
-        listOf<(com.storyteller_f.a.app.common.AppNav) -> Unit>(
+        listOf<(com.storyteller_f.alphaheart.app.common.AppNav) -> Unit>(
             { it.gotoCommunity(2, false) },
             { it.gotoRoom(2, false) },
             { it.gotoTopic(2) },

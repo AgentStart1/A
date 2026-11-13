@@ -13,7 +13,7 @@ plugins {
 val buildIosTarget = project.findProperty("target.ios") == "true"
 kotlin {
     android {
-        namespace = "com.storyteller_f.a.client.kotbase"
+        namespace = "com.storyteller_f.alphaheart.client.kotbase"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         compilerOptions {

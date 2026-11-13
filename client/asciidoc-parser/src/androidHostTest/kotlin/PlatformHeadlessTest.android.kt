@@ -2,7 +2,7 @@
  * This is a private project. All rights reserved.
  */
 
-package com.storyteller_f.a.client.asciidoc_parser
+package com.storyteller_f.alphaheart.client.asciidoc_parser
 
 import android.content.ContentProvider
 import org.junit.Before
