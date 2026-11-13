@@ -495,6 +495,10 @@ KoogClientFactory 对直接提供方只接受目录中的精确 ID：OpenAI、An
 
 分配客户端前先解析模型。OpenAI-compatible 端点传递不透明模型 ID，不附加 capability 或 token 限制。OpenRouter 也接受任意非空 ID；其 LLModel 只声明通过 Koog 本地请求验证所需的 completion 和标准 JSON-schema 操作，真实支持由远端路由器验证。两条路径都不推断 context 或输出 token 上限。LiteRT 保留本地模型元数据。
 
+Worker 的 `litert-jni-json` 构建插件对 LiteRT JVM JAR 应用可缓存的 JSON 编码兼容转换。上游 0.18.1 的 [JNI 请求边界](https://github.com/google-ai-edge/LiteRT-LM/blob/v0.18.1/kotlin/java/com/google/ai/edge/litertlm/jni/litertlm.cc) 使用 `GetStringUTFChars`，将 Modified UTF-8 直接交给标准 UTF-8 JSON 解析器；未转义的补充平面字符（如 emoji）会导致原生进程退出。转换在 SDK 序列化 JSON 后将有效代理对写为标准 `\uXXXX` 转义，JSON 解码后的内容保持不变，原生库字节也保持不变。未配对代理项在进入 JNI 前抛出受控异常。其他依赖 JAR 直接传递。普通 worker 编译、测试和分发自动使用该转换；SDK 序列化结构变化时构建会失败，升级到修复该边界的上游版本后应审查并移除兼容转换。
+
+编码和产物回归使用 `./gradlew -p bgscripts test --tests LiteRtJniJsonTransformTest`，覆盖 JSON 值往返、Modified UTF-8 传输、无效代理项及原生库保留。可用 `./gradlew :cloud:worker:exportPatchedLiteRtJar -Pserver.flavor=alpha -Pserver.buildType=prod` 单独导出同一派生 JAR，输出位于 `cloud/worker/build/litert-jni-json`，用于受限环境中的原生运行验证。
+
 Google 将 GoogleModels 与原生 GoogleLLMClient、GoogleClientSettings 配套。Bedrock 使用原生 Converse，以保留标准 JSON-schema 输出。Factory 接受 bearer API key 或 AWS SDK 默认凭据链、region 和可选 runtime endpoint，请求只尝试一次。显式 API key 的 HTTP bearer 认证优先于环境 AWS 签名凭据。Runtime SDK 自行构造并管理默认凭据链，绑定配置 region，关闭时连同 runtime HTTP engine 一起关闭凭据缓存。Koog DeepSeek 适配层使用 JSON-object 模式，不传输 JSON schema。服务保留调用方 system 指令，并将 schema 放入该提供方 system prompt；审核解析器仍验证返回决策。可选 region 字段与已有序列化 LlmConfig 记录向后兼容。
 
 迁移有意拒绝未知直接提供方 ID。更新已存 ID，使其匹配目录；自定义兼容端点使用 OPENAI_COMPATIBLE。Google endpoint 覆盖必须使用原生 API root，不再使用旧 OpenAI-compatible 路径，配置见 README.md。OpenRouter ID 保持不透明，无需目录迁移。

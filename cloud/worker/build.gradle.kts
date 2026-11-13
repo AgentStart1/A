@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.serialization)
     id("cloud")
+    id("litert-jni-json")
     id("merge-services")
     alias(libs.plugins.kotlinBuildConfig)
 }
