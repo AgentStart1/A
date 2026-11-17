@@ -5,6 +5,8 @@ services:
       target: server
       args:
         BUILD_ON: ${BUILD_ON}
+        FLAVOR: ${FLAVOR}
+        BUILD_TYPE: ${BUILD_TYPE}
     restart: unless-stopped
     environment:
       LOG_PATH: /home/app/logs/server
@@ -23,6 +25,8 @@ services:
       target: ws
       args:
         BUILD_ON: ${BUILD_ON}
+        FLAVOR: ${FLAVOR}
+        BUILD_TYPE: ${BUILD_TYPE}
     restart: unless-stopped
     environment:
       LOG_PATH: /home/app/logs/ws

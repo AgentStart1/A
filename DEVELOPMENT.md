@@ -254,7 +254,7 @@ JVM 和 Android 通过 `BC` 提供方，共用 ML-DSA-65 与 ML-KEM-768 的 JCA 
 
 ## 后端测试镜像
 
-每个后端服务应用 `test-docker-image`。`buildTestDockerImage` 依赖 Sync 任务 `copyTestDockerDistribution`，后者准备本模块 `build/test-docker-context`。上下文只含自身 distTar 输出、权威根 Dockerfile 的副本，以及必要的暂存和 CLI 辅助脚本。镜像构建前完成准备，其他模块不得修改该上下文。镜像任务没有全局 build-service permit，可以并发。集成和 E2E 任务依赖各自需要的镜像，普通 assembly 不依赖。测试选择 `BUILDER_STAGE=prebuilt-builder`，只解压分发包，不挂载共享 Gradle 缓存。根 Dockerfile 部署默认使用 `source-builder`；源码仍在 Docker 内编译，并对共享可写缓存加锁。Testcontainers 只负责启动镜像。
+每个后端服务应用 `test-docker-image`。`buildTestDockerImage` 依赖 Sync 任务 `copyTestDockerDistribution`，后者准备本模块 `build/test-docker-context`。上下文只含自身 distTar 输出、权威根 Dockerfile 的副本，以及必要的暂存和 CLI 辅助脚本。镜像构建前完成准备，其他模块不得修改该上下文。镜像任务没有全局 build-service permit，可以并发。集成和 E2E 任务依赖各自需要的镜像，普通 assembly 不依赖。测试选择 `BUILDER_STAGE=prebuilt-builder`，只解压分发包，不挂载共享 Gradle 缓存。服务端源码镜像通过 Compose 的 `FLAVOR`／`BUILD_TYPE` 构建参数传入 `-Pserver.flavor` 和 `-Pserver.buildType`；独立调用 `build-cloud.sh` 时未指定的值为 `dev`。根 Dockerfile 部署默认使用 `source-builder`；源码仍在 Docker 内编译，并对共享可写缓存加锁。Testcontainers 只负责启动镜像。
 
 使用操作者配置的 Docker 兼容后端运行 Gradle。所需测试镜像由 Gradle 通过 PATH 上的 Docker CLI 构建；宿主测试也必须能访问 Docker API 和公开服务端口。外部环境执行器可以透明提供这些连接。提供方安装、网络实现、私有 profile 和生命周期命令保留在仓库之外。其他运行进行中，不重启共享后端。构建上下文必须继续通过 `.dockerignore` 排除机密。
 
