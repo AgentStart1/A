@@ -180,6 +180,8 @@ kotlin {
             )
             dependencies {
                 implementation(libs.runtime)
+                implementation(compose.runtimeSaveable)
+                implementation("org.jetbrains.compose.ui:ui-util:${libs.versions.ui.get()}")
                 implementation(libs.foundation)
                 implementation(libs.material)
                 implementation(libs.material3)
