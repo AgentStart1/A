@@ -181,9 +181,9 @@ Initialized LiteRT LLM client with CPU backend
 
 ### 本地构建并通过 SSH 部署隔离验证环境
 
-目标服务器无法编译应用时，可使用 Bash、Python 3.11+ 和本地 Linux/amd64 Docker 后端构建镜像。远端需要 Python 3.11+、Bash、Docker、Compose，以及可免密登录、执行 Docker 并设置隔离挂载目录所有权的部署用户。
+目标服务器无法编译应用时，可在 Linux/macOS 上使用 Bash、Python 3.11+、本地 Docker 后端和 [docker-pussh 0.4.3](https://github.com/psviderski/unregistry/tree/v0.4.3) 构建并推送 Linux/amd64 镜像；原生 Windows 暂不受该插件支持。远端需要 Python 3.11+、Bash、Docker、Compose、已启用的 containerd image store，以及可免密登录、执行 Docker 并设置隔离挂载目录所有权的部署用户。安装与验证见 [开发指南](DEVELOPMENT.md#隔离部署的增量镜像传输)。
 
-可通过 `--ssh-config /path/to/private/connection.conf` 为 SSH 和 SCP 指定独立的 OpenSSH 配置，包括跳板连接。连接配置只保存在本机，不进入运行文件包。
+可通过 `--ssh-config /path/to/private/connection.conf` 为 SSH、SCP 和 `docker pussh` 指定同一个独立的 OpenSSH 配置。连接配置只保存在本机，不进入运行文件包。
 
 ```bash
 ./scripts/service_scripts/deploy-prebuilt-to-remote.sh \
@@ -194,7 +194,7 @@ Initialized LiteRT LLM client with CPU backend
 
 以 `deploy/sample.env` 为字段参考，在本机和远端分别创建精简的 stage 环境文件，放在发行包之外。设置 `DEPLOYMENT_MODE=stage`、`COMPOSE_FILE_LIST=pg,server,worker,cli,filesystem,lucene,app`、`INIT_ENABLE=false`、`CLI_INIT_ENABLE=false`、`DATABASE_URI=r2dbc:postgresql://pg:5432/stage` 和 `DATABASE_DB=stage`。使用新测试数据库及会话凭据、本机测试 URL、空预置目录，并填写必需的 flavor 和 build type。不要复制生产 env；脚本会拒绝提供商凭据、公网端点及不支持的设置。两端需选择相同 profile；本机配置仅提供构建参数，运行配置独立读取远端文件。
 
-先审查并提交改动，再运行部署。脚本在 Docker 内构建八个业务镜像，保存 PostgreSQL 17、Redis、Adminer 和 PostgreSQL exporter 四个依赖镜像，按发行版本标记。它传输带 SHA256 校验的镜像归档和明确允许的运行文件，不传输仓库或环境文件。清单记录提交、镜像 ID 和运行文件哈希，远端校验镜像 ID 后才启动；生成的 Compose 配置移除全部构建定义并禁用拉取镜像。
+先审查并提交改动，再运行部署。脚本在 Docker 内构建八个业务镜像，并获取 PostgreSQL 17、Redis、Adminer 和 PostgreSQL exporter 四个依赖镜像，按发行版本标记。`docker pussh` 通过 SSH 临时通道只传缺失镜像层，结束后移除临时注册表容器；SCP 仅传带 SHA256 校验的运行文件和清单，不传输镜像归档、仓库或环境文件。清单记录提交、源镜像 ID、配置与全部文件层的摘要及运行文件哈希；远端确认镜像配置和文件层一致后才启动，兼容经典与 containerd 存储返回不同类型 ID。生成的 Compose 配置移除全部构建定义并禁用拉取镜像。
 
 仅支持隔离 stage：不包含 BunkerWeb、共享网络、生产卷、数据复制或入口切换。发布端口仅绑定回环地址，由 Docker 分配；在远端运行 `docker compose -f <release>/runtime.json ps` 查看端口。轻量 `stage-api` 网关复用 Wasm Nginx 镜像，仅允许 `APP_WASM_PORT` 和 `PANEL_WASM_PORT` 指定的 `localhost`、`127.0.0.1` 来源携带凭据跨域访问。将本机 `SERVER_URL` 对应端口转发到 `stage-api`，不要直接转发到 `server`；WebSocket 和 filesystem 端口分别转发到各自服务。stage 从相同浏览器端口生成后端登录来源白名单，并为回环 HTTP 使用开发 Cookie，不改变生产来源策略。前端构建 URL 必须与浏览器的本机转发端口一致。项目名必须以 `-stage` 结尾；命名卷在该项目内持久保存，需要空数据库时选择新项目名。发行版挂载目录互相隔离且初始为空。PostgreSQL 17 直接挂载实际数据目录，避免数据落入匿名卷。
 

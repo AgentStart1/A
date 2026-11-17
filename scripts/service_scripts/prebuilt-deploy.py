@@ -1,5 +1,5 @@
 # This is a private project. All rights reserved.
-"""Build on the operator's Docker backend; transfer immutable images over SSH."""
+"""Build with Docker; push missing image layers over SSH using docker pussh."""
 import argparse
 import hashlib
 import io
@@ -14,6 +14,8 @@ import tarfile
 import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
+UNREGISTRY_IMAGE = ("ghcr.io/psviderski/unregistry@sha256:"
+                    "7297f3bb6f503515991e81e249dab81c23d2c350323fc209e3eaa8507a5970b1")
 TARGETS = {"server": "server", "worker": "worker", "cli": "cli", "ws": "ws",
            "filesystem": "filesystem-service", "lucene": "lucene-service",
            "app-wasm": "app-wasm", "panel-wasm": "panel-wasm"}
@@ -161,9 +163,8 @@ def runtime_apply(args):
 def apply_verified(args):
     manifest = json.loads((ROOT / "manifest.json").read_text())
     for record in manifest["images"].values():
-        actual = capture(["docker", "image", "inspect", "--format", "{{.Id}}", record["ref"]])
-        if actual != record["id"]:
-            raise ValueError("Imported image ID mismatch")
+        if not record.get("identity_sha256") or image_record(record["ref"])["identity_sha256"] != record["identity_sha256"]:
+            raise ValueError("Transferred image identity mismatch")
     model = render_runtime(args.env, args.project, manifest)
     (ROOT / "stage-api.nginx.conf").write_text(stage_proxy_config(read_env(args.env)), encoding="utf-8")
     config = ROOT / "runtime.json"
@@ -204,6 +205,42 @@ def ssh(args, command, **kwargs):
                 args.ssh, shlex.join([str(x) for x in command])], **kwargs)
 
 
+def image_record(ref):
+    image = json.loads(capture(["docker", "image", "inspect", ref]))[0]
+    return {"ref": ref, "id": image["Id"], "identity_sha256": image_identity(image)}
+
+
+def image_identity(image):
+    # Classic Docker reports a config ID; containerd-backed Docker may report a manifest ID.
+    # Compare the effective configuration and every uncompressed layer instead of those IDs.
+    config = {key: value for key, value in image["Config"].items()
+              if value is not None and not (key in ("User", "WorkingDir") and value == "")}
+    identity = {"config": config, "rootfs": image["RootFS"], "os": image["Os"],
+                "architecture": image["Architecture"], "variant": image.get("Variant") or ""}
+    encoded = json.dumps(identity, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def check_image_transport(args):
+    version = capture(["docker", "pussh", "--version"])
+    if not version.startswith("docker-pussh, version 0.4.3\n"):
+        raise ValueError("Install the supported docker-pussh 0.4.3 plugin on the build machine")
+    # Do not switch a live daemon's image store or silently fall back to a duplicate classic store.
+    ssh(args, ["python3", "-c",
+               "import json,subprocess; "
+               "status=json.loads(subprocess.check_output(['docker','info','--format',"
+               "'{{json .DriverStatus}}'])); "
+               "assert ['driver-type','io.containerd.snapshotter.v1'] in status, "
+               "'Target requires the containerd image store; no configuration was changed'"])
+
+
+def push_images(args, images):
+    for record in images.values():
+        print(f"Pushing missing layers for {record['ref']}", flush=True)
+        run(["docker", "pussh", *ssh_config_options(args), record["ref"], args.ssh],
+            env=os.environ | {"UNREGISTRY_IMAGE": UNREGISTRY_IMAGE, "SSH_STRICT_HOST_KEY_CHECKING": "yes"})
+
+
 def verify_checkout(commit):
     if (capture(["git", "status", "--porcelain"], cwd=ROOT)
             or capture(["git", "rev-parse", "HEAD"], cwd=ROOT) != commit):
@@ -225,6 +262,7 @@ def deploy(args):
     ssh(args, ["python3", "-c", f"import sys; __file__={str(remote + '/scripts/service_scripts/prebuilt-deploy.py')!r}; exec(compile(sys.stdin.read(), __file__, 'exec'))",
                "--check-env", "--env", args.remote_env, "--project", args.project],
         input=source, text=True)
+    check_image_transport(args)
     output = ROOT / "build/prebuilt-deploy" / release
     output.mkdir(parents=True, mode=0o700)
     manifest = {"commit": commit, "runtime_commit": commit,
@@ -244,20 +282,13 @@ def deploy(args):
         else:
             command += ["--build-arg", "BUILD_ON=docker"]
         run(command + ["."], cwd=ROOT)
-        manifest["images"][service] = {"ref": ref, "id": capture([
-            "docker", "image", "inspect", "--format", "{{.Id}}", ref])}
+        manifest["images"][service] = image_record(ref)
     for service, source in EXTERNAL.items():
         run(["docker", "pull", "--platform", "linux/amd64", source])
         ref = f"a-dependency-{service}:{release}"
         run(["docker", "tag", source, ref])
-        manifest["images"][service] = {"ref": ref, "source": source, "id": capture([
-            "docker", "image", "inspect", "--format", "{{.Id}}", ref])}
-    images = output / "images.tar"
+        manifest["images"][service] = image_record(ref) | {"source": source}
     verify_checkout(commit)
-    # Stream stdout: works with local engines and SSH-backed Docker CLI implementations.
-    with images.open("wb") as stream:
-        run(["docker", "save", *[r["ref"] for r in manifest["images"].values()]], stdout=stream)
-    manifest["archive_sha256"] = digest(images)
     payload = output / "runtime.tar"
     with tarfile.open(payload, "w") as archive:
         for relative in RUNTIME_FILES:
@@ -271,13 +302,14 @@ def deploy(args):
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     hashes = output / "SHA256SUMS"
     hashes.write_text("".join(f"{digest(output / name)}  {name}\n"
-                             for name in ("images.tar", "runtime.tar", "manifest.json")), encoding="ascii")
+                             for name in ("runtime.tar", "manifest.json")), encoding="ascii")
     ssh(args, ["mkdir", "-p", remote])
     run(["scp", *ssh_config_options(args), "-o", "BatchMode=yes", *[(output / name).as_posix() for name in
-         ("images.tar", "runtime.tar", "manifest.json", "SHA256SUMS")], f"{args.ssh}:{remote}/"])
-    print("Verifying and loading remote release", flush=True)
+         ("runtime.tar", "manifest.json", "SHA256SUMS")], f"{args.ssh}:{remote}/"])
+    push_images(args, manifest["images"])
+    print("Verifying remote release", flush=True)
     ssh(args, ["sh", "-c", f"cd {shlex.quote(remote)} && sha256sum -c SHA256SUMS && "
-               "tar -xf runtime.tar && docker load -i images.tar && " + shlex.join([
+               "tar -xf runtime.tar && " + shlex.join([
                    "python3", "scripts/service_scripts/prebuilt-deploy.py", "--apply",
                    "--env", args.remote_env, "--project", args.project])])
     print(f"Release ready: {release}", flush=True)
@@ -304,7 +336,7 @@ def main():
             runtime_apply(args)
         else:
             deploy(args)
-    except (ValueError, subprocess.CalledProcessError) as error:
+    except (ValueError, OSError, subprocess.CalledProcessError) as error:
         print(f"Deployment stopped: {error}", file=sys.stderr)
         return 1
     return 0

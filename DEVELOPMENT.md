@@ -448,6 +448,18 @@ python scripts/test_scripts/run-shell-tests.py --tests test_compose.ComposeTests
 
 JUnit 序列化在全部诊断字段转义 XML 1.0 禁止字符；原始 stdout/stderr 和无损 `junit.raw.json` 保留原诊断。原有浏览器容器生命周期套件仍可通过 `node --test client/composeCore/wasm-media-host/verification-reports.test.mjs` 运行。
 
+### 隔离部署的增量镜像传输
+
+`deploy-prebuilt-to-remote.sh` 在构建机调用官方 `docker pussh` 0.4.3。先按照 [上游固定版本的安装说明](https://github.com/psviderski/unregistry/tree/v0.4.3#installation) 安装插件，运行 `docker pussh --version` 确认。构建机的 Docker daemon 必须能访问该机的 SSH 回环转发端口；不要将远程 `DOCKER_HOST` 或 SSH Docker context 当作本地 daemon 使用。Windows 操作者应在已有 Linux 构建机上运行部署命令，不复制私钥。
+
+目标 Docker 必须预先启用 containerd image store，并提供 containerd Unix socket（标准位置会由插件检测，自定义位置使用 `REMOTE_CONTAINERD_SOCKET`）。脚本在构建前检查插件版本和目标存储。切换运行中的 Docker 存储会使原有容器和镜像暂时不可见，脚本不会自动切换。目标需预载或能拉取脚本固定摘要的 Unregistry 镜像；临时容器以 root 访问 containerd socket，仅绑定目标回环地址。部署用户需要 Docker 权限及 SSH 本地端口转发权限，主机密钥必须已受信任。`--ssh-config` 同时用于控制连接、运行文件 SCP 和镜像推送。
+
+所有业务产物仍在 Docker 中构建。传输不生成 `images.tar`，也不执行 `docker load`；每个镜像由插件查询已有层并补传缺失层，任一推送失败即停止，不启动新环境。SCP 只传 allowlist 运行文件、清单及 SHA256 校验文件。目标在 Compose 启动前校验配置、平台及有序 RootFS 层的摘要；经典存储的 config ID 与 containerd 的 manifest ID 不直接比较。只规范化未设置的可选字段、空默认用户和空默认工作目录，配置内容、层顺序和平台变化仍导致校验失败。
+
+首次使用此通道时，已有 `docker load` 镜像不保证能复用全部压缩 blob；实际传输依据 registry 内容摘要。重复推送及后续版本应观察 `Layer already exists`，不要把首次迁移的传输量当作稳态增量效果。
+
+运行 `python3 scripts/test_scripts/run-shell-tests.py --suite prebuilt-deploy` 检查运行包边界、连接配置一致性、推送失败停止和镜像身份校验。真实环境还需验证：首次推送仅补缺失层、同镜像重复推送复用全部层、应用层变化只补新层、Compose 无构建/无拉取更新后内容正确，以及临时注册表与 SSH 隧道已清理。私有连接配置和原始日志保留在操作者目录，不进入提交。
+
 ### 部署与 RPC 生命周期验证
 
 应用后端环境覆盖只为启用的 cli/server/worker/ws 生成。容器 Server 和 WebSocket 监听 80，发布宿主端口仍可配置。Filesystem public URL 来自 flavor 文件，同一 Compose 解析值传给 filesystem 和应用。Bunker 凭据与域名前缀设置使用 deploy/bunker.env.example 的最终变量名，仅通过 raw env_file（Compose 2.30+）注入 BunkerWeb。已有使用 BUNKER_* 占位符的外部文件必须按示例重写，不自动迁移或覆盖。

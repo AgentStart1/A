@@ -107,8 +107,8 @@ class StageConfigTests(unittest.TestCase):
         from argparse import Namespace
         with tempfile.TemporaryDirectory(dir=deploy.ROOT / "build") as directory:
             root = Path(directory)
-            (root / "manifest.json").write_text(json.dumps({"images": {"server": {"ref": "fixture:rev", "id": "sha256:expected"}}}))
-            with patch.object(deploy, "ROOT", root), patch.object(deploy, "capture", return_value="sha256:wrong"), patch.object(
+            (root / "manifest.json").write_text(json.dumps({"images": {"server": {"ref": "fixture:rev", "id": "sha256:expected", "identity_sha256": "expected"}}}))
+            with patch.object(deploy, "ROOT", root), patch.object(deploy, "image_record", return_value={"identity_sha256": "wrong"}), patch.object(
                     deploy, "run") as start, patch.dict(__import__("sys").modules, {"fcntl": __import__("types").SimpleNamespace(
                         flock=lambda *args: None, LOCK_EX=1, LOCK_NB=2)}):
                 with self.assertRaisesRegex(ValueError, "mismatch"):
@@ -150,33 +150,76 @@ class TransferTests(unittest.TestCase):
             return "a" * 40
         if command[:2] == ["git", "ls-files"]:
             return "100755 " + "a" * 40 + " 0\tfixture"
-        return "sha256:fixture"
+        if command[:3] == ["docker", "pussh", "--version"]:
+            return "docker-pussh, version 0.4.3\nunregistry image: fixture"
+        return json.dumps([{"Id": "sha256:fixture", "Config": {"User": "", "Env": ["FIXTURE=1"]},
+                            "RootFS": {"Type": "layers", "Layers": ["sha256:layer"]},
+                            "Os": "linux", "Architecture": "amd64"}])
 
-    def test_export_contains_all_images_and_verified_runtime_only(self):
+    def test_pushes_all_images_and_transfers_only_verified_runtime(self):
         import tarfile
         with tempfile.TemporaryDirectory(dir=deploy.ROOT / "build") as directory:
             root, args = self.fixture(directory)
 
-            def execute(command, **kwargs):
-                if command[:2] == ["docker", "save"]:
-                    kwargs["stdout"].write(b"fixture-image-archive")
-
             with patch.object(deploy, "ROOT", root), patch.object(deploy, "read_env", return_value=stage_env() | {
                     "FLAVOR": "dev", "BUILD_TYPE": "release", "SERVER_URL": "http://localhost:8080",
                     "WS_SERVER_URL": "ws://localhost:8081"}), patch.object(deploy, "capture", side_effect=self.output), patch.object(
-                    deploy, "run", side_effect=execute) as commands, patch.object(deploy, "ssh") as remote:
+                    deploy, "run") as commands, patch.object(deploy, "ssh") as remote:
                 deploy.deploy(args)
             release = next((root / "build/prebuilt-deploy").iterdir())
             manifest = json.loads((release / "manifest.json").read_text())
             self.assertEqual(set(manifest["images"]), set(deploy.TARGETS) | set(deploy.EXTERNAL))
-            self.assertEqual(manifest["archive_sha256"], deploy.digest(release / "images.tar"))
+            self.assertNotIn("archive_sha256", manifest)
+            self.assertFalse((release / "images.tar").exists())
+            pushes = [call.args[0] for call in commands.call_args_list if call.args[0][:2] == ["docker", "pussh"]]
+            self.assertEqual([command[-2] for command in pushes],
+                             [record["ref"] for record in manifest["images"].values()])
+            self.assertTrue(all(command[-1] == args.ssh for command in pushes))
+            self.assertTrue(all(command[2:4] == ["-F", args.ssh_config.resolve().as_posix()] for command in pushes))
+            for call in commands.call_args_list:
+                if call.args[0][:2] == ["docker", "pussh"]:
+                    self.assertEqual(call.kwargs["env"]["UNREGISTRY_IMAGE"], deploy.UNREGISTRY_IMAGE)
+                    self.assertEqual(call.kwargs["env"]["SSH_STRICT_HOST_KEY_CHECKING"], "yes")
             with tarfile.open(release / "runtime.tar") as archive:
                 self.assertEqual(set(archive.getnames()), set(deploy.RUNTIME_FILES))
                 self.assertEqual(archive.getmember("scripts/service_scripts/compose-service.sh").mode, 0o755)
             self.assertIn("sha256sum -c SHA256SUMS", remote.call_args.args[1][2])
-            self.assertTrue(any(call.args[0][0] == "scp" for call in commands.call_args_list))
+            self.assertNotIn("docker load", remote.call_args.args[1][2])
+            self.assertFalse(any(call.args[0][:2] == ["docker", "save"] for call in commands.call_args_list))
             transfer = next(call.args[0] for call in commands.call_args_list if call.args[0][0] == "scp")
             self.assertEqual(transfer[1:3], ["-F", args.ssh_config.resolve().as_posix()])
+            self.assertEqual({Path(item).name for item in transfer[-4:-1]},
+                             {"runtime.tar", "manifest.json", "SHA256SUMS"})
+
+    def test_incompatible_target_prevents_build_and_transfer(self):
+        import subprocess
+        with tempfile.TemporaryDirectory(dir=deploy.ROOT / "build") as directory:
+            root, args = self.fixture(directory)
+            with patch.object(deploy, "ROOT", root), patch.object(deploy, "read_env", return_value=stage_env()), patch.object(
+                    deploy, "capture", side_effect=self.output), patch.object(deploy, "ssh", side_effect=[
+                        None, None, subprocess.CalledProcessError(1, ["docker", "info"])]) as remote, patch.object(
+                    deploy, "run") as commands:
+                with self.assertRaises(subprocess.CalledProcessError):
+                    deploy.deploy(args)
+            commands.assert_not_called()
+            self.assertEqual(remote.call_count, 3)
+
+    def test_failed_image_push_prevents_remote_apply(self):
+        import subprocess
+        with tempfile.TemporaryDirectory(dir=deploy.ROOT / "build") as directory:
+            root, args = self.fixture(directory)
+
+            def execute(command, **kwargs):
+                if command[:2] == ["docker", "pussh"]:
+                    raise subprocess.CalledProcessError(1, command)
+
+            with patch.object(deploy, "ROOT", root), patch.object(deploy, "read_env", return_value=stage_env() | {
+                    "FLAVOR": "dev", "BUILD_TYPE": "debug", "SERVER_URL": "http://localhost:8080",
+                    "WS_SERVER_URL": "ws://localhost:8081"}), patch.object(deploy, "capture", side_effect=self.output), patch.object(
+                    deploy, "run", side_effect=execute), patch.object(deploy, "ssh") as remote:
+                with self.assertRaises(subprocess.CalledProcessError):
+                    deploy.deploy(args)
+            self.assertFalse(any("--apply" in str(call.args) for call in remote.call_args_list))
 
     def test_ssh_uses_same_private_connection_profile_as_scp(self):
         with tempfile.TemporaryDirectory(dir=deploy.ROOT / "build") as directory:
@@ -194,5 +237,54 @@ class TransferTests(unittest.TestCase):
                     deploy, "run", side_effect=subprocess.CalledProcessError(7, ["docker", "build"])) as commands:
                 with self.assertRaises(subprocess.CalledProcessError):
                     deploy.deploy(args)
-            self.assertEqual(remote.call_count, 2)  # Tool and env preflight only.
+            self.assertEqual(remote.call_count, 3)  # Tool, env and image-store preflight only.
             self.assertEqual(commands.call_count, 1)
+
+
+class ImageIdentityTests(unittest.TestCase):
+    @staticmethod
+    def image():
+        return {"Id": "sha256:config", "Config": {"User": "", "WorkingDir": "", "Cmd": None, "Env": ["EXAMPLE=1"]},
+                "RootFS": {"Type": "layers", "Layers": ["sha256:base", "sha256:app"]},
+                "Os": "linux", "Architecture": "amd64"}
+
+    def identity(self, image):
+        with patch.object(deploy, "capture", return_value=json.dumps([image])):
+            return deploy.image_record("fixture:rev")["identity_sha256"]
+
+    def test_classic_and_containerd_ids_share_effective_identity(self):
+        classic = self.image()
+        containerd = self.image() | {"Id": "sha256:manifest", "Variant": ""}
+        containerd["Config"] = {"Env": ["EXAMPLE=1"]}
+        self.assertEqual(self.identity(classic), self.identity(containerd))
+
+    def test_configuration_layer_order_and_platform_changes_are_rejected(self):
+        from copy import deepcopy
+        original = self.image()
+        changes = []
+        for field, value in [("Env", ["EXAMPLE=2"]), ("User", "1000"), ("WorkingDir", "/other"), ("Cmd", ["other"])]:
+            changed = deepcopy(original)
+            changed["Config"][field] = value
+            changes.append(changed)
+        changes += [original | {"RootFS": {"Type": "layers", "Layers": ["sha256:app", "sha256:base"]}},
+                    original | {"Architecture": "arm64"}, original | {"Variant": "v7"}]
+        for changed in changes:
+            with self.subTest(changed=changed):
+                self.assertNotEqual(self.identity(original), self.identity(changed))
+
+
+class PusshFailureTests(unittest.TestCase):
+    def test_unsupported_plugin_fails_before_remote_preflight(self):
+        with patch.object(deploy, "capture", return_value="docker-pussh, version 0.3.0"), patch.object(
+                deploy, "ssh") as remote:
+            with self.assertRaisesRegex(ValueError, "0.4.3"):
+                deploy.check_image_transport(object())
+            remote.assert_not_called()
+
+    def test_push_failure_stops_before_remaining_images(self):
+        import subprocess
+        from argparse import Namespace
+        with patch.object(deploy, "run", side_effect=subprocess.CalledProcessError(1, ["docker", "pussh"])) as run:
+            with self.assertRaises(subprocess.CalledProcessError):
+                deploy.push_images(Namespace(ssh="fixture"), {"a": {"ref": "a:rev"}, "b": {"ref": "b:rev"}})
+            self.assertEqual(run.call_count, 1)

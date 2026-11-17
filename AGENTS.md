@@ -393,3 +393,5 @@
 
 - 浏览器 UI 数据库夹具显式拥有分页作用域。清理时先在 NonCancellable 中取消并等待分页及查询作用域，再关闭 Room；同步 close 的 CloseBarrier 会忙等，不能在后台 worker 操作尚未结束时调用。保留完整业务断言与原时间预算。
 - 固定上游源码重编译的 Compose 模块需在 commonMain 显式声明源码直接使用的 ui-util 等依赖；平台编译通过不能替代公共 metadata 编译检查。
+
+- 跨 Docker 存储传输镜像时，经典 config ID 与 containerd manifest ID 不可直接比较；校验有效配置、平台及有序 RootFS 层摘要。增量部署使用固定版本 docker-pussh 和固定摘要 Unregistry，目标存储切换必须由操作者单独处理，不自动修改运行中的 Docker。
