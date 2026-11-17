@@ -3,8 +3,6 @@ set -e
 
 mkdir -p deploy/build
 ./gradlew \
-    -Pserver.flavor="${FLAVOR:-dev}" \
-    -Pserver.buildType="${BUILD_TYPE:-dev}" \
     cloud:server:distTar cloud:server:distZip \
     cloud:ws:distTar cloud:ws:distZip \
     cloud:cli:distTar cloud:cli:distZip \

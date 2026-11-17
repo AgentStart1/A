@@ -13,7 +13,7 @@
 - Detekt 只在配置的 `api` 和 `shared.model` 协议／模型范围及 `client/core` 请求边界允许公共库实体和公共 data class；在 `config/detekt/detekt.yml` 中严格限制这些例外范围。
 - 新 Kotlin 源文件必须以 Detekt 配置的私有项目许可证头开头。
 - 覆盖率：按需生成 Kover 报告。
-- 环境与机密：`app/composeApp` 和 `panel/composeApp` 通过 BuildKonfig 注入 `deploy/{flavor}.env` 的值。`app/androidApp` 读取相同 env 文件配置深链接。`app/androidApp` 和 `panel/androidApp` 使用 flavor/buildType 配置 application ID 和构建类型。始终传入 `-Pserver.flavor` 和 `-Pserver.buildType`。
+- 环境与机密：`app/composeApp` 和 `panel/composeApp` 通过 BuildKonfig 注入 `deploy/{flavor}.env` 的值。`app/androidApp` 读取相同 env 文件配置深链接。`app/androidApp` 和 `panel/androidApp` 使用 flavor/buildType 配置 application ID 和构建类型。客户端构建与测试始终传入 `-Pserver.flavor` 和 `-Pserver.buildType`。这两个属性仅选择 App/Panel 的 BuildKonfig 和 Android 变体；服务端通过 BackendEnv 读取容器环境变量，不向后端构建入口传入这两个客户端属性。
 - 提交信息：以中文或英文动词开头，包含模块或范围，例如 `client/core: add getAllUsers request`。
 - 不使用中文方法名。
 - 产品名称为 Alpha Heart，产品包名前缀为 `com.storyteller_f.alphaheart`；重命名时同步维护 ServiceLoader 文件名、启动类、资源包、平台标识和测试工具中的类路径。

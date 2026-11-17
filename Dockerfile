@@ -12,8 +12,6 @@ ENV HOST_TYPE=docker
 ENV GRADLE_OPTS="-Dorg.gradle.daemon=false"
 
 ARG BUILD_ON
-ARG FLAVOR=dev
-ARG BUILD_TYPE=dev
 
 RUN --mount=type=cache,id=cloud-gradle-alpine,target=/root/.gradle,sharing=locked \
     --mount=type=cache,id=cloud-project-gradle-alpine,target=/app/.gradle,sharing=locked \

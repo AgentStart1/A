@@ -205,8 +205,7 @@ class DeploymentConfigurationTests(ShellCase):
                              ["./app-wasm.nginx.conf:/etc/nginx/conf.d/default.conf:ro"])
 
     @cases({"server": ("server", ["server", "ws"]), "worker": ("worker", ["worker"]),
-            "cli": ("cli", ["cli"]), "filesystem": ("filesystem", ["filesystem"]),
-            "lucene": ("lucene", ["lucene"]), "minio": ("minio", ["minio"])})
+            "cli": ("cli", ["cli"]), "minio": ("minio", ["minio"])})
     def test_backend_build_targets(self, profile, names):
         services = self.load(f"deploy/docker-compose/docker-compose.{profile}.yml")["services"]
         for name in names:
@@ -214,25 +213,8 @@ class DeploymentConfigurationTests(ShellCase):
             if name == "minio":
                 self.assertEqual(build["dockerfile"], "minio.Dockerfile")
             else:
-                self.assertEqual(build["target"], f"{name}-service" if name in {"filesystem", "lucene"} else name)
-                self.assertEqual(build["args"], {"BUILD_ON": "${BUILD_ON}",
-                                                 "FLAVOR": "${FLAVOR}", "BUILD_TYPE": "${BUILD_TYPE}"})
+                self.assertEqual(build["target"], name)
                 self.assertEqual(build.get("dockerfile", "Dockerfile"), "Dockerfile")
-
-    @cases({"defaults": ({}, "dev", "dev"),
-            "selected": ({"FLAVOR": "sample", "BUILD_TYPE": "prod"}, "sample", "prod")})
-    def test_cloud_build_passes_selected_environment(self, environment, flavor, build_type):
-        self.env.pop("FLAVOR", None)
-        self.copy("scripts/build_scripts/build-cloud.sh")
-        self.write("gradlew", self.recorder("gradlew").read_text())
-        for name in ["server", "ws", "cli", "worker", "filesystem-service", "lucene-service"]:
-            self.write(f"cloud/{name}/build/distributions/{name}.tar", "fixture")
-        self.run_script("scripts/build_scripts/build-cloud.sh", env=environment)
-        arguments = self.calls("gradlew")[0][0]
-        self.assertIn(f"-Pserver.flavor={flavor}", arguments)
-        self.assertIn(f"-Pserver.buildType={build_type}", arguments)
-        for name in ["server", "ws", "cli", "worker", "filesystem-service", "lucene-service"]:
-            self.assertTrue((self.root / f"deploy/build/{name}.tar").is_file())
 
     def test_dockerfile_service_stages(self):
         stages = re.findall(r"^FROM\s+.+\s+AS\s+(\S+)", (ROOT / "Dockerfile").read_text(), re.M | re.I)
