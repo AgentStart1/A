@@ -52,8 +52,10 @@ internal sealed interface RtcCallState {
         val participants: ImmutableList<RtcParticipant> = persistentListOf(),
         val audioMuted: Boolean = false,
         val videoMuted: Boolean = false,
-        val mediaFailed: Boolean = false,
-    ) : RtcCallState
+        val mediaFailure: Throwable? = null,
+    ) : RtcCallState {
+        val mediaFailed: Boolean get() = mediaFailure != null
+    }
 }
 
 internal enum class RtcCallEffect { Left }
@@ -171,7 +173,7 @@ internal class RtcCallHost(
                 try {
                     val updated = change(active)
                     if ((mutableState.value as? RtcCallState.Active)?.media === active.media) {
-                        mutableState.value = updated.copy(participants = activeParticipants(), mediaFailed = false)
+                        mutableState.value = updated.copy(participants = activeParticipants(), mediaFailure = null)
                         publishMediaState()
                     }
                 } catch (cancelled: CancellationException) {
@@ -184,7 +186,7 @@ internal class RtcCallHost(
                                 participants = activeParticipants(),
                                 localVideo = active.media.video,
                                 videoMuted = active.videoMuted || active.media.video == null,
-                                mediaFailed = true,
+                                mediaFailure = failure,
                             )
                     }
                 }

@@ -4,6 +4,8 @@
 
 package com.storyteller_f.alphaheart.app.pages.community
 
+import androidx.compose.ui.InternalComposeUiApi
+import androidx.compose.ui.platform.registerSkikoComposeImplementation
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.createFontFamilyResolver
@@ -13,7 +15,7 @@ import org.jetbrains.skia.Data
 import org.jetbrains.skia.FontMgr
 import org.jetbrains.skia.impl.use
 
-@OptIn(ExperimentalTextApi::class)
+@OptIn(ExperimentalTextApi::class, InternalComposeUiApi::class)
 internal actual suspend fun buildCommunityFont(
     identity: String,
     faces: List<CommunityFontFace>,
@@ -38,6 +40,8 @@ internal actual suspend fun buildCommunityFont(
                 LoadedFont("$identity:${face.name}", { bytes }, face.weight, face.style)
             },
         )
+    // Font decoding can run without a mounted Compose scene.
+    registerSkikoComposeImplementation()
     val resolver = createFontFamilyResolver()
     resolver.preload(family)
     return LoadedCommunityFont(family, resolver)

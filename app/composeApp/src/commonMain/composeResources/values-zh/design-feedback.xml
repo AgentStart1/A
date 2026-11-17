@@ -1,0 +1,25 @@
+<resources>
+    <string name="record_favorites_empty">暂无收藏</string>
+    <string name="record_subscriptions_empty">暂无订阅</string>
+    <string name="record_comments_empty">暂无评论</string>
+    <string name="record_reactions_empty">暂无回应记录</string>
+    <string name="record_favorites_end">已显示全部收藏</string>
+    <string name="record_subscriptions_end">已显示全部订阅</string>
+    <string name="record_comments_end">已显示全部评论</string>
+    <string name="record_reactions_end">已显示全部回应记录</string>
+    <string name="configuration_preview">配置预览</string>
+    <string name="startup_section_label">启动分区</string>
+    <string name="rtc_call_title">音视频通话</string>
+    <string name="rtc_ready_status">准备加入</string>
+    <string name="rtc_ready_badge">准备就绪</string>
+    <string name="rtc_leaving_status">正在离开…</string>
+    <string name="reference_author">作者：%1$s</string>
+    <string name="record_favorites_loading">正在加载收藏…</string>
+    <string name="record_favorites_failure">收藏加载失败</string>
+    <string name="record_subscriptions_loading">正在加载订阅…</string>
+    <string name="record_subscriptions_failure">订阅加载失败</string>
+    <string name="record_comments_loading">正在加载评论…</string>
+    <string name="record_comments_failure">评论加载失败</string>
+    <string name="record_reactions_loading">正在加载回应记录…</string>
+    <string name="record_reactions_failure">回应记录加载失败</string>
+</resources>

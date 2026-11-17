@@ -89,6 +89,14 @@ class WasmAppiumTest(private val browserType: WasmBrowser) :
         )
 
     @Test
+    fun `test revoked owner cancels file preview download before browser handoff`() =
+        testDownloadOwnerRevocation(embedded = false)
+
+    @Test
+    fun `test revoked owner cancels embedded media download before browser handoff`() =
+        testDownloadOwnerRevocation(embedded = true)
+
+    @Test
     fun `test download from topic attachment saves exact bytes`() = testUploadedDownload(topic = true)
 
     @Test
@@ -129,6 +137,19 @@ class WasmAppiumTest(private val browserType: WasmBrowser) :
 
     @Test
     fun `test unknown private key rejects login and retains guest after restart`() = testUnknownKeyByHelper()
+
+    @Test
+    fun `test recorder synthetic audio uploads persisted wave with personal ownership`() = testRecordedAudioUpload()
+
+    @Test
+    fun `test recorder private audio uploads persisted wave with room ownership`() =
+        testRecordedAudioUpload(privateRoom = true)
+
+    @Test
+    fun `test recorder cancellation releases capture and uploads nothing`() = testRecordedAudioCancel()
+
+    @Test
+    fun `test recorder denied permission permits explicit recovery`() = testRecordingPermissionRecovery()
 
     @Test
     fun `test two clients present RTC video propagate mute and release capture`() = testTwoClientRtc()

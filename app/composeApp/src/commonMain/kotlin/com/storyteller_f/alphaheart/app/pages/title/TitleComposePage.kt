@@ -4,47 +4,22 @@
 
 package com.storyteller_f.alphaheart.app.pages.title
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Chat
-import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.Badge
-import androidx.compose.material.icons.filled.ChatBubble
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Diversity1
-import androidx.compose.material.icons.filled.Diversity3
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Topic
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -55,17 +30,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.storyteller_f.alphaheart.api.NewTitle
 import com.storyteller_f.alphaheart.app.AppGlobalDialogController
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
+import com.storyteller_f.alphaheart.app.LocalRefCellHandlerProvider
 import com.storyteller_f.alphaheart.app.LocalUserInfo
+import com.storyteller_f.alphaheart.app.Res
+import com.storyteller_f.alphaheart.app.cancel_action
+import com.storyteller_f.alphaheart.app.clear_selection
 import com.storyteller_f.alphaheart.app.common.OnTitleCreated
 import com.storyteller_f.alphaheart.app.common.TitleComposeSheetType
 import com.storyteller_f.alphaheart.app.common.TitleComposeViewModel
@@ -73,25 +49,52 @@ import com.storyteller_f.alphaheart.app.common.createMemberSearchViewModel
 import com.storyteller_f.alphaheart.app.common.createRoomSearchViewModel
 import com.storyteller_f.alphaheart.app.common.createSearchCommunitiesViewModel
 import com.storyteller_f.alphaheart.app.common.createTitleComposeViewModel
-import com.storyteller_f.alphaheart.app.components.AppTopicContentView
+import com.storyteller_f.alphaheart.app.confirm_action
+import com.storyteller_f.alphaheart.app.create_title_action
+import com.storyteller_f.alphaheart.app.creation_title_name
+import com.storyteller_f.alphaheart.app.description_label
+import com.storyteller_f.alphaheart.app.edit_title_description
 import com.storyteller_f.alphaheart.app.error.TitleActionError
-import com.storyteller_f.alphaheart.app.pages.AdaptiveFormLayout
+import com.storyteller_f.alphaheart.app.expiry_date_label
+import com.storyteller_f.alphaheart.app.expiry_label
+import com.storyteller_f.alphaheart.app.expiry_picker_title
+import com.storyteller_f.alphaheart.app.expiry_time_label
+import com.storyteller_f.alphaheart.app.invalid_date_time
+import com.storyteller_f.alphaheart.app.name
+import com.storyteller_f.alphaheart.app.pages.CreateFormLayout
+import com.storyteller_f.alphaheart.app.pages.ReadingPageToolbar
 import com.storyteller_f.alphaheart.app.pages.community.CommunityList
-import com.storyteller_f.alphaheart.app.pages.community.CommunityRefCell
 import com.storyteller_f.alphaheart.app.pages.room.RoomList
-import com.storyteller_f.alphaheart.app.pages.room.RoomRefCell
 import com.storyteller_f.alphaheart.app.pages.user.InputDialog
 import com.storyteller_f.alphaheart.app.pages.user.MemberList
-import com.storyteller_f.alphaheart.app.pages.user.UserRefCell
+import com.storyteller_f.alphaheart.app.receiver_label
+import com.storyteller_f.alphaheart.app.scope_community
+import com.storyteller_f.alphaheart.app.scope_label
+import com.storyteller_f.alphaheart.app.scope_room
+import com.storyteller_f.alphaheart.app.search
+import com.storyteller_f.alphaheart.app.search_scope
+import com.storyteller_f.alphaheart.app.search_start_hint
+import com.storyteller_f.alphaheart.app.search_users
+import com.storyteller_f.alphaheart.app.select_expiry_time
+import com.storyteller_f.alphaheart.app.select_title_receiver
+import com.storyteller_f.alphaheart.app.select_title_scope
+import com.storyteller_f.alphaheart.app.submit
+import com.storyteller_f.alphaheart.app.title_form_choose_scope
+import com.storyteller_f.alphaheart.app.title_form_description
+import com.storyteller_f.alphaheart.app.title_form_description_empty
+import com.storyteller_f.alphaheart.app.title_form_permanent
+import com.storyteller_f.alphaheart.app.title_join
+import com.storyteller_f.alphaheart.app.title_permanent
+import com.storyteller_f.alphaheart.app.title_regular
+import com.storyteller_f.alphaheart.app.title_type_label
+import com.storyteller_f.alphaheart.app.unselected_reference
 import com.storyteller_f.alphaheart.client.compose_core.components.BaseSheet
 import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
 import com.storyteller_f.alphaheart.client.compose_core.components.request
-import com.storyteller_f.alphaheart.client.compose_core.components.safeArea
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.core.createTitle
 import com.storyteller_f.result.CustomResult
 import com.storyteller_f.result.captureFailure
-import com.storyteller_f.result.getOrElse
 import com.storyteller_f.result.getOrThrow
 import com.storyteller_f.result.mapError
 import com.storyteller_f.result.onFailure
@@ -100,18 +103,20 @@ import com.storyteller_f.shared.model.CommunityInfo
 import com.storyteller_f.shared.model.RoomInfo
 import com.storyteller_f.shared.model.TitleDetail
 import com.storyteller_f.shared.model.TitleType
-import com.storyteller_f.shared.model.TopicContent
-import com.storyteller_f.shared.model.TopicDetail
 import com.storyteller_f.shared.model.UserInfo
 import com.storyteller_f.shared.obj.ObjectTuple
 import com.storyteller_f.shared.obj.ob
 import com.storyteller_f.shared.type.JoinStatusSearch
 import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
-import com.storyteller_f.shared.utils.now
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.number
+import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingAlertDialog as AlertDialog
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedTextField as OutlinedTextField
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab as Tab
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow as TabRow
 
 @Composable
 fun TitleComposePage() {
@@ -134,8 +139,8 @@ fun TitleComposeInternal() {
                 appNavFactory.newAppNav().back()
             }
         }
-    }) {
-        TitleComposeInternalEdit(vm)
+    }) { actions ->
+        TitleComposeInternalEdit(vm, actions)
     }
     TitleComposeSheet(vm)
 }
@@ -152,6 +157,14 @@ internal fun TitleComposeSheet(vm: TitleComposeViewModel) {
         sheetState,
         supportedObjectTypes,
         vm::clearShowSheetType,
+        title =
+        stringResource(
+            if (vm.showSheetType.value == TitleComposeSheetType.SCOPE) {
+                Res.string.select_title_scope
+            } else {
+                Res.string.select_title_receiver
+            },
+        ),
     ) {
         when (vm.showSheetType.value) {
             TitleComposeSheetType.SCOPE -> vm.setTitleScope(it)
@@ -164,55 +177,77 @@ internal fun TitleComposeSheet(vm: TitleComposeViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CommonComposePage(onCheck: () -> Unit, content: @Composable () -> Unit) {
-    Scaffold(topBar = {
-        TopAppBar({
-        }, actions = {
-            IconButton(
-                onClick = onCheck,
-                modifier =
-                Modifier.appiumSemantics(
-                    description = "submit",
-                    onClick = onCheck,
-                ),
-            ) {
-                Icon(Icons.Filled.Check, contentDescription = "submit")
+fun CommonComposePage(
+    onCheck: () -> Unit,
+    title: String? = null,
+    content: @Composable (@Composable () -> Unit) -> Unit,
+) {
+    val nav = LocalAppNavFactory.current
+    Scaffold(topBar = { ReadingPageToolbar(title ?: stringResource(Res.string.create_title_action)) }) { padding ->
+        Box(Modifier.padding(padding).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+            content {
+                Row(
+                    Modifier.fillMaxWidth().padding(top = 22.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
+                ) {
+                    com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton(
+                        { nav.newAppNav().back() },
+                    ) {
+                        Text(com.storyteller_f.alphaheart.client.compose_core.CoreStrings.cancel())
+                    }
+                    com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton(
+                        onCheck,
+                        Modifier.appiumSemantics(description = "submit", onClick = onCheck),
+                    ) {
+                        Icon(
+                            com.storyteller_f.alphaheart.client.compose_core.components.actionIcon(
+                                com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph.CHECK,
+                            ),
+                            null,
+                        )
+                        Text(stringResource(Res.string.submit), Modifier.padding(start = 7.dp))
+                    }
+                }
             }
-        })
-    }) { paddingValues ->
-        val direction = LocalLayoutDirection.current
-        Box(
-            Modifier.safeArea(paddingValues, direction).fillMaxWidth(),
-            contentAlignment = Alignment.TopCenter,
-        ) {
-            content()
         }
     }
 }
 
 @Composable
-fun TitleComposeInternalEdit(vm: TitleComposeViewModel) {
+fun TitleComposeInternalEdit(vm: TitleComposeViewModel, footer: @Composable () -> Unit = {}) {
     val name by vm.name.collectAsState()
     val titleType by vm.titleType.collectAsState()
     val titleScope by vm.titleScope.collectAsState()
     val receiver by vm.receiver.collectAsState()
     val isScopeLocked by vm.isScopeLocked.collectAsState()
     val isTypeLocked by vm.isTypeLocked.collectAsState()
-    AdaptiveFormLayout {
-        OutlinedTextField(name, vm::setName, label = {
-            Text("name")
-        }, modifier = Modifier.fillMaxWidth())
+    CreateFormLayout {
+        OutlinedTextField(name, vm::setName, singleLine = true, label = {
+            Text(stringResource(Res.string.creation_title_name))
+        }, modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp))
 
-        TitleTypeSelector(titleType, vm::setTitleType, readOnly = isTypeLocked)
-
-        val shape = RoundedCornerShape(10.dp)
-        TitleScopeEditor(shape, vm::openScopeSheet, titleScope, vm::clearTitleScope, readOnly = isScopeLocked)
-
-        ReceiverEditor(shape, vm::openReceiverSheet, receiver)
+        if (isTypeLocked) {
+            TitleLockedField(
+                stringResource(Res.string.title_type_label),
+                stringResource(
+                    if (titleType == TitleType.JOIN) Res.string.title_join else Res.string.title_regular,
+                ),
+            )
+        } else {
+            TitleTypeSelector(titleType, vm::setTitleType)
+        }
+        if (isScopeLocked) {
+            TitleLockedField(stringResource(Res.string.scope_label), TitleScopeName(titleScope))
+        }
+        ReceiverEditor(vm::openReceiverSheet, receiver)
+        if (!isScopeLocked) {
+            TitleScopeEditor(vm::openScopeSheet, titleScope, vm::clearTitleScope)
+        }
 
         ExpireTimeEditor(vm)
 
         DescriptionEditor(vm)
+        footer()
     }
 }
 
@@ -220,348 +255,272 @@ fun TitleComposeInternalEdit(vm: TitleComposeViewModel) {
 private fun ExpireTimeEditor(vm: TitleComposeViewModel) {
     val expiresAtText by vm.expiresAtText.collectAsState()
     var showExpireDialog by remember { mutableStateOf(false) }
-    val expireShape = RoundedCornerShape(12.dp)
-    Column(
-        modifier =
-        Modifier.clip(expireShape)
-            .background(MaterialTheme.colorScheme.primaryContainer, expireShape)
-            .padding(10.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Expire Time (UTC)", modifier = Modifier.weight(1f))
-            IconButton({ showExpireDialog = true }) {
-                Icon(Icons.Default.Edit, "edit expire time")
-            }
-        }
-        ExpireTimePickerDialog(
-            show = showExpireDialog,
-            init = expiresAtText,
-            dismiss = { showExpireDialog = false },
-            onConfirm = { newValue ->
-                vm.setExpiresAtText(newValue)
-                showExpireDialog = false
-            },
-            onClear = {
-                vm.setExpiresAtText("")
-                showExpireDialog = false
-            },
-        )
-        Spacer(modifier = Modifier.height(8.dp))
+    val value =
         if (expiresAtText.isBlank()) {
-            Text("Permanent", fontStyle = FontStyle.Italic, fontSize = 10.sp)
+            stringResource(
+                Res.string.title_form_permanent,
+            )
         } else {
-            Text(expiresAtText, fontSize = 12.sp)
+            expiresAtText.replace('T', ' ')
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text("Pick a UTC date and time, or clear it for permanent", fontSize = 10.sp)
+    TitleFormRow("${stringResource(Res.string.expiry_label)}：$value") {
+        com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton({ showExpireDialog = true }) {
+            Icon(
+                com.storyteller_f.alphaheart.client.compose_core.components.actionIcon(
+                    com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph.CALENDAR,
+                ),
+                null,
+            )
+            Text(stringResource(Res.string.select_expiry_time), Modifier.padding(start = 7.dp))
+        }
     }
+    ExpireTimePickerDialog(
+        show = showExpireDialog,
+        init = expiresAtText,
+        dismiss = { showExpireDialog = false },
+        onConfirm = { newValue ->
+            vm.setExpiresAtText(newValue)
+            showExpireDialog = false
+        },
+        onClear = {
+            vm.setExpiresAtText("")
+            showExpireDialog = false
+        },
+    )
 }
 
-@Suppress("LongMethod")
 @Composable
-private fun ExpireTimePickerDialog(
+internal fun ExpireTimePickerDialog(
     show: Boolean,
     init: String,
     dismiss: () -> Unit,
     onConfirm: (String) -> Unit,
     onClear: () -> Unit,
 ) {
-    if (!show) {
-        return
+    if (!show) return
+    var draft by remember(init) {
+        mutableStateOf(ExpiryDraft(init.substringBefore('T', ""), init.substringAfter('T', ""), init.isBlank()))
     }
-    val initialValue =
-        remember(show, init) {
-            captureFailure(TitleActionError::from) {
-                LocalDateTime.parse(init)
-            }.getOrElse {
-                now()
-            }
-        }
-    var year by remember(show, init) { mutableStateOf(initialValue.year.toString()) }
-    var month by remember(show, init) { mutableStateOf(initialValue.month.number.toString()) }
-    var day by remember(show, init) { mutableStateOf(initialValue.day.toString()) }
-    var hour by remember(show, init) { mutableStateOf(initialValue.hour.toString()) }
-    var minute by remember(show, init) { mutableStateOf(initialValue.minute.toString()) }
-    var second by remember(show, init) { mutableStateOf(initialValue.second.toString()) }
-    var errorMessage by remember(show, init) { mutableStateOf<String?>(null) }
-
+    val invalidDateMessage = stringResource(Res.string.invalid_date_time)
     AlertDialog(
         onDismissRequest = dismiss,
+        title = { Text(stringResource(Res.string.expiry_picker_title)) },
         confirmButton = {
-            TextButton(onClick = {
-                val candidate = buildExpireTimeText(year, month, day, hour, minute, second)
-                captureFailure(TitleActionError::from) {
-                    LocalDateTime.parse(candidate)
-                }.onSuccess {
-                    onConfirm(candidate)
-                }.onFailure {
-                    errorMessage = "Invalid date/time"
+            com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton({
+                if (draft.permanent) {
+                    onClear()
+                } else {
+                    captureFailure(
+                        TitleActionError::from,
+                    ) { LocalDateTime.parse("${draft.date}T${draft.time}").toString() }
+                        .onSuccess(onConfirm)
+                        .onFailure { draft = draft.copy(error = invalidDateMessage) }
                 }
             }) {
-                Text("Confirm")
+                Icon(
+                    com.storyteller_f.alphaheart.client.compose_core.components.actionIcon(
+                        com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph.CHECK,
+                    ),
+                    null,
+                )
+                Text(stringResource(Res.string.confirm_action), Modifier.padding(start = 7.dp))
             }
         },
         dismissButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = onClear) {
-                    Text("Clear")
-                }
-                TextButton(onClick = dismiss) {
-                    Text("Cancel")
-                }
+            com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton(dismiss) {
+                Text(stringResource(Res.string.cancel_action))
             }
         },
-        text = {
-            ExpireTimeInputFields(
-                year = year,
-                onYearChange = { year = it },
-                month = month,
-                onMonthChange = { month = it },
-                day = day,
-                onDayChange = { day = it },
-                hour = hour,
-                onHourChange = { hour = it },
-                minute = minute,
-                onMinuteChange = { minute = it },
-                second = second,
-                onSecondChange = { second = it },
-                errorMessage = errorMessage,
-            )
-        },
+        text = { ExpiryInputFields(draft) { draft = it } },
     )
 }
 
+private data class ExpiryDraft(val date: String, val time: String, val permanent: Boolean, val error: String? = null)
+
 @Composable
-private fun ExpireTimeInputFields(
-    year: String,
-    onYearChange: (String) -> Unit,
-    month: String,
-    onMonthChange: (String) -> Unit,
-    day: String,
-    onDayChange: (String) -> Unit,
-    hour: String,
-    onHourChange: (String) -> Unit,
-    minute: String,
-    onMinuteChange: (String) -> Unit,
-    second: String,
-    onSecondChange: (String) -> Unit,
-    errorMessage: String?,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Pick expiration date and time (UTC)")
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            DateTimeNumberField("Year", year, 4, Modifier.weight(1.4f), onYearChange)
-            DateTimeNumberField("Month", month, 2, Modifier.weight(1f), onMonthChange)
-            DateTimeNumberField("Day", day, 2, Modifier.weight(1f), onDayChange)
+private fun ExpiryInputFields(draft: ExpiryDraft, update: (ExpiryDraft) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+        OutlinedTextField(
+            draft.date,
+            { update(draft.copy(date = it, permanent = false, error = null)) },
+            Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text(stringResource(Res.string.expiry_date_label)) },
+            placeholder = { Text("YYYY-MM-DD") },
+        )
+        OutlinedTextField(
+            draft.time,
+            { update(draft.copy(time = it, permanent = false, error = null)) },
+            Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text(stringResource(Res.string.expiry_time_label)) },
+            placeholder = { Text("HH:mm") },
+        )
+        Row(
+            Modifier.toggleable(draft.permanent, role = Role.Checkbox) {
+                update(draft.copy(permanent = it, error = null))
+            },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Checkbox(draft.permanent, null, Modifier.size(18.dp))
+            Text(stringResource(Res.string.title_permanent))
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            DateTimeNumberField("Hour", hour, 2, Modifier.weight(1f), onHourChange)
-            DateTimeNumberField("Minute", minute, 2, Modifier.weight(1f), onMinuteChange)
-            DateTimeNumberField("Second", second, 2, Modifier.weight(1f), onSecondChange)
-        }
-        errorMessage?.let {
-            Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
-        }
+        draft.error?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp) }
     }
-}
-
-@Composable
-private fun DateTimeNumberField(
-    label: String,
-    value: String,
-    maxLength: Int,
-    modifier: Modifier = Modifier,
-    onValueChange: (String) -> Unit,
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = {
-            onValueChange(it.filter(Char::isDigit).take(maxLength))
-        },
-        label = {
-            Text(label)
-        },
-        modifier = modifier,
-        singleLine = true,
-    )
-}
-
-private fun buildExpireTimeText(
-    year: String,
-    month: String,
-    day: String,
-    hour: String,
-    minute: String,
-    second: String,
-): String {
-    val safeYear = year.padStart(4, '0')
-    val safeMonth = month.padStart(2, '0')
-    val safeDay = day.padStart(2, '0')
-    val safeHour = hour.padStart(2, '0')
-    val safeMinute = minute.padStart(2, '0')
-    val safeSecond = second.padStart(2, '0')
-    return "$safeYear-$safeMonth-$safeDay" +
-        "T$safeHour:$safeMinute:$safeSecond"
 }
 
 @Composable
 private fun DescriptionEditor(vm: TitleComposeViewModel) {
     val content by vm.content.collectAsState()
-    var showDescriptionDialog by remember { mutableStateOf(false) }
-    val descriptionShape = RoundedCornerShape(12.dp)
-    Column(
-        modifier =
-        Modifier.clip(descriptionShape)
-            .background(MaterialTheme.colorScheme.primaryContainer, descriptionShape)
-            .clickable {
-            }
-            .padding(10.dp),
-    ) {
-        Row {
-            Text("Description", modifier = Modifier.weight(1f))
-            IconButton({ showDescriptionDialog = true }) {
-                Icon(Icons.Default.Edit, "edit")
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        InputDialog(showDescriptionDialog, content, { showDescriptionDialog = false }) { newValue ->
-            vm.setContent(newValue)
-            showDescriptionDialog = false
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        if (content.isEmpty()) {
-            Text("No Description", fontStyle = FontStyle.Italic, fontSize = 10.sp)
-        } else {
-            AppTopicContentView(
-                TopicDetail.EMPTY.copy(
-                    topicInfo = TopicDetail.EMPTY.topicInfo.copy(content = TopicContent.Plain(content)),
+    var showDialog by remember { mutableStateOf(false) }
+    val summary = content.ifBlank { stringResource(Res.string.title_form_description_empty) }
+    TitleFormRow("${stringResource(Res.string.title_form_description)}：$summary") {
+        com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton({ showDialog = true }) {
+            Icon(
+                com.storyteller_f.alphaheart.client.compose_core.components.actionIcon(
+                    com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph.PEN_LINE,
                 ),
+                null,
             )
+            Text(stringResource(Res.string.edit_title_description), Modifier.padding(start = 7.dp))
         }
+    }
+    InputDialog(
+        showDialog,
+        content,
+        stringResource(Res.string.description_label),
+        { showDialog = false },
+        minLines = 4,
+    ) {
+        vm.setContent(it)
+        showDialog = false
     }
 }
 
 @Composable
-private fun ReceiverEditor(shape: RoundedCornerShape, showReceiverSheet: () -> Unit, receiver: PrimaryKey?) {
-    Row(
-        modifier =
-        Modifier.height(78.dp).fillMaxWidth().clip(shape).clickable {
-            showReceiverSheet()
-        }.background(MaterialTheme.colorScheme.primaryContainer, shape)
-            .padding(8.dp),
-    ) {
-        receiver.let {
-            if (it != null) {
-                UserRefCell(it)
-            } else {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("接受人")
-                }
-            }
+private fun ReceiverEditor(showReceiverSheet: () -> Unit, receiver: PrimaryKey?) {
+    val name =
+        if (receiver == null) {
+            stringResource(Res.string.unselected_reference)
+        } else {
+            val user by LocalRefCellHandlerProvider.current.userHandler(receiver).data.collectAsState()
+            user?.nickname.orEmpty()
+        }
+    TitleFormRow("${stringResource(Res.string.receiver_label)}：$name") {
+        com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton(showReceiverSheet) {
+            Icon(
+                com.storyteller_f.alphaheart.client.compose_core.components.actionIcon(
+                    com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph.USER_ROUND,
+                ),
+                null,
+            )
+            Text(stringResource(Res.string.select_title_receiver), Modifier.padding(start = 7.dp))
         }
     }
 }
 
 @Composable
 private fun TitleScopeEditor(
-    shape: RoundedCornerShape,
     showScopeSheet: () -> Unit,
     titleScope: ObjectTuple?,
-    updateTitleScope: () -> Unit,
+    clearScope: () -> Unit,
     readOnly: Boolean = false,
 ) {
-    Row(
-        modifier =
-        Modifier
-            .height(90.dp)
-            .fillMaxWidth()
-            .clip(shape)
-            .then(if (readOnly) Modifier else Modifier.clickable { showScopeSheet() })
-            .background(MaterialTheme.colorScheme.primaryContainer, shape)
-            .padding(8.dp),
-    ) {
-        if (titleScope != null) {
-            when (titleScope.objectType) {
-                ObjectType.COMMUNITY ->
-                    CommunityRefCell(titleScope.objectId) {
-                        if (!readOnly) updateTitleScope()
-                    }
-
-                ObjectType.ROOM ->
-                    RoomRefCell(titleScope.objectId) {
-                        if (!readOnly) updateTitleScope()
-                    }
-
-                ObjectType.TOPIC -> Unit
-
-                ObjectType.USER -> UserRefCell(titleScope.objectId)
-
-                ObjectType.TITLE -> Unit
-
-                ObjectType.FILE -> Unit
-
-                ObjectType.PANEL_ACCOUNT -> Unit
+    val name = TitleScopeName(titleScope)
+    TitleFormRow("${stringResource(Res.string.scope_label)}：$name") {
+        if (!readOnly) {
+            com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton(showScopeSheet) {
+                Icon(
+                    com.storyteller_f.alphaheart.client.compose_core.components.actionIcon(
+                        com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph.SCAN,
+                    ),
+                    null,
+                )
+                Text(stringResource(Res.string.title_form_choose_scope), Modifier.padding(start = 7.dp))
             }
-        } else {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("作用范围")
+            if (titleScope != null) {
+                com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton(clearScope) {
+                    Icon(
+                        com.storyteller_f.alphaheart.client.compose_core.components.actionIcon(
+                            com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph.X,
+                        ),
+                        null,
+                    )
+                    Text(stringResource(Res.string.clear_selection), Modifier.padding(start = 7.dp))
+                }
             }
         }
     }
 }
 
 @Composable
+private fun TitleScopeName(scope: ObjectTuple?): String {
+    val provider = LocalRefCellHandlerProvider.current
+    return when (scope?.objectType) {
+        null -> stringResource(Res.string.unselected_reference)
+
+        ObjectType.COMMUNITY -> {
+            val info by provider.communityHandler(scope.objectId).data.collectAsState()
+            info?.name.orEmpty()
+        }
+
+        ObjectType.ROOM -> {
+            val info by provider.roomHandler(scope.objectId).data.collectAsState()
+            info?.name.orEmpty()
+        }
+
+        ObjectType.USER -> {
+            val info by provider.userHandler(scope.objectId).data.collectAsState()
+            info?.nickname.orEmpty()
+        }
+
+        else -> scope.objectId.toString()
+    }
+}
+
+@Composable
+private fun TitleLockedField(label: String, value: String) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 13.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        com.storyteller_f.alphaheart.client.compose_core.components.SimpleMessageWithButton(value, label)
+    }
+    androidx.compose.material3.HorizontalDivider()
+}
+
+@Composable
+private fun TitleFormRow(
+    label: String,
+    showDivider: Boolean = true,
+    actions: @Composable androidx.compose.foundation.layout.FlowRowScope.() -> Unit,
+) {
+    Column {
+        androidx.compose.foundation.layout.FlowRow(
+            Modifier.fillMaxWidth().padding(vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(label)
+            actions()
+        }
+        if (showDivider) androidx.compose.material3.HorizontalDivider()
+    }
+}
+
+@Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun TitleTypeSelector(titleType: TitleType, updateTitleType: (TitleType) -> Unit, readOnly: Boolean = false) {
-    var expanded by remember {
-        mutableStateOf(false)
-    }
-    if (readOnly) {
-        TextField(
-            titleType.name,
-            {},
-            modifier = Modifier.fillMaxWidth(),
-            readOnly = true,
-            label = { Text("Title Type") },
-            colors = ExposedDropdownMenuDefaults.textFieldColors(),
-        )
-    } else {
-        ExposedDropdownMenuBox(expanded, {
-            expanded = true
-        }, modifier = Modifier) {
-            TextField(
-                // The `menuAnchor` modifier must be passed to the text field to handle
-                // expanding/collapsing the menu on click. A read-only text field has
-                // the anchor type `PrimaryNotEditable`.
-                titleType.name,
-                {
-                },
-                modifier =
-                Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                    .fillMaxWidth(),
-                readOnly = true,
-                label = { Text("Title Type") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                colors = ExposedDropdownMenuDefaults.textFieldColors(),
-            )
-            ExposedDropdownMenu(expanded, {
-                expanded = false
-            }, modifier = Modifier) {
-                DropdownMenuItem({
-                    Text("Regular")
-                }, {
-                    expanded = false
-                    updateTitleType(TitleType.REGULAR)
-                })
-                DropdownMenuItem({
-                    Text("Join")
-                }, {
-                    expanded = false
-                    updateTitleType(TitleType.JOIN)
-                })
-            }
-        }
-    }
+    com.storyteller_f.alphaheart.client.compose_core.components.ReadingSelect(
+        stringResource(Res.string.title_type_label),
+        titleType,
+        listOf(
+            TitleType.REGULAR to stringResource(Res.string.title_regular),
+            TitleType.JOIN to stringResource(Res.string.title_join),
+        ),
+        updateTitleType,
+        Modifier.fillMaxWidth().padding(bottom = 20.dp),
+        enabled = !readOnly,
+    )
 }
 
 private suspend fun AppGlobalDialogController.createTitle(
@@ -580,13 +539,19 @@ fun ObjectPicker(
     sheetState: SheetState,
     supportObjectType: List<ObjectType>,
     hideSheet: () -> Unit,
+    title: String,
     onCheck: (ObjectTuple) -> Unit,
 ) {
     BaseSheet(showSheet, sheetState, hideSheet) {
+        Text(
+            title,
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(end = 40.dp, bottom = 24.dp),
+        )
         var input by remember {
             mutableStateOf("")
         }
-        Column(modifier = Modifier.height(300.dp).padding(top = 20.dp)) {
+        Column(modifier = Modifier.height(360.dp)) {
             var currentType by remember {
                 mutableStateOf(supportObjectType[0])
             }
@@ -595,13 +560,22 @@ fun ObjectPicker(
             }, input) {
                 input = it
             }
-            ObjectList(input, currentType, {
-                onCheck(it.id ob ObjectType.COMMUNITY)
-            }, {
-                onCheck(it.id ob ObjectType.ROOM)
-            }, {
-                onCheck(it.id ob ObjectType.USER)
-            })
+            Box(Modifier.weight(1f).fillMaxWidth().padding(top = 20.dp), contentAlignment = Alignment.Center) {
+                if (input.isBlank()) {
+                    Text(
+                        stringResource(Res.string.search_start_hint),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    ObjectList(input, currentType, {
+                        onCheck(it.id ob ObjectType.COMMUNITY)
+                    }, {
+                        onCheck(it.id ob ObjectType.ROOM)
+                    }, {
+                        onCheck(it.id ob ObjectType.USER)
+                    })
+                }
+            }
         }
     }
 }
@@ -615,56 +589,35 @@ private fun TypeSelector(
     input: String,
     setInput: (String) -> Unit,
 ) {
-    var expanded by remember {
-        mutableStateOf(false)
-    }
-    val closeTypeSelector = {
-        expanded = false
-    }
-    Row(
-        modifier = Modifier.padding(horizontal = 20.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        val shape = RoundedCornerShape(10.dp)
-        Row(
-            modifier =
-            Modifier.background(MaterialTheme.colorScheme.primaryContainer, shape)
-                .clip(shape)
-                .clickable {
-                    expanded = true
-                }.padding(18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Icon(
-                when (currentType) {
-                    ObjectType.COMMUNITY -> Icons.Default.Diversity1
-                    ObjectType.ROOM -> Icons.AutoMirrored.Default.Chat
-                    ObjectType.TOPIC -> Icons.Default.Topic
-                    ObjectType.USER -> Icons.Default.AccountBox
-                    ObjectType.TITLE -> Icons.Default.Badge
-                    ObjectType.FILE -> Icons.AutoMirrored.Default.InsertDriveFile
-                    ObjectType.PANEL_ACCOUNT -> Icons.Default.AdminPanelSettings
-                },
-                "icon",
-            )
-            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        TabRow(contentPadding = PaddingValues(top = 8.dp)) {
+            supportObjectType.forEach { type ->
+                Tab(selected = currentType == type, onClick = { setType(type) }) {
+                    Text(objectTypeLabel(type), Modifier.padding(vertical = 12.dp))
+                }
+            }
         }
-        OutlinedTextField(input, setInput, modifier = Modifier.weight(1f))
-    }
-
-    DropdownMenu(expanded, closeTypeSelector) {
-        supportObjectType.forEach {
-            DropdownMenuItem({
-                Text(it.name)
-            }, {
-                closeTypeSelector()
-                setType(it)
-            })
-        }
+        OutlinedTextField(
+            input,
+            setInput,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text(stringResource(Res.string.search)) },
+            placeholder = { Text(stringResource(Res.string.search)) },
+        )
     }
 }
+
+@Composable
+private fun objectTypeLabel(type: ObjectType): String =
+    stringResource(
+        when (type) {
+            ObjectType.USER -> Res.string.search_users
+            ObjectType.COMMUNITY -> Res.string.scope_community
+            ObjectType.ROOM -> Res.string.scope_room
+            else -> Res.string.search_scope
+        },
+    )
 
 @Composable
 fun ObjectList(
@@ -699,43 +652,5 @@ fun ObjectList(
 
             ObjectType.PANEL_ACCOUNT -> Unit
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ComposeMenu(showSheet: Boolean, sheetState: SheetState, hideSheet: () -> Unit, onCheck: (ObjectType) -> Unit) {
-    BaseSheet(showSheet, sheetState, hideSheet) {
-        Column(
-            modifier = Modifier.height(300.dp).padding(top = 20.dp).padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            ComposeMenuItem(Icons.Default.Diversity3, "create community") {
-                onCheck(ObjectType.COMMUNITY)
-            }
-
-            ComposeMenuItem(Icons.Default.ChatBubble, "create room") {
-                onCheck(ObjectType.ROOM)
-            }
-
-            ComposeMenuItem(Icons.Default.Badge, "create title") {
-                onCheck(ObjectType.TITLE)
-            }
-        }
-    }
-}
-
-@Composable
-fun ComposeMenuItem(icon: ImageVector, title: String, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(12.dp)
-    Row(
-        modifier =
-        Modifier.fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primaryContainer, shape).clip(shape)
-            .clickable(onClick = onClick).appiumSemantics(text = title, onClick = onClick).padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Icon(icon, title)
-        Text(title)
     }
 }

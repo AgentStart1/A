@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -37,30 +36,32 @@ fun BlockEditor(
     initialMarkdown: String = "",
     onMarkdownChange: (String) -> Unit,
 ) {
-    // 如果 blocks 为空，解析初始 Markdown
-    LaunchedEffect(Unit) {
-        if (blocks.isEmpty()) {
-            blocks.addAll(parseMarkdownToBlocks(initialMarkdown))
+    // Parsing is a view operation. Do not publish generated Markdown until these initial blocks actually change.
+    val initialBlocks =
+        remember(blocks) {
+            if (blocks.isEmpty()) parseMarkdownToBlocks(initialMarkdown) else blocks.toList()
         }
+    var initialized by remember(blocks) { mutableStateOf(blocks.isNotEmpty()) }
+    var lastPublishedBlocks by remember(blocks) { mutableStateOf(initialBlocks) }
+    LaunchedEffect(blocks) {
+        if (blocks.isEmpty()) blocks.addAll(initialBlocks)
+        initialized = true
     }
 
-    // 当前聚焦的 Block ID
     var focusedBlockId by remember { mutableStateOf<String?>(null) }
-
-    // 当 Blocks 变化时，生成 Markdown 并回调
-    val markdown by remember {
-        derivedStateOf {
-            generateMarkdownFromBlocks(blocks.toList())
+    val currentBlocks = blocks.toList()
+    val ready = initialized
+    LaunchedEffect(currentBlocks, ready) {
+        if (ready && currentBlocks != lastPublishedBlocks) {
+            lastPublishedBlocks = currentBlocks
+            onMarkdownChange(generateMarkdownFromBlocks(currentBlocks))
         }
-    }
-
-    LaunchedEffect(markdown) {
-        onMarkdownChange(markdown)
     }
 
     LazyColumn(
         state = rememberLazyListState(),
         modifier = modifier.fillMaxSize().padding(horizontal = 20.dp),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
     ) {
         items(blocks, key = { it.id }) { block ->
             EditableBlock(

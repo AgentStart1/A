@@ -1,0 +1,10 @@
+<resources>
+    <string name="reference_type_community">Community</string>
+    <string name="reference_type_room">Room</string>
+    <string name="reference_type_topic">Topic</string>
+    <string name="reference_type_user">User</string>
+    <string name="reference_type_title">Title</string>
+    <string name="reference_type_file">File</string>
+    <string name="reference_type_panel">Panel account</string>
+    <string name="reference_content_unavailable">Content unavailable</string>
+</resources>

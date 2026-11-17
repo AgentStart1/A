@@ -16,7 +16,6 @@ import com.storyteller_f.alphaheart.client.compose_core.utils.ImageFormat.PNG
 import com.storyteller_f.alphaheart.client.compose_core.utils.ImageFormat.WEBP
 import com.storyteller_f.result.CustomResult
 import com.storyteller_f.result.captureFailure
-import kotlinx.io.files.Path
 import org.jetbrains.skia.EncodedImageFormat
 
 actual fun Image.coilImageToImageBitmap(): CustomResult<ImageBitmap, ImageError> =
@@ -24,15 +23,13 @@ actual fun Image.coilImageToImageBitmap(): CustomResult<ImageBitmap, ImageError>
         toBitmap().asComposeImageBitmap()
     }
 
-actual fun saveImageBitmap(
+actual fun encodeImageBitmap(
     imageBitmap: ImageBitmap,
-    path: String,
     format: ImageFormat,
     quality: Int,
-): CustomResult<Path, ImageError> =
+): CustomResult<ByteArray, ImageError> =
     captureFailure(ImageError::from) {
-        val data = imageBitmapToByteArray(imageBitmap, format, quality)
-        writeImageFile(path, data)
+        imageBitmapToByteArray(imageBitmap, format, quality).also { require(it.isNotEmpty()) }
     }
 
 fun imageBitmapToByteArray(imageBitmap: ImageBitmap, format: ImageFormat = PNG, quality: Int = 100): ByteArray {

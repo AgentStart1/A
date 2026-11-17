@@ -9,6 +9,7 @@ import com.storyteller_f.alphaheart.api.RoomActivityInfo
 import com.storyteller_f.alphaheart.api.RoomActivityListResponse
 import com.storyteller_f.alphaheart.api.TopicActivityListResponse
 import com.storyteller_f.alphaheart.app.error.ActivityPreviewError
+import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.result.CustomResult
 import com.storyteller_f.result.FailureDetails
 import com.storyteller_f.result.captureFailure
@@ -20,7 +21,6 @@ import com.storyteller_f.shared.model.TopicActivity
 import com.storyteller_f.shared.model.TopicContent
 import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
-import com.storyteller_f.shared.utils.formatTime
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
@@ -157,7 +157,7 @@ private fun TopicActivity.messagePreview() =
             else -> MessageSummary.Unavailable
         },
         authorInfo?.nickname?.takeIf { it.isNotBlank() },
-        createdTime.formatTime(),
+        createdTime.formatDisplayTime(),
     )
 
 private fun summarizeMessage(text: String, hasFiles: Boolean): MessageSummary {

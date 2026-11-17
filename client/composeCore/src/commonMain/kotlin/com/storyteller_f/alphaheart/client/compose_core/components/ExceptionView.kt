@@ -4,13 +4,14 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -18,7 +19,8 @@ import com.mohamedrejeb.richeditor.annotation.ExperimentalRichTextApi
 import com.mohamedrejeb.richeditor.model.rememberRichTextState
 import com.mohamedrejeb.richeditor.ui.material3.RichText
 import com.storyteller_f.alphaheart.client.compose_core.Res
-import com.storyteller_f.alphaheart.client.compose_core.refresh
+import com.storyteller_f.alphaheart.client.compose_core.content_load_failed
+import com.storyteller_f.alphaheart.client.compose_core.retry_action
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.core.ServerErrorException
 import com.storyteller_f.shared.utils.safeMessage
@@ -62,15 +64,23 @@ private fun ErrorText(text: String, modifier: Modifier) {
 
 @Composable
 fun ExceptionCell(throwable: Throwable, extraRefresh: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        ExceptionView(throwable)
-        Button({
-            extraRefresh()
-        }, modifier = Modifier) {
-            Text(stringResource(Res.string.refresh))
+    ExceptionCell(throwable, null, extraRefresh)
+}
+
+@Composable
+fun ExceptionCell(throwable: Throwable, failureText: String?, extraRefresh: () -> Unit) {
+    key(throwable) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            Text(failureText ?: stringResource(Res.string.content_load_failed))
+            ReadingOutlinedButton({
+                extraRefresh()
+            }, modifier = Modifier) {
+                Text(stringResource(Res.string.retry_action))
+            }
         }
     }
 }

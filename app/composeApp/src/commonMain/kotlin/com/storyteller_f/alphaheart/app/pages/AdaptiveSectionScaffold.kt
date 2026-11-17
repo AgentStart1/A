@@ -43,13 +43,19 @@ fun AdaptiveSectionScaffold(
         if (onSelectRoute != null) {
             onSelectRoute(path)
         } else {
-            scope.launch { pagerState.animateScrollToPage(routes.indexOfFirst { it.path == path }) }
+            val target = routes.indexOfFirst { it.path == path }
+            if (target >= 0) scope.launch { pagerState.scrollToPage(target) }
         }
     }
     BoxWithConstraints(modifier.fillMaxSize()) {
-        val compact = maxWidth < 600.dp
+        val compact = maxWidth <= 600.dp
         Scaffold(
             floatingActionButton = floatingActionButton,
+            topBar = {
+                searchStates.SaveableStateProvider(searchStateKey ?: routes[pagerState.currentPage].path) {
+                    search(pagerState.currentPage, compact)
+                }
+            },
             bottomBar = {
                 if (compact) {
                     CustomBottomNav(
@@ -73,9 +79,6 @@ fun AdaptiveSectionScaffold(
                     )
                 }
                 Column(Modifier.weight(1f).fillMaxSize()) {
-                    searchStates.SaveableStateProvider(searchStateKey ?: routes[pagerState.currentPage].path) {
-                        search(pagerState.currentPage, compact)
-                    }
                     HorizontalPager(
                         pagerState,
                         Modifier.weight(1f),

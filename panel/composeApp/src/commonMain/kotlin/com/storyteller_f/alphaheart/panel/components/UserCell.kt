@@ -22,10 +22,10 @@ import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.shared.model.UserInfo
 
 @Composable
-fun UserCell(userInfo: UserInfo?, onClick: (() -> Unit)? = null) {
+fun UserCell(userInfo: UserInfo?, selected: Boolean = false, onClick: (() -> Unit)? = null) {
     Row(
         modifier =
-        Modifier.fillMaxWidth().let { m ->
+        Modifier.fillMaxWidth().panelDirectorySelection(selected).let { m ->
             if (onClick != null) m.clickable { onClick() } else m
         }.appiumSemantics(text = userInfo?.address, onClick = onClick).padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,

@@ -4,8 +4,6 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyItemScope
@@ -14,7 +12,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridItemScope
 import androidx.compose.foundation.lazy.grid.LazyGridItemSpanScope
 import androidx.compose.foundation.lazy.grid.LazyGridScope
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
@@ -22,18 +19,16 @@ import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
@@ -45,6 +40,8 @@ import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import com.storyteller_f.alphaheart.client.compose_core.Res
 import com.storyteller_f.alphaheart.client.compose_core.common.PagingViewModel
+import com.storyteller_f.alphaheart.client.compose_core.load_more_failed_retry
+import com.storyteller_f.alphaheart.client.compose_core.loading_more
 import com.storyteller_f.alphaheart.client.compose_core.no_content_yet
 import com.storyteller_f.alphaheart.client.compose_core.refresh
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
@@ -55,6 +52,8 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTextButton as TextButton
 
 const val REFRESH_AFTER = 300L
 
@@ -97,6 +96,10 @@ fun <T : Any> StateView(
     showRefresh: Boolean = false,
     onRefresh: () -> Unit = {},
     refreshEvents: Flow<Any>? = null,
+    header: @Composable () -> Unit = {},
+    emptyText: String? = null,
+    loadingText: String? = null,
+    failureText: String? = null,
     content: @Composable (LazyPagingItems<T>) -> Unit,
 ) {
     val pagingItems = pagingViewModel.flow.collectAsLazyPagingItems()
@@ -121,30 +124,32 @@ fun <T : Any> StateView(
         }
     }
     BoxWithConstraints(modifier = modifier.pullRefresh(refreshState)) {
-        val desktopRefresh = showRefresh || maxWidth >= 600.dp
         Column(Modifier.fillMaxSize()) {
-            if (desktopRefresh) {
-                PagingRefreshAction(refreshLoadState !is LoadState.Loading, refresh)
-            }
-            Box(Modifier.weight(1f).fillMaxWidth()) {
+            header()
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
                 if (pagingItems.itemCount > 0) {
                     content(pagingItems)
-                    StateViewTopIndicator(pagingItems, pullRefreshing, refresh)
                 } else {
                     CenterBox {
                         when (val state = pagingItems.loadState.refresh.toLoadingState()) {
                             is LoadingState.Error ->
-                                ExceptionCell(state.e) {
+                                ExceptionCell(state.e, failureText) {
                                     refresh()
                                 }
 
                             is LoadingState.Done ->
-                                Text(text = stringResource(Res.string.no_content_yet))
+                                Text(text = emptyText ?: stringResource(Res.string.no_content_yet))
 
-                            else -> CircularProgressIndicator()
+                            else -> ReadingLoadingState(loadingText)
                         }
                     }
                 }
+            }
+        }
+        if (pagingItems.itemCount > 0) StateViewTopIndicator(pagingItems, pullRefreshing, refresh)
+        if (showRefresh) {
+            Box(Modifier.align(Alignment.TopEnd)) {
+                PagingRefreshAction(refreshLoadState !is LoadState.Loading, refresh)
             }
         }
         PullRefreshIndicator(pullRefreshing, refreshState, Modifier.align(Alignment.TopCenter))
@@ -165,7 +170,7 @@ fun <T> StateView(handler: LoadingHandler<T>, modifier: Modifier = Modifier, con
         delay(REFRESH_AFTER)
         if (pullRefreshing && state !is LoadingState.Loading) pullRefreshing = false
     }
-    Box(modifier = modifier.pullRefresh(refreshState)) {
+    Box(modifier = modifier.pullRefresh(refreshState), contentAlignment = Alignment.TopCenter) {
         val data by handler.data.collectAsState()
         HandlerStateViewInternal(data, handler, pullRefreshing, content)
         PullRefreshIndicator(pullRefreshing, refreshState, Modifier.align(Alignment.TopCenter))
@@ -174,7 +179,7 @@ fun <T> StateView(handler: LoadingHandler<T>, modifier: Modifier = Modifier, con
 
 @OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
-private fun <T> HandlerStateViewInternal(
+private fun <T> BoxScope.HandlerStateViewInternal(
     data: T?,
     handler: LoadingHandler<T>,
     pullRefreshing: Boolean,
@@ -194,7 +199,7 @@ private fun <T> HandlerStateViewInternal(
                 }
 
                 else -> {
-                    CircularProgressIndicator()
+                    ReadingLoadingState()
                 }
             }
         }
@@ -202,15 +207,17 @@ private fun <T> HandlerStateViewInternal(
 }
 
 @Composable
-private fun <T> StateViewTopIndicator(state: LoadingState?, handler: LoadingHandler<T>, pullRefreshing: Boolean) {
-    val newState = if (state is LoadingState.Loading || pullRefreshing) LoadingState.Done else state
-    StateViewTopIndicatorInternal(newState) {
-        handler.refresh()
-    }
+private fun <T> BoxScope.StateViewTopIndicator(
+    state: LoadingState?,
+    handler: LoadingHandler<T>,
+    pullRefreshing: Boolean,
+) {
+    val newState = if (pullRefreshing) LoadingState.Done else state
+    CachedRefreshOverlay(newState, handler::refresh)
 }
 
 @Composable
-private fun <T : Any> StateViewTopIndicator(
+private fun <T : Any> BoxScope.StateViewTopIndicator(
     pagingItems: LazyPagingItems<T>,
     pullRefreshing: Boolean,
     refresh: () -> Unit,
@@ -223,10 +230,14 @@ private fun <T : Any> StateViewTopIndicator(
         } else {
             refreshState
         }
-    StateViewTopIndicatorInternal(
-        newState,
-    ) {
-        refresh()
+    CachedRefreshOverlay(newState, refresh)
+}
+
+@Composable
+private fun BoxScope.CachedRefreshOverlay(state: LoadingState?, refresh: () -> Unit) {
+    // A refresh status must not determine the size of cached, wrap-content data.
+    Box(Modifier.matchParentSize().zIndex(1f), contentAlignment = Alignment.TopCenter) {
+        CachedRefreshIndicator(state, refresh)
     }
 }
 
@@ -242,25 +253,19 @@ class LoadingStatePreviewProvider : PreviewParameterProvider<LoadingState> {
 
 @Preview
 @Composable
-private fun StateViewTopIndicatorInternal(
+fun CachedRefreshIndicator(
     @PreviewParameter(LoadingStatePreviewProvider::class) loadingState: LoadingState?,
     refresh: () -> Unit = {},
 ) {
-    val visible = loadingState is LoadingState.Error || loadingState is LoadingState.Loading
-    val shape = RoundedCornerShape(8.dp)
-    AnimatedVisibility(visible) {
-        Box(
-            Modifier.padding(16.dp)
-                .clip(shape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-        ) {
-            if (loadingState is LoadingState.Error) {
-                ExceptionCell(loadingState.e) {
-                    refresh()
-                }
-            } else if (loadingState is LoadingState.Loading) {
-                RemoteMediatorLoadingView()
+    Box(Modifier.fillMaxWidth().zIndex(1f), contentAlignment = Alignment.TopCenter) {
+        when (loadingState) {
+            is LoadingState.Loading -> LinearProgressIndicator(Modifier.fillMaxWidth().height(2.dp))
+
+            is LoadingState.Error -> {
+                ReadingRefreshFailure(refresh)
             }
+
+            else -> Unit
         }
     }
 }
@@ -277,13 +282,14 @@ fun <T : Any> RefCellStateView(
         data.let { value ->
             if (value != null) {
                 content(value)
+                CachedRefreshOverlay(state, handler::refresh)
             } else {
                 val localState = state
                 if (localState is LoadingState.Error) {
                     Box(
                         modifier =
                         Modifier.fillMaxSize().clickable {
-                            // TODO show message
+                            handler.refresh()
                         }.padding(vertical = 8.dp),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -302,53 +308,54 @@ fun <T : Any> RefCellStateView(
     }
 }
 
-fun LazyListScope.topPrepend(combinedLoadStates: CombinedLoadStates) {
-    if (combinedLoadStates.prepend == LoadState.Loading) {
-        item("prepend") {
-            RemoteMediatorLoadingView()
-        }
+fun LazyListScope.topPrepend(combinedLoadStates: CombinedLoadStates, retry: (() -> Unit)? = null) {
+    val state = combinedLoadStates.prepend
+    if (state is LoadState.Loading || state is LoadState.Error) {
+        item("prepend") { PagingBoundaryState(state, retry) }
+    }
+}
+
+fun LazyGridScope.topPrepend(combinedLoadStates: CombinedLoadStates, retry: (() -> Unit)? = null) {
+    val state = combinedLoadStates.prepend
+    if (state is LoadState.Loading || state is LoadState.Error) {
+        item("prepend", span = { GridItemSpan(maxLineSpan) }) { PagingBoundaryState(state, retry) }
+    }
+}
+
+fun LazyListScope.bottomAppending(combinedLoadStates: CombinedLoadStates, retry: (() -> Unit)? = null) {
+    val state = combinedLoadStates.append
+    if (state is LoadState.Loading || state is LoadState.Error) {
+        item("append") { PagingBoundaryState(state, retry) }
+    }
+}
+
+fun LazyGridScope.bottomAppending(combinedLoadStates: CombinedLoadStates, retry: (() -> Unit)? = null) {
+    val state = combinedLoadStates.append
+    if (state is LoadState.Loading || state is LoadState.Error) {
+        item("append", span = { GridItemSpan(maxLineSpan) }) { PagingBoundaryState(state, retry) }
     }
 }
 
 @Composable
-private fun RemoteMediatorLoadingView() {
-    Column(
-        modifier = Modifier.padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-        Text(
-            text = "Waiting for items to load from the backend",
-            modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally),
-        )
-    }
-}
+private fun PagingBoundaryState(state: LoadState, retry: (() -> Unit)?) {
+    Box(Modifier.fillMaxWidth().height(64.dp), contentAlignment = Alignment.Center) {
+        when (state) {
+            is LoadState.Loading ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Text(stringResource(Res.string.loading_more))
+                }
 
-fun LazyGridScope.topPrepend(combinedLoadStates: CombinedLoadStates) {
-    if (combinedLoadStates.prepend == LoadState.Loading) {
-        item("prepend", span = {
-            GridItemSpan(maxLineSpan)
-        }) {
-            RemoteMediatorLoadingView()
-        }
-    }
-}
+            is LoadState.Error ->
+                TextButton({ retry?.invoke() }, enabled = retry != null) {
+                    Icon(Icons.Default.Refresh, null, Modifier.size(16.dp))
+                    Text(stringResource(Res.string.load_more_failed_retry), Modifier.padding(start = 6.dp))
+                }
 
-fun LazyListScope.bottomAppending(combinedLoadStates: CombinedLoadStates) {
-    if (combinedLoadStates.append == LoadState.Loading) {
-        item("append") {
-            RemoteMediatorLoadingView()
-        }
-    }
-}
-
-fun LazyGridScope.bottomAppending(combinedLoadStates: CombinedLoadStates) {
-    if (combinedLoadStates.append == LoadState.Loading) {
-        item("append", span = {
-            GridItemSpan(maxLineSpan)
-        }) {
-            RemoteMediatorLoadingView()
+            else -> Unit
         }
     }
 }

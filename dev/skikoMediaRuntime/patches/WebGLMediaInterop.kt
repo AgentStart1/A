@@ -49,16 +49,3 @@ class WebGLMediaContext internal constructor(
 @ExperimentalSkikoApi
 fun currentWebGLMediaContext(): WebGLMediaContext =
     checkNotNull(mediaContexts[currentHandle(GL)]) { "No active Skiko renderer context" }
-
-@JsFun("(gl, texture) => { const id = gl.getNewId(gl.textures); texture.name = id; gl.textures[id] = texture; return id; }")
-private external fun registerTexture(gl: GLInterface, texture: JsAny): Int
-
-/** Transfer the returned id to Image.adoptTextureFrom, or unregister it on failure. */
-@ExperimentalSkikoApi
-fun pushTexture(texture: JsAny): Int = registerTexture(GL, texture)
-
-@JsFun("(gl, id) => { if (gl.textures[id]) gl.textures[id].name = 0; gl.textures[id] = null; }")
-private external fun removeTexture(gl: GLInterface, id: Int)
-
-@ExperimentalSkikoApi
-fun unregisterTexture(id: Int) = removeTexture(GL, id)

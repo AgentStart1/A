@@ -6,13 +6,12 @@ package com.storyteller_f.alphaheart.panel.pages
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -20,6 +19,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
 import com.storyteller_f.alphaheart.client.compose_core.components.safeArea
@@ -28,7 +28,15 @@ import com.storyteller_f.alphaheart.panel.Res
 import com.storyteller_f.alphaheart.panel.all_titles
 import com.storyteller_f.alphaheart.panel.common.AllTitlesViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelAllTitlesViewModel
+import com.storyteller_f.alphaheart.panel.components.panelDirectoryRowColors
+import com.storyteller_f.alphaheart.panel.components.panelDirectorySelection
+import com.storyteller_f.alphaheart.panel.components.panelValueText
+import com.storyteller_f.alphaheart.panel.components.selectedPanelEntityId
+import com.storyteller_f.alphaheart.panel.menu
+import com.storyteller_f.shared.type.ObjectType
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,27 +49,35 @@ fun AllTitlesPage() {
 @Composable
 fun AllTitlesPageInternal(viewModel: AllTitlesViewModel) {
     val panelNav = LocalPanelNav.current
+    val selectedId = selectedPanelEntityId(panelNav.backStack.lastOrNull(), ObjectType.TITLE)
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(Res.string.all_titles)) },
-                navigationIcon = { IconButton({ panelNav.open() }) { Icon(Icons.Default.Menu, null) } },
+                navigationIcon = {
+                    IconButton({ panelNav.open() }) {
+                        Icon(Icons.Default.Menu, stringResource(Res.string.menu))
+                    }
+                },
             )
         },
     ) { paddingValues ->
         val direction = LocalLayoutDirection.current
         Box(Modifier.safeArea(paddingValues, direction)) {
             StateView(viewModel) { items ->
-                LazyColumn {
+                LazyColumn(contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp)) {
                     pagingItems(items, key = { it.id }) { index ->
                         val info = items[index]
                         if (info != null) {
-                            val type = info.type.name
-                            val scope = info.scopeType.name
+                            val type = panelValueText(info.type.name)
+                            val scope = panelValueText(info.scopeType.name)
                             val creator = info.creator.toString()
                             val receiver = info.receiver.toString()
                             ListItem(
-                                modifier = Modifier.clickable { panelNav.gotoTitleDetail(info.id) },
+                                colors = panelDirectoryRowColors(info.id == selectedId),
+                                modifier =
+                                Modifier.panelDirectorySelection(info.id == selectedId)
+                                    .clickable { panelNav.gotoTitleDetail(info.id) },
                                 headlineContent = { Text(info.name) },
                                 overlineContent = { Text(type) },
                                 supportingContent = {
@@ -70,10 +86,10 @@ fun AllTitlesPageInternal(viewModel: AllTitlesViewModel) {
                                     )
                                 },
                             )
-                            HorizontalDivider()
+                            if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                         } else {
                             ListItem(headlineContent = { Text("") })
-                            HorizontalDivider()
+                            if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                         }
                     }
                 }

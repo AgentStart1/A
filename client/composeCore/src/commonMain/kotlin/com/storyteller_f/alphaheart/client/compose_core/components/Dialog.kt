@@ -5,29 +5,38 @@
 package com.storyteller_f.alphaheart.client.compose_core.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
+import com.storyteller_f.alphaheart.client.compose_core.Res
+import com.storyteller_f.alphaheart.client.compose_core.close
+import com.storyteller_f.alphaheart.client.compose_core.copy
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingAlertDialog as AlertDialog
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTextButton as TextButton
 
 class DialogSaveState {
     val dialogShown = MutableStateFlow(false)
@@ -63,7 +72,7 @@ class CustomAlertDialogController(val state: MutableState<CustomAlertDialogState
 data class CustomAlertDialogState(
     val title: String?,
     val message: String,
-    val positiveButton: String = "Yes",
+    val positiveButton: String? = null,
     val enableCopy: Boolean = false,
     val negativeButton: String? = null,
 )
@@ -77,6 +86,10 @@ fun CustomAlertDialog(controller: CustomAlertDialogController, dismiss: () -> Un
 @Composable
 fun CustomAlertDialogInternal(dialogState: CustomAlertDialogState?, dismiss: () -> Unit, onClickOk: () -> Unit) {
     if (dialogState == null) return
+    // Capture host services before Dialog creates a separate owner with its own platform locals.
+    val clipboardManager = LocalClipboard.current
+    val toast = LocalToaster.current
+    val scope = rememberCoroutineScope()
     AlertDialog({
         dismiss()
     }, title = {
@@ -87,27 +100,25 @@ fun CustomAlertDialogInternal(dialogState: CustomAlertDialogState?, dismiss: () 
         Text(dialogState.message, Modifier.appiumSemantics(text = dialogState.message))
     }, confirmButton = {
         if (dialogState.enableCopy) {
-            val clipboardManager = LocalClipboard.current
-            val toast = LocalToaster.current
-            val scope = rememberCoroutineScope()
             Button({
-                dismiss()
                 scope.launch {
                     clipboardManager.copyText(dialogState.message, toast)
+                    dismiss()
                 }
             }) {
-                Text("Copy")
+                Text(stringResource(Res.string.copy))
             }
         } else {
             val confirm = {
                 dismiss()
                 onClickOk()
             }
+            val label = dialogState.positiveButton ?: CoreStrings.ok()
             Button(
                 confirm,
-                modifier = Modifier.appiumSemantics(text = dialogState.positiveButton, onClick = confirm),
+                modifier = Modifier.appiumSemantics(text = label, onClick = confirm),
             ) {
-                Text(dialogState.positiveButton)
+                Text(label)
             }
         }
     }, dismissButton = {
@@ -138,19 +149,22 @@ fun DialogContainer(
     block: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
-        modifier =
-        Modifier.appiumSemantics(
-            description = "dialog",
-            onClick = onDismissRequest,
-        ),
-        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.appiumSemantics(description = "dialog"),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
-        val scrollState = rememberScrollState()
-        Column(
-            modifier = Modifier.padding(20.dp).verticalScroll(scrollState),
-            verticalArrangement = verticalArrangement,
-        ) {
-            block()
+        Box {
+            val scrollState = rememberScrollState()
+            Column(
+                modifier = Modifier.padding(24.dp).verticalScroll(scrollState),
+                verticalArrangement = verticalArrangement,
+                content = block,
+            )
+            if (onDismissRequest != null) {
+                IconButton(onDismissRequest, Modifier.align(Alignment.TopEnd).padding(top = 16.dp, end = 8.dp)) {
+                    Icon(actionIcon(ActionGlyph.X), stringResource(Res.string.close))
+                }
+            }
         }
     }
 }

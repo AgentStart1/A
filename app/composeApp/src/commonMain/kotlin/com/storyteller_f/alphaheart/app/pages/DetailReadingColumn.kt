@@ -8,16 +8,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 
-/** Keeps a detail's reading content and composer aligned inside the same bounded region. */
+/** Keeps a detail's reading content and composer aligned while each child defines its own reading width. */
 @Composable
 fun DetailReadingColumn(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-        Column(Modifier.widthIn(max = 900.dp).fillMaxSize(), content = content)
+        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, content = content)
     }
 }

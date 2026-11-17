@@ -47,6 +47,19 @@ class RoomRoomInfoStorage(appDatabase: AppDatabase) : RoomInfoStorage {
         }
     }
 
+    override suspend fun append(collection: RoomCollection, items: List<RoomInfo>) {
+        if (items.isEmpty()) return
+        val details = items.map { CommonEntity(it.id, RoomCollection.Rooms.getName(), commonJson.encodeToString(it)) }
+        val aliases = details.zip(items) { entity, room -> entity.copy(id = room.aid) }
+        val entities =
+            if (collection is RoomCollection.Rooms) {
+                emptyList()
+            } else {
+                details.map { it.copy(collection = collection.getName()) }
+            }
+        impl.appDatabase.getCommonDao().appendCollection(collection.getName(), entities, details + aliases)
+    }
+
     override suspend fun replace(collection: RoomCollection, items: List<RoomInfo>) {
         val details = items.map { CommonEntity(it.id, RoomCollection.Rooms.getName(), commonJson.encodeToString(it)) }
         val aliases = details.zip(items) { entity, room -> entity.copy(id = room.aid) }

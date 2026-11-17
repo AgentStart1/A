@@ -31,6 +31,7 @@ import com.storyteller_f.shared.model.UserLogItem
 import com.storyteller_f.shared.model.UserOverview
 import com.storyteller_f.shared.model.UserSubscriptionItem
 import com.storyteller_f.shared.type.JoinStatusSearch
+import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
@@ -45,6 +46,12 @@ sealed interface UserCollection {
 interface CollectionListStorage<C, I : Any> {
     suspend fun saveLast(collection: C, item: I)
     suspend fun saveFirst(collection: C, item: I)
+
+    /** Appends a server page in its returned order; database implementations can commit it atomically. */
+    suspend fun append(collection: C, items: List<I>) {
+        items.forEach { saveLast(collection, it) }
+    }
+
     fun observeData(collection: C): PagingSource<Int, I>
     suspend fun clean(collection: C)
 
@@ -135,11 +142,14 @@ sealed interface UserReactionRecordCollection {
     data class UserReactionRecords(val uid: PrimaryKey) : UserReactionRecordCollection
 }
 
-data class UploadCollection(val objectId: PrimaryKey) {
-    fun getName() = "upload_$objectId"
+data class UploadCollection(val objectId: PrimaryKey, val objectType: ObjectType = ObjectType.USER) {
+    // Keep the original personal history namespace; new owner kinds must never read that history.
+    fun getName() = if (objectType == ObjectType.USER) "upload_$objectId" else "upload_${objectType.name}_$objectId"
 
     companion object {
-        fun fromInfo(uploadInfo: UploadInfo) = UploadCollection(uploadInfo.objectId)
+        fun fromInfo(uploadInfo: UploadInfo) = UploadCollection(uploadInfo.objectId, uploadInfo.objectType)
+        fun fromOwner(owner: com.storyteller_f.shared.obj.ObjectTuple) =
+            UploadCollection(owner.objectId, owner.objectType)
     }
 }
 

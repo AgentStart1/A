@@ -6,9 +6,10 @@ package com.storyteller_f.alphaheart.app.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
+import com.storyteller_f.alphaheart.client.compose_core.utils.readingTypography
 import com.storyteller_f.alphaheart.client.compose_core.utils.rememberPlatformTypography
 
-private val defaultTypography = Typography()
+private val defaultTypography = readingTypography
 
 @Composable
 internal fun rememberAppTypography(): Typography = rememberPlatformTypography(defaultTypography)

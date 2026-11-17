@@ -20,16 +20,29 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.common.SubscriptionsViewModel
 import com.storyteller_f.alphaheart.app.common.getSubscriptionViewModel
-import com.storyteller_f.alphaheart.app.pages.AdaptiveItemGrid
+import com.storyteller_f.alphaheart.app.my_subscriptions
+import com.storyteller_f.alphaheart.app.pages.ReadingPageToolbar
+import com.storyteller_f.alphaheart.app.pages.ReadingRecordList
+import com.storyteller_f.alphaheart.app.pages.community.CommunityRefCell
+import com.storyteller_f.alphaheart.app.pages.recordListFooter
+import com.storyteller_f.alphaheart.app.pages.room.RoomRefCell
 import com.storyteller_f.alphaheart.app.pages.topic.TopicCell
+import com.storyteller_f.alphaheart.app.record_subscriptions_empty
+import com.storyteller_f.alphaheart.app.record_subscriptions_end
+import com.storyteller_f.alphaheart.app.record_subscriptions_failure
+import com.storyteller_f.alphaheart.app.record_subscriptions_loading
+import com.storyteller_f.alphaheart.app.subscribed_at
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.shared.model.TopicContent
 import com.storyteller_f.shared.model.TopicDetail
 import com.storyteller_f.shared.model.UserSubscriptionItem
 import com.storyteller_f.shared.type.ObjectType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun UserSubscriptionPage() {
@@ -39,18 +52,27 @@ fun UserSubscriptionPage() {
 
 @Composable
 fun SubscriptionPageInternal(viewModel: SubscriptionsViewModel) {
-    Scaffold { paddingValues ->
+    Scaffold(topBar = { ReadingPageToolbar(stringResource(Res.string.my_subscriptions)) }) { paddingValues ->
         StateView(
             viewModel,
             modifier = Modifier.padding(top = paddingValues.calculateTopPadding()),
+            emptyText = stringResource(Res.string.record_subscriptions_empty),
+            loadingText = stringResource(Res.string.record_subscriptions_loading),
+            failureText = stringResource(Res.string.record_subscriptions_failure),
         ) { items ->
-            AdaptiveItemGrid {
+            val endLabel = stringResource(Res.string.record_subscriptions_end)
+            ReadingRecordList {
                 pagingItems(items, {
                     it.id
                 }) {
-                    UserSubscriptionCell(items[it])
-                    HorizontalDivider()
+                    Column {
+                        UserSubscriptionCell(items[it])
+                        if (it < items.itemCount - 1) {
+                            HorizontalDivider()
+                        }
+                    }
                 }
+                recordListFooter(items, endLabel)
             }
         }
     }
@@ -76,22 +98,35 @@ fun UserSubscriptionCell(
 ) {
     Column(Modifier.padding(vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
-            "Subscribed at ${userFavoriteInfo?.createdTime ?: "<none>"}",
+            userFavoriteInfo?.createdTime?.let {
+                stringResource(
+                    Res.string.subscribed_at,
+                    it.formatDisplayTime(),
+                )
+            }.orEmpty(),
             modifier = Modifier.padding(horizontal = 10.dp),
         )
-        if (userFavoriteInfo?.objectType == ObjectType.TOPIC) {
-            val topicInfo = userFavoriteInfo.topicInfo
-            if (topicInfo != null) {
-                Box(
-                    modifier =
-                    Modifier.padding(horizontal = 10.dp).background(
-                        MaterialTheme.colorScheme.surfaceContainerHigh,
-                        RoundedCornerShape(8.dp),
-                    ),
-                ) {
-                    TopicCell(topicInfo)
+        when (userFavoriteInfo?.objectType) {
+            ObjectType.USER -> UserRefCell(userFavoriteInfo.objectId)
+
+            ObjectType.COMMUNITY -> CommunityRefCell(userFavoriteInfo.objectId)
+
+            ObjectType.ROOM -> RoomRefCell(userFavoriteInfo.objectId)
+
+            ObjectType.TOPIC ->
+                userFavoriteInfo.topicInfo?.let { topicInfo ->
+                    Box(
+                        modifier =
+                        Modifier.padding(horizontal = 10.dp).background(
+                            MaterialTheme.colorScheme.surfaceContainerHigh,
+                            RoundedCornerShape(8.dp),
+                        ),
+                    ) {
+                        TopicCell(topicInfo)
+                    }
                 }
-            }
+
+            else -> Unit
         }
     }
 }

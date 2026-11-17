@@ -4,7 +4,6 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -12,7 +11,12 @@ import androidx.compose.ui.Modifier
 
 @Composable
 actual fun VideoViewEmbed(remoteMediaItem: RemoteMediaItem) {
-    WasmMediaPlayer(remoteMediaItem, Modifier.fillMaxWidth().aspectRatio(16f / 9f), video = true)
+    WasmMediaPlayer(
+        remoteMediaItem,
+        Modifier.fillMaxWidth(),
+        video = true,
+        layout = MediaSurfaceLayout.EmbeddedVideo(),
+    )
 }
 
 @Composable

@@ -5,9 +5,17 @@
 package com.storyteller_f.alphaheart.client.compose_core
 
 import androidx.compose.runtime.Composable
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 object CoreStrings {
+    /** Await real resource reads before a synchronous UI test starts querying translated controls. */
+    @OptIn(ExperimentalResourceApi::class)
+    suspend fun preload() {
+        Res.allStringResources.values.forEach { getString(it) }
+    }
+
     @Composable
     fun selectFile(): String = stringResource(Res.string.select_file)
 
@@ -28,6 +36,9 @@ object CoreStrings {
 
     @Composable
     fun privateKey(): String = stringResource(Res.string.private_key)
+
+    @Composable
+    fun p256SecurityWarning(): String = stringResource(Res.string.p256_security_warning)
 
     @Composable
     fun permission_denied(): String = stringResource(Res.string.permission_denied)

@@ -17,8 +17,6 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.PictureAsPdf
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.shared.model.FileInfo
 import kotlinx.coroutines.launch
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
 @Composable
 fun PdfViewBlock(fileInfo: FileInfo, onClick: (FileInfo) -> Unit) {

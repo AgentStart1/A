@@ -5,6 +5,7 @@
 package com.storyteller_f.alphaheart.panel.common
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
@@ -14,13 +15,18 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.alphaheart.client.core.PanelSessionManager
+import com.storyteller_f.alphaheart.panel.LocalPanelGlobalDialog
 import com.storyteller_f.alphaheart.panel.LocalPanelUiViewModel
 import com.storyteller_f.alphaheart.panel.Res
+import com.storyteller_f.alphaheart.panel.components.panelLogActionText
+import com.storyteller_f.alphaheart.panel.components.panelValueText
 import com.storyteller_f.alphaheart.panel.log_supporting
 import com.storyteller_f.shared.model.PanelLogInfo
 import com.storyteller_f.shared.model.TaskRecordType
@@ -106,10 +112,12 @@ fun createPanelUserViewModel(id: PrimaryKey) =
     }
 
 @Composable
-fun createPanelUserOverviewViewModel(id: PrimaryKey) =
-    panelViewModel(keys = listOf("user-overview", id)) { sessionManager, modelStorage ->
-        IdUserOverviewViewModel(sessionManager, modelStorage, id)
+fun createPanelUserOverviewViewModel(id: PrimaryKey): IdUserOverviewViewModel {
+    val events = LocalPanelGlobalDialog.current.context.events
+    return panelViewModel(keys = listOf("user-overview", id)) { sessionManager, _ ->
+        IdUserOverviewViewModel(sessionManager, id, events)
     }
+}
 
 @Composable
 fun createPanelJoinedCommunitiesViewModel(uid: PrimaryKey) =
@@ -119,8 +127,8 @@ fun createPanelJoinedCommunitiesViewModel(uid: PrimaryKey) =
 
 @Composable
 fun createPanelJoinedRoomsViewModel(uid: PrimaryKey) =
-    panelViewModel(keys = listOf("user-rooms", uid)) { sessionManager, modelStorage ->
-        UserJoinedRoomsViewModel(sessionManager, modelStorage, uid)
+    panelViewModel(keys = listOf("user-rooms", uid)) { sessionManager, _ ->
+        UserJoinedRoomsViewModel(sessionManager, uid)
     }
 
 @Composable
@@ -232,10 +240,15 @@ fun createPanelTopicTopicsViewModel(id: PrimaryKey) =
     }
 
 @Composable
-fun createPanelLogsViewModel(targetId: PrimaryKey, objectType: com.storyteller_f.shared.type.ObjectType) =
-    panelViewModel(keys = listOf("panel-logs", targetId, objectType)) { sessionManager, modelStorage ->
-        PanelLogsViewModel(sessionManager, modelStorage, targetId, objectType)
+fun createPanelLogsViewModel(
+    targetId: PrimaryKey,
+    objectType: com.storyteller_f.shared.type.ObjectType,
+): PanelLogsViewModel {
+    val events = LocalPanelGlobalDialog.current.context.events
+    return panelViewModel(keys = listOf("panel-logs", targetId, objectType)) { sessionManager, modelStorage ->
+        PanelLogsViewModel(sessionManager, modelStorage, targetId, objectType, events)
     }
+}
 
 @Composable
 internal fun CreatePanelTaskRecordsViewModel(type: TaskRecordType?, isSuccess: Boolean?, failureType: String?) =
@@ -270,9 +283,10 @@ fun PanelLogsTab(targetId: PrimaryKey, objectType: ObjectType) {
                 val info = items[index]
                 if (info != null) {
                     PanelLogItem(info)
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 } else {
                     ListItem(headlineContent = { Text("") })
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 }
             }
         }
@@ -282,18 +296,17 @@ fun PanelLogsTab(targetId: PrimaryKey, objectType: ObjectType) {
 @Composable
 private fun PanelLogItem(info: PanelLogInfo) {
     ListItem(
-        headlineContent = { Text(info.action) },
+        headlineContent = { Text(panelLogActionText(info.action)) },
         supportingContent = {
             Text(
                 stringResource(
                     Res.string.log_supporting,
-                    info.objectType,
+                    panelValueText(info.objectType.name),
                     info.targetId.toString(),
                     info.adminId.toString(),
-                    info.createdTime.toString(),
+                    info.createdTime.formatDisplayTime(),
                 ),
             )
         },
     )
-    HorizontalDivider()
 }

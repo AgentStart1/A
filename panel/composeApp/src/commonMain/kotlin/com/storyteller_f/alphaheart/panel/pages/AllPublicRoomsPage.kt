@@ -6,13 +6,12 @@ package com.storyteller_f.alphaheart.panel.pages
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -30,8 +29,15 @@ import com.storyteller_f.alphaheart.panel.Res
 import com.storyteller_f.alphaheart.panel.all_public_rooms
 import com.storyteller_f.alphaheart.panel.common.AllPublicRoomsViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelAllPublicRoomsViewModel
+import com.storyteller_f.alphaheart.panel.components.panelDirectoryRowColors
+import com.storyteller_f.alphaheart.panel.components.panelDirectorySelection
+import com.storyteller_f.alphaheart.panel.components.selectedPanelEntityId
+import com.storyteller_f.alphaheart.panel.menu
 import com.storyteller_f.alphaheart.panel.room_public
+import com.storyteller_f.shared.type.ObjectType
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
 @Composable
 fun AllPublicRoomsPage() {
@@ -43,13 +49,14 @@ fun AllPublicRoomsPage() {
 @Composable
 fun AllPublicRoomsPageInternal(viewModel: AllPublicRoomsViewModel) {
     val panelNav = LocalPanelNav.current
+    val selectedId = selectedPanelEntityId(panelNav.backStack.lastOrNull(), ObjectType.ROOM)
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(Res.string.all_public_rooms)) },
                 navigationIcon = {
                     IconButton({ panelNav.open() }) {
-                        Icon(Icons.Default.Menu, null)
+                        Icon(Icons.Default.Menu, stringResource(Res.string.menu))
                     }
                 },
             )
@@ -58,14 +65,17 @@ fun AllPublicRoomsPageInternal(viewModel: AllPublicRoomsViewModel) {
         val direction = LocalLayoutDirection.current
         Box(Modifier.safeArea(paddingValues, direction)) {
             StateView(viewModel) { items ->
-                LazyColumn {
+                LazyColumn(contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp)) {
                     pagingItems(items, key = { it.id }) { index ->
                         val info = items[index]
                         if (info != null) {
                             val members = info.memberCount.toString()
                             val aid = info.aid
                             ListItem(
-                                modifier = Modifier.clickable { panelNav.gotoRoomDetail(info.id) },
+                                colors = panelDirectoryRowColors(info.id == selectedId),
+                                modifier =
+                                Modifier.panelDirectorySelection(info.id == selectedId)
+                                    .clickable { panelNav.gotoRoomDetail(info.id) },
                                 leadingContent = {
                                     RoomIcon(info, 40.dp, false) {}
                                 },
@@ -80,10 +90,10 @@ fun AllPublicRoomsPageInternal(viewModel: AllPublicRoomsViewModel) {
                                     )
                                 },
                             )
-                            HorizontalDivider()
+                            if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                         } else {
                             ListItem(headlineContent = { Text("") })
-                            HorizontalDivider()
+                            if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                         }
                     }
                 }

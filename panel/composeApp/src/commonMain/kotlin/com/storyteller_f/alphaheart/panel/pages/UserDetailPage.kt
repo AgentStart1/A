@@ -9,21 +9,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.PrimaryScrollableTabRow
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -31,16 +22,21 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.client.compose_core.components.CommunityIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomBottomNav
+import com.storyteller_f.alphaheart.client.compose_core.components.DetailNavigationScaffold
 import com.storyteller_f.alphaheart.client.compose_core.components.FileIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.RoomIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
+import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
+import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.alphaheart.client.core.updateUserStatus
 import com.storyteller_f.alphaheart.panel.LocalPanelGlobalDialog
 import com.storyteller_f.alphaheart.panel.LocalPanelNav
@@ -57,10 +53,16 @@ import com.storyteller_f.alphaheart.panel.common.createPanelUserReactionsViewMod
 import com.storyteller_f.alphaheart.panel.common.createPanelUserSubscriptionsViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelUserUploadRecordsViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelUserViewModel
-import com.storyteller_f.alphaheart.panel.components.InfoTable
+import com.storyteller_f.alphaheart.panel.components.PanelInfoTable
 import com.storyteller_f.alphaheart.panel.components.TopicCell
+import com.storyteller_f.alphaheart.panel.components.panelOptionalValueText
+import com.storyteller_f.alphaheart.panel.components.panelUserLogText
+import com.storyteller_f.alphaheart.panel.components.panelValueText
 import com.storyteller_f.alphaheart.panel.file_progress
-import com.storyteller_f.alphaheart.panel.log_supporting
+import com.storyteller_f.alphaheart.panel.menu
+import com.storyteller_f.alphaheart.panel.review_user_log_supporting
+import com.storyteller_f.alphaheart.panel.set_normal
+import com.storyteller_f.alphaheart.panel.set_read_only
 import com.storyteller_f.alphaheart.panel.tab_basic_info
 import com.storyteller_f.alphaheart.panel.tab_created_files
 import com.storyteller_f.alphaheart.panel.tab_joined_communities
@@ -84,33 +86,28 @@ import com.storyteller_f.shared.type.UserStatus
 import kotlinx.coroutines.launch
 import nl.jacobras.humanreadable.HumanReadable
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingHorizontalPager as HorizontalPager
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab as Tab
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow as PrimaryScrollableTabRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserDetailPage(uid: PrimaryKey) {
     val pagerState = rememberPagerState { 3 }
-    val scope = rememberCoroutineScope()
-    Scaffold(topBar = { UserTopBar(uid) }, bottomBar = {
-        val navRoutes =
-            listOf(
-                NavRoute("/info", Icons.Default.People, stringResource(Res.string.user_info)),
-                NavRoute("/logs", Icons.AutoMirrored.Filled.Article, stringResource(Res.string.user_logs)),
-                NavRoute("/panel-logs", Icons.AutoMirrored.Filled.Article, stringResource(Res.string.tab_logs)),
-            )
-        CustomBottomNav(navRoutes[pagerState.currentPage].path, navRoutes) { path ->
-            scope.launch {
-                pagerState.animateScrollToPage(navRoutes.indexOfFirst { it.path == path })
-            }
-        }
-    }) { paddingValues ->
-        Column(Modifier.padding(paddingValues)) {
-            HorizontalPager(pagerState) { pageIndex ->
-                when (pageIndex) {
-                    0 -> UserInfoTabs(uid)
-                    1 -> UserLogsTab(uid)
-                    else -> UserPanelLogsTab(uid)
-                }
-            }
+    val navRoutes =
+        listOf(
+            NavRoute("/info", navigationIcon(NavigationGlyph.USERS), stringResource(Res.string.user_info)),
+            NavRoute("/logs", navigationIcon(NavigationGlyph.FILE_TEXT), stringResource(Res.string.user_logs)),
+            NavRoute("/panel-logs", navigationIcon(NavigationGlyph.SCROLL_TEXT), stringResource(Res.string.tab_logs)),
+        )
+    DetailNavigationScaffold(pagerState, navRoutes, topBar = { UserTopBar(uid) }) { pageIndex ->
+        when (pageIndex) {
+            0 -> UserInfoTabs(uid)
+            1 -> UserLogsTab(uid)
+            else -> UserPanelLogsTab(uid)
         }
     }
 }
@@ -135,7 +132,7 @@ private fun UserTopBar(uid: PrimaryKey) {
         },
         navigationIcon = {
             IconButton(onClick = { nav.open() }) {
-                Icon(Icons.Default.Menu, null)
+                Icon(Icons.Default.Menu, stringResource(Res.string.menu))
             }
         },
     )
@@ -160,7 +157,7 @@ private fun UserInfoTabs(uid: PrimaryKey) {
     val pagerState = rememberPagerState { tabs.size }
     val scope = rememberCoroutineScope()
     Column {
-        PrimaryScrollableTabRow(pagerState.currentPage) {
+        PrimaryScrollableTabRow {
             tabs.forEachIndexed { i, label ->
                 Tab(selected = pagerState.currentPage == i, onClick = {
                     scope.launch { pagerState.scrollToPage(i) }
@@ -203,10 +200,10 @@ private fun UserJoinedCommunitiesSection(uid: PrimaryKey) {
                         overlineContent = { Text(info.aid) },
                         modifier = Modifier.clickable { panelNav.gotoCommunityDetail(info.id) },
                     )
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 } else {
                     ListItem(headlineContent = { Text("") })
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 }
             }
         }
@@ -233,10 +230,10 @@ private fun UserJoinedRoomsSection(uid: PrimaryKey) {
                         },
                         modifier = Modifier.clickable { panelNav.gotoRoomDetail(info.id) },
                     )
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 } else {
                     ListItem(headlineContent = { Text("") })
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 }
             }
         }
@@ -254,13 +251,13 @@ private fun UserReceivedTitlesSection(uid: PrimaryKey) {
                     val panelNav = LocalPanelNav.current
                     ListItem(
                         headlineContent = { Text(info.name) },
-                        supportingContent = { Text(info.type.name) },
+                        supportingContent = { Text(panelValueText(info.type.name)) },
                         modifier = Modifier.clickable { panelNav.gotoTitleDetail(info.id) },
                     )
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 } else {
                     ListItem(headlineContent = { Text("") })
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 }
             }
         }
@@ -280,12 +277,17 @@ private fun UserCreatedFilesSection(uid: PrimaryKey) {
                         headlineContent = { Text(info.name) },
                         supportingContent = { Text(HumanReadable.fileSize(info.size)) },
                         leadingContent = { FileIcon(info) },
-                        modifier = Modifier.clickable { panelNav.gotoFileDetail(info.id) },
+                        modifier =
+                        Modifier.clickable { panelNav.gotoFileDetail(info.id) }.semantics(mergeDescendants = true) {
+                            contentDescription =
+                                listOf(info.name, info.contentType, HumanReadable.fileSize(info.size))
+                                    .joinToString(", ")
+                        },
                     )
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 } else {
                     ListItem(headlineContent = { Text("") })
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 }
             }
         }
@@ -306,17 +308,17 @@ private fun UserUploadRecordsSection(uid: PrimaryKey) {
                             Text(
                                 stringResource(
                                     Res.string.file_progress,
-                                    info.status,
+                                    panelValueText(info.status.name),
                                     HumanReadable.fileSize(info.progress),
                                     HumanReadable.fileSize(info.total),
                                 ),
                             )
                         },
                     )
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 } else {
                     ListItem(headlineContent = { Text("") })
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 }
             }
         }
@@ -333,14 +335,14 @@ private fun UserLogsTab(uid: PrimaryKey) {
                 if (info != null) {
                     val panelNav = LocalPanelNav.current
                     ListItem(
-                        headlineContent = { Text(info.type.name) },
+                        headlineContent = { Text(panelUserLogText(info.type)) },
                         supportingContent = {
                             Text(
                                 stringResource(
-                                    Res.string.log_supporting,
-                                    info.objectType,
+                                    Res.string.review_user_log_supporting,
+                                    panelValueText(info.objectType.name),
                                     info.objectId.toString(),
-                                    info.createdTime.toString(),
+                                    info.createdTime.formatDisplayTime(),
                                 ),
                             )
                         },
@@ -357,10 +359,10 @@ private fun UserLogsTab(uid: PrimaryKey) {
                             }
                         },
                     )
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 } else {
                     ListItem(headlineContent = { Text("") })
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 }
             }
         }
@@ -384,7 +386,7 @@ private fun UserBasicInfoSection(uid: PrimaryKey) {
                 add("nickname" to overview.userInfo.nickname)
                 add("status" to overview.userInfo.status.name)
                 add("address" to overview.userInfo.address)
-                add("aid" to overview.userInfo.aid.orEmpty())
+                add("aid" to panelOptionalValueText(overview.userInfo.aid))
                 add("favoriteCount" to overview.favoriteCount.toString())
                 add("subscriptionCount" to overview.subscriptionCount.toString())
                 add("acg" to overview.acg.toString())
@@ -403,9 +405,10 @@ private fun UserBasicInfoSection(uid: PrimaryKey) {
             }
             Unit
         }
-        val action = if (newStatus == UserStatus.READ_ONLY) "Set to ReadOnly" else "Set to Normal"
+        val action =
+            stringResource(if (newStatus == UserStatus.READ_ONLY) Res.string.set_read_only else Res.string.set_normal)
         Column {
-            InfoTable(items, Modifier.padding(16.dp).weight(1f))
+            PanelInfoTable(items, Modifier.padding(16.dp).weight(1f))
             Button(
                 onClick = updateStatus,
                 modifier =
@@ -414,13 +417,7 @@ private fun UserBasicInfoSection(uid: PrimaryKey) {
                     onClick = updateStatus,
                 ),
             ) {
-                Text(
-                    if (overview.userInfo.status == UserStatus.NORMAL) {
-                        "Set to ReadOnly"
-                    } else {
-                        "Set to Normal"
-                    },
-                )
+                Text(action)
             }
         }
     }
@@ -436,14 +433,18 @@ private fun UserReactionsSection(uid: PrimaryKey) {
                 if (info != null) {
                     val panelNav = LocalPanelNav.current
                     ListItem(
-                        headlineContent = { Text("${info.emoji} • Topic ${info.objectId}") },
-                        supportingContent = { Text("${info.objectType} • ${info.createdTime}") },
+                        headlineContent = {
+                            Text("${info.emoji} · ${panelValueText(info.objectType.name)} ${info.objectId}")
+                        },
+                        supportingContent = {
+                            Text("${panelValueText(info.objectType.name)} · ${info.createdTime.formatDisplayTime()}")
+                        },
                         modifier = Modifier.clickable { panelNav.gotoTopicDetail(info.objectId) },
                     )
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 } else {
                     ListItem(headlineContent = { Text("") })
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 }
             }
         }
@@ -460,10 +461,10 @@ private fun UserCommentsSection(uid: PrimaryKey) {
                 if (info != null) {
                     val panelNav = LocalPanelNav.current
                     TopicCell(info, panelNav)
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 } else {
                     ListItem(headlineContent = { Text("") })
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 }
             }
         }
@@ -480,8 +481,12 @@ private fun UserFavoritesSection(uid: PrimaryKey) {
                 if (info != null) {
                     val panelNav = LocalPanelNav.current
                     ListItem(
-                        headlineContent = { Text("Object ${info.objectId}") },
-                        supportingContent = { Text("Type: ${info.objectType} • Time: ${info.createdTime}") },
+                        headlineContent = { Text("${panelValueText(info.objectType.name)} ${info.objectId}") },
+                        supportingContent = {
+                            Text(
+                                info.createdTime.formatDisplayTime(),
+                            )
+                        },
                         modifier =
                         Modifier.clickable {
                             when (info.objectType) {
@@ -495,10 +500,10 @@ private fun UserFavoritesSection(uid: PrimaryKey) {
                             }
                         },
                     )
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 } else {
                     ListItem(headlineContent = { Text("") })
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 }
             }
         }
@@ -515,8 +520,12 @@ private fun UserSubscriptionsSection(uid: PrimaryKey) {
                 if (info != null) {
                     val panelNav = LocalPanelNav.current
                     ListItem(
-                        headlineContent = { Text("Object ${info.objectId}") },
-                        supportingContent = { Text("Type: ${info.objectType} • Time: ${info.createdTime}") },
+                        headlineContent = { Text("${panelValueText(info.objectType.name)} ${info.objectId}") },
+                        supportingContent = {
+                            Text(
+                                info.createdTime.formatDisplayTime(),
+                            )
+                        },
                         modifier =
                         Modifier.clickable {
                             when (info.objectType) {
@@ -530,10 +539,10 @@ private fun UserSubscriptionsSection(uid: PrimaryKey) {
                             }
                         },
                     )
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 } else {
                     ListItem(headlineContent = { Text("") })
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 }
             }
         }

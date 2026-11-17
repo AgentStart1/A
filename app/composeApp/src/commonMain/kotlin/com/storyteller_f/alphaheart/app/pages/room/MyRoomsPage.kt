@@ -15,11 +15,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,7 +48,6 @@ import com.storyteller_f.alphaheart.app.common.createCommunityViewModel
 import com.storyteller_f.alphaheart.app.common.createJoinedRoomsViewModel
 import com.storyteller_f.alphaheart.app.pages.ActivityMessageContent
 import com.storyteller_f.alphaheart.app.pages.RememberUnreadBadgeRefresh
-import com.storyteller_f.alphaheart.app.pages.community.CommunityIconWithDialog
 import com.storyteller_f.alphaheart.app.pages.roomActivityDescription
 import com.storyteller_f.alphaheart.app.room_community
 import com.storyteller_f.alphaheart.app.room_members
@@ -56,7 +56,6 @@ import com.storyteller_f.alphaheart.app.room_read_only
 import com.storyteller_f.alphaheart.app.room_status
 import com.storyteller_f.alphaheart.app.room_unread
 import com.storyteller_f.alphaheart.app.rooms
-import com.storyteller_f.alphaheart.client.compose_core.components.LayoutDefaults
 import com.storyteller_f.alphaheart.client.compose_core.components.RoomIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.bottomAppending
@@ -68,11 +67,21 @@ import com.storyteller_f.shared.model.CommunityInfo
 import com.storyteller_f.shared.model.RoomInfo
 import kotlinx.coroutines.flow.filter
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBadge as Badge
 
 @Composable
 fun MyRoomsPage() {
     val viewModel = createJoinedRoomsViewModel()
-    RoomList(viewModel)
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        Column(Modifier.widthIn(max = 740.dp).fillMaxSize()) {
+            Text(
+                stringResource(Res.string.rooms),
+                Modifier.padding(horizontal = 28.dp, vertical = 24.dp),
+                style = MaterialTheme.typography.headlineSmall,
+            )
+            Box(Modifier.weight(1f)) { RoomList(viewModel) }
+        }
+    }
 }
 
 @Composable
@@ -82,28 +91,33 @@ fun RoomList(roomsViewModel: RoomListViewModel, onClick: ((RoomInfo) -> Unit)? =
     val refreshEvents = remember(events) { events.filter { it.changesRoomActivity() } }
     val refreshBadge = RememberUnreadBadgeRefresh()
     val listState = rememberLazyListState()
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val wide = maxWidth >= 760.dp
-        Column(Modifier.fillMaxSize()) {
-            if (wide) RoomTableHeader()
-            StateView(
-                roomsViewModel,
-                Modifier.weight(1f).fillMaxWidth(),
-                onRefresh = refreshBadge,
-                refreshEvents = refreshEvents,
-            ) { items ->
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = LayoutDefaults.contentPadding,
-                    verticalArrangement = LayoutDefaults.pagingVerticalArrangement,
-                ) {
-                    topPrepend(items.loadState)
-                    pagingItems(items, { it.id }) { index ->
-                        val room = items[index]
-                        PrimaryRoomCell(room, onClick, wide, activities[room?.id])
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        BoxWithConstraints(Modifier.widthIn(max = 740.dp).fillMaxSize()) {
+            val wide = maxWidth >= 760.dp
+            Column(Modifier.fillMaxSize()) {
+                if (wide) RoomTableHeader()
+                StateView(
+                    roomsViewModel,
+                    Modifier.weight(1f).fillMaxWidth(),
+                    onRefresh = refreshBadge,
+                    refreshEvents = refreshEvents,
+                ) { items ->
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
+                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(0.dp),
+                    ) {
+                        topPrepend(items.loadState, items::retry)
+                        pagingItems(items, { it.id }) { index ->
+                            val room = items[index]
+                            Column {
+                                PrimaryRoomCell(room, onClick, wide, activities[room?.id])
+                                if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(horizontal = 20.dp))
+                            }
+                        }
+                        bottomAppending(items.loadState, items::retry)
                     }
-                    bottomAppending(items.loadState)
                 }
             }
         }
@@ -130,10 +144,10 @@ fun PrimaryRoomCell(
     RoomCellInternal(
         currentRoom,
         Modifier.fillMaxWidth()
-            .background(MaterialTheme.colorScheme.secondaryContainer, shape)
+            .background(MaterialTheme.colorScheme.background, shape)
             .clip(shape)
             .clickable { openRoom?.invoke() }
-            .padding(10.dp)
+            .padding(horizontal = 20.dp, vertical = 20.dp)
             .roomCellSemantics(
                 label = currentRoom?.name,
                 onClick = openRoom,
@@ -173,15 +187,11 @@ private fun RoomCellInternal(
         }
     val roomDialog = rememberCommonDialogController()
     val roomShown by roomDialog.shown
-    val communityDialog = rememberCommonDialogController()
-    val communityShown by communityDialog.shown
     BadgedBox(badge = {
         if (!wide && activity == null && roomInfo?.hasUnread == true) Badge(containerColor = Color.Red)
     }) {
         RoomRowContent(roomInfo, communityInfo, wide, modifier, {
             RoomIconWithDialog(roomInfo, showDialog = roomShown, updateDialog = roomDialog::update)
-        }, {
-            CommunityIconWithDialog(communityInfo, communityShown, onClickIcon = communityDialog::update)
         }, activity)
     }
 }
@@ -194,7 +204,6 @@ fun RoomRowContent(
     wide: Boolean,
     modifier: Modifier = Modifier,
     roomIcon: @Composable () -> Unit,
-    communityIcon: @Composable () -> Unit,
     activity: RoomActivityPreview? = null,
 ) {
     Row(
@@ -210,44 +219,62 @@ fun RoomRowContent(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (activity != null) ActivityMessageContent(activity.message)
+            if (!wide && communityInfo != null) {
+                Text(
+                    communityInfo.name,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (activity?.message != null) ActivityMessageContent(activity.message)
         }
-        if (wide) {
-            Text(
-                communityInfo?.name ?: if (roomInfo?.communityId == null) {
-                    stringResource(Res.string.room_no_community)
-                } else {
-                    "—"
-                },
-                Modifier.weight(0.8f).padding(end = 12.dp),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(roomInfo?.memberCount?.toString().orEmpty(), Modifier.width(88.dp))
-            Text(
-                if (roomInfo?.readOnly == true) stringResource(Res.string.room_read_only) else "—",
-                Modifier.width(100.dp),
-                maxLines = 2,
-                style = MaterialTheme.typography.labelMedium,
-            )
-            Box(Modifier.width(64.dp), contentAlignment = Alignment.Center) {
-                if (activity?.unreadCount?.let { it > 0 } ?: (roomInfo?.hasUnread == true)) {
-                    Badge {
-                        val label = activity?.unreadCount?.toString() ?: stringResource(Res.string.room_unread)
-                        Text(label, Modifier.appiumSemantics(text = label))
-                    }
+        RoomRowMetadata(roomInfo, communityInfo, wide, activity)
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.RoomRowMetadata(
+    roomInfo: RoomInfo?,
+    communityInfo: CommunityInfo?,
+    wide: Boolean,
+    activity: RoomActivityPreview?,
+) {
+    if (wide) {
+        Text(
+            communityInfo?.name ?: if (roomInfo?.communityId == null) {
+                stringResource(Res.string.room_no_community)
+            } else {
+                "—"
+            },
+            Modifier.weight(0.8f).padding(end = 12.dp),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(roomInfo?.memberCount?.toString().orEmpty(), Modifier.width(88.dp))
+        Text(
+            if (roomInfo?.readOnly == true) stringResource(Res.string.room_read_only) else "—",
+            Modifier.width(100.dp),
+            maxLines = 2,
+            style = MaterialTheme.typography.labelMedium,
+        )
+        Box(Modifier.width(64.dp), contentAlignment = Alignment.Center) {
+            if (activity?.unreadCount?.let { it > 0 } ?: (roomInfo?.hasUnread == true)) {
+                Badge {
+                    val label = activity?.unreadCount?.toString() ?: stringResource(Res.string.room_unread)
+                    Text(label, Modifier.appiumSemantics(text = label))
                 }
             }
-        } else {
-            if (roomInfo?.communityId != null) communityIcon()
-            if (activity != null && activity.unreadCount > 0) {
-                Badge {
-                    Text(
-                        activity.unreadCount.toString(),
-                        Modifier.appiumSemantics(text = activity.unreadCount.toString()),
-                    )
-                }
+        }
+    } else {
+        if (activity != null && activity.unreadCount > 0) {
+            Badge {
+                Text(
+                    activity.unreadCount.toString(),
+                    Modifier.appiumSemantics(text = activity.unreadCount.toString()),
+                )
             }
         }
     }

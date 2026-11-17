@@ -6,6 +6,7 @@ package com.storyteller_f.alphaheart.app.pages.file
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,12 +15,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.NotStarted
 import androidx.compose.material.icons.filled.Pause
@@ -27,8 +27,6 @@ import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
@@ -36,6 +34,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -43,37 +42,59 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
-import androidx.paging.compose.collectAsLazyPagingItems
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalClientFileProvider
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
+import com.storyteller_f.alphaheart.app.LocalUserInfo
+import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.common.DownloadViewModel
 import com.storyteller_f.alphaheart.app.common.createMediaListViewModel
 import com.storyteller_f.alphaheart.app.common.createUploadViewModel
 import com.storyteller_f.alphaheart.app.common.getDownloadListViewModel
 import com.storyteller_f.alphaheart.app.common.getDownloadViewModel
-import com.storyteller_f.alphaheart.app.common.getQuotaViewModel
+import com.storyteller_f.alphaheart.app.community_files
+import com.storyteller_f.alphaheart.app.file_explorer
+import com.storyteller_f.alphaheart.app.files_download_records
+import com.storyteller_f.alphaheart.app.files_upload_records
+import com.storyteller_f.alphaheart.app.files_uploaded
+import com.storyteller_f.alphaheart.app.my_files
 import com.storyteller_f.alphaheart.app.pages.search.CustomSearchBar
 import com.storyteller_f.alphaheart.app.pages.search.SearchScope
+import com.storyteller_f.alphaheart.app.pages.search.searchScopeName
 import com.storyteller_f.alphaheart.app.pages.topic.PlatformClientFile
+import com.storyteller_f.alphaheart.app.room_files
+import com.storyteller_f.alphaheart.app.transfer_completed
+import com.storyteller_f.alphaheart.app.transfer_field_error
+import com.storyteller_f.alphaheart.app.transfer_field_message
+import com.storyteller_f.alphaheart.app.transfer_field_path
+import com.storyteller_f.alphaheart.app.transfer_field_size
+import com.storyteller_f.alphaheart.app.transfer_field_status
+import com.storyteller_f.alphaheart.app.transfer_field_url
+import com.storyteller_f.alphaheart.app.transfer_pause
+import com.storyteller_f.alphaheart.app.transfer_resume
+import com.storyteller_f.alphaheart.app.transfer_start
+import com.storyteller_f.alphaheart.app.user_files
 import com.storyteller_f.alphaheart.client.compose_core.components.BaseSheet
 import com.storyteller_f.alphaheart.client.compose_core.components.FileIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.InfoTable
 import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.SheetContainer
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.bottomAppending
+import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
 import com.storyteller_f.alphaheart.client.compose_core.components.topPrepend
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.result.CustomResult
 import com.storyteller_f.shared.model.FileInfo
-import com.storyteller_f.shared.model.QuotaDetail
 import com.storyteller_f.shared.obj.ObjectTuple
 import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
@@ -85,12 +106,43 @@ import io.github.vinceglb.filekit.dialogs.openFilePicker
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.serialization.Serializable
 import nl.jacobras.humanreadable.HumanReadable
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.pow
 import kotlin.math.round
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FileExplorerPage(mediaTarget: ObjectTuple) {
+    val fileScope = SearchScope.UploadedFiles(mediaTarget.objectId, mediaTarget.objectType)
+    val owner = searchScopeName(fileScope)
+    val title =
+        stringResource(
+            when (mediaTarget.objectType) {
+                ObjectType.COMMUNITY -> Res.string.community_files
+
+                ObjectType.ROOM -> Res.string.room_files
+
+                ObjectType.USER ->
+                    if (mediaTarget.objectId ==
+                        LocalUserInfo.current?.id
+                    ) {
+                        Res.string.my_files
+                    } else {
+                        Res.string.user_files
+                    }
+
+                else -> Res.string.file_explorer
+            },
+        )
+    val heading =
+        title +
+            owner?.takeUnless {
+                mediaTarget.objectId == LocalUserInfo.current?.id &&
+                    mediaTarget.objectType == ObjectType.USER
+            }
+                ?.let { " · $it" }.orEmpty()
     val backStack = rememberFileExplorerBackStack()
     var showQuota by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
@@ -100,10 +152,11 @@ fun FileExplorerPage(mediaTarget: ObjectTuple) {
         search = {
             CustomSearchBar(
                 scope = SearchScope.UploadedFiles(mediaTarget.objectId, mediaTarget.objectType),
+                title = heading,
                 leadingIcon = {},
             )
         },
-        floatingActionButton = { FileExplorerFab(backStack.last()) { showQuota = true } },
+        floatingActionButton = { FileExplorerFab(mediaTarget, backStack.last()) { showQuota = true } },
     ) { route ->
         when (route) {
             FileExplorerRoute.Uploaded -> UploadedPage(mediaTarget)
@@ -118,11 +171,21 @@ fun FileExplorerPage(mediaTarget: ObjectTuple) {
 private fun fileNavRoutes(mediaTarget: ObjectTuple): List<NavRoute> {
     val list =
         mutableListOf(
-            NavRoute("/uploaded", Icons.Filled.Folder, "Uploaded"),
-            NavRoute("/upload-record", Icons.Filled.CloudUpload, "Upload"),
+            NavRoute("/uploaded", navigationIcon(NavigationGlyph.FOLDER), stringResource(Res.string.files_uploaded)),
+            NavRoute(
+                "/upload-record",
+                navigationIcon(NavigationGlyph.CLOUD_UPLOAD),
+                stringResource(Res.string.files_upload_records),
+            ),
         )
     if (mediaTarget.objectType == ObjectType.USER) {
-        list.add(NavRoute("/download-record", Icons.Filled.Download, "App downloads"))
+        list.add(
+            NavRoute(
+                "/download-record",
+                navigationIcon(NavigationGlyph.DOWNLOAD),
+                stringResource(Res.string.files_download_records),
+            ),
+        )
     }
     return list
 }
@@ -146,14 +209,14 @@ sealed interface FileExplorerRoute : NavKey {
 }
 
 @Composable
-private fun FileExplorerFab(current: NavKey, showQuota: () -> Unit) {
+private fun FileExplorerFab(mediaTarget: ObjectTuple, current: NavKey, showQuota: () -> Unit) {
     when (current) {
         FileExplorerRoute.Uploaded -> {
             FileQuotaActionButton(showQuota)
         }
 
         FileExplorerRoute.UploadRecord -> {
-            UploadFileActionButton()
+            UploadFileActionButton(mediaTarget)
         }
     }
 }
@@ -166,7 +229,7 @@ private fun FileQuotaActionButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun UploadFileActionButton() {
+private fun UploadFileActionButton(mediaTarget: ObjectTuple) {
     val fileProvider = LocalClientFileProvider.current
     val globalDialogController = LocalGlobalDialog.current
     val openPicker = {
@@ -174,7 +237,7 @@ private fun UploadFileActionButton() {
             useResult {
                 val f = FileKit.openFilePicker()
                 if (f != null) {
-                    fileProvider.getUploader()?.upload(persistentListOf(PlatformClientFile(f)))
+                    fileProvider.getUploader()?.upload(persistentListOf(PlatformClientFile(f)), mediaTarget)
                 }
                 CustomResult.success(Unit)
             }
@@ -201,7 +264,7 @@ private fun UploadedPage(mediaTarget: ObjectTuple) {
     Column(modifier = Modifier.fillMaxSize()) {
         StateView(vm, modifier = Modifier.fillMaxSize()) { pagingItems ->
             LazyColumn(contentPadding = PaddingValues(10.dp)) {
-                topPrepend(pagingItems.loadState)
+                topPrepend(pagingItems.loadState, pagingItems::retry)
                 pagingItems(pagingItems, key = { it.id }) {
                     val item: FileInfo? = pagingItems[it]
                     FileCell(item) { items ->
@@ -210,9 +273,11 @@ private fun UploadedPage(mediaTarget: ObjectTuple) {
                             appNavFactory.newAppNav().gotoMedia(first)
                         }
                     }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
+                    if (it < pagingItems.itemCount - 1) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+                    }
                 }
-                bottomAppending(pagingItems.loadState)
+                bottomAppending(pagingItems.loadState, pagingItems::retry)
             }
         }
     }
@@ -221,60 +286,12 @@ private fun UploadedPage(mediaTarget: ObjectTuple) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun QuotaSheet(showSheet: Boolean, sheetState: SheetState, hideSheet: () -> Unit, mediaTarget: ObjectTuple) {
-    BaseSheet(showSheet, sheetState, hideSheet) {
-        val quotaVm = getQuotaViewModel(mediaTarget)
-        StateView(quotaVm.handler) { q: QuotaDetail ->
-            Column(modifier = Modifier.padding(20.dp)) {
-                val totalText = HumanReadable.fileSize(q.total)
-                val usedText = HumanReadable.fileSize(q.used)
-                Text("总空间: $totalText")
-                Text("已用空间: $usedText")
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    LinearProgressIndicator(
-                        progress = { q.used.toFloat() / q.total.coerceAtLeast(1) },
-                        modifier = Modifier.weight(1f),
-                    )
-                    Spacer(modifier = Modifier.padding(8.dp))
-                    val percent = if (q.total > 0) q.used * 100f / q.total else 0f
-                    Text("${percent.toInt()}%")
-                }
-                val rec = q.uploadRecord
-                if (rec != null) {
-                    Spacer(modifier = Modifier.padding(8.dp))
-                    Text("上传记录: ${rec.name}")
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        LinearProgressIndicator(
-                            progress = {
-                                (rec.progress.toFloat() / rec.total.coerceAtLeast(1)).coerceIn(
-                                    0f,
-                                    1f,
-                                )
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                        Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-                        val uploadPercent = if (rec.total > 0) rec.progress * 100f / rec.total else 0f
-                        Text("${uploadPercent.toInt()}%")
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(HumanReadable.fileSize(rec.progress))
-                        Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-                        Text("/ ${HumanReadable.fileSize(rec.total)}")
-                        Spacer(modifier = Modifier.weight(1f))
-                        Text(rec.status.name)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("分片大小: ${HumanReadable.fileSize(rec.chunkSize)}")
-                    }
-                }
-            }
-        }
-    }
+    key(sheetState) { QuotaDialog(showSheet, hideSheet, mediaTarget) }
 }
 
 @Composable
 private fun UploadRecordPage(mediaTarget: ObjectTuple) {
-    val viewModel = createUploadViewModel(mediaTarget.objectId)
+    val viewModel = createUploadViewModel(mediaTarget)
     StateView(viewModel, modifier = Modifier.fillMaxSize()) { items ->
         LazyColumn(
             contentPadding = PaddingValues(20.dp),
@@ -294,15 +311,16 @@ private fun UploadRecordPage(mediaTarget: ObjectTuple) {
 @Composable
 private fun DownloadRecordPage() {
     val vm = getDownloadListViewModel()
-    val items = vm.flow.collectAsLazyPagingItems()
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(20.dp),
-    ) {
-        pagingItems(items, key = { it.fileInfo.id }) {
-            DownloadRecordItem(items[it])
-            if (it != items.itemCount - 1) {
-                HorizontalDivider()
+    StateView(vm, modifier = Modifier.fillMaxSize()) { items ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(20.dp),
+        ) {
+            pagingItems(items, key = { it.fileInfo.id }) {
+                DownloadRecordItem(items[it])
+                if (it != items.itemCount - 1) {
+                    HorizontalDivider()
+                }
             }
         }
     }
@@ -405,10 +423,21 @@ private fun DownloadRecordItem(@PreviewParameter(DownloadRecordItemPreviewProvid
     d ?: return
     var showSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
+    val statusLabel = downloadStatusLabel(d.status)
+    val rowDescription =
+        listOf(
+            d.fileInfo.name,
+            d.fileInfo.contentType,
+            HumanReadable.fileSize(d.fileInfo.size),
+            statusLabel,
+            d.getPercent(),
+        )
+            .joinToString(", ")
     Row(
         modifier =
         Modifier
             .fillMaxWidth()
+            .semantics(mergeDescendants = true) { contentDescription = rowDescription }
             .clickable {
                 showSheet = true
             }
@@ -417,22 +446,22 @@ private fun DownloadRecordItem(@PreviewParameter(DownloadRecordItemPreviewProvid
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         FileIcon(d.fileInfo)
-        Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(d.fileInfo.name)
             Row {
                 Text(HumanReadable.fileSize(d.fileInfo.size))
                 Spacer(modifier = Modifier.weight(1f))
-                Text(d.status.name)
+                Text(statusLabel, maxLines = 1)
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                LinearProgressIndicator(progress = {
-                    getDownloadProgress(d)
-                }, modifier = Modifier.weight(1f))
-                Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-                FixedProgress(d.getPercent())
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                LinearProgressIndicator(progress = { getDownloadProgress(d) }, modifier = Modifier.weight(1f))
+                TransferProgressLabel(d.getPercent())
             }
         }
-        DownloadStatusButton(d)
+        Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) { DownloadStatusButton(d) }
     }
     DownloadInfoPage(showSheet, sheetState, d.fileInfo.id) {
         showSheet = false
@@ -461,7 +490,7 @@ private fun DownloadStatusButton(d: DownloadInfo?) {
                     }
                 }
             }) {
-                Icon(Icons.Default.Pause, contentDescription = "pause")
+                Icon(Icons.Default.Pause, contentDescription = stringResource(Res.string.transfer_pause))
             }
         }
 
@@ -478,12 +507,12 @@ private fun DownloadStatusButton(d: DownloadInfo?) {
                     }
                 }
             }) {
-                Icon(Icons.Default.PlayCircle, contentDescription = "resume")
+                Icon(Icons.Default.PlayCircle, contentDescription = stringResource(Res.string.transfer_resume))
             }
         }
 
         DownloadStatus.PROCESSED -> {
-            Icon(Icons.Default.Done, contentDescription = "done")
+            Icon(Icons.Default.Done, contentDescription = stringResource(Res.string.transfer_completed))
         }
 
         DownloadStatus.NOT_DOWNLOADED -> {
@@ -495,7 +524,7 @@ private fun DownloadStatusButton(d: DownloadInfo?) {
                     }
                 }
             }) {
-                Icon(Icons.Default.NotStarted, "start")
+                Icon(Icons.Default.NotStarted, stringResource(Res.string.transfer_start))
             }
         }
     }
@@ -525,18 +554,17 @@ private fun DownloadInfoPageInternal(downloadViewModel: DownloadViewModel) {
     downloadInfo?.let { info ->
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            LinearProgressIndicator(progress = {
-                info.progress.toFloat() / info.total
-            })
-            FixedProgress(info.getPercent())
+            LinearProgressIndicator(progress = { getDownloadProgress(info) }, modifier = Modifier.weight(1f))
+            TransferProgressLabel(info.getPercent())
         }
     }
     DownloadInfoTable(downloadInfo)
 }
 
-fun DownloadInfo.getPercent(): String = "${(progress.toFloat() * 100 / total).roundToDecimalPlaces(2)} %"
+fun DownloadInfo.getPercent(): String = "${(getDownloadProgress(this) * 100).roundToDecimalPlaces(2)} %"
 
 @Composable
 private fun DownloadInfoTitle(data: DownloadInfo?) {
@@ -549,24 +577,26 @@ private fun DownloadInfoTitle(data: DownloadInfo?) {
     ) {
         LocalClientFileProvider.current
         Text(it?.name ?: "-", modifier = Modifier.weight(1f))
-        DownloadStatusButton(data)
+        Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) { DownloadStatusButton(data) }
     }
 }
 
 @Composable
 fun DownloadInfoTable(downloadInfo: DownloadInfo?) {
-    val fileInfo = downloadInfo?.fileInfo
     val tableData =
-        remember(downloadInfo, fileInfo) {
+        if (downloadInfo == null) {
+            emptyList()
+        } else {
             buildList {
-                downloadInfo?.path?.let { add("Path" to it) }
-                fileInfo?.size?.let { add("Size" to HumanReadable.fileSize(it)) }
-                downloadInfo?.status?.name?.let { add("Status" to it) }
-                if (downloadInfo?.status == DownloadStatus.DOWNLOAD_FAILED) {
-                    add("Error" to downloadInfo.message)
+                add(stringResource(Res.string.transfer_field_path) to downloadInfo.path)
+                val size = HumanReadable.fileSize(downloadInfo.fileInfo.size)
+                add(stringResource(Res.string.transfer_field_size) to size)
+                add(stringResource(Res.string.transfer_field_status) to downloadStatusLabel(downloadInfo.status))
+                if (downloadInfo.status == DownloadStatus.DOWNLOAD_FAILED) {
+                    add(stringResource(Res.string.transfer_field_error) to downloadInfo.message)
                 }
-                downloadInfo?.message?.let { add("Message" to it) }
-                fileInfo?.url?.let { add("Url" to it) }
+                add(stringResource(Res.string.transfer_field_message) to downloadInfo.message)
+                add(stringResource(Res.string.transfer_field_url) to downloadInfo.fileInfo.url)
             }
         }
     InfoTable(tableData)

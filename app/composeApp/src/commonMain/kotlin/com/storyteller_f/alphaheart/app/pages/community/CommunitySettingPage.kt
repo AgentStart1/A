@@ -31,12 +31,20 @@ import com.storyteller_f.alphaheart.app.common.OnCommunityUpdated
 import com.storyteller_f.alphaheart.app.common.createCommunityViewModel
 import com.storyteller_f.alphaheart.app.components.SettingOptionResettableView
 import com.storyteller_f.alphaheart.app.components.SettingOptionView
+import com.storyteller_f.alphaheart.app.field_alias
+import com.storyteller_f.alphaheart.app.field_icon
+import com.storyteller_f.alphaheart.app.field_name
+import com.storyteller_f.alphaheart.app.field_poster
+import com.storyteller_f.alphaheart.app.font_categories
 import com.storyteller_f.alphaheart.app.font_settings
 import com.storyteller_f.alphaheart.app.pages.AdaptiveFormLayout
+import com.storyteller_f.alphaheart.app.pages.ReadingPageToolbar
 import com.storyteller_f.alphaheart.app.pages.user.ObjectSettingDialog
 import com.storyteller_f.alphaheart.app.pages.user.SettingOption
+import com.storyteller_f.alphaheart.app.settings_title
 import com.storyteller_f.alphaheart.client.compose_core.components.CommunityPoster
 import com.storyteller_f.alphaheart.client.compose_core.components.LocalToaster
+import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
 import com.storyteller_f.alphaheart.client.compose_core.components.request
 import com.storyteller_f.alphaheart.client.core.updateCommunityInfo
@@ -60,9 +68,15 @@ fun CommunitySettingPage(communityId: PrimaryKey) {
     val closeDialog = {
         currentOption = null
     }
-    Scaffold { paddingValues ->
-        communityInfo?.let { it1 ->
-            CommunitySettingInternal(paddingValues, { opt ->
+    Scaffold(
+        topBar = {
+            ReadingPageToolbar(
+                stringResource(Res.string.settings_title) + communityInfo?.name?.let { " · $it" }.orEmpty(),
+            )
+        },
+    ) { paddingValues ->
+        StateView(communityViewModel.handler, Modifier.padding(paddingValues)) { it1 ->
+            CommunitySettingInternal(PaddingValues(0.dp), { opt ->
                 currentOption = opt
             }, it1)
         }
@@ -109,12 +123,12 @@ private fun CommunitySettingInternal(
     val appNavFactory = LocalAppNavFactory.current
     AdaptiveFormLayout(Modifier.padding(values)) {
         SettingOptionResettableView(
-            "Icon",
+            stringResource(Res.string.field_icon),
             communityInfo.icon != null,
             {
                 if (it) {
                     scope.launch {
-                        updateCommunityInfo(globalDialogController, communityInfo)
+                        globalDialogController.resetCommunityMedia(communityInfo.id, UpdateCommunityBody(icon = 0))
                     }
                 } else {
                     showDialog(SettingOption.Icon(communityInfo.icon?.fullName))
@@ -130,12 +144,12 @@ private fun CommunitySettingInternal(
         )
         val globalDialogController = LocalGlobalDialog.current
         SettingOptionResettableView(
-            "Poster",
+            stringResource(Res.string.field_poster),
             communityInfo.hasPoster,
             {
                 if (it) {
                     scope.launch {
-                        updateCommunityInfo(globalDialogController, communityInfo)
+                        globalDialogController.resetCommunityMedia(communityInfo.id, UpdateCommunityBody(poster = 0))
                     }
                 } else {
                     showDialog(SettingOption.Poster(communityInfo.poster?.fullName))
@@ -147,34 +161,30 @@ private fun CommunitySettingInternal(
                 }
             },
         )
-        SettingOptionView("Name", {
+        SettingOptionView(stringResource(Res.string.field_name), {
             showDialog(SettingOption.Name(communityInfo.name))
-        }, {
+        }, content = {
             Text(communityInfo.name, textDecoration = TextDecoration.Underline)
         })
         val aid = communityInfo.aid
-        SettingOptionView("Aid", {
+        SettingOptionView(stringResource(Res.string.field_alias), {
             toasterState.showMessage("forbid")
-        }, {
+        }, content = {
             Text(aid)
         })
         SettingOptionView(stringResource(Res.string.font_settings), {
             appNavFactory.newAppNav().gotoFontSettingsPage(communityInfo.id)
-        }) {
-            Text("Content / Code / Fallback", textDecoration = TextDecoration.Underline)
+        }, showDivider = false) {
+            Text(stringResource(Res.string.font_categories), textDecoration = TextDecoration.Underline)
         }
     }
 }
 
-private suspend fun updateCommunityInfo(
-    globalDialogController: AppGlobalDialogController,
-    communityInfo: CommunityInfo,
-) {
-    globalDialogController.useResult {
-        val body = UpdateCommunityBody(icon = 0)
-        request { updateCommunityInfo(communityInfo.id, body) }
+private suspend fun AppGlobalDialogController.resetCommunityMedia(communityId: PrimaryKey, body: UpdateCommunityBody) {
+    useResult {
+        request { updateCommunityInfo(communityId, body) }
     }.onSuccess { newInfo ->
-        globalDialogController.emitEvent(OnCommunityUpdated(newInfo))
+        emitEvent(OnCommunityUpdated(newInfo))
     }
 }
 

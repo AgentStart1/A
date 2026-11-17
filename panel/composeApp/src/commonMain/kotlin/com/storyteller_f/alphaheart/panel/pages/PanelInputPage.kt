@@ -4,10 +4,10 @@
 
 package com.storyteller_f.alphaheart.panel.pages
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -20,7 +20,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
-import com.storyteller_f.alphaheart.client.compose_core.components.CenterBox
 import com.storyteller_f.alphaheart.client.compose_core.components.PrivateKeyInput
 import com.storyteller_f.alphaheart.client.compose_core.components.request
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
@@ -29,10 +28,13 @@ import com.storyteller_f.alphaheart.client.core.RawUserPassInfo
 import com.storyteller_f.alphaheart.client.core.getPanelUserSignInPass
 import com.storyteller_f.alphaheart.panel.LocalPanelGlobalDialog
 import com.storyteller_f.alphaheart.panel.LocalPanelUiViewModel
+import com.storyteller_f.alphaheart.panel.sign_in
 import com.storyteller_f.result.captureFailure
 import com.storyteller_f.result.onSuccess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
 
 private val panelInputCoordination = Dispatchers.Default.limitedParallelism(1)
 
@@ -49,7 +51,9 @@ fun PanelInputPage(back: () -> Unit) {
     val viewModel: PanelInputViewModel = viewModel { PanelInputViewModel() }
     val dialogController = LocalPanelGlobalDialog.current
     val panelUiViewModel = LocalPanelUiViewModel.current
-    CenterBox {
+    com.storyteller_f.alphaheart.client.compose_core.components.ReadingAuthLayout(
+        stringResource(com.storyteller_f.alphaheart.panel.Res.string.sign_in),
+    ) {
         val scope = rememberCoroutineScope()
         val host = viewModel.host
         val privateKey by host.privateKey.collectAsState()
@@ -81,7 +85,10 @@ fun PanelInputPage(back: () -> Unit) {
                 }
             }
         }
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
             PrivateKeyInput(
                 privateKey = privateKey,
                 encryptionPrivateKey = encryptionPrivateKey,
@@ -94,14 +101,23 @@ fun PanelInputPage(back: () -> Unit) {
                     host.updatePrivateKey(it)
                 },
             )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Button(
-                    startSign,
-                    modifier = Modifier.appiumSemantics(text = CoreStrings.start(), onClick = startSign),
-                ) {
-                    Text(CoreStrings.start())
-                }
-            }
+            PanelSigninButton(startSign)
+        }
+    }
+}
+
+@Composable
+private fun PanelSigninButton(startSign: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Button(
+            startSign,
+            modifier = Modifier.appiumSemantics(text = CoreStrings.start(), onClick = startSign),
+        ) {
+            Text(CoreStrings.start())
         }
     }
 }

@@ -1,0 +1,36 @@
+Compose Web input source overlay
+
+Upstream: JetBrains Compose Multiplatform UI 1.13.0-beta02
+https://github.com/JetBrains/compose-multiplatform-core
+org.jetbrains.compose.ui:ui-wasm-js:1.13.0-beta02:sources@jar
+Source SHA-256: ceafdd1ec92d02ca112b38d6eee39b510fe3f2abb7a65cbd6a57db97f262ca19
+License: Apache License 2.0; original notices are retained in source files.
+
+Only Wasm is substituted. The published ABI module identity and JS output name
+are retained; Android and JVM continue using their published Compose artifacts.
+
+Input fix: defer DOM text and character-selection synchronization while a native
+edit batch is queued or being processed. After the whole batch commits, read the
+current platform text-input request model and synchronize once, including rejected
+or unchanged edits. Do not restore an intermediate model over native typing ahead
+of the deferred Compose event queue. The composition guard remains in force.
+
+Forward Delete uses the browser's authoritative beforeinput range exactly once
+through existing edit commands. Suppress its keyboard route only for the matching
+native edit; preserve the original modified-key fallback when word/line ranges
+are unavailable. A collapsed content-delete fallback counts Unicode code points,
+never individual surrogate units; word/line deletion never falls back to one code
+point. Element-child range offsets are converted to text offsets.
+
+No global DOM overrides, swallowed errors, clamped offsets, forced focus resets,
+or duplicate forward-delete command. The private communicator reads the existing
+platform request value after the batch; input ownership and lifecycle are retained.
+
+Source rebuild compatibility (also required with original Kotlin 2.4.20):
+- Synchronization.skiko: match the expect class's PublishedApi on its actual class.
+- PlatformClipboard.wasm: infer the JsAny-bounded Promise await result rather than
+  explicitly requesting Any?. Clipboard behavior and public API are unchanged.
+
+Remove the input overlay after an official release synchronizes the live DOM
+before selection and implements the native forward-delete protocol, then rerun
+the trusted keyboard and DOM event-queue regressions.

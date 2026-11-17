@@ -4,25 +4,20 @@
 
 package com.storyteller_f.alphaheart.app.utils
 
+import com.storyteller_f.alphaheart.client.compose_core.components.ResourceDownloadRequest
+import com.storyteller_f.alphaheart.client.compose_core.components.ResourceSaveOutcome
+import com.storyteller_f.alphaheart.client.compose_core.components.saveRemoteResource
 import com.storyteller_f.shared.model.FileInfo
-import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.FileKitDialogSettings
-import io.github.vinceglb.filekit.dialogs.openFileSaver
-import io.github.vinceglb.filekit.sink
 import io.ktor.client.HttpClient
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.withContext
 
 internal actual suspend fun saveUploadedFile(
     client: HttpClient,
     file: FileInfo,
     dialogSettings: FileKitDialogSettings,
-): FileSaveOutcome {
-    val destination =
-        withContext(Dispatchers.Main) {
-            FileKit.openFileSaver(suggestedName = file.name, defaultExtension = null, dialogSettings = dialogSettings)
-        } ?: return FileSaveOutcome.CANCELLED
-    withContext(Dispatchers.IO) { streamUploadedFile(client, file) { destination.sink() } }
-    return FileSaveOutcome.SAVED
-}
+): FileSaveOutcome =
+    when (saveRemoteResource(client, ResourceDownloadRequest(file.url, file.name, file.size), dialogSettings)) {
+        ResourceSaveOutcome.SAVED -> FileSaveOutcome.SAVED
+        ResourceSaveOutcome.HANDED_OFF -> FileSaveOutcome.STARTED
+        ResourceSaveOutcome.CANCELLED -> FileSaveOutcome.CANCELLED
+    }

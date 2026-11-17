@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="community_member_page_title">社区成员</string>
+    <string name="room_member_page_title">房间成员</string>
+</resources>

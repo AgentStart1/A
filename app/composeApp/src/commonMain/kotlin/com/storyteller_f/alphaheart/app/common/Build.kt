@@ -336,19 +336,19 @@ fun createUserTitlesViewModel(
 }
 
 @Composable
-fun createUploadViewModel(myUid: PrimaryKey) =
+fun createUploadViewModel(owner: ObjectTuple) =
     customViewModel(
-        listOf("upload"),
+        listOf("upload", owner.objectType.name, owner.objectId),
     ) { _, model ->
-        UploadViewModel(myUid, model)
+        UploadViewModel(owner, model)
     }
 
 @Composable
-fun getUploadViewModel(pathHash: String, myUid: PrimaryKey): UploadDetailViewModel =
+fun getUploadViewModel(pathHash: String, owner: ObjectTuple): UploadDetailViewModel =
     customViewModel(
-        listOf("upload-detail", pathHash),
+        listOf("upload-detail", owner.objectType.name, owner.objectId, pathHash),
     ) { _, modelStorage ->
-        UploadDetailViewModel(modelStorage, pathHash, myUid)
+        UploadDetailViewModel(modelStorage, pathHash, owner)
     }
 
 @Composable

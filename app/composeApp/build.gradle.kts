@@ -59,7 +59,12 @@ val buildType = project.findProperty("server.buildType") as String
 kotlin {
     android {
         namespace = "com.storyteller_f.alphaheart.app.android_library"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        compileSdk {
+            version =
+                release(libs.versions.android.compileSdk.get().toInt()) {
+                    minorApiLevel = libs.versions.android.compileSdkMinor.get().toInt()
+                }
+        }
         minSdk = libs.versions.android.minSdk.get().toInt()
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
@@ -471,8 +476,26 @@ tasks.register<Test>("adaptiveUiTest") {
     classpath = hostTest.classpath
     include(
         "device_based/HomeAdaptiveUiTest*",
+        "device_based/EditorPreviewUiTest*",
+        "device_based/ImageCropStageUiTest*",
+        "device_based/CommunityPolicyUiTest*",
+        "device_based/TitleExpiryUiTest*",
+        "device_based/SearchResultsLayoutUiTest*",
+        "device_based/ReactionOverflowUiTest*",
+        "device_based/ReactionAggregateListUiTest*",
+        "device_based/TopicActionsPresentationUiTest*",
+        "device_based/CreateMenuUiTest*",
+        "device_based/ReadingRecordListUiTest*",
+        "device_based/QuotaDialogContentUiTest*",
+        "device_based/TopicDataRegionUiTest*",
+        "device_based/ReferenceSearchUiTest*",
+        "device_based/SectionNavigationUiTest*",
+        "device_based/UserCardAccessibilityUiTest*",
         "device_based/RoomPagingUiTest*",
+        "device_based/TopicPagingUiTest*",
+        "device_based/RoomMessageLayoutUiTest*",
         "device_based/FileExplorerNavigationUiTest*",
+        "device_based/FilePickerPagerUiTest*",
         "device_based/SignInPromptUiTest*",
         "device_based/CommunityFontRenderingUiTest*",
         "device_based/CommunityTopicFontsUiTest*",

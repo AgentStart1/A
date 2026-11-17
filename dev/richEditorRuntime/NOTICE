@@ -1,0 +1,7 @@
+Compose Rich Editor 1.2.1
+Copyright Mohamed Rejeb and contributors. Licensed under Apache License 2.0.
+Upstream: https://github.com/MohamedRejeb/Compose-Rich-Editor
+Source identity: the exact published Maven Central 1.2.1 source archives, verified by SHA-256.
+Changes: preserve equals tokens and complete inline-math source while importing Markdown.
+All other upstream sources, including platform clipboard implementations, remain unchanged.
+The upstream release source archives contain no NOTICE file.

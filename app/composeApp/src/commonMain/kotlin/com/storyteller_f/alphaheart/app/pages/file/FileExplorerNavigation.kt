@@ -9,6 +9,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -22,6 +23,9 @@ import androidx.savedstate.serialization.SavedStateConfiguration
 import com.storyteller_f.alphaheart.app.pages.AdaptiveSectionScaffold
 import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
 import com.storyteller_f.alphaheart.client.compose_core.utils.BindBrowserNavigation
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
@@ -60,9 +64,11 @@ internal fun FileExplorerNavigation(
     floatingActionButton: @Composable () -> Unit = {},
     section: @Composable (FileExplorerRoute) -> Unit,
 ) {
-    val initialRoute = backStack.last()
+    require(routes.isNotEmpty()) { "File navigation requires an uploaded-files route" }
+    val availablePaths = routes.map { it.path }.toSet()
+    val initialRoute = availableFileRoute(backStack.lastOrNull(), availablePaths)
     val initialPage = routes.indexOfFirst { it.path == initialRoute.toString() }
-    val pagerState = rememberPagerState(initialPage = initialPage) { routes.size }
+    val pagerState = key(availablePaths) { rememberPagerState(initialPage = initialPage) { routes.size } }
     BindFileExplorerPager(backStack, pagerState, routes, initialRoute)
     AdaptiveSectionScaffold(
         pagerState = pagerState,
@@ -75,7 +81,12 @@ internal fun FileExplorerNavigation(
     ) { page -> section(fileExplorerRoute(routes[page].path)) }
 }
 
-private data class FilePagerPosition(val route: NavKey, val page: Int, val scrolling: Boolean)
+private data class FilePagerPosition(
+    val history: List<NavKey>,
+    val page: Int,
+    val scrolling: Boolean,
+    val offsetFraction: Float,
+)
 
 @Composable
 private fun BindFileExplorerPager(
@@ -84,13 +95,27 @@ private fun BindFileExplorerPager(
     routes: List<NavRoute>,
     initialRoute: NavKey,
 ) {
-    LaunchedEffect(backStack, pagerState) {
-        var route = initialRoute
+    val availablePaths = routes.map { it.path }.toSet()
+    LaunchedEffect(backStack, pagerState, availablePaths) {
+        var route: NavKey = normalizeFileExplorerHistory(backStack, availablePaths)
         var page = routes.indexOfFirst { it.path == route.toString() }
-        snapshotFlow { FilePagerPosition(backStack.last(), pagerState.settledPage, pagerState.isScrollInProgress) }
+        if (route != initialRoute) pagerState.restoreFilePage(page)
+        snapshotFlow {
+            FilePagerPosition(
+                backStack.toList(),
+                pagerState.settledPage,
+                pagerState.isScrollInProgress,
+                pagerState.currentPageOffsetFraction,
+            )
+        }
             .collect { position ->
-                if (position.route != route) {
-                    route = position.route
+                val selectedRoute = position.history.lastOrNull()
+                if (selectedRoute == null || position.history.any { it.toString() !in availablePaths }) {
+                    route = normalizeFileExplorerHistory(backStack, availablePaths)
+                    page = routes.indexOfFirst { it.path == route.toString() }
+                    pagerState.restoreFilePage(page)
+                } else if (selectedRoute != route) {
+                    route = selectedRoute
                     page = routes.indexOfFirst { it.path == route.toString() }
                     // Browser navigation wins over an obsolete drag, without publishing a new route.
                     pagerState.restoreFilePage(page)
@@ -98,6 +123,9 @@ private fun BindFileExplorerPager(
                     page = position.page
                     selectFileExplorerRoute(backStack, routes[page].path)
                     route = backStack.last()
+                } else if (!position.scrolling && position.offsetFraction != 0f) {
+                    // Accessibility ScrollBy can stop between pages without a fling to settle it.
+                    pagerState.settleIdleFilePage(page)
                 }
             }
     }
@@ -125,3 +153,39 @@ private fun fileExplorerRoute(path: String): FileExplorerRoute =
 private suspend fun PagerState.restoreFilePage(page: Int) {
     scroll(MutatePriority.PreventUserInput) { updateCurrentPage(page) }
 }
+
+private suspend fun PagerState.settleIdleFilePage(page: Int) {
+    try {
+        scroll { updateCurrentPage(page) }
+    } catch (e: Exception) {
+        if (e is CancellationException) currentCoroutineContext().ensureActive() else throw e
+    }
+}
+
+/** Removes unavailable owner-specific tabs from restored history, keeping the URL and pager in agreement. */
+internal fun normalizeFileExplorerHistory(
+    backStack: NavBackStack<NavKey>,
+    availablePaths: Set<String>,
+): FileExplorerRoute {
+    val current = backStack.lastOrNull()
+    val restored = availableFileRoute(current, availablePaths)
+    val validHistory = backStack.filter { it.toString() in availablePaths }
+    if (validHistory.size != backStack.size) {
+        backStack.clear()
+        backStack.addAll(validHistory)
+    }
+    if (backStack.isEmpty()) {
+        backStack.add(restored)
+    } else if (current?.toString() !in availablePaths) {
+        selectFileExplorerRoute(backStack, restored.toString())
+    }
+    return restored
+}
+
+private fun availableFileRoute(route: NavKey?, availablePaths: Set<String>): FileExplorerRoute =
+    if (route is FileExplorerRoute && route.toString() in availablePaths) {
+        route
+    } else {
+        require(FileExplorerRoute.Uploaded.toString() in availablePaths) { "Uploaded files must remain available" }
+        FileExplorerRoute.Uploaded
+    }

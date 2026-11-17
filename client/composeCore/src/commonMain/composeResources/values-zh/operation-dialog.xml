@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="operation_failed">操作失败</string>
+    <string name="operation_failed_help">操作未完成，请关闭提示后重试。</string>
+    <string name="error_details">错误详情</string>
+</resources>

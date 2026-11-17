@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="transfer_waiting">Waiting</string>
+    <string name="transfer_uploading">Uploading</string>
+    <string name="transfer_paused">Paused</string>
+    <string name="transfer_failed">Failed</string>
+    <string name="transfer_completed">Completed</string>
+    <string name="transfer_pending">Pending</string>
+    <string name="transfer_cancelled">Cancelled</string>
+    <string name="transfer_field_path">Path</string>
+    <string name="transfer_field_hash">Hash</string>
+    <string name="transfer_field_size">Size</string>
+    <string name="transfer_field_status">Status</string>
+    <string name="transfer_field_message">Message</string>
+    <string name="transfer_field_name">Name</string>
+    <string name="transfer_field_content_type">Content type</string>
+    <string name="transfer_pause">pause</string>
+    <string name="transfer_resume">resume</string>
+    <string name="transfer_retry">retry</string>
+    <string name="transfer_upload_action">%1$s upload %2$s</string>
+    <string name="transfer_upload_progress">upload progress %1$s: %2$d/%3$d</string>
+    <string name="transfer_not_downloaded">Not downloaded</string>
+    <string name="transfer_downloading">Downloading</string>
+    <string name="transfer_downloaded">Downloaded</string>
+    <string name="transfer_download_failed">Download failed</string>
+    <string name="transfer_process_failed">Processing failed</string>
+    <string name="transfer_field_error">Error</string>
+    <string name="transfer_field_url">URL</string>
+    <string name="transfer_start">start</string>
+</resources>

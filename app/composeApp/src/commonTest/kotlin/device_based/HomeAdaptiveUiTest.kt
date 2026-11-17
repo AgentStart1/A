@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.BasicTextField
@@ -25,12 +26,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -40,7 +43,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTextReplacement
-import androidx.compose.ui.test.v2.runComposeUiTest
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -79,7 +82,10 @@ import com.storyteller_f.alphaheart.app.refresh
 import com.storyteller_f.alphaheart.client.compose_core.common.PagingViewModel
 import com.storyteller_f.alphaheart.client.compose_core.common.RegularPagingSource
 import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingInteractions
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
+import com.storyteller_f.alphaheart.client.compose_core.components.bottomAppending
 import com.storyteller_f.alphaheart.client.core.LoadingHandler
 import com.storyteller_f.alphaheart.client.core.LoadingState
 import com.storyteller_f.result.CustomResult
@@ -94,14 +100,37 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import org.jetbrains.compose.resources.getString
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalTestApi::class)
 class HomeAdaptiveUiTest {
     @Test
+    fun pressingAReadingButtonDoesNotChangeItsPixels() =
+        runAppComposeUiTest {
+            var clicks = 0
+            setContent {
+                MaterialTheme {
+                    ReadingInteractions {
+                        ReadingButton({ clicks++ }, Modifier.testTag("quiet-button")) { Text("Action") }
+                    }
+                }
+            }
+            val node = onNodeWithTag("quiet-button")
+            val before = node.captureToImage().pixels()
+            node.performTouchInput { down(center) }
+            mainClock.advanceTimeBy(200)
+            assertContentEquals(before, node.captureToImage().pixels())
+            node.performTouchInput { up() }
+            runOnIdle { assertEquals(1, clicks) }
+        }
+
+    private fun ImageBitmap.pixels(): IntArray = IntArray(width * height).also { readPixels(it) }
+
+    @Test
     fun formRemainsScrollableInShortWindows() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val width = mutableStateOf(1200.dp)
             setContent {
                 MaterialTheme {
@@ -121,7 +150,7 @@ class HomeAdaptiveUiTest {
 
     @Test
     fun formFieldsReflowAndKeepInput() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val width = mutableStateOf(540.dp)
             setContent {
                 MaterialTheme {
@@ -150,7 +179,7 @@ class HomeAdaptiveUiTest {
 
     @Test
     fun editorKeepsDraftWhenPreviewAppears() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val width = mutableStateOf(700.dp)
             setContent {
                 MaterialTheme {
@@ -174,7 +203,7 @@ class HomeAdaptiveUiTest {
 
     @Test
     fun resizingPreservesSectionSearchAndScroll() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val width = mutableStateOf(540.dp)
             val routes =
                 listOf(
@@ -209,7 +238,7 @@ class HomeAdaptiveUiTest {
 
     @Test
     fun contextAppearsWithoutResettingReadingContent() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val width = mutableStateOf(900.dp)
             setContent {
                 MaterialTheme {
@@ -242,7 +271,7 @@ class HomeAdaptiveUiTest {
 
     @Test
     fun searchResultsUseMoreWidthAndFitShortViewport() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             setContent {
                 MaterialTheme {
                     Box(Modifier.requiredSize(1000.dp, 320.dp).testTag("viewport")) {
@@ -270,7 +299,7 @@ class HomeAdaptiveUiTest {
 
     @Test
     fun communityGridRetainsVisibleItemAcrossColumnChanges() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val width = mutableStateOf(540.dp)
             setContent {
                 MaterialTheme {
@@ -290,20 +319,20 @@ class HomeAdaptiveUiTest {
 
     @Test
     fun detailReadingAndComposerStayAlignedAcrossResizes() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val width = mutableStateOf(1280.dp)
             setContent {
                 MaterialTheme {
                     Box(Modifier.requiredSize(width.value, 320.dp)) {
                         DetailReadingColumn {
-                            LazyColumn(Modifier.weight(1f).fillMaxSize().testTag("detail-list")) {
+                            LazyColumn(Modifier.weight(1f).widthIn(max = 740.dp).fillMaxSize().testTag("detail-list")) {
                                 items(100) { Text("Message $it", Modifier.requiredSize(200.dp, 48.dp)) }
                             }
                             var draft by rememberSaveable { mutableStateOf("") }
                             BasicTextField(
                                 draft,
                                 { draft = it },
-                                Modifier.fillMaxSize().weight(0.2f).testTag("composer"),
+                                Modifier.widthIn(max = 740.dp).fillMaxSize().weight(0.2f).testTag("composer"),
                             )
                         }
                     }
@@ -311,7 +340,7 @@ class HomeAdaptiveUiTest {
             }
             val reading = onNodeWithTag("detail-list").getUnclippedBoundsInRoot()
             val composer = onNodeWithTag("composer").getUnclippedBoundsInRoot()
-            assertTrue(reading.right - reading.left <= 900.dp)
+            assertTrue(reading.right - reading.left <= 740.dp)
             assertTrue(reading.left == composer.left && reading.right == composer.right)
             onNodeWithTag("composer").performTextReplacement("Saved draft")
             onNodeWithTag("detail-list").performScrollToIndex(20)
@@ -325,7 +354,7 @@ class HomeAdaptiveUiTest {
 
     @Test
     fun contextRetryDoesNotHideOtherSource() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val room = RoomInfo.EMPTY.copy(name = "Room preview")
             val preview =
                 RoomActivityPreview(
@@ -354,7 +383,7 @@ class HomeAdaptiveUiTest {
 
     @Test
     fun roomPreviewClickInvokesNavigation() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val room = RoomInfo.EMPTY.copy(id = 42, name = "Room preview")
             val preview =
                 RoomActivityPreview(
@@ -372,7 +401,7 @@ class HomeAdaptiveUiTest {
 
     @Test
     fun roomSummaryAndExactCountSurviveResizing() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val width = mutableStateOf(1000.dp)
             val room = RoomInfo.EMPTY.copy(name = "Room preview")
             val preview =
@@ -390,7 +419,6 @@ class HomeAdaptiveUiTest {
                             width.value >= 760.dp,
                             Modifier.fillMaxWidth().clickable {}.testTag("room-row").padding(16.dp),
                             { Box(Modifier.requiredSize(60.dp, 60.dp)) },
-                            {},
                             preview,
                         )
                     }
@@ -415,7 +443,7 @@ class HomeAdaptiveUiTest {
 
     @Test
     fun listRefreshAlsoRefreshesSupplementalActivity() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             var refreshes = 0
             val model =
                 object : PagingViewModel<RoomInfo>() {
@@ -439,6 +467,7 @@ class HomeAdaptiveUiTest {
                     }
                 }
             }
+            awaitExternalCondition { onAllNodesWithText("Loaded room").fetchSemanticsNodes().isNotEmpty() }
             onNodeWithText("Loaded room").assertExists()
             onNodeWithText(getString(Res.string.refresh)).performClick()
             runOnIdle { assertEquals(1, refreshes) }
@@ -446,7 +475,7 @@ class HomeAdaptiveUiTest {
 
     @Test
     fun roomAnchorFollowsNewMessagesAndPreservesHistory() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val messages = mutableStateOf(listOf(4, 3, 2, 1))
             val list = androidx.compose.foundation.lazy.LazyListState()
             setContent {
@@ -474,7 +503,7 @@ class HomeAdaptiveUiTest {
 
     @Test
     fun roomRefreshEventsReloadEmptyList() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val events = MutableSharedFlow<Any>(extraBufferCapacity = 1)
             val loads = MutableStateFlow(0)
             val model =
@@ -494,17 +523,17 @@ class HomeAdaptiveUiTest {
                     }
                 }
             }
-            waitUntil { events.subscriptionCount.value == 1 && loads.value > 0 }
+            awaitExternalCondition { events.subscriptionCount.value == 1 && loads.value > 0 }
             awaitIdle()
             val beforeRefresh = loads.value
             assertTrue(events.tryEmit(OnRoomRead(1)))
-            waitUntil { loads.value > beforeRefresh }
+            awaitExternalCondition { loads.value > beforeRefresh }
             onNodeWithText("Room content").assertDoesNotExist()
         }
 
     @Test
     fun previewBindingRefreshesOnlyWhilePageIsActive() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val owner =
                 object : LifecycleOwner {
                     override val lifecycle = LifecycleRegistry.createUnsafe(this)
@@ -535,15 +564,15 @@ class HomeAdaptiveUiTest {
                 }
                 runOnIdle { owner.lifecycle.currentState = Lifecycle.State.RESUMED }
                 awaitIdle()
-                waitUntil { host.unread.value is PreviewState.Ready }
+                awaitExternalCondition { host.unread.value is PreviewState.Ready }
                 onNodeWithText("Live room").assertExists()
                 runOnIdle { owner.lifecycle.currentState = Lifecycle.State.CREATED }
                 awaitIdle()
-                waitUntil { host.unread.value is PreviewState.Idle }
+                awaitExternalCondition { host.unread.value is PreviewState.Idle }
                 assertTrue(events.tryEmit(OnRoomRead(1)))
                 runOnIdle { owner.lifecycle.currentState = Lifecycle.State.RESUMED }
                 awaitIdle()
-                waitUntil { host.unread.value is PreviewState.Ready }
+                awaitExternalCondition { host.unread.value is PreviewState.Ready }
                 onNodeWithText("Live room").assertExists()
             } finally {
                 host.close()
@@ -553,7 +582,7 @@ class HomeAdaptiveUiTest {
 
     @Test
     fun unreadBadgeRefreshesAfterReadAndResume() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val owner =
                 object : LifecycleOwner {
                     override val lifecycle = LifecycleRegistry.createUnsafe(this)
@@ -577,29 +606,29 @@ class HomeAdaptiveUiTest {
             awaitIdle()
             runOnIdle { assertEquals(0, refreshes.value) }
             runOnIdle { handler.state.value = LoadingState.Done }
-            waitUntil { events.subscriptionCount.value == 1 && refreshes.value == 1 }
+            awaitExternalCondition { events.subscriptionCount.value == 1 && refreshes.value == 1 }
             runOnIdle { handler.state.value = LoadingState.Loading }
             assertTrue(events.tryEmit(OnRoomRead(1)))
             awaitIdle()
             runOnIdle { assertEquals(1, refreshes.value) }
             runOnIdle { handler.state.value = LoadingState.Done }
-            waitUntil { refreshes.value == 2 }
+            awaitExternalCondition { refreshes.value == 2 }
             assertTrue(events.tryEmit(OnRoomActivityRefreshRequested))
-            waitUntil { refreshes.value == 3 }
+            awaitExternalCondition { refreshes.value == 3 }
             runOnIdle { owner.lifecycle.currentState = Lifecycle.State.CREATED }
             awaitIdle()
-            waitUntil { events.subscriptionCount.value == 0 }
+            awaitExternalCondition { events.subscriptionCount.value == 0 }
             assertTrue(events.tryEmit(OnRoomRead(1)))
             runOnIdle { assertEquals(3, refreshes.value) }
             runOnIdle { owner.lifecycle.currentState = Lifecycle.State.RESUMED }
             awaitIdle()
-            waitUntil { refreshes.value == 4 }
+            awaitExternalCondition { refreshes.value == 4 }
             runOnIdle { owner.lifecycle.currentState = Lifecycle.State.DESTROYED }
         }
 
     @Test
     fun unreadNavigationDescriptionSurvivesResize() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val width = mutableStateOf(900.dp)
             val unread = mutableStateOf(true)
             val total = mutableStateOf(123L)
@@ -621,16 +650,101 @@ class HomeAdaptiveUiTest {
                 onNodeWithTag("Rooms").fetchSemanticsNode()
                     .config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].first()
             assertTrue(unreadDescription.startsWith("Rooms, "))
+            assertTrue(unreadDescription.endsWith(", 123"))
             onNodeWithContentDescription(unreadDescription).assertExists()
             onNodeWithText("123", useUnmergedTree = true).assertExists()
             runOnIdle {
                 total.value = 122L
                 width.value = 390.dp
             }
-            onNodeWithContentDescription(unreadDescription).assertExists()
+            val updatedDescription = unreadDescription.removeSuffix(", 123") + ", 122"
+            onNodeWithContentDescription(unreadDescription).assertDoesNotExist()
+            onNodeWithContentDescription(updatedDescription).assertExists()
             onNodeWithText("122", useUnmergedTree = true).assertExists()
             runOnIdle { unread.value = false }
-            onNodeWithContentDescription(unreadDescription).assertDoesNotExist()
+            onNodeWithContentDescription(updatedDescription).assertDoesNotExist()
             onNodeWithContentDescription("Rooms").assertExists()
+        }
+
+    @Test
+    fun cachedRefreshStatesKeepContentAndClickTargetsStill() =
+        runAppComposeUiTest {
+            val state = mutableStateOf<LoadingState>(LoadingState.Done)
+            val width = mutableStateOf(390.dp)
+            setContent {
+                MaterialTheme {
+                    Box(Modifier.requiredSize(width.value, 600.dp)) {
+                        Text("Existing content", Modifier.padding(top = 24.dp).testTag("existing-content"))
+                        com.storyteller_f.alphaheart.client.compose_core.components.CachedRefreshIndicator(state.value)
+                    }
+                }
+            }
+            val initial = onNodeWithTag("existing-content").getUnclippedBoundsInRoot()
+            listOf(LoadingState.Loading, LoadingState.Error(IllegalStateException("offline")), LoadingState.Done)
+                .forEach { next ->
+                    runOnIdle { state.value = next }
+                    assertEquals(initial, onNodeWithTag("existing-content").getUnclippedBoundsInRoot())
+                }
+            runOnIdle { width.value = 1000.dp }
+            val wide = onNodeWithTag("existing-content").getUnclippedBoundsInRoot()
+            runOnIdle { state.value = LoadingState.Loading }
+            assertEquals(wide, onNodeWithTag("existing-content").getUnclippedBoundsInRoot())
+            runOnIdle { state.value = LoadingState.Error(IllegalStateException("offline")) }
+            assertEquals(wide, onNodeWithTag("existing-content").getUnclippedBoundsInRoot())
+        }
+
+    @Test
+    fun searchPromptAndResultsAreExclusive() =
+        runAppComposeUiTest {
+            val submitted = mutableStateOf("")
+            setContent {
+                MaterialTheme {
+                    com.storyteller_f.alphaheart.app.pages.search.SearchPageLayout(
+                        query = "Rust",
+                        searchQuery = submitted.value,
+                        updateQuery = {},
+                        submit = { submitted.value = "Rust" },
+                        close = {},
+                        scopeContent = {},
+                    ) { Text("Search results", Modifier.testTag("search-results")) }
+                }
+            }
+            onNodeWithTag("search-results").assertDoesNotExist()
+            runOnIdle { submitted.value = "Rust" }
+            onNodeWithTag("search-results").assertIsDisplayed()
+            runOnIdle { submitted.value = "" }
+            onNodeWithTag("search-results").assertDoesNotExist()
+        }
+
+    @Test
+    fun paginationFailureCanRetryWithoutReplacingExistingContent() =
+        runAppComposeUiTest {
+            var retries = 0
+            val sourceStates =
+                LoadStates(
+                    LoadState.NotLoading(false),
+                    LoadState.NotLoading(true),
+                    LoadState.Error(IllegalStateException("offline")),
+                )
+            val page = PagingData.from(listOf("Existing item"), sourceLoadStates = sourceStates)
+            val model =
+                object : PagingViewModel<String>() {
+                    override val flow = flowOf(page)
+                }
+            setContent {
+                MaterialTheme {
+                    StateView(model, Modifier.requiredSize(390.dp, 600.dp)) { items ->
+                        LazyColumn {
+                            item { Text(items[0].orEmpty()) }
+                            bottomAppending(items.loadState) { retries++ }
+                        }
+                    }
+                }
+            }
+            awaitExternalCondition { onAllNodesWithText("Existing item").fetchSemanticsNodes().isNotEmpty() }
+            onNodeWithText("Existing item").assertIsDisplayed()
+            onNodeWithText("Could not load more · Retry").performClick()
+            runOnIdle { assertEquals(1, retries) }
+            onNodeWithText("Existing item").assertIsDisplayed()
         }
 }

@@ -10,31 +10,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ChatBubble
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.SignalCellularAlt
 import androidx.compose.material.icons.filled.SwitchAccount
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,11 +36,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.storyteller_f.alphaheart.app.AppGlobalDialogController
 import com.storyteller_f.alphaheart.app.LocalAccountSwitcher
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
@@ -64,34 +51,47 @@ import com.storyteller_f.alphaheart.app.LocalSessionManager
 import com.storyteller_f.alphaheart.app.LocalUiViewModel
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.UIViewModel
+import com.storyteller_f.alphaheart.app.common.AppNav
 import com.storyteller_f.alphaheart.app.common.UserScreen
+import com.storyteller_f.alphaheart.app.common.finishSignOut
 import com.storyteller_f.alphaheart.app.common.hasRouteFlow
 import com.storyteller_f.alphaheart.app.connected
 import com.storyteller_f.alphaheart.app.create
 import com.storyteller_f.alphaheart.app.disconnected
 import com.storyteller_f.alphaheart.app.file_explorer
 import com.storyteller_f.alphaheart.app.grant_notification
+import com.storyteller_f.alphaheart.app.menu_signed_out
+import com.storyteller_f.alphaheart.app.my_comments
+import com.storyteller_f.alphaheart.app.my_favorites
+import com.storyteller_f.alphaheart.app.my_reactions
+import com.storyteller_f.alphaheart.app.my_subscriptions
+import com.storyteller_f.alphaheart.app.pages.title.ComposeMenu
+import com.storyteller_f.alphaheart.app.pages.topic.TopicComposeData
 import com.storyteller_f.alphaheart.app.preference
+import com.storyteller_f.alphaheart.app.room_read_only
 import com.storyteller_f.alphaheart.app.settings
 import com.storyteller_f.alphaheart.app.sign_out
 import com.storyteller_f.alphaheart.app.sign_out_prompt
 import com.storyteller_f.alphaheart.app.switch_account
-import com.storyteller_f.alphaheart.app.ui.MaterialSymbolsOutlined
 import com.storyteller_f.alphaheart.app.utils.createConnectivity
 import com.storyteller_f.alphaheart.app.utils.rememberAppNotificationPermission
 import com.storyteller_f.alphaheart.app.utils.requestAppNotificationPermission
 import com.storyteller_f.alphaheart.app.utils.unregisterPushService
 import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
+import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.ButtonNav
 import com.storyteller_f.alphaheart.client.compose_core.components.CustomAlertDialog
 import com.storyteller_f.alphaheart.client.compose_core.components.CustomAlertDialogController
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.DialogContainer
 import com.storyteller_f.alphaheart.client.compose_core.components.FavoriteButton
+import com.storyteller_f.alphaheart.client.compose_core.components.IconActionMenu
 import com.storyteller_f.alphaheart.client.compose_core.components.IconRes
+import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingActionMenuSurface
 import com.storyteller_f.alphaheart.client.compose_core.components.SignInButton
 import com.storyteller_f.alphaheart.client.compose_core.components.SubscriptionButton
 import com.storyteller_f.alphaheart.client.compose_core.components.UserIcon
+import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.request
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.compose_core.utils.supportsChildAccountSwitching
@@ -106,13 +106,16 @@ import com.storyteller_f.result.getOrThrow
 import com.storyteller_f.result.onSuccess
 import com.storyteller_f.shared.model.UserInfo
 import com.storyteller_f.shared.model.UserOverview
+import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.UserStatus
 import dev.jordond.connectivity.Connectivity
 import dev.jordond.connectivity.compose.rememberConnectivityState
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CancellationException
-import nl.jacobras.humanreadable.HumanReadable
+import kotlinx.coroutines.flow.first
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBadge as Badge
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBasicAlertDialog as BasicAlertDialog
 
 @Composable
 private fun SelfDialogInternal(
@@ -124,40 +127,32 @@ private fun SelfDialogInternal(
 ) {
     val instance by LocalUiViewModel.current.instance.collectAsState()
     val isAlreadySignIn = instance.isAlreadySign
-    DialogContainer {
+    ReadingActionMenuSurface(
+        onDismiss = dismiss,
+        heading = {
+            if (isAlreadySignIn) {
+                UserCard(userInfo, dismiss)
+            } else {
+                Text(stringResource(Res.string.menu_signed_out), fontSize = 18.sp)
+            }
+        },
+    ) {
         if (isAlreadySignIn) {
-            SelfUserDetailCard(userInfo, dismiss, overviewHandler, clickCreate)
-            AccountSwitchButton(dismiss, overviewHandler)
-            NotificationButton()
-            ConnectionButton()
-            FileExplorerButton(dismiss)
-            SettingsButton(dismiss)
-            SignOutButton(signOutController)
+            IconActionMenu {
+                if (userInfo?.status == UserStatus.NORMAL) CreateButton(dismiss, clickCreate)
+                UserOverviewActions(overviewHandler, dismiss)
+                AccountSwitchButton(dismiss, overviewHandler)
+                NotificationButton()
+                ConnectionButton()
+                FileExplorerButton(dismiss)
+                SettingsButton(dismiss)
+                SignOutButton(signOutController)
+                SystemSettingsButton(dismiss)
+            }
         } else {
             SignInBox(dismiss)
+            SystemSettingsButton(dismiss)
         }
-        SystemSettingsButton(dismiss)
-    }
-}
-
-@Composable
-private fun RowScope.StatCell(value: Long, iconRes: IconRes, onClick: () -> Unit) {
-    val str =
-        remember(value) {
-            HumanReadable.number(value.toFloat())
-        }
-    val shape = RoundedCornerShape(8.dp)
-    Row(
-        modifier =
-        Modifier.weight(1f).clip(shape).clickable {
-            onClick()
-        }.padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        CustomIcon(iconRes)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(str)
     }
 }
 
@@ -179,7 +174,7 @@ fun SignInBox(dismiss: () -> Unit) {
 fun SystemSettingsButton(dismiss: () -> Unit) {
     val appNavFactory = LocalAppNavFactory.current
     ButtonNav(
-        MaterialSymbolsOutlined.Settings,
+        navigationIcon(NavigationGlyph.SETTINGS_2),
         stringResource(Res.string.preference),
     ) {
         dismiss()
@@ -190,7 +185,7 @@ fun SystemSettingsButton(dismiss: () -> Unit) {
 @Composable
 fun CreateButton(dismiss: () -> Unit, clickCreate: () -> Unit) {
     ButtonNav(
-        Icons.Default.Add,
+        actionIcon(ActionGlyph.PLUS),
         stringResource(Res.string.create),
         semanticDescription = "create",
     ) {
@@ -225,134 +220,132 @@ fun UserCardContainer(userInfo: UserInfo?, dismiss: () -> Unit, content: @Compos
         dismiss()
         userInfo?.id?.let { appNavFactory.newAppNav().gotoUser(it) }
     }
+    val userLabel =
+        userInfo?.let { info ->
+            val aid = info.aid
+            val identity = if (aid != null) CoreStrings.aid(aid) else CoreStrings.ad(info.address)
+            "${info.nickname}, $identity"
+        }
     val modifier =
         Modifier.fillMaxWidth()
             .appiumSemantics(
                 testTag = "user-dialog-cell",
-                description = "user-dialog-cell",
-                text = userInfo?.let { "${it.nickname}, ${CoreStrings.ad(it.address)}" },
+                description = userLabel,
+                text = userLabel,
                 onClick = openUser.takeIf { userInfo != null && cellClickable },
             )
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceDim, shape)
             .clickable(userInfo != null && cellClickable, onClick = openUser)
-            .padding(8.dp)
+
     Box(modifier) {
         content()
     }
 }
 
 @Composable
-fun SelfUserDetailCard(
-    userInfo: UserInfo?,
-    dismiss: () -> Unit = {},
-    overviewHandler: LoadingHandler<UserOverview>,
-    onClickCreate: () -> Unit,
+private fun UserOverviewActions(overviewHandler: LoadingHandler<UserOverview>, dismiss: () -> Unit) {
+    val overview by overviewHandler.data.collectAsState()
+    val state by overviewHandler.state.collectAsState()
+    val loading = state is LoadingState.Loading
+    val appNav = LocalAppNavFactory.current
+    fun open(action: () -> Unit) {
+        dismiss()
+        action()
+    }
+    UserOverviewActionTiles(
+        overview,
+        loading,
+        onFavorite = { open { appNav.newAppNav().gotoFavoritePage() } },
+        onSubscription = { open { appNav.newAppNav().gotoSubscriptionPage() } },
+        onReaction = { open { appNav.newAppNav().gotoUserReactionRecordsPage() } },
+        onComment = { open { appNav.newAppNav().gotoUserCommentsPage() } },
+    )
+}
+
+@Composable
+internal fun UserOverviewActionTiles(
+    overview: UserOverview?,
+    loading: Boolean,
+    onFavorite: () -> Unit,
+    onSubscription: () -> Unit,
+    onReaction: () -> Unit,
+    onComment: () -> Unit,
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+    OverviewMenuAction(overview?.acg ?: 0, "ACG", actionIcon(ActionGlyph.WALLET), loading) {}
+    OverviewMenuAction(
+        overview?.favoriteCount ?: 0,
+        stringResource(Res.string.my_favorites),
+        actionIcon(ActionGlyph.HEART),
+        loading,
     ) {
-        UserCardContainer(userInfo, dismiss) {
-            UnboundSimpleUserCell(userInfo)
-        }
-        val userOverview by overviewHandler.data.collectAsState()
-        val userOverviewState by overviewHandler.state.collectAsState()
-        val isLoading by remember {
-            derivedStateOf {
-                userOverviewState is LoadingState.Loading
-            }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            val createTopic = {
-                dismiss()
-                onClickCreate()
-            }
-            FilledIconButton(
-                onClick = createTopic,
-                modifier =
-                Modifier.appiumSemantics(
-                    description = "create",
-                    onClick = createTopic,
-                ),
-            ) {
-                Icon(Icons.Default.Add, "create")
-            }
-            UserOverviewRow(userOverview, isLoading, dismiss)
-        }
+        onFavorite()
+    }
+    OverviewMenuAction(
+        overview?.subscriptionCount ?: 0,
+        stringResource(Res.string.my_subscriptions),
+        actionIcon(ActionGlyph.BELL),
+        loading,
+    ) { onSubscription() }
+    OverviewMenuAction(
+        overview?.reactionRecordCount ?: 0,
+        stringResource(Res.string.my_reactions),
+        actionIcon(ActionGlyph.THUMBS_UP),
+        loading,
+    ) {
+        onReaction()
+    }
+    OverviewMenuAction(
+        overview?.commentCount ?: 0,
+        stringResource(Res.string.my_comments),
+        actionIcon(ActionGlyph.MESSAGE_CIRCLE),
+        loading,
+    ) {
+        onComment()
     }
 }
 
 @Composable
-private fun UserOverviewRow(userOverview: UserOverview?, isLoading: Boolean, dismiss: () -> Unit) {
-    val shape = RoundedCornerShape(10.dp)
-    val appNav = LocalAppNavFactory.current
-    Column(
-        modifier =
-        Modifier.clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceDim, shape),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            StatCell(
-                userOverview?.acg ?: 0,
-                if (isLoading) IconRes.Loading else IconRes.Vector(Icons.Default.AccountBalanceWallet),
-            ) {
-            }
-            StatCell(
-                userOverview?.favoriteCount ?: 0,
-                if (isLoading) IconRes.Loading else IconRes.Vector(Icons.Default.Favorite),
-            ) {
-                dismiss()
-                appNav.newAppNav().gotoFavoritePage()
-            }
-            StatCell(
-                userOverview?.subscriptionCount ?: 0,
-                if (isLoading) IconRes.Loading else IconRes.Vector(Icons.Default.NotificationsActive),
-            ) {
-                dismiss()
-                appNav.newAppNav().gotoSubscriptionPage()
-            }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            StatCell(
-                userOverview?.reactionRecordCount ?: 0,
-                if (isLoading) IconRes.Loading else IconRes.Vector(Icons.Default.ThumbUp),
-            ) {
-                dismiss()
-                appNav.newAppNav().gotoUserReactionRecordsPage()
-            }
-            StatCell(
-                userOverview?.commentCount ?: 0,
-                if (isLoading) IconRes.Loading else IconRes.Vector(Icons.Default.ChatBubble),
-            ) {
-                dismiss()
-                appNav.newAppNav().gotoUserCommentsPage()
-            }
-            Spacer(modifier = Modifier.weight(1f))
-        }
-    }
+private fun OverviewMenuAction(
+    count: Long,
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    loading: Boolean,
+    onClick: () -> Unit,
+) {
+    ButtonNav(
+        if (loading) IconRes.Loading else IconRes.Vector(icon),
+        label,
+        suffix = { ButtonBadgeSuffix(count) },
+        semanticDescription = "$label, $count",
+        onClick = onClick,
+    )
 }
 
 @Composable
 private fun UnboundSimpleUserCell(userInfo: UserInfo?) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         UserIcon(
             setClickEvent = false,
             userInfo?.avatar?.url,
-            60.dp,
+            40.dp,
         ) {}
         if (userInfo != null) {
-            Column {
+            Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(userInfo.nickname, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        userInfo.nickname,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
                     if (userInfo.status == UserStatus.READ_ONLY) {
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            "ReadOnly",
+                            stringResource(Res.string.room_read_only),
                             style = MaterialTheme.typography.labelSmall,
                             modifier =
                             Modifier
@@ -407,7 +400,7 @@ fun AccountSwitchButton(dismiss: () -> Unit, overviewHandler: LoadingHandler<Use
 
 @Composable
 fun ButtonBadgeSuffix(number: Long, hasUnread: Boolean = false) {
-    val shape = RoundedCornerShape(8.dp)
+    val shape = RoundedCornerShape(5.dp)
     BadgedBox(badge = {
         if (hasUnread) {
             Badge(containerColor = Color.Red)
@@ -416,9 +409,12 @@ fun ButtonBadgeSuffix(number: Long, hasUnread: Boolean = false) {
         Text(
             number.toString(),
             modifier =
-            Modifier.clip(shape)
+            Modifier.widthIn(min = 16.dp).clip(shape)
                 .background(MaterialTheme.colorScheme.primaryContainer, shape)
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(horizontal = 3.dp),
+            fontSize = 11.sp,
+            lineHeight = 16.sp,
+            color = MaterialTheme.colorScheme.primary,
         )
     }
 }
@@ -427,7 +423,7 @@ fun ButtonBadgeSuffix(number: Long, hasUnread: Boolean = false) {
 fun SignOutButton(controller: CustomAlertDialogController) {
     val title = stringResource(Res.string.sign_out_prompt)
     if (!isInChildAccount()) {
-        ButtonNav(Icons.AutoMirrored.Default.Logout, stringResource(Res.string.sign_out)) {
+        ButtonNav(navigationIcon(NavigationGlyph.LOG_OUT), stringResource(Res.string.sign_out)) {
             controller.showTitle(title)
         }
     }
@@ -440,7 +436,7 @@ fun NotificationButton() {
     val hasPermission = rememberAppNotificationPermission()
 
     if (!hasPermission) {
-        ButtonNav(Icons.Default.Notifications, stringResource(Res.string.grant_notification)) {
+        ButtonNav(actionIcon(ActionGlyph.BELL_RING), stringResource(Res.string.grant_notification)) {
             requestAppNotificationPermission()
         }
     }
@@ -459,12 +455,12 @@ fun ConnectionButton() {
     val status = connectivityState.status
     if (status is Connectivity.Status.Connected) {
         ButtonNav(
-            if (status.metered) Icons.Default.SignalCellularAlt else Icons.Default.Wifi,
+            actionIcon(if (status.metered) ActionGlyph.SIGNAL else ActionGlyph.WIFI),
             stringResource(Res.string.connected),
         )
     } else {
         ButtonNav(
-            MaterialSymbolsOutlined.SignalDisconnected,
+            actionIcon(ActionGlyph.WIFI_OFF),
             stringResource(Res.string.disconnected),
         )
     }
@@ -473,7 +469,7 @@ fun ConnectionButton() {
 @Composable
 fun SettingsButton(dismiss: () -> Unit) {
     val appNavFactory = LocalAppNavFactory.current
-    ButtonNav(MaterialSymbolsOutlined.SettingsAccountBox, stringResource(Res.string.settings)) {
+    ButtonNav(actionIcon(ActionGlyph.USER_ROUND_COG), stringResource(Res.string.settings)) {
         dismiss()
         appNavFactory.newAppNav().gotoUserSetting()
     }
@@ -482,13 +478,13 @@ fun SettingsButton(dismiss: () -> Unit) {
 @Composable
 fun FileExplorerButton(dismiss: () -> Unit) {
     val appNavFactory = LocalAppNavFactory.current
-    ButtonNav(Icons.Default.Folder, stringResource(Res.string.file_explorer)) {
+    ButtonNav(navigationIcon(NavigationGlyph.FOLDER), stringResource(Res.string.file_explorer)) {
         dismiss()
         appNavFactory.newAppNav().gotoFileExplorer()
     }
 }
 
-suspend fun AppGlobalDialogController.signOut(uiViewModel: UIViewModel) {
+suspend fun AppGlobalDialogController.signOut(uiViewModel: UIViewModel, appNav: AppNav) {
     val address = uiViewModel.instance.value.address
     useResult {
         request {
@@ -498,6 +494,7 @@ suspend fun AppGlobalDialogController.signOut(uiViewModel: UIViewModel) {
         uiViewModel.historyManager.exitSession(address)
         unregisterPushService()
         uiViewModel.logout()
+        appNav.finishSignOut()
     }
 }
 
@@ -532,11 +529,12 @@ fun UserDialog(userInfo: UserInfo?, showDialog: Boolean, dismiss: () -> Unit) {
         BasicAlertDialog({
             dismiss()
         }) {
-            DialogContainer {
-                UserCard(userInfo, dismiss)
+            ReadingActionMenuSurface(onDismiss = dismiss, heading = { UserCard(userInfo, dismiss) }) {
                 if (userInfo != null) {
-                    FavoriteButton(userInfo.favoriteId, userInfo.tuple())
-                    SubscriptionButton(userInfo.subscriptionId, userInfo.tuple())
+                    IconActionMenu(twoActions = true) {
+                        FavoriteButton(userInfo.favoriteId, userInfo.tuple())
+                        SubscriptionButton(userInfo.subscriptionId, userInfo.tuple())
+                    }
                 }
             }
         }
@@ -556,11 +554,22 @@ fun SelfDialog(
     val signOutState by signOutController.state
     val globalDialogController = LocalGlobalDialog.current
     val uiViewModel = LocalUiViewModel.current
+    val appNavFactory = LocalAppNavFactory.current
     if (showDialog) {
         // Replace the account modal instead of opening a second modal inside it.
         if (signOutState == null) {
             BasicAlertDialog(dismiss) {
                 val sessionManager = LocalSessionManager.current
+                val refreshCached =
+                    remember(overviewHandler, userInfo?.id) {
+                        overviewHandler.state.value == LoadingState.Done || overviewHandler.data.value != null
+                    }
+                LaunchedEffect(overviewHandler, userInfo?.id) {
+                    if (userInfo != null && refreshCached) {
+                        overviewHandler.state.first { it !is LoadingState.Loading }
+                        overviewHandler.refresh()
+                    }
+                }
                 LaunchedEffect(userInfo) {
                     refreshMyInfo(userInfo, sessionManager)
                 }
@@ -570,7 +579,7 @@ fun SelfDialog(
             CustomAlertDialog(signOutController, signOutController::close) {
                 dismiss()
                 globalDialogController.launch {
-                    globalDialogController.signOut(uiViewModel)
+                    globalDialogController.signOut(uiViewModel, appNavFactory.newAppNav())
                 }
             }
         }
@@ -594,13 +603,35 @@ fun UserIconWithDialog(userInfo: UserInfo?, setClickEvent: Boolean = true, size:
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SelfUserIconWithDialog(
     userInfo: UserInfo?,
     size: Dp = 40.dp,
     overviewHandler: LoadingHandler<UserOverview>,
-    onClickCreate: () -> Unit = {},
+    onClickCreate: (() -> Unit)? = null,
 ) {
+    var showCreate by remember { mutableStateOf(false) }
+    val nav = LocalAppNavFactory.current
+    ComposeMenu(showCreate, { showCreate = false }) { type ->
+        showCreate = false
+        when (type) {
+            ObjectType.COMMUNITY -> nav.newAppNav().gotoCommunityCompose()
+
+            ObjectType.ROOM -> nav.newAppNav().gotoRoomCompose()
+
+            ObjectType.TITLE -> nav.newAppNav().gotoTitleCompose()
+
+            ObjectType.TOPIC ->
+                userInfo?.let {
+                    nav.newAppNav().gotoTopicCompose(
+                        TopicComposeData.User(it.id, it.tuple()),
+                    )
+                }
+
+            else -> Unit
+        }
+    }
     var showUserDialog by remember {
         mutableStateOf(false)
     }
@@ -622,7 +653,7 @@ fun SelfUserIconWithDialog(
         userInfo,
         showUserDialog,
         overviewHandler,
-        onClickCreate,
+        { if (onClickCreate != null) onClickCreate() else showCreate = true },
     ) {
         showUserDialog = false
     }

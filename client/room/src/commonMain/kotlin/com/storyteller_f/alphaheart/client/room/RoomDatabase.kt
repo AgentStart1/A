@@ -57,6 +57,13 @@ interface CommonDao {
         insertAll(items)
     }
 
+    @Transaction
+    suspend fun appendCollection(collection: String, items: List<CommonEntity>, details: List<CommonEntity>) {
+        val maxSeq = getMaxSeq(collection)
+        insertAll(details)
+        insertAll(items.mapIndexed { index, entity -> entity.copy(seq = maxSeq + index + 1) })
+    }
+
     @Query("delete from CommonEntity where collection = :collection and id = :id")
     suspend fun delete(collection: String, id: String)
 

@@ -6,13 +6,14 @@ package com.storyteller_f.alphaheart.app.components
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -20,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.font_loaded
@@ -27,12 +29,13 @@ import com.storyteller_f.alphaheart.app.pages.community.CommunityFontState
 import com.storyteller_f.alphaheart.app.pages.community.LocalCommunityFontStore
 import com.storyteller_f.alphaheart.app.pages.community.fontFileKey
 import com.storyteller_f.alphaheart.app.retry_font_loading
-import com.storyteller_f.alphaheart.app.ui.MaterialSymbolsOutlined
+import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
 import com.storyteller_f.shared.model.FileInfo
-import dev.tclement.fonticons.FontIcon
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
-private enum class FontLoadStatus { LOADING, READY, FAILED }
+internal enum class FontLoadStatus { LOADING, READY, FAILED }
 
 @Composable
 fun FontView(info: FileInfo) {
@@ -46,26 +49,42 @@ fun FontView(info: FileInfo) {
             is CommunityFontState.Ready -> FontLoadStatus.READY
             is CommunityFontState.Failed -> FontLoadStatus.FAILED
         }
+    FontStatusRow(info.name, status) { store.retry(info) }
+}
+
+@Composable
+internal fun FontStatusRow(name: String, status: FontLoadStatus, onRetry: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp),
     ) {
-        FontIcon(MaterialSymbolsOutlined.FontDownload, null)
-        Text(info.name, modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()))
-        when (status) {
-            FontLoadStatus.LOADING -> CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+        Icon(actionIcon(ActionGlyph.TYPE), null, Modifier.size(17.dp).testTag("font-type-icon"))
+        Text(name, modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()))
+        Box(Modifier.size(44.dp).testTag("font-status-slot"), contentAlignment = Alignment.Center) {
+            when (status) {
+                FontLoadStatus.LOADING ->
+                    CircularProgressIndicator(
+                        Modifier.size(17.dp).testTag("font-state-icon"),
+                        strokeWidth = 2.dp,
+                    )
 
-            FontLoadStatus.READY ->
-                FontIcon(
-                    MaterialSymbolsOutlined.DownloadDone,
-                    stringResource(Res.string.font_loaded),
-                )
+                FontLoadStatus.READY ->
+                    Icon(
+                        actionIcon(ActionGlyph.CHECK),
+                        stringResource(Res.string.font_loaded),
+                        modifier = Modifier.size(17.dp).testTag("font-state-icon"),
+                    )
 
-            FontLoadStatus.FAILED ->
-                IconButton(onClick = { store.retry(info) }) {
-                    FontIcon(MaterialSymbolsOutlined.Refresh, stringResource(Res.string.retry_font_loading))
-                }
+                FontLoadStatus.FAILED ->
+                    IconButton(onRetry, Modifier.testTag("font-status-retry")) {
+                        Icon(
+                            actionIcon(ActionGlyph.REFRESH_CW),
+                            stringResource(Res.string.retry_font_loading),
+                            modifier = Modifier.size(17.dp).testTag("font-state-icon"),
+                        )
+                    }
+            }
         }
     }
 }

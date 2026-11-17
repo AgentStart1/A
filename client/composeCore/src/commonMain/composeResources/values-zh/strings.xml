@@ -8,7 +8,7 @@
     <string name="sign_in">登录</string>
     <string name="sign_up">注册</string>
     <string name="add">添加</string>
-    <string name="topics">主题</string>
+    <string name="topics">话题</string>
     <string name="rooms">房间</string>
     <string name="success">成功</string>
     <string name="design_spec">设计规范</string>
@@ -28,14 +28,14 @@
     <string name="join_community">加入社区</string>
     <string name="exit_community">退出社区</string>
     <string name="input_search_members">输入以搜索成员</string>
-    <string name="input_search_topics">输入以搜索主题</string>
+    <string name="input_search_topics">输入以搜索话题</string>
     <string name="input_search_room">输入以搜索房间</string>
     <string name="input_search_community">输入以搜索社区</string>
-    <string name="input_search_topics_and_users">输入以搜索主题/用户</string>
+    <string name="input_search_topics_and_users">输入以搜索话题/用户</string>
     <string name="input_search_user_received_titles">输入以搜索收到的头衔</string>
     <string name="input_search_user_created_titles">输入以搜索创建的头衔</string>
     <string name="refresh">刷新</string>
-    <string name="no_content_yet">暂无内容 ┑(￣Д ￣)┍</string>
+    <string name="no_content_yet">暂无内容</string>
     <string name="copy_failed">复制失败，请重试。</string>
     <string name="copy">复制</string>
     <string name="snapshot">快照</string>
@@ -63,4 +63,19 @@
     <string name="media_pip">画中画</string>
     <string name="media_download">下载</string>
     <string name="media_retry">重试</string>
+    <string name="refresh_failed_retry">刷新失败 · 重试</string>
+    <string name="copied">已复制</string>
+    <string name="confirm">确认</string>
+    <string name="edit_private_key">编辑私钥</string>
+    <string name="generate">生成</string>
+    <string name="loading_more">正在加载更多…</string>
+    <string name="load_more_failed_retry">加载更多失败 · 重试</string>
+    <string name="pdf_preview_failed">PDF 预览加载失败</string>
+    <string name="crop_title">裁剪头像／图标</string>
+    <string name="crop_confirm">确认裁剪</string>
+    <string name="crop_rotate_left">向左旋转</string>
+    <string name="crop_rotate_right">向右旋转</string>
+    <string name="crop_flip_horizontal">水平翻转</string>
+    <string name="crop_flip_vertical">垂直翻转</string>
+    <string name="crop_reset">重置裁剪</string>
 </resources>

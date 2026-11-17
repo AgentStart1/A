@@ -1,0 +1,3 @@
+<resources>
+    <string name="message_result_unconfirmed">连接已中断，发送结果尚未确认。草稿已保留，请先检查消息是否已发送。</string>
+</resources>

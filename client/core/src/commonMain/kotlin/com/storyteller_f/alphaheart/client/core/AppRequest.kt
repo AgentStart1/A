@@ -583,7 +583,7 @@ suspend fun UserSessionManager.initChunkUpload(
             objectTuple.objectType,
             name,
             size,
-            contentType.contentType,
+            contentType.toString(),
             chunkSize,
             sha256,
             crc32c,

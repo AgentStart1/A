@@ -9,38 +9,28 @@ package com.storyteller_f.alphaheart.panel
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.FilePresent
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Title
-import androidx.compose.material.icons.filled.Topic
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.PermanentNavigationDrawer
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.Posture
 import androidx.compose.material3.adaptive.WindowAdaptiveInfo
@@ -58,12 +48,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -79,12 +74,18 @@ import androidx.window.core.layout.WindowSizeClass
 import androidx.window.core.layout.computeWindowSizeClass
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
+import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.common.LocalClient
 import com.storyteller_f.alphaheart.client.compose_core.components.CustomGlobalDialogController
 import com.storyteller_f.alphaheart.client.compose_core.components.CustomGlobalTask
 import com.storyteller_f.alphaheart.client.compose_core.components.GlobalDialog
 import com.storyteller_f.alphaheart.client.compose_core.components.GlobalDialogContext
 import com.storyteller_f.alphaheart.client.compose_core.components.GlobalTaskContext
+import com.storyteller_f.alphaheart.client.compose_core.components.LocalResourceDownloadAction
+import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon
+import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.components.rememberResourceDownloadAction
 import com.storyteller_f.alphaheart.client.compose_core.components.request
 import com.storyteller_f.alphaheart.client.compose_core.utils.BindBrowserNavigation
 import com.storyteller_f.alphaheart.client.compose_core.utils.CurrentWindowSizeClass
@@ -143,6 +144,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingAlertDialog as AlertDialog
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
 
 internal typealias PanelGlobalDialogController =
     CustomGlobalDialogController<GlobalDialogContext<CustomPanelSessionManager>>
@@ -199,6 +202,7 @@ fun App() {
         }
     CompositionLocalProvider(
         LocalClient provides client,
+        LocalResourceDownloadAction provides rememberResourceDownloadAction(controller, client),
         LocalPanelNav provides nav.newPanelNav(),
         LocalPanelGlobalDialog provides controller,
         LocalPanelGlobalTask provides task,
@@ -220,17 +224,18 @@ fun App() {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
-private fun PanelNavigationDrawer(
+internal fun PanelNavigationDrawer(
     drawerState: DrawerState,
     drawerContent: @Composable (permanent: Boolean) -> Unit,
     content: @Composable () -> Unit,
 ) {
     val windowSizeClass = CurrentWindowSizeClass()
     val usePermanentDrawer = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact
+    val retainedContent = rememberPanelMainContent(content)
     if (usePermanentDrawer) {
         PermanentNavigationDrawer(
             drawerContent = { drawerContent(true) },
-            content = content,
+            content = retainedContent,
         )
     } else {
         val contentDispatcher = rememberNavigationEventDispatcherOwner(enabled = !drawerState.isOpen)
@@ -239,12 +244,18 @@ private fun PanelNavigationDrawer(
             drawerContent = { drawerContent(false) },
             content = {
                 CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides contentDispatcher) {
-                    content()
+                    retainedContent()
                 }
             },
         )
         PanelDrawerBackHandler(drawerState)
     }
+}
+
+@Composable
+internal fun rememberPanelMainContent(content: @Composable () -> Unit): @Composable () -> Unit {
+    val currentContent by rememberUpdatedState(content)
+    return remember { movableContentOf { currentContent() } }
 }
 
 @Composable
@@ -298,7 +309,7 @@ internal fun calculatePanelPaneDirective(contentSize: DpSize, windowPosture: Pos
             ),
             windowPosture = windowPosture,
         ),
-    ).copy(defaultPanePreferredWidth = 420.dp)
+    ).copy(defaultPanePreferredWidth = 230.dp, horizontalPartitionSpacerSize = 0.dp)
 
 @Composable
 private fun PanelDrawer(scope: CoroutineScope, drawerState: DrawerState, nav: PanelNav, permanent: Boolean) {
@@ -309,9 +320,13 @@ private fun PanelDrawer(scope: CoroutineScope, drawerState: DrawerState, nav: Pa
         PanelSignoutEntry(scope)
     }
     if (permanent) {
-        PermanentDrawerSheet(content = scrollContent)
+        PermanentDrawerSheet(
+            modifier = Modifier.width(170.dp),
+            drawerContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            content = scrollContent,
+        )
     } else {
-        ModalDrawerSheet(content = scrollContent)
+        ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surfaceContainer, content = scrollContent)
     }
 }
 
@@ -319,52 +334,55 @@ private fun PanelDrawer(scope: CoroutineScope, drawerState: DrawerState, nav: Pa
 private fun PanelDrawerContent(scope: CoroutineScope, drawerState: DrawerState, nav: PanelNav) {
     DrawerHeader()
     DrawerNavItem(
-        Icons.Default.Home,
+        navigationIcon(NavigationGlyph.HOUSE),
         stringResource(Res.string.overview),
         onNavigate(scope, drawerState) { nav.gotoOverview() },
     )
+    DrawerSection(stringResource(Res.string.review_nav_people_spaces))
     DrawerNavItem(
-        Icons.Default.People,
+        navigationIcon(NavigationGlyph.USERS),
         stringResource(Res.string.all_users),
         onNavigate(scope, drawerState) { nav.gotoAllUsers() },
     )
     DrawerNavItem(
-        Icons.Default.Group,
+        navigationIcon(NavigationGlyph.PANELS_TOP_LEFT),
         stringResource(Res.string.all_communities),
         onNavigate(scope, drawerState) { nav.gotoAllCommunities() },
     )
     DrawerNavItem(
-        Icons.Default.Public,
+        navigationIcon(NavigationGlyph.EARTH),
         stringResource(Res.string.all_public_rooms),
         onNavigate(scope, drawerState) { nav.gotoAllPublicRooms() },
     )
     DrawerNavItem(
-        Icons.Default.Lock,
+        navigationIcon(NavigationGlyph.LOCK_KEYHOLE),
         stringResource(Res.string.all_private_rooms),
         onNavigate(scope, drawerState) { nav.gotoAllPrivateRooms() },
     )
+    DrawerSection(stringResource(Res.string.review_nav_content_files))
     DrawerNavItem(
-        Icons.Default.Topic,
+        navigationIcon(NavigationGlyph.TEXT),
         stringResource(Res.string.all_topics),
         onNavigate(scope, drawerState) { nav.gotoAllTopics() },
     )
     DrawerNavItem(
-        Icons.Default.FilePresent,
+        navigationIcon(NavigationGlyph.FOLDER),
         stringResource(Res.string.all_files),
         onNavigate(scope, drawerState) { nav.gotoAllFiles() },
     )
     DrawerNavItem(
-        Icons.Default.Title,
+        navigationIcon(NavigationGlyph.AWARD),
         stringResource(Res.string.all_titles),
         onNavigate(scope, drawerState) { nav.gotoAllTitles() },
     )
+    DrawerSection(stringResource(Res.string.review_nav_operations))
     DrawerNavItem(
-        Icons.Default.Build,
+        navigationIcon(NavigationGlyph.ACTIVITY),
         stringResource(Res.string.worker_records),
         onNavigate(scope, drawerState) { nav.gotoTaskRecords() },
     )
     DrawerNavItem(
-        Icons.Default.Settings,
+        navigationIcon(NavigationGlyph.SETTINGS_2),
         stringResource(Res.string.worker_task_configurations),
         onNavigate(scope, drawerState) { nav.gotoWorkerTasks() },
     )
@@ -383,6 +401,7 @@ private fun PanelSignoutEntry(scope: CoroutineScope) {
     }
     val confirming by signoutHost.confirming.collectAsState()
     val title = stringResource(Res.string.sign_out_prompt)
+    val confirmLabel = CoreStrings.ok()
     if (confirming) {
         AlertDialog(
             onDismissRequest = signoutHost::cancel,
@@ -390,19 +409,29 @@ private fun PanelSignoutEntry(scope: CoroutineScope) {
             confirmButton = {
                 Button(
                     signoutHost::confirm,
-                    modifier = Modifier.appiumSemantics(text = "Yes", onClick = signoutHost::confirm),
-                ) { Text("Yes") }
+                    modifier = Modifier.appiumSemantics(text = confirmLabel, onClick = signoutHost::confirm),
+                ) { Text(confirmLabel) }
             },
         )
     }
     if (account.isAlreadySign) {
         HorizontalDivider()
         DrawerNavItem(
-            Icons.AutoMirrored.Filled.Logout,
+            navigationIcon(NavigationGlyph.LOG_OUT),
             stringResource(Res.string.sign_out),
             signoutHost::request,
         )
     }
+}
+
+@Composable
+private fun DrawerSection(label: String) {
+    Text(
+        label,
+        Modifier.padding(start = 24.dp, end = 12.dp, top = 20.dp, bottom = 6.dp),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 @Composable
@@ -417,13 +446,43 @@ private fun DrawerHeader() {
 
 @Composable
 private fun DrawerNavItem(icon: ImageVector, label: String, onClick: () -> Unit) {
-    NavigationDrawerItem(
-        modifier = Modifier.appiumSemantics(text = label, onClick = onClick),
-        icon = { Icon(icon, contentDescription = null) },
-        label = { Text(label) },
-        selected = false,
+    val active = label == selectedPanelDrawerLabel()
+    Surface(
         onClick = onClick,
-    )
+        modifier =
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp)
+            .semantics { selected = active }.appiumSemantics(text = label, onClick = onClick),
+        shape = MaterialTheme.shapes.small,
+        color = if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Row(
+            Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ReadingIcon(icon, null, Modifier.size(17.dp))
+            Text(label, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+@Composable
+private fun selectedPanelDrawerLabel(): String {
+    val label =
+        when (panelDrawerSection(LocalPanelNav.current.backStack)) {
+            PanelDrawerSection.Overview -> Res.string.overview
+            PanelDrawerSection.Users -> Res.string.all_users
+            PanelDrawerSection.Communities -> Res.string.all_communities
+            PanelDrawerSection.PublicRooms -> Res.string.all_public_rooms
+            PanelDrawerSection.PrivateRooms -> Res.string.all_private_rooms
+            PanelDrawerSection.Topics -> Res.string.all_topics
+            PanelDrawerSection.Files -> Res.string.all_files
+            PanelDrawerSection.Titles -> Res.string.all_titles
+            PanelDrawerSection.TaskRecords -> Res.string.worker_records
+            PanelDrawerSection.WorkerTasks -> Res.string.worker_task_configurations
+            null -> return ""
+        }
+    return stringResource(label)
 }
 
 private fun onNavigate(scope: CoroutineScope, drawerState: DrawerState, navigate: () -> Unit): () -> Unit =

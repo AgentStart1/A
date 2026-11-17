@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -33,8 +33,6 @@ import androidx.compose.material.icons.filled.FormatUnderlined
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
@@ -45,22 +43,59 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.mohamedrejeb.richeditor.annotation.ExperimentalRichTextApi
 import com.mohamedrejeb.richeditor.model.RichTextState
-import com.mohamedrejeb.richeditor.model.rememberRichTextState
 import com.mohamedrejeb.richeditor.ui.BasicRichTextEditor
+import com.mohamedrejeb.richeditor.ui.material3.RichText
+import com.storyteller_f.alphaheart.client.compose_core.Res
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_add_before
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_bold
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_code_placeholder
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_code_span
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_delete
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_handle
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_image_empty
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_image_hint
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_image_label
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_italic
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_list_placeholder
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_math
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_math_placeholder
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_menu
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_object_empty
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_object_hint
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_ordered_list
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_plain_text
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_quote_placeholder
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_reference_label
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_strikethrough
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_text_placeholder
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_to_code
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_to_heading
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_to_paragraph
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_underline
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_unordered_list
 import com.storyteller_f.alphaheart.client.compose_core.components.LocalTopicContentFonts
+import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
 /**
  * 可编辑的 Block 组件
@@ -80,8 +115,11 @@ fun EditableBlock(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
-        Column {
+        Column(Modifier.padding(12.dp)) {
             // Block 操作行
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -91,30 +129,38 @@ fun EditableBlock(
                 // 添加按钮
                 IconButton(
                     onClick = { onAddBlockBefore() },
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(44.dp),
                 ) {
-                    Icon(Icons.Default.Add, "Add block before", modifier = Modifier.size(16.dp))
+                    Icon(
+                        Icons.Default.Add,
+                        stringResource(Res.string.block_editor_add_before),
+                        modifier = Modifier.size(16.dp),
+                    )
                 }
 
                 // 拖拽图标
                 Icon(
                     Icons.Default.DragIndicator,
-                    "Drag to reorder",
+                    stringResource(Res.string.block_editor_handle),
                     modifier = Modifier.size(20.dp),
                 )
 
-                // 编辑/预览区域
-                BlockPreview(block, isFocused, onContentChange, onFocusChange)
+                Spacer(Modifier.weight(1f))
 
                 // 删除按钮
                 IconButton(onClick = { showTypeMenu = true }) {
-                    Icon(Icons.Default.Delete, "Delete or change type", modifier = Modifier.size(16.dp))
+                    Icon(
+                        Icons.Default.Delete,
+                        stringResource(Res.string.block_editor_menu),
+                        modifier = Modifier.size(16.dp),
+                    )
                 }
 
                 BlockMenu(showTypeMenu, onDelete, onChangeBlockType, block) {
                     showTypeMenu = it
                 }
             }
+            BlockPreview(block, isFocused, onContentChange, onFocusChange)
         }
     }
 }
@@ -132,14 +178,14 @@ private fun BlockMenu(
         onDismissRequest = { update(false) },
     ) {
         DropdownMenuItem(
-            text = { Text("Delete") },
+            text = { Text(stringResource(Res.string.block_editor_delete)) },
             onClick = {
                 onDelete()
                 update(false)
             },
         )
         DropdownMenuItem(
-            text = { Text("To Paragraph") },
+            text = { Text(stringResource(Res.string.block_editor_to_paragraph)) },
             onClick = {
                 onChangeBlockType(
                     ContentBlock.Paragraph(id = block.id, content = getBlockText(block)),
@@ -148,7 +194,7 @@ private fun BlockMenu(
             },
         )
         DropdownMenuItem(
-            text = { Text("To Heading 1") },
+            text = { Text(stringResource(Res.string.block_editor_to_heading, 1)) },
             onClick = {
                 onChangeBlockType(
                     ContentBlock.Paragraph(id = block.id, content = getBlockText(block), level = 1),
@@ -157,7 +203,7 @@ private fun BlockMenu(
             },
         )
         DropdownMenuItem(
-            text = { Text("To Heading 2") },
+            text = { Text(stringResource(Res.string.block_editor_to_heading, 2)) },
             onClick = {
                 onChangeBlockType(
                     ContentBlock.Paragraph(id = block.id, content = getBlockText(block), level = 2),
@@ -166,7 +212,7 @@ private fun BlockMenu(
             },
         )
         DropdownMenuItem(
-            text = { Text("To Code Block") },
+            text = { Text(stringResource(Res.string.block_editor_to_code)) },
             onClick = {
                 onChangeBlockType(
                     ContentBlock.CodeBlock(id = block.id, content = getBlockText(block)),
@@ -178,7 +224,7 @@ private fun BlockMenu(
 }
 
 @Composable
-private fun RowScope.BlockPreview(
+private fun BlockPreview(
     block: ContentBlock,
     isFocused: Boolean,
     onContentChange: (String) -> Unit,
@@ -186,7 +232,7 @@ private fun RowScope.BlockPreview(
 ) {
     val style = LocalTextStyle.current.merge(fontFamily = LocalTopicContentFonts.current.content)
     ProvideTextStyle(style) {
-        Box(modifier = Modifier.weight(1f)) {
+        Box(modifier = Modifier.fillMaxWidth()) {
             when (block) {
                 is ContentBlock.Paragraph ->
                     EditableParagraphBlock(
@@ -288,54 +334,90 @@ fun EditableParagraphBlock(
     if (isFocused) {
         RichEditableParagraphBlock(block, textStyle, onContentChange)
     } else {
-        Text(
-            text = block.content,
-            style = textStyle,
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable { onFocusChange(true) }
-                .padding(vertical = 4.dp),
-        )
+        ReadOnlyParagraphBlock(block, textStyle) { onFocusChange(true) }
     }
 }
 
+@OptIn(ExperimentalRichTextApi::class)
 @Composable
+private fun ReadOnlyParagraphBlock(
+    block: ContentBlock.Paragraph,
+    textStyle: androidx.compose.ui.text.TextStyle,
+    onClick: () -> Unit,
+) {
+    val state = remember(block.id, block.content) { RichTextState().setMarkdown(block.content) }
+    RichText(
+        state = state,
+        style = textStyle,
+        maxLines = Int.MAX_VALUE,
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 4.dp),
+    )
+}
+
+@Composable
+@OptIn(ExperimentalRichTextApi::class)
 private fun RichEditableParagraphBlock(
     block: ContentBlock.Paragraph,
     textStyle: androidx.compose.ui.text.TextStyle,
     onContentChange: (String) -> Unit,
 ) {
-    val state = rememberRichTextState()
-
-    LaunchedEffect(block.id) {
-        state.setMarkdown(block.content)
-    }
+    val state =
+        rememberSaveable(block.id, saver = RichTextState.Saver) {
+            RichTextState().setMarkdown(block.content)
+        }
+    // Markdown import is presentation, not an edit. Compare structural documents so focus/selection
+    // cannot normalize untouched source, while text and inline formatting changes still publish.
+    var observedDocument by remember(state) { mutableStateOf(state.toRichTextDocument()) }
+    var lastPublishedMarkdown by remember(state) { mutableStateOf<String?>(null) }
+    val focusRequester = remember { FocusRequester() }
+    var editorFocused by remember { mutableStateOf(false) }
+    // Toolbar focus collapses the live field selection; formatting still belongs to the editor's selected range.
+    var actionSelection by remember { mutableStateOf(state.selection) }
+    val selection = state.selection
+    SideEffect { if (editorFocused) actionSelection = selection }
+    LaunchedEffect(block.id) { focusRequester.requestFocus() }
     LaunchedEffect(block.content) {
+        if (block.content == lastPublishedMarkdown) {
+            lastPublishedMarkdown = null
+            return@LaunchedEffect
+        }
+        lastPublishedMarkdown = null
+
         val markdown = state.toMarkdown().normalizeParagraphMarkdown()
         if (markdown != block.content) {
             state.setMarkdown(block.content)
+            observedDocument = state.toRichTextDocument()
         }
     }
     LaunchedEffect(state.annotatedString) {
-        val markdown = state.toMarkdown().normalizeParagraphMarkdown()
-        if (markdown != block.content) {
-            onContentChange(markdown)
+        val document = state.toRichTextDocument()
+        if (document != observedDocument) {
+            observedDocument = document
+            val markdown = state.toMarkdown().normalizeParagraphMarkdown()
+            if (markdown != block.content) {
+                lastPublishedMarkdown = markdown
+                onContentChange(markdown)
+            }
         }
     }
 
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-        ParagraphRichTextToolbar(state)
+        ParagraphRichTextToolbar(state) { format ->
+            state.selection = actionSelection
+            format()
+        }
         Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
             if (block.content.isEmpty()) {
                 Text(
-                    "Type '/' for commands...",
+                    stringResource(Res.string.block_editor_text_placeholder),
                     style = textStyle.copy(color = LocalContentColor.current.copy(alpha = 0.5f)),
                 )
             }
             BasicRichTextEditor(
                 state = state,
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                Modifier.fillMaxWidth().focusRequester(focusRequester)
+                    .onFocusChanged { editorFocused = it.isFocused },
                 textStyle = textStyle.copy(color = LocalContentColor.current),
             )
         }
@@ -344,45 +426,45 @@ private fun RichEditableParagraphBlock(
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
-private fun ParagraphRichTextToolbar(state: RichTextState) {
+private fun ParagraphRichTextToolbar(state: RichTextState, applyFormat: (() -> Unit) -> Unit) {
     val currentSpanStyle = state.currentSpanStyle
     FlowRow {
         IconToggleButton(currentSpanStyle.fontWeight == FontWeight.Bold, {
-            state.toggleSpanStyle(SpanStyle(fontWeight = FontWeight.Bold))
+            applyFormat { state.toggleSpanStyle(SpanStyle(fontWeight = FontWeight.Bold)) }
         }) {
-            Icon(Icons.Default.FormatBold, "Toggle bold")
+            Icon(Icons.Default.FormatBold, stringResource(Res.string.block_editor_bold))
         }
         IconToggleButton(currentSpanStyle.fontStyle == FontStyle.Italic, {
-            state.toggleSpanStyle(SpanStyle(fontStyle = FontStyle.Italic))
+            applyFormat { state.toggleSpanStyle(SpanStyle(fontStyle = FontStyle.Italic)) }
         }) {
-            Icon(Icons.Default.FormatItalic, "Toggle italic")
+            Icon(Icons.Default.FormatItalic, stringResource(Res.string.block_editor_italic))
         }
         IconToggleButton(currentSpanStyle.textDecoration == TextDecoration.Underline, {
-            state.toggleSpanStyle(SpanStyle(textDecoration = TextDecoration.Underline))
+            applyFormat { state.toggleSpanStyle(SpanStyle(textDecoration = TextDecoration.Underline)) }
         }) {
-            Icon(Icons.Default.FormatUnderlined, "Toggle underline")
+            Icon(Icons.Default.FormatUnderlined, stringResource(Res.string.block_editor_underline))
         }
         IconToggleButton(currentSpanStyle.textDecoration == TextDecoration.LineThrough, {
-            state.toggleSpanStyle(SpanStyle(textDecoration = TextDecoration.LineThrough))
+            applyFormat { state.toggleSpanStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) }
         }) {
-            Icon(Icons.Default.FormatStrikethrough, "Toggle strikethrough")
+            Icon(Icons.Default.FormatStrikethrough, stringResource(Res.string.block_editor_strikethrough))
         }
         VerticalDivider(modifier = Modifier.height(20.dp).align(Alignment.CenterVertically))
         IconToggleButton(state.isOrderedList, {
-            state.toggleOrderedList()
+            applyFormat { state.toggleOrderedList() }
         }) {
-            Icon(Icons.Default.FormatListNumbered, "Toggle ordered list")
+            Icon(Icons.Default.FormatListNumbered, stringResource(Res.string.block_editor_ordered_list))
         }
         IconToggleButton(state.isUnorderedList, {
-            state.toggleUnorderedList()
+            applyFormat { state.toggleUnorderedList() }
         }) {
-            Icon(Icons.AutoMirrored.Filled.FormatListBulleted, "Toggle unordered list")
+            Icon(Icons.AutoMirrored.Filled.FormatListBulleted, stringResource(Res.string.block_editor_unordered_list))
         }
         VerticalDivider(modifier = Modifier.height(20.dp).align(Alignment.CenterVertically))
         IconToggleButton(state.isCodeSpan, {
-            state.toggleCodeSpan()
+            applyFormat { state.toggleCodeSpan() }
         }) {
-            Icon(Icons.Default.Code, "Toggle code span")
+            Icon(Icons.Default.Code, stringResource(Res.string.block_editor_code_span))
         }
     }
 }
@@ -417,7 +499,7 @@ fun EditableListItemBlock(
                 decorationBox = { innerTextField ->
                     if (block.content.isEmpty()) {
                         Text(
-                            "List item...",
+                            stringResource(Res.string.block_editor_list_placeholder),
                             style = LocalTextStyle.current.copy(color = LocalContentColor.current.copy(alpha = 0.5f)),
                         )
                     }
@@ -467,7 +549,7 @@ fun EditableQuoteBlock(
                 decorationBox = { innerTextField ->
                     if (block.content.isEmpty()) {
                         Text(
-                            "Quote...",
+                            stringResource(Res.string.block_editor_quote_placeholder),
                             style = LocalTextStyle.current.copy(color = LocalContentColor.current.copy(alpha = 0.5f)),
                         )
                     }
@@ -514,7 +596,7 @@ fun EditableCodeBlock(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = block.language.ifBlank { "plain text" },
+                text = block.language.ifBlank { stringResource(Res.string.block_editor_plain_text) },
                 style = MaterialTheme.typography.labelSmall,
                 color = LocalContentColor.current.copy(alpha = 0.6f),
             )
@@ -533,7 +615,7 @@ fun EditableCodeBlock(
                 decorationBox = { innerTextField ->
                     if (block.content.isEmpty()) {
                         Text(
-                            "Enter code...",
+                            stringResource(Res.string.block_editor_code_placeholder),
                             style = LocalTextStyle.current.copy(color = LocalContentColor.current.copy(alpha = 0.5f)),
                         )
                     }
@@ -561,12 +643,16 @@ fun EditableCodeBlock(
 fun EditableImageBlock(block: ContentBlock.ImageBlock, isFocused: Boolean) {
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Text(
-            text = "Image: ${block.name.ifBlank { "No image selected" }}",
+            text =
+            stringResource(
+                Res.string.block_editor_image_label,
+                block.name.ifBlank { stringResource(Res.string.block_editor_image_empty) },
+            ),
             style = MaterialTheme.typography.bodyMedium,
         )
         if (isFocused) {
             Text(
-                text = "Click to select image (TODO: integrate with FilePicker)",
+                text = stringResource(Res.string.block_editor_image_hint),
                 style = MaterialTheme.typography.labelSmall,
                 color = LocalContentColor.current.copy(alpha = 0.5f),
             )
@@ -581,12 +667,12 @@ fun EditableImageBlock(block: ContentBlock.ImageBlock, isFocused: Boolean) {
 fun EditableObjectBlock(block: ContentBlock.ObjectBlock, isFocused: Boolean) {
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Text(
-            text = block.title ?: block.name.ifBlank { "Embedded Object" },
+            text = block.title ?: block.name.ifBlank { stringResource(Res.string.block_editor_object_empty) },
             style = MaterialTheme.typography.bodyMedium,
         )
         if (isFocused) {
             Text(
-                text = "Click to edit object (TODO: integrate with media picker)",
+                text = stringResource(Res.string.block_editor_object_hint),
                 style = MaterialTheme.typography.labelSmall,
                 color = LocalContentColor.current.copy(alpha = 0.5f),
             )
@@ -601,7 +687,7 @@ fun EditableObjectBlock(block: ContentBlock.ObjectBlock, isFocused: Boolean) {
 fun EditableRefBlock(block: ContentBlock.RefBlock) {
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Text(
-            text = "Reference: ${block.refPath}",
+            text = stringResource(Res.string.block_editor_reference_label, block.refPath),
             style = MaterialTheme.typography.bodyMedium,
             modifier =
             Modifier
@@ -636,7 +722,7 @@ fun EditableMathBlock(
             .padding(12.dp),
     ) {
         Text(
-            text = "Math Formula",
+            text = stringResource(Res.string.block_editor_math),
             style = MaterialTheme.typography.labelSmall,
             color = LocalContentColor.current.copy(alpha = 0.6f),
         )
@@ -654,7 +740,7 @@ fun EditableMathBlock(
                 decorationBox = { innerTextField ->
                     if (block.content.isEmpty()) {
                         Text(
-                            "Enter LaTeX...",
+                            stringResource(Res.string.block_editor_math_placeholder),
                             style = LocalTextStyle.current.copy(color = LocalContentColor.current.copy(alpha = 0.5f)),
                         )
                     }

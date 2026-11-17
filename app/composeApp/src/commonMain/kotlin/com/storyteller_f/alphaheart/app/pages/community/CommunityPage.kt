@@ -4,27 +4,12 @@
 
 package com.storyteller_f.alphaheart.app.pages.community
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AddHome
-import androidx.compose.material.icons.filled.CardMembership
-import androidx.compose.material.icons.filled.ChatBubble
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Title
-import androidx.compose.material.icons.filled.Topic
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,9 +19,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.storyteller_f.alphaheart.app.AppGlobalDialogController
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
@@ -54,24 +42,30 @@ import com.storyteller_f.alphaheart.app.common.createCommunityViewModel
 import com.storyteller_f.alphaheart.app.common.hasRouteFlow
 import com.storyteller_f.alphaheart.app.components.FontView
 import com.storyteller_f.alphaheart.app.exit_community
+import com.storyteller_f.alphaheart.app.files_title
 import com.storyteller_f.alphaheart.app.join_community
 import com.storyteller_f.alphaheart.app.pages.AdaptiveSectionScaffold
 import com.storyteller_f.alphaheart.app.pages.room.RoomList
 import com.storyteller_f.alphaheart.app.pages.search.SearchScope
 import com.storyteller_f.alphaheart.app.pages.search.detailSearchBar
-import com.storyteller_f.alphaheart.app.pages.topic.TopicComposeData
 import com.storyteller_f.alphaheart.app.pages.topic.TopicList
 import com.storyteller_f.alphaheart.app.pages.user.ButtonBadgeSuffix
 import com.storyteller_f.alphaheart.app.rooms
+import com.storyteller_f.alphaheart.app.settings_title
 import com.storyteller_f.alphaheart.app.topics
+import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.ButtonNav
 import com.storyteller_f.alphaheart.client.compose_core.components.CommunityIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.DialogContainer
 import com.storyteller_f.alphaheart.client.compose_core.components.FavoriteButton
+import com.storyteller_f.alphaheart.client.compose_core.components.IconActionMenu
 import com.storyteller_f.alphaheart.client.compose_core.components.IconRes
 import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingActionMenuSurface
 import com.storyteller_f.alphaheart.client.compose_core.components.SubscriptionButton
+import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
+import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.request
 import com.storyteller_f.alphaheart.client.core.exitCommunity
 import com.storyteller_f.alphaheart.client.core.joinCommunity
@@ -82,6 +76,7 @@ import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBasicAlertDialog as BasicAlertDialog
 
 @Composable
 fun CommunityPage(communityId: PrimaryKey, showDialog: Boolean) {
@@ -125,8 +120,8 @@ private fun CommunityPageInternal(communityId: PrimaryKey, needShowDialog: Boole
 @Composable
 fun communityNavRoutes(): List<NavRoute> =
     listOf(
-        NavRoute("/topics", Icons.Default.Topic, stringResource(Res.string.topics)),
-        NavRoute("/rooms", Icons.Default.ChatBubble, stringResource(Res.string.rooms)),
+        NavRoute("/topics", navigationIcon(NavigationGlyph.TEXT), stringResource(Res.string.topics)),
+        NavRoute("/rooms", navigationIcon(NavigationGlyph.MESSAGES_SQUARE), stringResource(Res.string.rooms)),
     )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -147,23 +142,24 @@ fun CommunityDialog(communityInfo: CommunityInfo?, showDialog: Boolean, dismiss:
 @Composable
 fun CommunityDialogInternal(communityInfo: CommunityInfo, dismiss: () -> Unit) {
     val communityId = communityInfo.id
-    DialogContainer {
+    ReadingActionMenuSurface(onDismiss = dismiss, heading = {
         Row(
             modifier =
-            Modifier.background(MaterialTheme.colorScheme.surfaceDim, RoundedCornerShape(8.dp))
-                .padding(8.dp).fillMaxWidth(),
+            Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             CommunityIconWithDialog(
                 communityInfo,
                 showDialog = false,
-                50.dp,
+                40.dp,
                 setClickEvent = false,
             ) {}
-            Column {
-                Text(communityInfo.name)
+            Column(Modifier.weight(1f)) {
+                Text(communityInfo.name, fontSize = 18.sp, fontWeight = FontWeight.Medium)
             }
         }
+    }) {
         communityInfo.fontSettings?.contentFont?.let {
             FontView(it)
         }
@@ -178,9 +174,9 @@ fun CommunityDialogInternal(communityInfo: CommunityInfo, dismiss: () -> Unit) {
 private fun CommunityMenus(communityId: PrimaryKey, communityInfo: CommunityInfo, dismiss: () -> Unit) {
     val appNavFactory = LocalAppNavFactory.current
     val globalDialogController = LocalGlobalDialog.current
-    Column {
+    IconActionMenu {
         ButtonNav(
-            IconRes.Vector(Icons.Default.CardMembership),
+            IconRes.Vector(navigationIcon(NavigationGlyph.USERS)),
             stringResource(Res.string.all_members),
             {
                 ButtonBadgeSuffix(communityInfo.memberCount)
@@ -196,7 +192,6 @@ private fun CommunityMenus(communityId: PrimaryKey, communityInfo: CommunityInfo
             CommunityMemberStatusButton(communityInfo, globalDialogController, communityId)
             FavoriteButton(communityInfo.favoriteId, communityInfo.tuple())
             SubscriptionButton(communityInfo.subscriptionId, communityInfo.tuple())
-            CommunityCreateButton(dismiss, appNavFactory, communityId)
             CommunityAdminButtons(communityInfo, dismiss, appNavFactory, communityId)
         }
     }
@@ -211,30 +206,15 @@ private fun CommunityAdminButtons(
 ) {
     val myInfo = LocalUserInfo.current
     if (myInfo?.id == communityInfo.owner) {
-        ButtonNav(Icons.Default.Folder, "Files") {
+        ButtonNav(navigationIcon(NavigationGlyph.FOLDER), stringResource(Res.string.files_title)) {
             dismiss()
             appNavFactory.newAppNav().gotoFileExplorer(communityId ob ObjectType.COMMUNITY)
         }
 
-        ButtonNav(Icons.Default.Title, "Add Title") {
-            dismiss()
-            appNavFactory.newAppNav().gotoTitleCompose()
-        }
-
-        ButtonNav(Icons.Default.Settings, "Settings") {
+        ButtonNav(actionIcon(ActionGlyph.SETTINGS), stringResource(Res.string.settings_title)) {
             dismiss()
             appNavFactory.newAppNav().gotoSettingPage(communityId, ObjectType.COMMUNITY)
         }
-    }
-}
-
-@Composable
-private fun CommunityCreateButton(dismiss: () -> Unit, appNavFactory: AppNavFactory, communityId: PrimaryKey) {
-    ButtonNav(Icons.Default.Add, "Add", semanticDescription = "community-add-topic-action") {
-        dismiss()
-        appNavFactory.newAppNav().gotoTopicCompose(
-            TopicComposeData.Community(communityId, communityId ob ObjectType.COMMUNITY),
-        )
     }
 }
 
@@ -246,7 +226,7 @@ private fun CommunityMemberStatusButton(
 ) {
     val scope = rememberCoroutineScope()
     if (communityInfo.isJoined) {
-        ButtonNav(Icons.Default.Close, stringResource(Res.string.exit_community)) {
+        ButtonNav(navigationIcon(NavigationGlyph.LOG_OUT), stringResource(Res.string.exit_community)) {
             scope.launch {
                 globalDialogController.useResult {
                     request {
@@ -258,7 +238,7 @@ private fun CommunityMemberStatusButton(
             }
         }
     } else {
-        ButtonNav(Icons.Default.AddHome, stringResource(Res.string.join_community)) {
+        ButtonNav(actionIcon(ActionGlyph.LOG_IN), stringResource(Res.string.join_community)) {
             scope.launch {
                 globalDialogController.useResult {
                     request {

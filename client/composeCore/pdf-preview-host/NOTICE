@@ -1,0 +1,8 @@
+This adapter is part of a private project.
+PDF.js and its CMap, font, image decoder, ICC and worker assets are provided by
+the pinned pdfjs-dist 6.5.438 dependency, copyright Mozilla Foundation and contributors.
+https://github.com/mozilla/pdf.js/releases/tag/v6.5.438
+The scoped text-layer style rules are adapted from PDF.js web/pdf_viewer.css,
+copyright 2014 Mozilla Foundation, under the Apache License 2.0. Selectors were
+scoped to the preview, and unused editing/highlighting UI was omitted.
+See LICENSE-pdfjs and the licenses included in the distribution assets.

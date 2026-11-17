@@ -9,21 +9,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Article
-import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.PrimaryScrollableTabRow
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -32,11 +23,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomBottomNav
+import com.storyteller_f.alphaheart.client.compose_core.components.DetailNavigationScaffold
 import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
+import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.alphaheart.client.core.updateCommunityStatus
 import com.storyteller_f.alphaheart.panel.LocalPanelGlobalDialog
 import com.storyteller_f.alphaheart.panel.LocalPanelNav
@@ -47,8 +41,14 @@ import com.storyteller_f.alphaheart.panel.common.createPanelCommunityMembersView
 import com.storyteller_f.alphaheart.panel.common.createPanelCommunityViewModel
 import com.storyteller_f.alphaheart.panel.community_detail_title
 import com.storyteller_f.alphaheart.panel.community_detail_title_with_info
-import com.storyteller_f.alphaheart.panel.components.InfoTable
+import com.storyteller_f.alphaheart.panel.components.PanelInfoTable
+import com.storyteller_f.alphaheart.panel.components.panelValueText
+import com.storyteller_f.alphaheart.panel.menu
+import com.storyteller_f.alphaheart.panel.set_normal
+import com.storyteller_f.alphaheart.panel.set_read_only
 import com.storyteller_f.alphaheart.panel.tab_basic_info
+import com.storyteller_f.alphaheart.panel.tab_info
+import com.storyteller_f.alphaheart.panel.tab_logs
 import com.storyteller_f.alphaheart.panel.tab_members
 import com.storyteller_f.result.onSuccess
 import com.storyteller_f.shared.obj.UpdateObjectStatusBody
@@ -58,6 +58,12 @@ import com.storyteller_f.shared.type.PrimaryKey
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingHorizontalPager as HorizontalPager
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab as Tab
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow as PrimaryScrollableTabRow
 
 private val compactJson = Json { prettyPrint = false }
 
@@ -65,26 +71,15 @@ private val compactJson = Json { prettyPrint = false }
 @Composable
 fun CommunityDetailPage(id: PrimaryKey) {
     val pagerState = rememberPagerState { 2 }
-    val scope = rememberCoroutineScope()
-    Scaffold(topBar = { CommunityTopBar(id) }, bottomBar = {
-        val navRoutes =
-            listOf(
-                NavRoute("/info", Icons.Default.Group, "Info"),
-                NavRoute("/logs", Icons.AutoMirrored.Filled.Article, "Logs"),
-            )
-        CustomBottomNav(navRoutes[pagerState.currentPage].path, navRoutes) { path ->
-            scope.launch {
-                pagerState.animateScrollToPage(navRoutes.indexOfFirst { it.path == path })
-            }
-        }
-    }) { paddingValues ->
-        Column(Modifier.padding(paddingValues)) {
-            HorizontalPager(pagerState) { pageIndex ->
-                when (pageIndex) {
-                    0 -> CommunityInfoTabs(id)
-                    else -> CommunityLogsTab(id)
-                }
-            }
+    val navRoutes =
+        listOf(
+            NavRoute("/info", navigationIcon(NavigationGlyph.INFO), stringResource(Res.string.tab_info)),
+            NavRoute("/logs", navigationIcon(NavigationGlyph.FILE_TEXT), stringResource(Res.string.tab_logs)),
+        )
+    DetailNavigationScaffold(pagerState, navRoutes, topBar = { CommunityTopBar(id) }) { pageIndex ->
+        when (pageIndex) {
+            0 -> CommunityInfoTabs(id)
+            else -> CommunityLogsTab(id)
         }
     }
 }
@@ -109,7 +104,7 @@ private fun CommunityTopBar(id: PrimaryKey) {
         },
         navigationIcon = {
             IconButton(onClick = { nav.open() }) {
-                Icon(Icons.Default.Menu, null)
+                Icon(Icons.Default.Menu, stringResource(Res.string.menu))
             }
         },
     )
@@ -121,7 +116,7 @@ private fun CommunityInfoTabs(id: PrimaryKey) {
     val pagerState = rememberPagerState { tabs.size }
     val scope = rememberCoroutineScope()
     Column {
-        PrimaryScrollableTabRow(pagerState.currentPage) {
+        PrimaryScrollableTabRow {
             tabs.forEachIndexed { i, label ->
                 Tab(selected = pagerState.currentPage == i, onClick = {
                     scope.launch { pagerState.scrollToPage(i) }
@@ -151,7 +146,7 @@ private fun CommunityBasicInfoSection(id: PrimaryKey) {
                 add("name" to info.name)
                 add("aid" to info.aid)
                 add("owner" to info.owner.toString())
-                add("createdTime" to info.createdTime.toString())
+                add("createdTime" to info.createdTime.formatDisplayTime())
                 add("memberCount" to info.memberCount.toString())
                 add("memberPolicy" to info.memberPolicy.name)
                 add("icon" to (info.icon?.name ?: "null"))
@@ -171,7 +166,7 @@ private fun CommunityBasicInfoSection(id: PrimaryKey) {
                 add("readOnly" to info.readOnly.toString())
             }
         Column {
-            InfoTable(items, Modifier.padding(16.dp).weight(1f))
+            PanelInfoTable(items, Modifier.padding(16.dp).weight(1f))
             Button(onClick = {
                 val newStatus = if (info.readOnly) ObjectStatus.NORMAL else ObjectStatus.READ_ONLY
                 scope.launch {
@@ -184,7 +179,7 @@ private fun CommunityBasicInfoSection(id: PrimaryKey) {
                     }
                 }
             }, modifier = Modifier.padding(16.dp)) {
-                Text(if (info.readOnly) "Set to Writable" else "Set to ReadOnly")
+                Text(stringResource(if (info.readOnly) Res.string.set_normal else Res.string.set_read_only))
             }
         }
     }
@@ -208,12 +203,12 @@ private fun CommunityMembersTab(id: PrimaryKey) {
                         modifier = Modifier.clickable { nav.gotoUserDetail(m.userInfo.id) },
                         headlineContent = { Text(m.userInfo.nickname) },
                         supportingContent = {
-                            val joined = m.joinedTime?.toString().orEmpty()
-                            val status = m.status.name
+                            val joined = m.joinedTime?.formatDisplayTime().orEmpty()
+                            val status = panelValueText(m.status.name)
                             Text(listOf(joined, status).joinToString(" • "))
                         },
                     )
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 }
             }
         }

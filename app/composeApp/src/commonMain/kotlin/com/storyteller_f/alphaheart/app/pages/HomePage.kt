@@ -11,15 +11,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Diversity3
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -30,7 +27,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,31 +54,48 @@ import com.storyteller_f.alphaheart.app.pages.search.CustomSearchBar
 import com.storyteller_f.alphaheart.app.pages.search.SearchScope
 import com.storyteller_f.alphaheart.app.rooms
 import com.storyteller_f.alphaheart.app.source_repository
-import com.storyteller_f.alphaheart.app.utils.rememberStringPreference
+import com.storyteller_f.alphaheart.app.utils.LocalAppPreferences
 import com.storyteller_f.alphaheart.app.world
 import com.storyteller_f.alphaheart.client.compose_core.components.ButtonNav
+import com.storyteller_f.alphaheart.client.compose_core.components.CenterBox
 import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBasicAlertDialog as BasicAlertDialog
 
 @Composable
 fun HomePage() {
-    val homeStartDestination by rememberStringPreference(
-        HOME_START_DESTINATION_PREFERENCE_KEY,
-        HOME_START_DESTINATION_WORLD,
-    )
-    val pagerState = rememberPagerState(initialPage = homePageFromPreference(homeStartDestination)) { 3 }
+    val preferences = LocalAppPreferences.current
+    val startupValues =
+        remember(preferences) {
+            preferences.observeString(HOME_START_DESTINATION_PREFERENCE_KEY, HOME_START_DESTINATION_WORLD)
+        }
+    val pagerState = rememberStartupHomePager(startupValues)
+    if (pagerState == null) {
+        CenterBox { CircularProgressIndicator() }
+        return
+    }
     val homeNavRoutes =
         listOf(
-            NavRoute(HOME_START_DESTINATION_WORLD, Icons.Default.Public, stringResource(Res.string.world)),
+            NavRoute(
+                HOME_START_DESTINATION_WORLD,
+                navigationIcon(NavigationGlyph.EARTH),
+                stringResource(Res.string.world),
+            ),
             NavRoute(
                 HOME_START_DESTINATION_COMMUNITIES,
-                Icons.Default.Diversity3,
+                navigationIcon(NavigationGlyph.USERS),
                 stringResource(Res.string.communities),
             ),
-            NavRoute(HOME_START_DESTINATION_ROOMS, Icons.Default.ChatBubble, stringResource(Res.string.rooms)),
+            NavRoute(
+                HOME_START_DESTINATION_ROOMS,
+                navigationIcon(NavigationGlyph.MESSAGES_SQUARE),
+                stringResource(Res.string.rooms),
+            ),
         )
     val unreadMessagesViewModel = getUnreadMessageCountViewModel()
     ObserveUnreadMessageCountEvents(unreadMessagesViewModel.handler)
@@ -90,7 +103,6 @@ fun HomePage() {
         unreadMessagesViewModel,
     ) { unreadMessagesViewModel.handler.data.collectAsStateWithLifecycle() }
     val unreadMessageCount = unreadMessages?.unreadMessageCount ?: 0
-    val scope = rememberCoroutineScope()
     AdaptiveSectionScaffold(
         pagerState,
         homeNavRoutes,
@@ -107,8 +119,16 @@ fun HomePage() {
             CustomSearchBar(searchScope, title = if (compact) null else homeNavRoutes[page].label) { ProjectIcon() }
         },
     ) { page ->
-        HomeSection(page) { destination -> scope.launch { pagerState.animateScrollToPage(destination) } }
+        HomeSection(page)
     }
+}
+
+/** Read the persisted startup choice before first mount; later choices never move an active reader. */
+@Composable
+internal fun rememberStartupHomePager(values: Flow<String>): PagerState? {
+    val startupValue by values.collectAsState(initial = null)
+    val initialPage = startupValue?.let(::homePageFromPreference) ?: return null
+    return rememberPagerState(initialPage = initialPage) { 3 }
 }
 
 @Serializable
@@ -165,14 +185,14 @@ private fun ProjectIcon() {
     Box(
         modifier =
         Modifier.size(40.dp).appiumSemantics(description = "about project", onClick = { showDialog = true })
-            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
-            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(8.dp))
             .clickable {
                 showDialog = true
             },
         contentAlignment = Alignment.Center,
     ) {
-        Text("AH", color = MaterialTheme.colorScheme.onPrimaryContainer)
+        Text("α", color = MaterialTheme.colorScheme.onPrimary)
     }
     if (showDialog) {
         BasicAlertDialog({
@@ -186,9 +206,9 @@ private fun ProjectIcon() {
 }
 
 @Composable
-private fun HomeSection(page: Int, selectSection: (Int) -> Unit) {
+private fun HomeSection(page: Int) {
     when (page) {
-        0 -> WorldPage(selectSection)
+        0 -> WorldPage()
         1 -> UserHost { MyCommunitiesPage() }
         else -> UserHost { MyRoomsPage() }
     }

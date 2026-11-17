@@ -24,7 +24,8 @@ import org.intellij.markdown.parser.CancellationToken
 import org.intellij.markdown.parser.MarkdownParser
 
 fun extractMarkdownHeadline(markdownText: String): String {
-    val parsedTree = astNode(markdownText)
+    val source = normalizeMarkdownLineEndings(markdownText)
+    val parsedTree = astNode(source)
 
     val paragraphs = StringBuilder()
     var headline: CharSequence = ""
@@ -41,12 +42,12 @@ fun extractMarkdownHeadline(markdownText: String): String {
 
                     type == MarkdownElementTypes.ATX_1 -> {
                         // Extract the first level header content
-                        headline = node.getTextInNode(markdownText).trim().take(50)
+                        headline = node.getTextInNode(source).trim().take(50)
                     }
 
                     type == MarkdownElementTypes.PARAGRAPH -> {
                         if (captureContent) {
-                            val content = node.getTextInNode(markdownText).trim()
+                            val content = node.getTextInNode(source).trim()
                             if (content.isNotEmpty()) {
                                 paragraphs.appendLine(content)
                             }
@@ -70,13 +71,14 @@ fun extractMarkdownHeadline(markdownText: String): String {
     return if (headline.isNotBlank()) {
         "$headline\n${paragraphs.toString().trim().take(150)}"
     } else {
-        extractHeadParagraph(markdownText)
+        extractHeadParagraph(source)
     }
 }
 
 fun extractHeadParagraph(markdownText: String): String {
+    val source = normalizeMarkdownLineEndings(markdownText)
     val paragraphs = StringBuilder()
-    val parsedTree = astNode(markdownText)
+    val parsedTree = astNode(source)
     var captureContent = false
     val typeList = markdownElementTypes()
     parsedTree.accept(
@@ -89,7 +91,7 @@ fun extractHeadParagraph(markdownText: String): String {
 
                     type == MarkdownElementTypes.PARAGRAPH -> {
                         if (captureContent) {
-                            val content = node.getTextInNode(markdownText).trim()
+                            val content = node.getTextInNode(source).trim()
                             if (content.isNotEmpty()) {
                                 if (children.size == 1 && children.first().type == MarkdownElementTypes.IMAGE) {
                                     paragraphs.appendLine(content)
@@ -105,7 +107,7 @@ fun extractHeadParagraph(markdownText: String): String {
                         it.name == type.name
                     } -> {
                         if (paragraphs.length <= 100) {
-                            val content = node.getTextInNode(markdownText).trim()
+                            val content = node.getTextInNode(source).trim()
                             paragraphs.appendLine(content)
                         }
                         captureContent = false
@@ -156,7 +158,8 @@ fun markdownElementTypes(): List<IElementType> =
     )
 
 fun extractMarkdownMediaLink(markdownText: String): MutableList<String> {
-    val parsedTree = astNode(markdownText)
+    val source = normalizeMarkdownLineEndings(markdownText)
+    val parsedTree = astNode(source)
 
     val list = mutableListOf<String>()
 
@@ -165,15 +168,15 @@ fun extractMarkdownMediaLink(markdownText: String): MutableList<String> {
             override fun visitNode(node: ASTNode) {
                 when (node.type) {
                     MarkdownElementTypes.IMAGE -> {
-                        val imagePath = extractImageUrl(node, markdownText)
+                        val imagePath = extractImageUrl(node, source)
                         imagePath?.let { list.add(it) }
                     }
 
                     MarkdownElementTypes.CODE_FENCE -> {
-                        val lang = getLang(node, markdownText)
+                        val lang = getLang(node, source)
                         if (lang == "object") {
                             try {
-                                val content = readCodeFence(node, markdownText)
+                                val content = readCodeFence(node, source)
                                 val obj = commonJson.decodeFromString<MarkdownObject>(content)
                                 if (obj.name.isNotBlank() && obj.url.isBlank()) {
                                     list.add(obj.name)
@@ -192,8 +195,9 @@ fun extractMarkdownMediaLink(markdownText: String): MutableList<String> {
 }
 
 fun extractImageUrl(node: ASTNode, markdownText: String): String? {
+    val source = normalizeMarkdownLineEndings(markdownText)
     // Extract the first level header content
-    val markdownImage = node.getTextInNode(markdownText)
+    val markdownImage = node.getTextInNode(source)
 
     // 正则表达式匹配 ![alt text](image path "title")
     val regex = Regex("""!\[([^]]*)]\(([^ )]+)(?:\s+"([^"]*)")?\)""")
@@ -209,7 +213,8 @@ fun extractImageUrl(node: ASTNode, markdownText: String): String? {
 }
 
 fun trimMarkdownUnusedContent(markdownText: String): String {
-    val parsedTree = astNode(markdownText)
+    val source = normalizeMarkdownLineEndings(markdownText)
+    val parsedTree = astNode(source)
     return buildString {
         parsedTree.accept(
             object : Visitor {
@@ -224,8 +229,8 @@ fun trimMarkdownUnusedContent(markdownText: String): String {
                         queue.removeAt(0)
                     }
                     if (node.type == MarkdownElementTypes.CODE_FENCE) {
-                        val lang = getLang(node, markdownText)
-                        val content = readCodeFence(node, markdownText)
+                        val lang = getLang(node, source)
+                        val content = readCodeFence(node, source)
                         if (lang == "object") {
                             try {
                                 val obj = commonJson.decodeFromString<MarkdownObject>(content)
@@ -247,7 +252,7 @@ fun trimMarkdownUnusedContent(markdownText: String): String {
                             appendLine(content.trimEnd())
                             append("```")
                         } else {
-                            append(content)
+                            append(node.getTextInNode(source))
                         }
                     } else if (node.type == MarkdownElementTypes.MARKDOWN_FILE) {
                         node.acceptChildren(this)
@@ -259,7 +264,7 @@ fun trimMarkdownUnusedContent(markdownText: String): String {
                             appendLine()
                         }
                     } else {
-                        val value = node.getTextInNode(markdownText)
+                        val value = node.getTextInNode(source)
                         append(value)
                     }
                 }
@@ -271,29 +276,40 @@ fun trimMarkdownUnusedContent(markdownText: String): String {
 data class MathContext(val content: String, val start: Int, val end: Int, val isInline: Boolean)
 
 fun extractMath(markdownText: String): MutableList<MathContext> {
-    val parsedTree = astNode(markdownText)
+    val source = normalizeMarkdownLineEndings(markdownText)
+    val originalOffsets =
+        if (source.length == markdownText.length) null else originalMarkdownOffsets(markdownText, source.length)
+    fun originalOffset(offset: Int): Int = originalOffsets?.get(offset) ?: offset
+    val parsedTree = astNode(source)
     val images = mutableListOf<MathContext>()
     parsedTree.accept(
         object : Visitor {
             override fun visitNode(node: ASTNode) {
                 when (node.type) {
                     GFMElementTypes.INLINE_MATH, GFMElementTypes.BLOCK_MATH -> {
-                        val mathContent = readInlineMath(node, markdownText)
+                        val mathContent = readInlineMath(node, source)
                         images.add(
                             MathContext(
                                 mathContent,
-                                node.startOffset,
-                                node.endOffset,
+                                originalOffset(node.startOffset),
+                                originalOffset(node.endOffset),
                                 node.type == GFMElementTypes.INLINE_MATH,
                             ),
                         )
                     }
 
                     MarkdownElementTypes.CODE_FENCE -> {
-                        val lang = getLang(node, markdownText)
+                        val lang = getLang(node, source)
                         if (lang == "math") {
-                            val content = readCodeFence(node, markdownText)
-                            images.add(MathContext(content, node.startOffset, node.endOffset, false))
+                            val content = readCodeFence(node, source)
+                            images.add(
+                                MathContext(
+                                    content,
+                                    originalOffset(node.startOffset),
+                                    originalOffset(node.endOffset),
+                                    false,
+                                ),
+                            )
                         }
                     }
                 }
@@ -305,14 +321,32 @@ fun extractMath(markdownText: String): MutableList<MathContext> {
     return images
 }
 
+private fun originalMarkdownOffsets(source: String, normalizedLength: Int): IntArray {
+    val offsets = IntArray(normalizedLength + 1)
+    var original = 0
+    var normalized = 0
+    while (original < source.length) {
+        offsets[normalized++] = original
+        original += if (source[original] == '\r' && source.getOrNull(original + 1) == '\n') 2 else 1
+    }
+    offsets[normalized] = source.length
+    return offsets
+}
+
+/** Rendering and syntax inspection must normalize both the parser input and text read through its offsets. */
+fun normalizeMarkdownLineEndings(source: String): String =
+    if ('\r' in source) source.replace("\r\n", "\n").replace('\r', '\n') else source
+
+/** Parse a presentation view; node offsets address [normalizeMarkdownLineEndings] of the input. */
 fun astNode(markdownText: String): ASTNode {
     val flavour = GFMFlavourDescriptor()
     val parser = MarkdownParser(flavour, cancellationToken = CancellationToken.NonCancellable)
-    val text: CharSequence = markdownText
+    val text: CharSequence = normalizeMarkdownLineEndings(markdownText)
     return parser.buildMarkdownTreeFromString(text)
 }
 
 fun readCodeFence(node: ASTNode, content: String): String {
+    val source = normalizeMarkdownLineEndings(content)
     val children = node.children
     val langOffset =
         children.indexOfFirst {
@@ -326,10 +360,11 @@ fun readCodeFence(node: ASTNode, content: String): String {
         children.last {
             it.type == MarkdownTokenTypes.CODE_FENCE_CONTENT
         }.endOffset
-    return content.substring(start, end)
+    return source.substring(start, end)
 }
 
 fun readInlineMath(node: ASTNode, content: String): String {
+    val source = normalizeMarkdownLineEndings(content)
     val children = node.children
     val langOffset =
         children.first {
@@ -339,17 +374,18 @@ fun readInlineMath(node: ASTNode, content: String): String {
         children.last {
             it.type == GFMTokenTypes.DOLLAR
         }.startOffset
-    return content.substring(langOffset, end).removeSurrounding("`")
+    return source.substring(langOffset, end).removeSurrounding("`")
 }
 
 fun getLang(node: ASTNode, content: String): String {
+    val source = normalizeMarkdownLineEndings(content)
     val children = node.children
     val langOffset =
         children.indexOfFirst {
             it.type == MarkdownTokenTypes.FENCE_LANG
         }
     val languageNode = children.getOrNull(langOffset) ?: return ""
-    return languageNode.getTextInNode(content).toString().lowercase()
+    return languageNode.getTextInNode(source).toString().lowercase()
 }
 
 @Serializable

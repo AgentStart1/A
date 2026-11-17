@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="topic_action_comments">评论 %1$s</string>
+    <string name="topic_action_reply_count">回复 %1$s</string>
+    <string name="topic_action_view_replies">查看回复</string>
+    <string name="topic_action_view_replies_count">查看回复，%1$s</string>
+    <string name="topic_action_react">回应</string>
+</resources>

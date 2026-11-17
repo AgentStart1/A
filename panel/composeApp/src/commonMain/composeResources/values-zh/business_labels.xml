@@ -1,0 +1,24 @@
+<resources>
+    <string name="review_log_sign_in">登录</string>
+    <string name="review_log_sign_up">注册</string>
+    <string name="review_log_create">创建</string>
+    <string name="review_log_delete">删除</string>
+    <string name="review_log_update">更新</string>
+    <string name="review_log_join">加入</string>
+    <string name="review_log_exit">退出</string>
+    <string name="review_log_add_child">添加子账号</string>
+    <string name="review_log_remove_child">移除子账号</string>
+    <string name="review_log_add_favorite">收藏</string>
+    <string name="review_log_remove_favorite">取消收藏</string>
+    <string name="review_log_add_subscription">订阅</string>
+    <string name="review_log_remove_subscription">取消订阅</string>
+    <string name="review_title_regular">常规</string>
+    <string name="review_title_join">加入型</string>
+    <string name="review_upload_pending">等待中</string>
+    <string name="review_upload_success">已完成</string>
+    <string name="review_upload_failed">失败</string>
+    <string name="review_upload_aborted">已中止</string>
+    <string name="review_user_log_supporting">类型：%1$s | 目标：%2$s | 时间：%3$s</string>
+    <string name="review_log_update_status">将%1$s状态设为%2$s</string>
+    <string name="review_object_panel_account">管理账号</string>
+</resources>

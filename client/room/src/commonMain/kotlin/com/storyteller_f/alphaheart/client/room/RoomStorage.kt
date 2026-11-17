@@ -230,6 +230,19 @@ class RoomTopicInfoStorage(val appDatabase: AppDatabase) : TopicInfoStorage {
         }
     }
 
+    override suspend fun replace(collection: TopicCollection, items: List<TopicDetail>) {
+        val details = items.map { CommonEntity(it.id, TopicCollection.Topics.getName(), commonJson.encodeToString(it)) }
+        val aliases =
+            details.zip(items).mapNotNull { (entity, topic) ->
+                topic.aid?.let { entity.copy(id = it) }
+            }
+        val entities =
+            details.mapIndexed { index, entity ->
+                entity.copy(collection = collection.getName(), seq = index.toLong())
+            }
+        appDatabase.getCommonDao().replaceCollection(collection.getName(), entities, details + aliases)
+    }
+
     override suspend fun saveFirst(collection: TopicCollection, item: TopicDetail) {
         val commonEntity = saveToDefaultCollections(item)
         if (collection !is TopicCollection.Topics) {
@@ -418,16 +431,12 @@ class RoomReactionInfoStorage(appDatabase: AppDatabase) : ReactionInfoStorage {
 
     override suspend fun saveLast(collection: ReactionCollection, item: ReactionInfo) {
         val commonEntity = saveToDefaultCollections(item)
-        if (collection == ReactionCollection.Reactions) {
-            impl.saveLast(commonEntity.copy(collection = collection.getName()))
-        }
+        impl.saveLast(commonEntity.copy(collection = collection.getName()))
     }
 
     override suspend fun saveFirst(collection: ReactionCollection, item: ReactionInfo) {
         val commonEntity = saveToDefaultCollections(item)
-        if (collection == ReactionCollection.Reactions) {
-            impl.saveFirst(commonEntity.copy(collection = collection.getName()))
-        }
+        impl.saveFirst(commonEntity.copy(collection = collection.getName()))
     }
 
     override fun observeData(collection: ReactionCollection): PagingSource<Int, ReactionInfo> =

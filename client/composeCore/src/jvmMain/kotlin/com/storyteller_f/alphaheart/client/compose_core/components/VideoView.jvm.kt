@@ -37,7 +37,12 @@ private val desktopVideoCoordination = Dispatchers.Default.limitedParallelism(1)
 
 @Composable
 actual fun VideoViewEmbed(remoteMediaItem: RemoteMediaItem) {
-    DesktopMedia(remoteMediaItem, Modifier.aspectRatio(16f / 9), video = true)
+    DesktopMedia(
+        remoteMediaItem,
+        Modifier.fillMaxWidth(),
+        video = true,
+        layout = MediaSurfaceLayout.EmbeddedVideo(),
+    )
 }
 
 @Composable
@@ -51,7 +56,12 @@ actual fun VideoViewFilled(remoteMediaItem: RemoteMediaItem) {
 }
 
 @Composable
-internal fun DesktopMedia(item: RemoteMediaItem, modifier: Modifier, video: Boolean) {
+internal fun DesktopMedia(
+    item: RemoteMediaItem,
+    modifier: Modifier,
+    video: Boolean,
+    layout: MediaSurfaceLayout = MediaSurfaceLayout.Bounded,
+) {
     val scope = rememberCoroutineScope()
     var retryGeneration by remember(item.url, video) { mutableIntStateOf(0) }
     val autoPlay = video || retryGeneration > 0
@@ -78,7 +88,14 @@ internal fun DesktopMedia(item: RemoteMediaItem, modifier: Modifier, video: Bool
             { volume.toggleMute(controls.volume, controls.muted) },
             retry = { retryGeneration++ },
         )
-    val surfaceModifier = if (video) modifier else modifier.fillMaxWidth().heightIn(min = 224.dp)
+    val surfaceModifier =
+        if (video) {
+            modifier
+        } else {
+            modifier.fillMaxWidth().heightIn(
+                min = if (item.cover == null) 64.dp else 224.dp,
+            )
+        }
     key(item.url) {
         MediaPlayerSurface(
             item.title ?: item.name,
@@ -88,6 +105,7 @@ internal fun DesktopMedia(item: RemoteMediaItem, modifier: Modifier, video: Bool
             video,
             sourceUrl = item.url,
             artwork = item.cover?.url,
+            layout = layout,
         ) {
             bitmap?.let { image ->
                 val ratio = ready?.aspectRatio ?: image.width.toFloat() / image.height

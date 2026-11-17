@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="file_icon_video">video file</string>
+    <string name="file_icon_audio">audio file</string>
+    <string name="file_icon_other">other file</string>
+</resources>

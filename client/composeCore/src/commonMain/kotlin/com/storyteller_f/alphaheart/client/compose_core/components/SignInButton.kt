@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Login
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -18,6 +16,8 @@ import com.storyteller_f.alphaheart.client.compose_core.Res
 import com.storyteller_f.alphaheart.client.compose_core.sign_in
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 
 @Composable
 fun SignInButton(onClick: () -> Unit = {}) {

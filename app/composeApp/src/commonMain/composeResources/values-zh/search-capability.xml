@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="topic_search_unsupported">此范围暂不支持话题搜索</string>
+</resources>

@@ -9,32 +9,26 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Topic
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.PrimaryScrollableTabRow
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomBottomNav
+import com.storyteller_f.alphaheart.client.compose_core.components.DetailNavigationScaffold
 import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
+import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.alphaheart.client.core.updateTopicStatus
 import com.storyteller_f.alphaheart.panel.LocalPanelGlobalDialog
 import com.storyteller_f.alphaheart.panel.LocalPanelNav
@@ -44,10 +38,15 @@ import com.storyteller_f.alphaheart.panel.common.PanelLogsTab
 import com.storyteller_f.alphaheart.panel.common.PanelNav
 import com.storyteller_f.alphaheart.panel.common.createPanelTopicTopicsViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelTopicViewModel
-import com.storyteller_f.alphaheart.panel.components.InfoTable
+import com.storyteller_f.alphaheart.panel.common.gotoChildTopicDetail
+import com.storyteller_f.alphaheart.panel.components.PanelInfoTable
+import com.storyteller_f.alphaheart.panel.components.panelOptionalValueText
 import com.storyteller_f.alphaheart.panel.encrypted
 import com.storyteller_f.alphaheart.panel.interaction
+import com.storyteller_f.alphaheart.panel.menu
 import com.storyteller_f.alphaheart.panel.pinned
+import com.storyteller_f.alphaheart.panel.set_normal
+import com.storyteller_f.alphaheart.panel.set_read_only
 import com.storyteller_f.alphaheart.panel.tab_basic_info
 import com.storyteller_f.alphaheart.panel.tab_logs
 import com.storyteller_f.alphaheart.panel.tab_topics
@@ -61,33 +60,28 @@ import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingHorizontalPager as HorizontalPager
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab as Tab
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow as PrimaryScrollableTabRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopicDetailPage(id: PrimaryKey) {
     val pagerState = rememberPagerState { 3 }
-    val scope = rememberCoroutineScope()
-    Scaffold(topBar = { TopicTopBar(id) }, bottomBar = {
-        val navRoutes =
-            listOf(
-                NavRoute("/info", Icons.Default.Topic, stringResource(Res.string.tab_basic_info)),
-                NavRoute("/topics", Icons.Default.Topic, stringResource(Res.string.tab_topics)),
-                NavRoute("/logs", Icons.AutoMirrored.Filled.Article, stringResource(Res.string.tab_logs)),
-            )
-        CustomBottomNav(navRoutes[pagerState.currentPage].path, navRoutes) { path ->
-            scope.launch {
-                pagerState.animateScrollToPage(navRoutes.indexOfFirst { it.path == path })
-            }
-        }
-    }) { paddingValues ->
-        Column(Modifier.padding(paddingValues)) {
-            HorizontalPager(pagerState) { pageIndex ->
-                when (pageIndex) {
-                    0 -> TopicInfoTabs(id)
-                    1 -> TopicTopicsTab(id)
-                    else -> TopicLogsTab(id)
-                }
-            }
+    val navRoutes =
+        listOf(
+            NavRoute("/info", navigationIcon(NavigationGlyph.INFO), stringResource(Res.string.tab_basic_info)),
+            NavRoute("/topics", navigationIcon(NavigationGlyph.MESSAGES_SQUARE), stringResource(Res.string.tab_topics)),
+            NavRoute("/logs", navigationIcon(NavigationGlyph.FILE_TEXT), stringResource(Res.string.tab_logs)),
+        )
+    DetailNavigationScaffold(pagerState, navRoutes, topBar = { TopicTopBar(id) }) { pageIndex ->
+        when (pageIndex) {
+            0 -> TopicInfoTabs(id)
+            1 -> TopicTopicsTab(id)
+            else -> TopicLogsTab(id)
         }
     }
 }
@@ -103,7 +97,7 @@ private fun TopicTopBar(id: PrimaryKey) {
         },
         navigationIcon = {
             IconButton(onClick = { nav.open() }) {
-                Icon(Icons.Default.Menu, null)
+                Icon(Icons.Default.Menu, stringResource(Res.string.menu))
             }
         },
     )
@@ -115,7 +109,7 @@ private fun TopicInfoTabs(id: PrimaryKey) {
     val pagerState = rememberPagerState { tabs.size }
     val scope = rememberCoroutineScope()
     Column {
-        PrimaryScrollableTabRow(pagerState.currentPage) {
+        PrimaryScrollableTabRow {
             tabs.forEachIndexed { i, label ->
                 Tab(selected = pagerState.currentPage == i, onClick = {
                     scope.launch { pagerState.scrollToPage(i) }
@@ -144,19 +138,19 @@ private fun TopicBasicInfoSection(id: PrimaryKey) {
                 add("rootType" to info.rootType.name)
                 add("parentId" to info.parentId.toString())
                 add("parentType" to info.parentType.name)
-                add("createdTime" to info.createdTime.toString())
+                add("createdTime" to info.createdTime.formatDisplayTime())
                 add("commentCount" to info.commentCount.toString())
                 add("reactionCount" to info.reactionCount.toString())
                 add("hasComment" to info.hasComment.toString())
                 add("isEncrypted" to info.isEncrypted.toString())
                 add("level" to info.level.toString())
                 add("isPin" to info.isPin.toString())
-                add("lastModifiedTime" to (info.lastModifiedTime?.toString() ?: "null"))
-                add("aid" to (info.aid ?: "null"))
+                add("lastModifiedTime" to (info.lastModifiedTime?.formatDisplayTime() ?: "null"))
+                add("aid" to panelOptionalValueText(info.aid))
                 add("readOnly" to info.readOnly.toString())
             }
         Column {
-            InfoTable(items, Modifier.padding(16.dp).weight(1f))
+            PanelInfoTable(items, Modifier.padding(16.dp).weight(1f))
             Button(onClick = {
                 val newStatus = if (info.readOnly) ObjectStatus.NORMAL else ObjectStatus.READ_ONLY
                 scope.launch {
@@ -169,7 +163,7 @@ private fun TopicBasicInfoSection(id: PrimaryKey) {
                     }
                 }
             }, modifier = Modifier.padding(16.dp)) {
-                Text(if (info.readOnly) "Set to Writable" else "Set to ReadOnly")
+                Text(stringResource(if (info.readOnly) Res.string.set_normal else Res.string.set_read_only))
             }
         }
     }
@@ -190,10 +184,10 @@ private fun TopicTopicsTab(id: PrimaryKey) {
                 val info = items[index]
                 if (info != null) {
                     TopicCell(info, nav)
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 } else {
                     ListItem(headlineContent = { Text("") })
-                    HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                 }
             }
         }
@@ -224,13 +218,13 @@ private fun TopicCell(info: TopicDetail, panelNav: PanelNav) {
         ).joinToString(" • ")
     val supporting =
         listOf(
-            info.createdTime.toString(),
+            info.createdTime.formatDisplayTime(),
             counts,
             flags,
         ).filter { it.isNotEmpty() }.joinToString(" • ")
 
     ListItem(
-        modifier = Modifier.clickable { panelNav.gotoTopicDetail(info.id) },
+        modifier = Modifier.clickable { panelNav.gotoChildTopicDetail(info.id) },
         headlineContent = { Text(text) },
         overlineContent = { Text(overline) },
         supportingContent = {

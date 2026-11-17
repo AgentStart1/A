@@ -25,12 +25,11 @@ enum class ImageFormat {
     WEBP,
 }
 
-expect fun saveImageBitmap(
+expect fun encodeImageBitmap(
     imageBitmap: ImageBitmap,
-    path: String,
     format: ImageFormat = ImageFormat.PNG,
     quality: Int = 90,
-): CustomResult<Path, ImageError>
+): CustomResult<ByteArray, ImageError>
 
 fun writeImageFile(filePath: String, data: ByteArray): Path {
     val path = Path(SystemTemporaryDirectory, filePath)

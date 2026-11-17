@@ -17,8 +17,10 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import com.storyteller_f.alphaheart.app.common.TopicsViewModel
@@ -34,7 +36,7 @@ fun TopicList(topicsViewModel: PagingViewModel<TopicDetail>) {
     CommonTopicList(topicsViewModel) { index, info, size ->
         TopicCell(info)
         if (index != size - 1) {
-            HorizontalDivider()
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
         }
     }
 }
@@ -44,7 +46,7 @@ fun UserTopicList(topicsViewModel: PagingViewModel<TopicDetail>) {
     CommonTopicList(topicsViewModel = topicsViewModel) { index, info, size ->
         UserTopicCell(info)
         if (index != size - 1) {
-            HorizontalDivider()
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
         }
     }
 }
@@ -54,20 +56,22 @@ fun CommonTopicList(
     topicsViewModel: PagingViewModel<TopicDetail>,
     block: @Composable (index: Int, info: TopicDetail?, Int) -> Unit,
 ) {
+    val listState = rememberSaveable(topicsViewModel, saver = LazyListState.Saver) { LazyListState() }
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-        StateView(topicsViewModel, Modifier.widthIn(max = 900.dp).fillMaxSize()) { items ->
+        StateView(topicsViewModel, Modifier.fillMaxSize().testTag("topic-list-data-region")) { items ->
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                state = listState,
+                modifier = Modifier.widthIn(max = 740.dp).fillMaxSize().testTag("topic-list-reading-content"),
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                topPrepend(items.loadState)
+                topPrepend(items.loadState, items::retry)
                 pagingItems(items, {
                     it.id
                 }) {
                     block(it, items[it], items.itemCount)
                 }
-                bottomAppending(items.loadState)
+                bottomAppending(items.loadState, items::retry)
             }
         }
     }
@@ -75,15 +79,15 @@ fun CommonTopicList(
 
 @Composable
 fun RoomTopicList(items: LazyPagingItems<TopicDetail>, topicsViewModel: TopicsViewModel, lazyListState: LazyListState) {
-    StateView(topicsViewModel) {
+    StateView(topicsViewModel, Modifier.fillMaxSize().testTag("room-topic-data-region")) {
         LazyColumn(
             state = lazyListState,
-            modifier = Modifier.padding(top = 10.dp),
+            modifier = Modifier.widthIn(max = 740.dp).fillMaxSize().padding(top = 10.dp),
             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp),
             reverseLayout = true,
         ) {
             addLatestRoomAnchor()
-            bottomAppending(items.loadState)
+            bottomAppending(items.loadState, items::retry)
             pagingItems(items, {
                 it.id
             }) { index ->
@@ -96,7 +100,7 @@ fun RoomTopicList(items: LazyPagingItems<TopicDetail>, topicsViewModel: TopicsVi
                 val info = items[index]
                 RoomTopicCell(info, info != null && next?.author != info.author)
             }
-            topPrepend(items.loadState)
+            topPrepend(items.loadState, items::retry)
         }
     }
 }

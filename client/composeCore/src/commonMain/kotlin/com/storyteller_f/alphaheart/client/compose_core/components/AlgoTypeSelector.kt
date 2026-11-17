@@ -6,12 +6,12 @@ package com.storyteller_f.alphaheart.client.compose_core.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.shared.model.AlgoType
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
 
 @Composable
 fun AlgoTypeSelector(selected: AlgoType, onSelected: (AlgoType) -> Unit) {

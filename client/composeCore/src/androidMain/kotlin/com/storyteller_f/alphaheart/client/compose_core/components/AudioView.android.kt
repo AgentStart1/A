@@ -57,7 +57,16 @@ private fun AudioPlayer(
     }
     val ratio = Rational(16, 9)
     val pipModifier = Modifier.androidPipMode(enablePip, ratio)
-    Box(modifier = if (fill) pipModifier.fillMaxSize() else pipModifier.fillMaxWidth().heightIn(min = 224.dp)) {
+    Box(
+        modifier =
+        if (fill) {
+            pipModifier.fillMaxSize()
+        } else {
+            pipModifier.fillMaxWidth().heightIn(
+                min = if (remoteMediaItem.cover == null) 64.dp else 224.dp,
+            )
+        },
+    ) {
         when {
             player == null -> PlayerWaiting(localMediaPlaySession, remoteMediaItem, video = false)
 

@@ -9,12 +9,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.BasicAlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
@@ -30,7 +27,6 @@ import androidx.compose.ui.window.DialogProperties
 import com.storyteller_f.alphaheart.client.compose_core.Res
 import com.storyteller_f.alphaheart.client.compose_core.close
 import com.storyteller_f.alphaheart.client.compose_core.error.DialogError
-import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.result.CustomResult
 import com.storyteller_f.result.FailureDetails
 import com.storyteller_f.result.mapError
@@ -45,6 +41,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jetbrains.compose.resources.stringResource
 import kotlin.uuid.ExperimentalUuidApi
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBasicAlertDialog as BasicAlertDialog
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingDialog as Dialog
 
 sealed interface GlobalDialogState {
     data class Loading(
@@ -196,6 +195,12 @@ fun <C> GlobalDialog(state: CustomGlobalDialogController<C>) {
 @Composable
 fun GlobalDialogInternal(message: GlobalDialogState, dismiss: () -> Unit) {
     val scrollState = rememberScrollState()
+    if (message is GlobalDialogState.Error) {
+        Dialog(onDismissRequest = dismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+            Box(Modifier.padding(24.dp)) { GlobalDialogContent(message, scrollState, dismiss) }
+        }
+        return
+    }
 
     BasicAlertDialog(
         dismiss,
@@ -206,44 +211,26 @@ fun GlobalDialogInternal(message: GlobalDialogState, dismiss: () -> Unit) {
             DialogProperties()
         },
     ) {
-        DialogContainer {
+        DialogContainer(onDismissRequest = dismiss.takeUnless { message is GlobalDialogState.Loading }) {
             GlobalDialogContent(message, scrollState, dismiss)
         }
     }
 }
 
 @Composable
-private fun GlobalDialogContent(message: GlobalDialogState, scrollState: ScrollState, onDismissRequest: () -> Unit) {
-    Column(modifier = Modifier.height(200.dp)) {
-        when (message) {
-            is GlobalDialogState.Error -> {
-                ExceptionView(message.throwable, modifier = Modifier.weight(1f).verticalScroll(scrollState))
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-                    val label = stringResource(Res.string.close)
-                    Button(
-                        onClick = onDismissRequest,
-                        modifier = Modifier.appiumSemantics(text = label, onClick = onDismissRequest),
-                    ) {
-                        Text(label)
-                    }
-                }
-            }
+internal fun GlobalDialogContent(message: GlobalDialogState, scrollState: ScrollState, onDismissRequest: () -> Unit) {
+    when (message) {
+        is GlobalDialogState.Error -> ReadingFailureSurface(message.throwable, scrollState, onDismissRequest)
 
-            is GlobalDialogState.Loading -> {
-                LoadingGlobalDialogContent(message)
-            }
+        is GlobalDialogState.Loading -> Column(Modifier.height(200.dp)) { LoadingGlobalDialogContent(message) }
 
-            is GlobalDialogState.Custom -> {
+        is GlobalDialogState.Custom ->
+            Column(Modifier.height(200.dp)) {
                 message.content.content()
                 Box(contentAlignment = Alignment.CenterEnd) {
-                    Button({
-                        onDismissRequest()
-                    }) {
-                        Text("Close")
-                    }
+                    Button(onDismissRequest) { Text(stringResource(Res.string.close)) }
                 }
             }
-        }
     }
 }
 

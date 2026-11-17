@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="topic_search_unsupported">Topic search is not available in this scope yet.</string>
+</resources>

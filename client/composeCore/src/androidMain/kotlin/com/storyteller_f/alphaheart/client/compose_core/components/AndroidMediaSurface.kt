@@ -32,6 +32,7 @@ internal fun AndroidMediaSurface(
     modifier: Modifier,
     video: Boolean = true,
     controlsVisible: Boolean = true,
+    layout: MediaSurfaceLayout = MediaSurfaceLayout.Bounded,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val state by rememberMediaControls(player)
@@ -46,16 +47,17 @@ internal fun AndroidMediaSurface(
                 contentDescription =
                     "${if (video) "video" else "audio"} playback ${item.name}: ${if (state.playing) "playing" else "paused"}"
             },
-            video, controlsVisible, sourceUrl = item.url, artwork = item.cover?.url, menuContent = { dismiss ->
-                DropdownMenuItem(text = { Text(stringResource(Res.string.media_playlist)) }, onClick = {
+            video, controlsVisible, sourceUrl = item.url, artwork = item.cover?.url, layout = layout,
+            menuContent = { dismiss ->
+                ButtonNav(Icons.AutoMirrored.Filled.List, stringResource(Res.string.media_playlist)) {
                     dismiss()
                     showPlaylist = true
-                }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.List, null) })
+                }
                 if (service.enablePip) {
-                    DropdownMenuItem(text = { Text(stringResource(Res.string.media_pip)) }, onClick = {
+                    ButtonNav(Icons.Default.PictureInPicture, stringResource(Res.string.media_pip)) {
                         dismiss()
                         context.findActivity().enterPictureInPictureMode(PictureInPictureParams.Builder().build())
-                    }, leadingIcon = { Icon(Icons.Default.PictureInPicture, null) })
+                    }
                 }
             }, content = content,
         )

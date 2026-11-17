@@ -1,0 +1,5 @@
+<resources>
+    <string name="content_loading">正在加载…</string>
+    <string name="content_load_failed">首次加载失败</string>
+    <string name="retry_action">重试</string>
+</resources>

@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
@@ -25,9 +24,13 @@ import com.storyteller_f.shared.utils.safeFirstUnicode
 
 @Composable
 fun RoomIcon(roomInfo: RoomInfo?, width: Dp, setClickEvent: Boolean, updateDialog: (Boolean) -> Unit) {
+    RoomIcon(roomInfo, width, setClickEvent, 8.dp, updateDialog)
+}
+
+@Composable
+fun RoomIcon(roomInfo: RoomInfo?, width: Dp, setClickEvent: Boolean, radius: Dp, updateDialog: (Boolean) -> Unit) {
     val height = width * 3 / 4
     val iconUrl = roomInfo?.icon?.url
-    val radius = 8.dp
     val shape = RoundedCornerShape(radius)
     if (iconUrl != null) {
         CommonImage(
@@ -43,7 +46,7 @@ fun RoomIcon(roomInfo: RoomInfo?, width: Dp, setClickEvent: Boolean, updateDialo
                 } else {
                     it
                 }
-            }.border(1.dp, Color.Gray, shape),
+            }.border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
         )
     } else {
         Box(
@@ -60,7 +63,7 @@ fun RoomIcon(roomInfo: RoomInfo?, width: Dp, setClickEvent: Boolean, updateDialo
                     } else {
                         it
                     }
-                }.border(1.dp, Color.Gray, shape),
+                }.border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
             contentAlignment = Alignment.Center,
         ) {
             Text(roomInfo?.name?.let { safeFirstUnicode(it) }.orEmpty())

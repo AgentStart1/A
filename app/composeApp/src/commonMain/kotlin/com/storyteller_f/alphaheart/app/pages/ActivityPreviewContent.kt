@@ -11,12 +11,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Badge
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,6 +34,8 @@ import com.storyteller_f.alphaheart.app.common.RoomActivityPreview
 import com.storyteller_f.alphaheart.app.refresh
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBadge as Badge
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTextButton as TextButton
 
 /** Runtime-free preview state and refresh action, shared by both Home context cards. */
 @Composable
@@ -114,15 +114,22 @@ fun RoomActivityPreviewContent(preview: RoomActivityPreview, modifier: Modifier 
 fun ActivityMessageContent(message: MessagePreview?, modifier: Modifier = Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         val summaryText = activityMessageSummary(message)
-        Text(
-            summaryText,
-            Modifier.appiumSemantics(text = summaryText),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodySmall,
-        )
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            val author =
+                message?.author?.takeIf {
+                    message.summary is MessageSummary.Text || message.summary is MessageSummary.Attachment
+                }
+            author?.let { Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 1) }
+            Text(
+                summaryText,
+                Modifier.weight(1f).appiumSemantics(text = summaryText),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
         if (message != null) {
-            listOfNotNull(message.author, message.time).forEach { metadata ->
+            listOfNotNull(message.time).forEach { metadata ->
                 Text(
                     metadata,
                     maxLines = 1,

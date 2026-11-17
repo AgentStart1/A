@@ -23,7 +23,11 @@ import coil3.request.ImageRequest
 import com.hrm.latex.renderer.measure.rememberLatexMeasurer
 import com.mikepenz.markdown.compose.Markdown
 import com.mikepenz.markdown.compose.components.MarkdownComponent
+import com.mikepenz.markdown.compose.components.MarkdownComponentModel
 import com.mikepenz.markdown.compose.components.markdownComponents
+import com.mikepenz.markdown.compose.elements.MarkdownTable
+import com.mikepenz.markdown.compose.elements.MarkdownTableHeader
+import com.mikepenz.markdown.compose.elements.MarkdownTableRow
 import com.mikepenz.markdown.compose.elements.highlightedCodeBlock
 import com.mikepenz.markdown.compose.extendedspans.ExtendedSpans
 import com.mikepenz.markdown.compose.extendedspans.RoundedCornerSpanPainter
@@ -35,12 +39,14 @@ import com.mikepenz.markdown.model.ImageTransformer
 import com.mikepenz.markdown.model.markdownAnnotator
 import com.mikepenz.markdown.model.markdownExtendedSpans
 import com.mikepenz.markdown.model.markdownInlineContent
+import com.mikepenz.markdown.model.rememberMarkdownState
 import com.mohamedrejeb.richeditor.annotation.ExperimentalRichTextApi
 import com.storyteller_f.alphaheart.client.compose_core.common.LocalClient
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.compose_core.utils.imageRequest
 import com.storyteller_f.shared.model.Dimension
 import com.storyteller_f.shared.model.FileInfo
+import com.storyteller_f.shared.utils.normalizeMarkdownLineEndings
 import kotlinx.collections.immutable.ImmutableMap
 
 @Composable
@@ -51,6 +57,9 @@ fun CustomMarkdown(
     dimensionMap: ImmutableMap<String, Dimension?>,
     codeFence: MarkdownComponent,
 ) {
+    val source = remember(plain) { normalizeMarkdownLineEndings(plain) }
+    // Parsed nodes own embedded controls; a width-only remeasurement must not replace them.
+    val markdownState = rememberMarkdownState(content = source, immediate = true)
     val inlineContentMap = remember { mutableMapOf<String, InlineTextContent>() }
     val density = LocalDensity.current
     val latexMeasurer = rememberLatexMeasurer()
@@ -76,12 +85,17 @@ fun CustomMarkdown(
                     )
                 }
             Markdown(
-                content = plain,
+                markdownState = markdownState,
                 modifier = Modifier.fillMaxWidth(),
                 colors = colors,
                 typography = typography,
                 imageTransformer = imageTransformer,
-                components = markdownComponents(codeFence = codeFence, codeBlock = highlightedCodeBlock),
+                components =
+                markdownComponents(
+                    codeFence = codeFence,
+                    codeBlock = highlightedCodeBlock,
+                    table = { ReadingMarkdownTable(it) },
+                ),
                 annotator = annotator,
                 inlineContent = markdownInlineContent(inlineContentMap),
                 extendedSpans =
@@ -127,4 +141,19 @@ fun imageRequestInMarkdown(info: FileInfo?): ImageRequest {
     val client = LocalClient.current
     val context = LocalPlatformContext.current
     return imageRequest(context, client, info).build()
+}
+
+@Composable
+private fun ReadingMarkdownTable(model: MarkdownComponentModel) {
+    MarkdownTable(
+        content = model.content,
+        node = model.node,
+        style = model.typography.table,
+        headerBlock = { content, header, width, style ->
+            MarkdownTableHeader(content, header, width, style, maxLines = Int.MAX_VALUE)
+        },
+        rowBlock = { content, row, width, style ->
+            MarkdownTableRow(content, row, width, style, maxLines = Int.MAX_VALUE)
+        },
+    )
 }

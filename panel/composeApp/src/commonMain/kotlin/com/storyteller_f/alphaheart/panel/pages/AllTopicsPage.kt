@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
 import com.storyteller_f.alphaheart.client.compose_core.components.safeArea
@@ -21,6 +22,9 @@ import com.storyteller_f.alphaheart.panel.all_topics
 import com.storyteller_f.alphaheart.panel.common.AllTopicsViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelAllTopicsViewModel
 import com.storyteller_f.alphaheart.panel.components.TopicCell
+import com.storyteller_f.alphaheart.panel.components.selectedPanelEntityId
+import com.storyteller_f.alphaheart.panel.menu
+import com.storyteller_f.shared.type.ObjectType
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -33,27 +37,32 @@ fun AllTopicsPage() {
 @Composable
 fun AllTopicsPageInternal(viewModel: AllTopicsViewModel) {
     val panelNav = LocalPanelNav.current
+    val selectedId = selectedPanelEntityId(panelNav.backStack.lastOrNull(), ObjectType.TOPIC)
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(Res.string.all_topics)) },
-                navigationIcon = { IconButton({ panelNav.open() }) { Icon(Icons.Default.Menu, null) } },
+                navigationIcon = {
+                    IconButton({ panelNav.open() }) {
+                        Icon(Icons.Default.Menu, stringResource(Res.string.menu))
+                    }
+                },
             )
         },
     ) {
         val direction = LocalLayoutDirection.current
         Box(Modifier.safeArea(it, direction)) {
             StateView(viewModel) { items ->
-                LazyColumn {
+                LazyColumn(contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp)) {
                     pagingItems(items, key = { it.id }) { index ->
                         val info = items[index]
                         if (info != null) {
                             val panelNav = LocalPanelNav.current
-                            TopicCell(info, panelNav)
-                            HorizontalDivider()
+                            TopicCell(info, panelNav, selected = info.id == selectedId)
+                            if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                         } else {
                             ListItem(headlineContent = { Text("") })
-                            HorizontalDivider()
+                            if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                         }
                     }
                 }

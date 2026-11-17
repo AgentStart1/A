@@ -1,0 +1,11 @@
+Kodio JVM 0.2.0 source rebuild for Java 21
+
+Upstream: https://github.com/dosier/kodio
+Published sources: https://repo.maven.apache.org/maven2/space/kodio/core-jvm/0.2.0/core-jvm-0.2.0-sources.jar
+License: Apache License 2.0, https://www.apache.org/licenses/LICENSE-2.0
+
+The published JVM artifact targets Java 22. This build compiles its verified,
+unmodified common/JVM sources with Java 21 and preserves the verified native
+resources. Android retains the published artifact; the separate Web source patch handles missing track sample rates.
+No class-file rewriting or runtime class replacement is performed.
+Remove this rebuild when an upstream Java 21-compatible artifact is available.

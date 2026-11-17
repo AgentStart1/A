@@ -95,12 +95,12 @@ fun customMarkdownTypography(colors: MarkdownColors): MarkdownTypography {
     val fonts = LocalTopicContentFonts.current
     val typography = MaterialTheme.typography.withDefaultFontFamily(fonts.content)
     return markdownTypography(
-        h1 = typography.displayLarge,
-        h2 = typography.displayMedium,
-        h3 = typography.displaySmall,
-        h4 = typography.headlineMedium,
-        h5 = typography.headlineSmall,
-        h6 = typography.titleLarge,
+        h1 = typography.headlineSmall,
+        h2 = typography.titleLarge,
+        h3 = typography.titleMedium,
+        h4 = typography.titleMedium,
+        h5 = typography.titleSmall,
+        h6 = typography.titleSmall,
         text = typography.bodyLarge,
         paragraph = typography.bodyLarge,
         ordered = typography.bodyLarge,

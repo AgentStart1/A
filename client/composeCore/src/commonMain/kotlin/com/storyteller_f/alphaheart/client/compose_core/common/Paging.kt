@@ -244,11 +244,9 @@ private suspend fun <C : Any, T : Any> updateCollectionPage(
     data: List<T>,
     loadType: LoadType,
 ) {
-    if (loadType == LoadType.REFRESH) {
-        storage.replace(collection, data)
-    } else {
-        data.forEach {
-            if (loadType == LoadType.PREPEND) storage.saveFirst(collection, it) else storage.saveLast(collection, it)
-        }
+    when (loadType) {
+        LoadType.REFRESH -> storage.replace(collection, data)
+        LoadType.APPEND -> storage.append(collection, data)
+        LoadType.PREPEND -> data.forEach { storage.saveFirst(collection, it) }
     }
 }

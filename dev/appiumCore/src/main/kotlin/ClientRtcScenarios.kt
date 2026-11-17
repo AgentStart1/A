@@ -13,10 +13,12 @@ fun AppiumTestBase<AppAppiumHelper, WasmAppiumHelper>.testTwoClientRtc() =
             signInClientRoles(clients, data)
             val sender = clients.getValue("sender").driver as WasmAppTestDriver
             val recipient = clients.getValue("recipient").driver as WasmAppTestDriver
-            val senderProbe = sender.rtcProbe()
-            val recipientProbe = recipient.rtcProbe()
+            val senderProbe = sender.mediaProbe()
+            val recipientProbe = recipient.mediaProbe()
             senderProbe.observeCapture()
             recipientProbe.observeCapture()
+            senderProbe.observeRtcAudio()
+            recipientProbe.observeRtcAudio()
             sender.joinClientCall(data.roomName)
             recipient.joinClientCall(data.roomName)
             senderProbe.awaitCaptureStarted()
@@ -27,6 +29,8 @@ fun AppiumTestBase<AppAppiumHelper, WasmAppiumHelper>.testTwoClientRtc() =
             recipient.assertVisibleByTextContaining("Participant $senderId, Connected")
             senderProbe.awaitPresentedRemoteFrames()
             recipientProbe.awaitPresentedRemoteFrames()
+            senderProbe.awaitReceivedAudioGrowth()
+            recipientProbe.awaitReceivedAudioGrowth()
             sender.clickByDescription("rtc-toggle-audio")
             recipient.assertVisibleByTextContaining("Participant $senderId, Connected, audioMuted=true")
             sender.clickByDescription("rtc-toggle-audio")
@@ -85,7 +89,7 @@ fun AppiumTestBase<AppAppiumHelper, WasmAppiumHelper>.testCancelRtcDuringCapture
 
 private fun AppiumTestBase<AppAppiumHelper, WasmAppiumHelper>.withSingleRtcClient(
     holdCapture: Boolean = false,
-    block: suspend (WasmAppTestDriver, WasmRtcProbe, String) -> Unit,
+    block: suspend (WasmAppTestDriver, WasmMediaProbe, String) -> Unit,
 ) = runAppiumBlockingTest {
     platformHelper.runClients(testName, targetHelper, syntheticMedia = true, setup = { ports ->
         val data = prepareClientRoom(ports, privateRoom = false)
@@ -93,7 +97,7 @@ private fun AppiumTestBase<AppAppiumHelper, WasmAppiumHelper>.withSingleRtcClien
     }) { clients, data ->
         val driver = clients.getValue("sender").driver as WasmAppTestDriver
         scenarioSignIn(driver, data.sender.session.pemPrivateKey)
-        val probe = driver.rtcProbe()
+        val probe = driver.mediaProbe()
         probe.observeCapture(holdCapture)
         block(driver, probe, data.roomName)
     }

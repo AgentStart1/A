@@ -4,21 +4,36 @@
 
 package com.storyteller_f.alphaheart.app.pages.user
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetState
-import androidx.compose.material3.Switch
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -27,12 +42,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.PlatformContext
 import coil3.compose.LocalPlatformContext
 import com.attafitamim.krop.core.crop.AspectRatio
@@ -44,29 +67,55 @@ import com.attafitamim.krop.core.crop.crop
 import com.attafitamim.krop.core.crop.cropperStyle
 import com.attafitamim.krop.core.crop.rememberImageCropper
 import com.attafitamim.krop.core.images.ImageBitmapSrc
-import com.attafitamim.krop.ui.ImageCropperDialog
 import com.storyteller_f.alphaheart.app.AppGlobalDialogController
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
 import com.storyteller_f.alphaheart.app.LocalUserInfo
+import com.storyteller_f.alphaheart.app.Res
+import com.storyteller_f.alphaheart.app.close
 import com.storyteller_f.alphaheart.app.common.OnUserUpdated
 import com.storyteller_f.alphaheart.app.components.SettingOptionResettableView
 import com.storyteller_f.alphaheart.app.components.SettingOptionView
+import com.storyteller_f.alphaheart.app.copy_auth_uri
+import com.storyteller_f.alphaheart.app.download_recovery_codes
+import com.storyteller_f.alphaheart.app.edit
+import com.storyteller_f.alphaheart.app.enable_action
 import com.storyteller_f.alphaheart.app.error.AvatarUpdateError
+import com.storyteller_f.alphaheart.app.field_alias
+import com.storyteller_f.alphaheart.app.field_avatar
+import com.storyteller_f.alphaheart.app.field_name
+import com.storyteller_f.alphaheart.app.field_not_set
 import com.storyteller_f.alphaheart.app.pages.AdaptiveFormLayout
+import com.storyteller_f.alphaheart.app.pages.ReadingPageToolbar
 import com.storyteller_f.alphaheart.app.pages.topic.FilePicker
-import com.storyteller_f.alphaheart.app.pages.topic.uploadPath
+import com.storyteller_f.alphaheart.app.pages.topic.upload
+import com.storyteller_f.alphaheart.app.parent_topic_load_failed_retry
+import com.storyteller_f.alphaheart.app.select_font_file
+import com.storyteller_f.alphaheart.app.select_image
+import com.storyteller_f.alphaheart.app.settings
+import com.storyteller_f.alphaheart.app.totp_code
+import com.storyteller_f.alphaheart.app.totp_secret
+import com.storyteller_f.alphaheart.app.two_factor_authentication
+import com.storyteller_f.alphaheart.app.two_factor_disabled
+import com.storyteller_f.alphaheart.app.two_factor_enabled
 import com.storyteller_f.alphaheart.app.utils.saveTextToFile
 import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
+import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.CustomAlertDialog
 import com.storyteller_f.alphaheart.client.compose_core.components.CustomAlertDialogController
+import com.storyteller_f.alphaheart.client.compose_core.components.DialogContainer
+import com.storyteller_f.alphaheart.client.compose_core.components.GlobalDialogState
+import com.storyteller_f.alphaheart.client.compose_core.components.GlobalDialogStateProgress
 import com.storyteller_f.alphaheart.client.compose_core.components.LocalToaster
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingImageCropperDialog
+import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.copyText
 import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
 import com.storyteller_f.alphaheart.client.compose_core.components.rememberAlertDialogController
 import com.storyteller_f.alphaheart.client.compose_core.components.request
 import com.storyteller_f.alphaheart.client.compose_core.utils.ImageFormat
+import com.storyteller_f.alphaheart.client.compose_core.utils.encodeImageBitmap
 import com.storyteller_f.alphaheart.client.compose_core.utils.getRemoteImageBitmap
-import com.storyteller_f.alphaheart.client.compose_core.utils.saveImageBitmap
 import com.storyteller_f.alphaheart.client.core.disableTwoFactor
 import com.storyteller_f.alphaheart.client.core.enableTotp
 import com.storyteller_f.alphaheart.client.core.generateRecoveryCodes
@@ -74,10 +123,9 @@ import com.storyteller_f.alphaheart.client.core.getTwoFactorSettings
 import com.storyteller_f.alphaheart.client.core.setupTotp
 import com.storyteller_f.alphaheart.client.core.updateUserInfo
 import com.storyteller_f.result.CustomResult
-import com.storyteller_f.result.andThen
-import com.storyteller_f.result.getOrThrow
+import com.storyteller_f.result.map
 import com.storyteller_f.result.mapError
-import com.storyteller_f.result.mapPresent
+import com.storyteller_f.result.onFailure
 import com.storyteller_f.result.onSuccess
 import com.storyteller_f.shared.model.Dimension
 import com.storyteller_f.shared.model.FileInfo
@@ -92,6 +140,12 @@ import com.storyteller_f.shared.type.PrimaryKey
 import io.github.alexzhirkevich.qrose.rememberQrCodePainter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBasicAlertDialog as BasicAlertDialog
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedTextField as OutlinedTextField
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTextButton as TextButton
 
 sealed class SettingOption(open val value: String?) {
     data class Name(override val value: String?) : SettingOption(value)
@@ -122,7 +176,7 @@ fun UserSettingPage() {
         currentOption = null
     }
     val globalDialogController = LocalGlobalDialog.current
-    Scaffold { padding ->
+    Scaffold(topBar = { ReadingPageToolbar(stringResource(Res.string.settings)) }) { padding ->
         UserSettingInternal(padding, showDialog, {
             showTwoFactor = true
         }, my)
@@ -167,7 +221,10 @@ fun ObjectSettingDialog(
     val imageCropper = rememberImageCropper()
     val cropState = imageCropper.cropState
     if (cropState != null) {
-        ImageCropperDialog(state = cropState, cropperStyle(shapes = listOf(RectCropShape), aspects = listOf(ratio)))
+        ReadingImageCropperDialog(
+            state = cropState,
+            style = cropperStyle(shapes = listOf(RectCropShape), aspects = listOf(ratio)),
+        )
     }
 
     val myInfo = LocalUserInfo.current
@@ -183,8 +240,10 @@ fun ObjectSettingDialog(
         sheetState,
         mediaTarget,
         listOf("files"),
-        requiredDimension = Dimension(ratio.x, ratio.y),
-        { mediaList ->
+        requiredDimension = if (isFontOption) null else Dimension(ratio.x, ratio.y),
+        imageOnly = !isFontOption,
+        title = stringResource(if (isFontOption) Res.string.select_font_file else Res.string.select_image),
+        onClickItems = { mediaList ->
             if (isFontOption) {
                 onInputMedia(mediaList.first())
             } else {
@@ -207,15 +266,32 @@ fun ObjectSettingDialog(
         closeDialog()
     }
 
-    currentOption?.let {
-        val showInput = !showSheet
-        InputDialog(showInput, it.value.orEmpty(), {
-            closeDialog()
-        }, onInputString)
-    }
+    SettingTextInput(currentOption, showSheet, closeDialog, onInputString)
+
     CustomAlertDialog(alertDialogController, {
         alertDialogController.close()
     }) {
+    }
+}
+
+@Composable
+private fun SettingTextInput(
+    currentOption: SettingOption?,
+    showSheet: Boolean,
+    closeDialog: () -> Unit,
+    onInputString: (String) -> Unit,
+) {
+    currentOption?.let {
+        val showInput = !showSheet
+        val title =
+            stringResource(
+                when (it) {
+                    is SettingOption.Name -> Res.string.field_name
+                    is SettingOption.Aid -> Res.string.field_alias
+                    else -> Res.string.edit
+                },
+            )
+        InputDialog(showInput, it.value.orEmpty(), title, closeDialog, onConfirm = onInputString)
     }
 }
 
@@ -259,9 +335,12 @@ private fun processSelectedMedia(mediaList: List<FileInfo>, ratio: AspectRatio, 
         return
     }
     context.scope.launch {
-        context.globalDialogController.useResult {
-            cropImage(context.platformContext, info, context.imageCropper, context.mediaTarget)
-        }.onSuccess {
+        context.globalDialogController.cropImage(
+            context.platformContext,
+            info,
+            context.imageCropper,
+            context.mediaTarget,
+        ).onSuccess {
             if (it != null) {
                 context.onInputMedia(it)
             }
@@ -284,41 +363,32 @@ private suspend fun AppGlobalDialogController.cropImage(
     info: FileInfo,
     imageCropper: ImageCropper,
     mediaTarget: ObjectTuple,
-): CustomResult<FileInfo?, AvatarUpdateError> {
-    val image =
-        useResult {
+): CustomResult<FileInfo?, AvatarUpdateError> =
+    runImageCropStages(
+        load = {
             getRemoteImageBitmap(this.context.sessionManager, context, info)
+                ?.mapError(AvatarUpdateError::fromError)
                 ?: CustomResult.Failure(AvatarUpdateError.from(Exception("download")))
-        }
-    return image.andThen(AvatarUpdateError::fromError) {
-        when (val result = imageCropper.crop(ImageBitmapSrc(it))) {
-            CropResult.Cancelled -> {
-                CustomResult.success(null)
+        },
+        crop = { bitmap ->
+            when (val result = imageCropper.crop(ImageBitmapSrc(bitmap))) {
+                CropResult.Cancelled -> null
+                is CropError -> error(result.name)
+                is CropResult.Success -> result.bitmap
             }
-
-            is CropError -> {
-                CustomResult.Failure(AvatarUpdateError.from(Exception(result.name)))
-            }
-
-            is CropResult.Success -> {
-                useResult {
-                    val name = info.name.substringBeforeLast(".")
-                    saveImageBitmap(
-                        result.bitmap,
-                        "tmpImage/$name-cropped.png",
-                        when (info.contentType) {
-                            "image/webp" -> ImageFormat.WEBP
-                            "image/jpeg", "image/jpg" -> ImageFormat.JPEG
-                            else -> ImageFormat.PNG
-                        },
-                    )
+        },
+        save = { bitmap ->
+            encodeImageBitmap(bitmap, ImageFormat.PNG).mapError(AvatarUpdateError::fromError)
+        },
+        upload = { bytes ->
+            useResult {
+                val data = prepareCroppedImageUpload(info.name, bytes)
+                upload(mediaTarget, data) { position, total ->
+                    emitProgress { GlobalDialogState.Loading(progress = GlobalDialogStateProgress(position, total)) }
                 }
-            }
-        }
-    }.mapPresent {
-        uploadPath(it, mediaTarget).getOrThrow()?.first()
-    }.mapError(AvatarUpdateError::fromError)
-}
+            }.map { it.first() }.mapError(AvatarUpdateError::fromError)
+        },
+    )
 
 @Composable
 private fun UserSettingInternal(
@@ -332,7 +402,7 @@ private fun UserSettingInternal(
     val globalDialogController = LocalGlobalDialog.current
     AdaptiveFormLayout(Modifier.padding(values)) {
         SettingOptionResettableView(
-            "Icon",
+            stringResource(Res.string.field_avatar),
             m.avatar != null,
             {
                 if (it) {
@@ -352,27 +422,27 @@ private fun UserSettingInternal(
                 UserIconWithDialog(m, setClickEvent = false)
             },
         )
-        SettingOptionView("Name", {
+        SettingOptionView(stringResource(Res.string.field_name), {
             showDialog(SettingOption.Name(m.nickname))
-        }, {
+        }, content = {
             Text(m.nickname, textDecoration = TextDecoration.Underline)
         })
         val aid = m.aid
-        SettingOptionView("Aid", {
+        SettingOptionView(stringResource(Res.string.field_alias), {
             if (aid == null) {
                 showDialog(SettingOption.Aid(aid))
             } else {
                 toasterState.showMessage("forbid")
             }
-        }, {
+        }, content = {
             if (aid == null) {
-                Text("undefined", textDecoration = TextDecoration.Underline)
+                Text(stringResource(Res.string.field_not_set), textDecoration = TextDecoration.Underline)
             } else {
                 Text(aid)
             }
         })
-        SettingOptionView("2FA", showTwoFactor) {
-            Text("Two-factor authentication", textDecoration = TextDecoration.Underline)
+        SettingOptionView(stringResource(Res.string.two_factor_authentication), showTwoFactor, showDivider = false) {
+            Icon(Icons.Default.ChevronRight, null)
         }
     }
 }
@@ -387,7 +457,13 @@ private fun TwoFactorDialog(dismiss: () -> Unit) {
     var setupInfo by remember { mutableStateOf<TotpSetupInfo?>(null) }
     var code by remember { mutableStateOf("") }
 
-    LoadTwoFactorSettings(globalDialogController) { settings = it }
+    var loadFailure by remember { mutableStateOf<Throwable?>(null) }
+    var loadAttempt by remember { mutableStateOf(0) }
+    LaunchedEffect(loadAttempt) {
+        loadFailure = null
+        globalDialogController.request { getTwoFactorSettings() }
+            .onSuccess { settings = it }.onFailure { loadFailure = it.cause }
+    }
     val actions =
         scope.rememberTwoFactorActions(
             globalDialogController,
@@ -401,42 +477,79 @@ private fun TwoFactorDialog(dismiss: () -> Unit) {
             ),
         )
 
-    AlertDialog(dismiss, {
-        Button(dismiss) {
-            Text(CoreStrings.ok())
-        }
-    }, title = {
-        Text("Two-factor authentication")
-    }, text = {
-        TwoFactorDialogContent(
-            settings,
-            setupInfo,
-            code,
-            { code = it },
-            actions.setupTotp,
-            actions.disableTwoFactor,
-            actions.copyUri,
-            actions.enableTotp,
-            actions.downloadRecoveryCodes,
+    val windowWidth = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+    BasicAlertDialog(dismiss) {
+        TwoFactorDialogSurface(
+            compact = windowWidth <= 600.dp,
+            settings = settings,
+            setupInfo = setupInfo,
+            code = code,
+            onCodeChange = { code = it },
+            actions = actions,
+            loadFailed = loadFailure != null,
+            onRetry = { loadAttempt += 1 },
+            dismiss = dismiss,
         )
-    })
-}
-
-@Composable
-private fun LoadTwoFactorSettings(
-    globalDialogController: AppGlobalDialogController,
-    onSuccess: (TwoFactorSettingsInfo) -> Unit,
-) {
-    LaunchedEffect(Unit) {
-        globalDialogController.useResult {
-            request {
-                getTwoFactorSettings()
-            }
-        }.onSuccess(onSuccess)
     }
 }
 
-private data class TwoFactorActions(
+@Composable
+internal fun TwoFactorDialogSurface(
+    compact: Boolean,
+    settings: TwoFactorSettingsInfo?,
+    setupInfo: TotpSetupInfo?,
+    code: String,
+    onCodeChange: (String) -> Unit,
+    actions: TwoFactorActions,
+    loadFailed: Boolean,
+    onRetry: () -> Unit,
+    dismiss: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.widthIn(max = 320.dp).fillMaxWidth().testTag("two-factor-surface"),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column(Modifier.padding(1.dp).padding(if (compact) 18.dp else 20.dp).verticalScroll(rememberScrollState())) {
+            Box(Modifier.fillMaxWidth().height(29.dp)) {
+                Text(
+                    stringResource(Res.string.two_factor_authentication),
+                    fontSize = 17.sp,
+                    lineHeight = 24.sp,
+                    modifier = Modifier.padding(end = 44.dp).align(Alignment.CenterStart),
+                )
+                ReadingIconButton(dismiss, Modifier.align(Alignment.CenterEnd)) {
+                    Icon(
+                        actionIcon(ActionGlyph.X),
+                        stringResource(Res.string.close),
+                        Modifier.size(17.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.height(24.dp))
+            if (settings == null) {
+                Box(
+                    Modifier.fillMaxWidth().height(44.dp).testTag("two-factor-status"),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (loadFailed) {
+                        TextButton(onRetry) { Text(stringResource(Res.string.parent_topic_load_failed_retry)) }
+                    } else {
+                        CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+                    }
+                }
+            } else {
+                TwoFactorDialogContent(
+                    settings, setupInfo, code, onCodeChange, actions.setupTotp, actions.disableTwoFactor,
+                    actions.copyUri, actions.enableTotp, actions.downloadRecoveryCodes,
+                )
+            }
+        }
+    }
+}
+
+internal data class TwoFactorActions(
     val setupTotp: () -> Unit,
     val disableTwoFactor: () -> Unit,
     val copyUri: (String) -> Unit,
@@ -499,15 +612,17 @@ private fun TwoFactorDialogContent(
     onEnable: () -> Unit,
     onDownloadCodes: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(24.dp)) {
         val enabled = settings?.enabled == true
         TwoFactorSwitchRow(enabled, onSetup, onDisable)
         setupInfo?.let {
-            TotpSetupView(it, code, onCodeChange, onCopyUri, onEnable)
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                TotpSetupView(it, code, onCodeChange, onCopyUri, onEnable)
+            }
         }
         if (enabled) {
-            Button(onDownloadCodes) {
-                Text("Download recovery codes")
+            Button(onDownloadCodes, Modifier.align(Alignment.End)) {
+                Text(stringResource(Res.string.download_recovery_codes))
             }
         }
     }
@@ -515,15 +630,35 @@ private fun TwoFactorDialogContent(
 
 @Composable
 private fun TwoFactorSwitchRow(enabled: Boolean, onSetup: () -> Unit, onDisable: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(if (enabled) "Enabled" else "Disabled", modifier = Modifier.weight(1f))
-        Switch(enabled, { checked ->
-            if (checked) {
-                onSetup()
-            } else {
-                onDisable()
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 44.dp).testTag("two-factor-status"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        val label = stringResource(if (enabled) Res.string.two_factor_enabled else Res.string.two_factor_disabled)
+        Text(label, modifier = Modifier.weight(1f))
+        Box(
+            Modifier.size(44.dp).semantics { contentDescription = label }.toggleable(
+                value = enabled,
+                role = Role.Switch,
+                onValueChange = { checked -> if (checked) onSetup() else onDisable() },
+            ).testTag("two-factor-toggle"),
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+            Box(
+                Modifier.size(20.dp).testTag("two-factor-checkbox")
+                    .background(
+                        if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer,
+                        RoundedCornerShape(2.dp),
+                    )
+                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(2.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (enabled) {
+                    Icon(Icons.Default.Check, null, Modifier.size(17.dp), tint = MaterialTheme.colorScheme.onPrimary)
+                }
             }
-        })
+        }
     }
 }
 
@@ -540,17 +675,17 @@ private fun ColumnScope.TotpSetupView(
         "TOTP QR code",
         modifier = Modifier.size(220.dp).align(Alignment.CenterHorizontally),
     )
-    Text("Secret: ${info.secret}")
+    Text(stringResource(Res.string.totp_secret, info.secret))
     Button({
         onCopyUri(info.otpauthUri)
     }) {
-        Text("Copy URI")
+        Text(stringResource(Res.string.copy_auth_uri))
     }
     OutlinedTextField(code, onCodeChange, label = {
-        Text("TOTP code")
+        Text(stringResource(Res.string.totp_code))
     })
     Button(onEnable) {
-        Text("Enable")
+        Text(stringResource(Res.string.enable_action))
     }
 }
 
@@ -624,22 +759,40 @@ private suspend fun updateUser(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InputDialog(show: Boolean, init: String, dismiss: () -> Unit, onConfirm: (String) -> Unit) {
-    var input by remember {
-        mutableStateOf(init)
-    }
+fun InputDialog(
+    show: Boolean,
+    init: String,
+    title: String,
+    dismiss: () -> Unit,
+    minLines: Int = 1,
+    onConfirm: (String) -> Unit,
+) {
     if (show) {
-        AlertDialog(dismiss, {
-            Button({
-                onConfirm(input)
-            }) {
-                Text(CoreStrings.ok())
+        var input by rememberSaveable { mutableStateOf(init) }
+        BasicAlertDialog(dismiss) {
+            DialogContainer(onDismissRequest = dismiss) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(end = 40.dp, bottom = 20.dp),
+                )
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = minLines,
+                    maxLines = 10,
+                )
+                Row(
+                    Modifier.fillMaxWidth().padding(top = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                ) {
+                    TextButton(dismiss) { Text(CoreStrings.cancel()) }
+                    Button({ onConfirm(input) }) { Text(CoreStrings.ok()) }
+                }
             }
-        }, text = {
-            OutlinedTextField(input, {
-                input = it
-            })
-        })
+        }
     }
 }

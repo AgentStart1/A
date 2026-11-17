@@ -159,8 +159,6 @@ class WebSocketClientImpl(
             Napier.i(tag = "ws") {
                 "done"
             }
-        } catch (cancellation: kotlin.coroutines.cancellation.CancellationException) {
-            throw cancellation
         } catch (e: SessionIdentityChangedException) {
             failConnection(e)
             expireConnection()
@@ -168,6 +166,7 @@ class WebSocketClientImpl(
             failConnection(e)
             if (e.status == io.ktor.http.HttpStatusCode.Unauthorized) expireConnection()
         } catch (e: Exception) {
+            if (e is CancellationException) currentCoroutineContext().ensureActive()
             failConnection(e)
         }
     }
@@ -188,23 +187,26 @@ class WebSocketClientImpl(
 
     private suspend fun startListenerWebSocket(session: DefaultClientWebSocketSession, userInfo: UserInfo) {
         CoroutineScope(currentCoroutineContext()).launch {
+            var receiveFailure: Exception? = null
             try {
                 while (isActive) {
                     val frame = session.receiveDeserialized<RoomFrame>()
                     onMessage(frame, session)
                     frameFlow.emit(frame)
                 }
-            } catch (cancellation: kotlin.coroutines.cancellation.CancellationException) {
-                throw cancellation
-            } catch (_: ClosedReceiveChannelException) {
+            } catch (closed: ClosedReceiveChannelException) {
+                receiveFailure = closed
                 Napier.i(tag = "ClientWebSocket") { "Connection closed" }
             } catch (e: Exception) {
+                if (e is CancellationException) currentCoroutineContext().ensureActive()
+                receiveFailure = e
                 Napier.e(e, tag = "ClientWebSocket") { "Receive failed" }
             } finally {
                 session.cancel()
                 if (connectionHandler.data.value === session) {
                     connectionHandler.data.value = null
-                    connectionHandler.state.value = null
+                    connectionHandler.state.value =
+                        receiveFailure?.takeIf { isActive && canConnectWebSocket(userInfo) }?.let(LoadingState::Error)
                 }
                 if (session.closeReason.await()?.code == io.ktor.websocket.CloseReason.Codes.VIOLATED_POLICY.code &&
                     sessionModel.userHandler.data.value == userInfo

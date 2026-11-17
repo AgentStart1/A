@@ -132,6 +132,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -384,24 +385,21 @@ class TopicSearchViewModel(
     private val modelCollection = TopicCollection.SearchTopic(word, parentId)
 
     override val flow: Flow<PagingData<TopicDetail>> =
-        buildPager(
-            modelCollection,
-            modelStorage.remoteKey.wrap(modelCollection.getName()),
-            modelStorage.topic,
-        ) { key, size ->
-            // 内联并确保调用正确的endpoint
-            if (parentId != null && parentType != null) {
+        if (parentId == null || parentType !in setOf(ObjectType.COMMUNITY, ObjectType.ROOM, ObjectType.USER)) {
+            flowOf(PagingData.empty())
+        } else {
+            buildPager(
+                modelCollection,
+                modelStorage.remoteKey.wrap(modelCollection.getName()),
+                modelStorage.topic,
+            ) { key, size ->
                 when (parentType) {
                     ObjectType.COMMUNITY -> sessionManager.searchCommunityTopics(parentId, size, word, key)
                     ObjectType.ROOM -> sessionManager.searchRoomTopics(parentId, size, word, key)
-                    ObjectType.USER -> sessionManager.searchUserTopics(parentId, size, word, key)
-                    else -> throw IllegalArgumentException("Unsupported parentType: $parentType")
+                    else -> sessionManager.searchUserTopics(parentId, size, word, key)
                 }
-            } else {
-                // 如果没有指定父对象，则搜索推荐主题
-                sessionManager.getRecommendTopics(PaginationQuery(key, size = size))
-            }
-        }.flow.cachedIn(viewModelScope)
+            }.flow.cachedIn(viewModelScope)
+        }
 }
 
 class MediaListViewModel(
@@ -575,27 +573,25 @@ class AidTopicViewModel(sessionManager: UserSessionManager, modelStorage: ModelS
         }
 }
 
-class RoomKeysViewModel(sessionManager: UserSessionManager, private val id: PrimaryKey, val private: Boolean) :
-    SimpleViewModel<List<UserPubKeyInfo>>() {
+class RoomKeysViewModel(
+    private val sessionManager: UserSessionManager,
+    private val id: PrimaryKey,
+    val private: Boolean,
+) : SimpleViewModel<List<UserPubKeyInfo>>() {
     override val handler: LoadingHandler<List<UserPubKeyInfo>> =
-        SimpleLoadingHandler(viewModelScope) {
-            captureFailure(FormError::from) {
-                if (!private) return@captureFailure emptyList()
-                val result = mutableListOf<UserPubKeyInfo>()
-                var last: String? = null
-                while (true) {
-                    val list =
-                        sessionManager.getRoomMembersPublicKeys(
-                            this@RoomKeysViewModel.id,
-                            PaginationQuery(last, size = 100),
-                        )
-                            .getOrThrow()
-                    result.addAll(list.data)
-                    val nextKey = list.pagination?.nextPageToken ?: break
-                    last = nextKey
-                }
-                result
+        SimpleLoadingHandler(viewModelScope, ::loadCurrentKeys)
+
+    suspend fun loadCurrentKeys() =
+        captureFailure(FormError::from) {
+            if (!private) return@captureFailure emptyList()
+            val result = mutableListOf<UserPubKeyInfo>()
+            var last: String? = null
+            while (true) {
+                val list = sessionManager.getRoomMembersPublicKeys(id, PaginationQuery(last, size = 100)).getOrThrow()
+                result.addAll(list.data)
+                last = list.pagination?.nextPageToken ?: break
             }
+            result
         }
 }
 
@@ -635,15 +631,15 @@ class UploadHandler(private val scope: CoroutineScope, private val load: suspend
     }
 }
 
-class UploadViewModel(myUid: PrimaryKey, modelStorage: ModelStorage) : PagingViewModel<UploadInfo>() {
+class UploadViewModel(owner: ObjectTuple, modelStorage: ModelStorage) : PagingViewModel<UploadInfo>() {
     override val flow: Flow<PagingData<UploadInfo>> =
         Pager(PagingConfig(10)) {
-            modelStorage.upload.observeData(UploadCollection(myUid))
+            modelStorage.upload.observeData(UploadCollection.fromOwner(owner))
         }.flow.cachedIn(viewModelScope)
 }
 
-class UploadDetailViewModel(modelStorage: ModelStorage, pathHash: String, myUid: PrimaryKey) : ViewModel() {
-    val data = modelStorage.upload.observeDatumByHash(UploadCollection(myUid), pathHash)
+class UploadDetailViewModel(modelStorage: ModelStorage, pathHash: String, owner: ObjectTuple) : ViewModel() {
+    val data = modelStorage.upload.observeDatumByHash(UploadCollection.fromOwner(owner), pathHash)
 }
 
 class DownloadListViewModel(records: com.storyteller_f.storage.DownloadInfoStorage) : PagingViewModel<DownloadInfo>() {

@@ -124,3 +124,38 @@ includeBuild("dev/skikoMediaRuntime") {
         substitute(module("org.jetbrains.skiko:skiko-wasm-js")).using(project(":"))
     }
 }
+
+// Same-version Compose Web input source fix; native targets retain official artifacts.
+includeBuild("dev/composeWebInputRuntime") {
+    dependencySubstitution {
+        substitute(module("org.jetbrains.compose.ui:ui-wasm-js")).using(project(":"))
+    }
+}
+
+// Preserve Markdown source while editing blocks; published 1.2.1 drops equals and inline-math delimiters.
+includeBuild("dev/richEditorRuntime") {
+    dependencySubstitution {
+        listOf(
+            "richeditor-compose",
+            "richeditor-compose-android",
+            "richeditor-compose-desktop",
+            "richeditor-compose-wasm-js",
+        ).forEach { artifact ->
+            substitute(module("com.mohamedrejeb.richeditor:$artifact")).using(project(":"))
+        }
+    }
+}
+
+// The published Kodio JVM 0.2.0 targets Java 22; rebuild the same sources for Java 21.
+includeBuild("dev/kodioJvmRuntime") {
+    dependencySubstitution {
+        substitute(module("space.kodio:core-jvm")).using(project(":"))
+    }
+}
+
+// Some browser tracks omit sampleRate; keep the requested rate instead of passing zero to AudioContext.
+includeBuild("dev/kodioWebRuntime") {
+    dependencySubstitution {
+        substitute(module("space.kodio:core-wasm-js")).using(project(":"))
+    }
+}

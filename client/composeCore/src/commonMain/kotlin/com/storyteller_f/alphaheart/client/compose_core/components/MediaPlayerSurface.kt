@@ -5,29 +5,31 @@
 package com.storyteller_f.alphaheart.client.compose_core.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.VolumeOff
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
 import com.storyteller_f.alphaheart.client.compose_core.Res
@@ -45,9 +47,28 @@ import com.storyteller_f.alphaheart.client.compose_core.media_position
 import com.storyteller_f.alphaheart.client.compose_core.media_retry
 import com.storyteller_f.alphaheart.client.compose_core.media_unmute
 import com.storyteller_f.alphaheart.client.compose_core.media_volume
+import com.storyteller_f.alphaheart.client.compose_core.preview
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
+import com.storyteller_f.alphaheart.client.compose_core.utils.readingColorScheme
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingDialog as Dialog
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+
+internal val LocalMediaPreviewAction = staticCompositionLocalOf<(() -> Unit)?> { null }
+private val LocalMediaDownloadEnabled = staticCompositionLocalOf { true }
+private val LocalMediaHeadingVisible = staticCompositionLocalOf { true }
+
+/** Avoids a duplicate download entry when the surrounding file page already provides that action. */
+@Composable
+fun MediaMenuScope(showDownload: Boolean = true, showHeading: Boolean = true, content: @Composable () -> Unit) {
+    CompositionLocalProvider(
+        LocalMediaDownloadEnabled provides showDownload,
+        LocalMediaHeadingVisible provides showHeading,
+        content = content,
+    )
+}
 
 /** Times are seconds; volume is normalized to 0..1. Unknown duration disables seeking. */
 internal data class MediaControlState(
@@ -79,6 +100,12 @@ internal fun formatMediaTime(seconds: Double): String {
     return if (total >= 3600) "${total / 3600}:$minutes:$remainder" else "${total / 60}:$remainder"
 }
 
+/** Embedded video reserves its picture ratio independently of the heading and transport controls. */
+sealed interface MediaSurfaceLayout {
+    data object Bounded : MediaSurfaceLayout
+    data class EmbeddedVideo(val aspectRatio: Float = 16f / 9f) : MediaSurfaceLayout
+}
+
 /** Owns presentation only; the caller retains the playback engine across expansion. */
 @Composable
 internal fun MediaPlayerSurface(
@@ -90,25 +117,43 @@ internal fun MediaPlayerSurface(
     controlsVisible: Boolean = true,
     sourceUrl: String? = null,
     artwork: String? = null,
+    layout: MediaSurfaceLayout = MediaSurfaceLayout.Bounded,
     menuContent: @Composable (() -> Unit) -> Unit = {},
     content: @Composable BoxScope.() -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var embeddedSize by remember { mutableStateOf(IntSize.Zero) }
+    val density = LocalDensity.current
     if (expanded) {
         Dialog(
             onDismissRequest = { expanded = false },
             properties = DialogProperties(usePlatformDefaultWidth = false),
         ) {
-            MediaSurfaceContent(
-                state.title ?: title, state, actions, Modifier.fillMaxSize(), video, controlsVisible, true,
-                { expanded = false }, sourceUrl, artwork, menuContent, content,
-            )
+            Box(Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
+                MediaSurfaceContent(
+                    state.title ?: title, state, actions,
+                    if (video) Modifier.widthIn(max = 900.dp).fillMaxWidth() else Modifier.fillMaxSize(),
+                    video, controlsVisible, true,
+                    { expanded = false }, sourceUrl, artwork, layout, menuContent, content,
+                )
+            }
         }
-        Box(modifier.background(Color.Black, RoundedCornerShape(16.dp)))
+        Box(
+            modifier.size(
+                with(density) { embeddedSize.width.toDp() },
+                with(density) { embeddedSize.height.toDp() },
+            ).background(Color.Black, RoundedCornerShape(16.dp)),
+        )
     } else {
-        MediaSurfaceContent(state.title ?: title, state, actions, modifier, video, controlsVisible, false, {
-            expanded = true
-        }, sourceUrl, artwork, menuContent, content)
+        MediaSurfaceContent(
+            state.title ?: title, state, actions,
+            modifier.onSizeChanged {
+                embeddedSize = it
+            },
+            video, controlsVisible, false, {
+                expanded = true
+            }, sourceUrl, artwork, layout, menuContent, content,
+        )
     }
 }
 
@@ -124,38 +169,63 @@ private fun MediaSurfaceContent(
     toggleExpanded: () -> Unit,
     sourceUrl: String?,
     artwork: String?,
+    layout: MediaSurfaceLayout,
     menuContent: @Composable (() -> Unit) -> Unit,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    MaterialTheme(colorScheme = darkColorScheme(primary = Color(0xFFBFCBFF))) {
-        Box(modifier.clip(RoundedCornerShape(if (expanded) 0.dp else 16.dp)).background(Color(0xFF101218))) {
-            if (video) {
-                content()
-            } else {
-                MediaAudioArtwork(title, artwork)
+    if (!video && !expanded && artwork == null) {
+        CompactAudioSurface(title, state, actions, modifier, controlsVisible, toggleExpanded, sourceUrl, menuContent)
+        return
+    }
+    val showEmbeddedHeading = controlsVisible && LocalMediaHeadingVisible.current
+    val showHeading = expanded || showEmbeddedHeading
+    val pictureRatio =
+        if (video) {
+            if (expanded) 16f / 9f else (layout as? MediaSurfaceLayout.EmbeddedVideo)?.aspectRatio
+        } else {
+            null
+        }
+    Column(
+        modifier.clip(RoundedCornerShape(if (expanded) 16.dp else 12.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer).testTag("media-player-shell")
+            .then(
+                if (expanded) {
+                    Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+                        .padding(20.dp)
+                } else {
+                    Modifier
+                },
+            ),
+    ) {
+        if (showHeading) MediaSurfaceHeader(title, expanded, toggleExpanded, sourceUrl, menuContent)
+        if (expanded) Spacer(Modifier.height(18.dp))
+        Column(
+            Modifier.fillMaxWidth()
+                .then(if (pictureRatio != null) Modifier else Modifier.weight(1f))
+                .clip(RoundedCornerShape(12.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                .testTag("media-player-frame"),
+        ) {
+            MaterialTheme(colorScheme = readingColorScheme(darkTheme = true)) {
+                val stageModifier =
+                    if (pictureRatio != null) {
+                        Modifier.fillMaxWidth().aspectRatio(pictureRatio)
+                    } else {
+                        Modifier.fillMaxWidth().weight(1f)
+                    }
+                Box(stageModifier.background(Color(0xFF14241A)).testTag("media-player-stage")) {
+                    if (video) content() else MediaAudioArtwork(title, artwork, !expanded && !controlsVisible)
+                    if (controlsVisible) MediaStatus(state, actions.retry, Modifier.align(Alignment.Center))
+                }
             }
             if (controlsVisible) {
-                MediaStatus(state, actions.retry, Modifier.align(Alignment.Center).padding(bottom = 72.dp))
-                if (sourceUrl != null) {
-                    Box(Modifier.align(Alignment.TopEnd).padding(4.dp)) {
-                        MediaOptions(sourceUrl, menuContent)
-                    }
-                }
                 Column(
-                    Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xE6101218))))
-                        .padding(start = 12.dp, end = 12.dp, top = 20.dp, bottom = 4.dp),
+                    Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer)
+                        .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp),
                 ) {
-                    if (video) {
-                        Text(
-                            title,
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                    MediaTransport(state, actions, expanded, toggleExpanded) {
+                        if (!showHeading && sourceUrl != null) MediaOptions(sourceUrl, menuContent)
                     }
-                    MediaTransport(state, actions, expanded, toggleExpanded)
                 }
             }
         }
@@ -163,7 +233,158 @@ private fun MediaSurfaceContent(
 }
 
 @Composable
-private fun MediaAudioArtwork(title: String, artwork: String?) {
+private fun MediaSurfaceHeader(
+    title: String,
+    expanded: Boolean,
+    collapse: () -> Unit,
+    sourceUrl: String?,
+    menuContent: @Composable (() -> Unit) -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer)
+            .then(if (expanded) Modifier else Modifier.padding(horizontal = 12.dp, vertical = 10.dp))
+            .testTag("media-player-heading"),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            title,
+            Modifier.weight(1f),
+            fontSize = if (expanded) 17.sp else 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (sourceUrl != null) MediaOptions(sourceUrl, menuContent)
+        if (expanded) {
+            MediaIcon(actionIcon(ActionGlyph.X), stringResource(Res.string.media_exit_fullscreen), true, collapse)
+        }
+    }
+}
+
+@Composable
+private fun CompactAudioSurface(
+    title: String,
+    state: MediaControlState,
+    actions: MediaControlActions,
+    modifier: Modifier,
+    controlsVisible: Boolean,
+    toggleExpanded: () -> Unit,
+    sourceUrl: String?,
+    menuContent: @Composable (() -> Unit) -> Unit,
+) {
+    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+        val wide = maxWidth >= 600.dp
+        val enabled = state.enabled && !state.failed && !state.loading
+        Surface(
+            Modifier.widthIn(max = 740.dp).fillMaxWidth().height(if (wide) 64.dp else 108.dp),
+            shape = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.surface,
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        ) {
+            Box {
+                Column(Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        if (controlsVisible) {
+                            MediaIcon(
+                                if (state.playing) actionIcon(ActionGlyph.PAUSE) else actionIcon(ActionGlyph.PLAY),
+                                stringResource(if (state.playing) Res.string.media_pause else Res.string.media_play),
+                                enabled,
+                                actions.togglePlayback,
+                            )
+                        }
+                        CompactAudioLabel(
+                            if (LocalMediaHeadingVisible.current) title else "",
+                            state,
+                            if (controlsVisible) actions.retry else null,
+                            Modifier.weight(1f),
+                        )
+                        if (wide && controlsVisible) {
+                            CompactAudioPosition(state, actions, Modifier.weight(1.5f), enabled)
+                            MediaVolume(state, actions, enabled && state.volumeEnabled)
+                            MediaIcon(
+                                actionIcon(ActionGlyph.MAXIMIZE_2),
+                                stringResource(Res.string.media_fullscreen),
+                                state.expansionEnabled,
+                                toggleExpanded,
+                            )
+                        }
+                        if (sourceUrl != null && controlsVisible) MediaOptions(sourceUrl, menuContent)
+                    }
+                    if (!wide && controlsVisible) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            CompactAudioPosition(state, actions, Modifier.weight(1f), enabled)
+                            MediaVolume(state, actions, enabled && state.volumeEnabled)
+                            MediaIcon(
+                                actionIcon(ActionGlyph.MAXIMIZE_2),
+                                stringResource(Res.string.media_fullscreen),
+                                state.expansionEnabled,
+                                toggleExpanded,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompactAudioLabel(title: String, state: MediaControlState, retry: (() -> Unit)?, modifier: Modifier) {
+    Row(modifier.heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (state.loading) {
+            CircularProgressIndicator(Modifier.padding(end = 8.dp).size(16.dp), strokeWidth = 2.dp)
+        }
+        Text(
+            when {
+                state.failed -> stringResource(Res.string.media_playback_error)
+                state.loading -> stringResource(Res.string.media_loading)
+                else -> title
+            },
+            Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (state.failed && retry != null) {
+            MediaIcon(actionIcon(ActionGlyph.ROTATE_CW), stringResource(Res.string.media_retry), true, retry)
+        }
+    }
+}
+
+@Composable
+private fun CompactAudioPosition(
+    state: MediaControlState,
+    actions: MediaControlActions,
+    modifier: Modifier,
+    enabled: Boolean,
+) {
+    var seekDraft by remember { mutableStateOf<Float?>(null) }
+    val duration = state.duration.takeIf { it.isFinite() && it > 0 } ?: 0.0
+    val position = state.position.takeIf { it.isFinite() }?.coerceIn(0.0, duration) ?: 0.0
+    val label = stringResource(Res.string.media_position)
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        MediaSlider(
+            value = seekDraft ?: position.toFloat(),
+            onValueChange = { seekDraft = it },
+            onValueChangeFinished = {
+                seekDraft?.let { actions.seek(it.toDouble()) }
+                seekDraft = null
+            },
+            enabled = enabled && duration > 0,
+            valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
+            modifier =
+            Modifier.weight(1f).height(32.dp)
+                .appiumSemantics(testTag = "media-position", description = label)
+                .semantics { contentDescription = label },
+        )
+        val progress = "${formatMediaTime(seekDraft?.toDouble() ?: position)} / ${formatMediaTime(duration)}"
+        Text(progress, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+    }
+}
+
+@Composable
+private fun MediaAudioArtwork(title: String, artwork: String?, showTitle: Boolean) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val artworkSize = if (maxHeight > 400.dp) 160.dp else 64.dp
         Column(
@@ -177,11 +398,13 @@ private fun MediaAudioArtwork(title: String, artwork: String?) {
                 if (artwork != null) {
                     AsyncImage(artwork, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                 } else {
-                    Icon(Icons.Default.MusicNote, null, Modifier.size(32.dp), tint = Color(0xFFBFCBFF))
+                    Icon(Icons.Default.MusicNote, null, Modifier.size(32.dp), tint = Color(0xFF8FC4A5))
                 }
             }
-            Spacer(Modifier.height(12.dp))
-            Text(title, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (showTitle) {
+                Spacer(Modifier.height(12.dp))
+                Text(title, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
         }
     }
 }
@@ -194,7 +417,7 @@ private fun MediaStatus(state: MediaControlState, retry: (() -> Unit)?, modifier
             Column(modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     stringResource(Res.string.media_playback_error),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 if (retry != null) TextButton(onClick = retry) { Text(stringResource(Res.string.media_retry)) }
@@ -205,7 +428,7 @@ private fun MediaStatus(state: MediaControlState, retry: (() -> Unit)?, modifier
                 modifier.size(32.dp).semantics {
                     contentDescription = loadingLabel
                 },
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 strokeWidth = 2.dp,
             )
     }
@@ -217,12 +440,39 @@ private fun MediaTransport(
     actions: MediaControlActions,
     expanded: Boolean,
     toggleExpanded: () -> Unit,
+    endActions: @Composable () -> Unit,
 ) {
     var seekDraft by remember { mutableStateOf<Float?>(null) }
     val duration = state.duration.takeIf { it.isFinite() && it > 0 } ?: 0.0
     val position = state.position.takeIf { it.isFinite() }?.coerceIn(0.0, duration) ?: 0.0
     val enabled = state.enabled && !state.failed
     val positionLabel = stringResource(Res.string.media_position)
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        MediaIcon(
+            if (state.playing) actionIcon(ActionGlyph.PAUSE) else actionIcon(ActionGlyph.PLAY),
+            stringResource(if (state.playing) Res.string.media_pause else Res.string.media_play),
+            enabled,
+            actions.togglePlayback,
+        )
+        val progress = "${formatMediaTime(seekDraft?.toDouble() ?: position)} / ${formatMediaTime(duration)}"
+        Text(
+            progress,
+            Modifier.weight(1f).appiumSemantics(text = progress),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+        )
+        MediaVolume(state, actions, enabled && state.volumeEnabled)
+        if (!expanded) {
+            MediaIcon(
+                actionIcon(ActionGlyph.MAXIMIZE_2),
+                stringResource(Res.string.media_fullscreen),
+                state.expansionEnabled,
+                toggleExpanded,
+            )
+        }
+        endActions()
+    }
     MediaSlider(
         value = seekDraft ?: position.toFloat(),
         onValueChange = { seekDraft = it },
@@ -237,29 +487,6 @@ private fun MediaTransport(
             .appiumSemantics(testTag = "media-position", description = positionLabel)
             .semantics { contentDescription = positionLabel },
     )
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        MediaIcon(
-            if (state.playing) Icons.Default.Pause else Icons.Default.PlayArrow,
-            stringResource(if (state.playing) Res.string.media_pause else Res.string.media_play),
-            enabled,
-            actions.togglePlayback,
-        )
-        val progress = "${formatMediaTime(seekDraft?.toDouble() ?: position)} / ${formatMediaTime(duration)}"
-        Text(
-            progress,
-            Modifier.weight(1f).appiumSemantics(text = progress),
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White,
-            maxLines = 1,
-        )
-        MediaVolume(state, actions, enabled && state.volumeEnabled)
-        MediaIcon(
-            if (expanded) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
-            stringResource(if (expanded) Res.string.media_exit_fullscreen else Res.string.media_fullscreen),
-            state.expansionEnabled,
-            toggleExpanded,
-        )
-    }
 }
 
 @Composable
@@ -270,9 +497,9 @@ private fun MediaVolume(state: MediaControlState, actions: MediaControlActions, 
         if (state.muted ||
             state.volume == 0f
         ) {
-            Icons.AutoMirrored.Filled.VolumeOff
+            actionIcon(ActionGlyph.VOLUME_X)
         } else {
-            Icons.AutoMirrored.Filled.VolumeUp
+            actionIcon(ActionGlyph.VOLUME_2)
         }
     Box {
         MediaIcon(icon, label, enabled) { expanded = !expanded }
@@ -309,28 +536,56 @@ private fun MediaIcon(icon: ImageVector, label: String, enabled: Boolean, action
         enabled = enabled,
         modifier = Modifier.appiumSemantics(text = label, onClick = if (enabled) action else null),
     ) {
-        Icon(icon, label, tint = if (enabled) Color.White else Color.White.copy(alpha = 0.38f))
+        Icon(
+            icon,
+            label,
+            Modifier.size(17.dp),
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else 0.38f),
+        )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MediaOptions(sourceUrl: String, content: @Composable (() -> Unit) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    val uriHandler = LocalUriHandler.current
+    val downloadResource = LocalResourceDownloadAction.current
+    val downloadFile = LocalResourceDownloadFile.current
     val clipboard = LocalClipboard.current
     val toast = LocalToaster.current
     val scope = rememberCoroutineScope()
-    MediaIcon(Icons.Default.MoreVert, stringResource(Res.string.media_options), true) { expanded = true }
-    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-        DropdownMenuItem(text = { Text(stringResource(Res.string.media_download)) }, onClick = {
-            expanded = false
-            uriHandler.openUri(sourceUrl)
-        }, leadingIcon = { Icon(Icons.Default.Download, null) })
-        DropdownMenuItem(text = { Text(stringResource(Res.string.copy)) }, onClick = {
-            expanded = false
-            scope.launch { clipboard.copyText(sourceUrl, toast) }
-        }, leadingIcon = { Icon(Icons.Default.ContentCopy, null) })
-        content { expanded = false }
+    val openPreview = LocalMediaPreviewAction.current
+    val showDownload = LocalMediaDownloadEnabled.current
+    MediaIcon(actionIcon(ActionGlyph.ELLIPSIS), stringResource(Res.string.media_options), true) { expanded = true }
+    if (expanded) {
+        BasicAlertDialog(onDismissRequest = { expanded = false }) {
+            ReadingActionMenuSurface(
+                onDismiss = { expanded = false },
+                heading = { Text(stringResource(Res.string.media_options), fontSize = 17.sp) },
+            ) {
+                IconActionMenu {
+                    if (openPreview != null) {
+                        ButtonNav(actionIcon(ActionGlyph.EXTERNAL_LINK), stringResource(Res.string.preview)) {
+                            expanded = false
+                            openPreview()
+                        }
+                    }
+                    if (showDownload) {
+                        ButtonNav(navigationIcon(NavigationGlyph.DOWNLOAD), stringResource(Res.string.media_download)) {
+                            expanded = false
+                            downloadResource(mediaDownloadRequest(sourceUrl, downloadFile))
+                        }
+                    }
+                    ButtonNav(actionIcon(ActionGlyph.COPY), stringResource(Res.string.copy)) {
+                        scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                            clipboard.copyText(sourceUrl, toast)
+                            expanded = false
+                        }
+                    }
+                    content { expanded = false }
+                }
+            }
+        }
     }
 }
 
@@ -344,12 +599,13 @@ private fun MediaSlider(
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     onValueChangeFinished: (() -> Unit)? = null,
 ) {
+    val state = remember(valueRange) { SliderState(value = value, trackRange = valueRange) }
+    SideEffect { state.value = value }
     Slider(
-        value = value,
+        state = state,
         onValueChange = onValueChange,
         modifier = modifier,
         enabled = enabled,
-        valueRange = valueRange,
         onValueChangeFinished = onValueChangeFinished,
         thumb = {
             Box(

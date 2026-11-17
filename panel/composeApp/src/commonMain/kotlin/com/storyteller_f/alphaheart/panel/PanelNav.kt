@@ -81,3 +81,56 @@ internal fun NavBackStack<NavKey>.addPanelDetail(detail: NavKey) {
     }
     add(detail)
 }
+
+internal enum class PanelDrawerSection {
+    Overview,
+    Users,
+    Communities,
+    PublicRooms,
+    PrivateRooms,
+    Topics,
+    Files,
+    Titles,
+    TaskRecords,
+    WorkerTasks,
+}
+
+/** Detail destinations retain their owning directory's highlight. */
+internal fun panelDrawerSection(stack: List<NavKey>): PanelDrawerSection? {
+    val route = stack.lastOrNull()
+    return when (route?.panelListDetailDestination()?.scene) {
+        PanelListDetailScene.Users -> PanelDrawerSection.Users
+
+        PanelListDetailScene.Communities -> PanelDrawerSection.Communities
+
+        PanelListDetailScene.Rooms -> {
+            val directory = stack.lastOrNull { it == PanelAllPrivateRoomsScreen || it == PanelAllPublicRoomsScreen }
+            if (directory == PanelAllPrivateRoomsScreen) {
+                PanelDrawerSection.PrivateRooms
+            } else {
+                PanelDrawerSection.PublicRooms
+            }
+        }
+
+        PanelListDetailScene.Topics -> PanelDrawerSection.Topics
+
+        PanelListDetailScene.Files -> PanelDrawerSection.Files
+
+        PanelListDetailScene.Titles -> PanelDrawerSection.Titles
+
+        null ->
+            when (route) {
+                com.storyteller_f.alphaheart.panel.common.PanelOverviewScreen -> PanelDrawerSection.Overview
+
+                com.storyteller_f.alphaheart.panel.common.PanelTaskRecordsScreen,
+                is com.storyteller_f.alphaheart.panel.common.PanelTaskRecordDetailScreen,
+                -> PanelDrawerSection.TaskRecords
+
+                com.storyteller_f.alphaheart.panel.common.PanelWorkerTasksScreen -> PanelDrawerSection.WorkerTasks
+
+                is com.storyteller_f.alphaheart.panel.common.PanelFilePreviewScreen -> PanelDrawerSection.Files
+
+                else -> null
+            }
+    }
+}

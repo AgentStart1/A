@@ -80,4 +80,10 @@
     <string name="tab_user_subscriptions">Subscriptions</string>
     <string name="tab_file_refs">File refs</string>
     <string name="task_record_supporting">Processed: %1$s | Record: %2$s | Time: %3$s</string>
+    <string name="save_failed">Save failed</string>
+    <string name="file_preview_title">File preview</string>
+    <string name="worker_task_invalid_configuration">Fetch size and wait duration must be greater than zero</string>
+    <string name="worker_task_save_failed_detail">Could not save task configuration. Your changes have been kept.</string>
+    <string name="set_read_only">Set to ReadOnly</string>
+    <string name="set_normal">Set to Normal</string>
 </resources>

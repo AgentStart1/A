@@ -1,0 +1,5 @@
+<resources>
+    <string name="content_loading">Loading…</string>
+    <string name="content_load_failed">Could not load content</string>
+    <string name="retry_action">Retry</string>
+</resources>

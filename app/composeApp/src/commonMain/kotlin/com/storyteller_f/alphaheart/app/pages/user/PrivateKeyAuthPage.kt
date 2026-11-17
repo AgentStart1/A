@@ -7,11 +7,7 @@ package com.storyteller_f.alphaheart.app.pages.user
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -32,7 +28,6 @@ import com.storyteller_f.alphaheart.app.LocalGlobalDialog
 import com.storyteller_f.alphaheart.app.LocalUiViewModel
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.UIViewModel
-import com.storyteller_f.alphaheart.app.auth_private_key_subtitle
 import com.storyteller_f.alphaheart.app.common.AppNavFactory
 import com.storyteller_f.alphaheart.app.error.AccountActionError
 import com.storyteller_f.alphaheart.app.invalid_private_key
@@ -40,6 +35,9 @@ import com.storyteller_f.alphaheart.app.sign_in
 import com.storyteller_f.alphaheart.app.sign_up
 import com.storyteller_f.alphaheart.app.start_sign_in
 import com.storyteller_f.alphaheart.app.start_sign_up
+import com.storyteller_f.alphaheart.app.totp_code
+import com.storyteller_f.alphaheart.app.two_factor_authentication
+import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.components.PrivateKeyInput
 import com.storyteller_f.alphaheart.client.compose_core.components.request
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
@@ -62,6 +60,9 @@ import com.storyteller_f.result.onSuccess
 import com.storyteller_f.shared.model.AlgoType
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingAlertDialog as AlertDialog
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedTextField as OutlinedTextField
 
 @Composable
 fun PrivateKeyAuthSignUpPage() {
@@ -154,7 +155,6 @@ private fun PrivateKeyAuthContent(
     val privateKeyError by viewModel.privateKeyError.collectAsState()
     AuthPageChrome(
         title = stringResource(if (isSignUp) Res.string.sign_up else Res.string.sign_in),
-        subtitle = stringResource(Res.string.auth_private_key_subtitle),
         footer = {},
     ) {
         Column(
@@ -183,11 +183,10 @@ private fun PrivateKeyAuthContent(
             Button(
                 onClick = startSign,
                 modifier =
-                Modifier.fillMaxWidth().appiumSemantics(
+                Modifier.align(androidx.compose.ui.Alignment.End).appiumSemantics(
                     testTag = "start_sign",
                     text = stringResource(if (isSignUp) Res.string.start_sign_up else Res.string.start_sign_in),
                 ),
-                shape = ButtonDefaults.shape,
             ) {
                 Text(stringResource(if (isSignUp) Res.string.start_sign_up else Res.string.start_sign_in))
             }
@@ -381,15 +380,15 @@ internal fun TotpSignInDialog(
             Button({
                 onConfirm(pending, code)
             }) {
-                Text("OK")
+                Text(CoreStrings.ok())
             }
         }, title = {
-            Text("Two-factor authentication")
+            Text(stringResource(Res.string.two_factor_authentication))
         }, text = {
             OutlinedTextField(code, {
                 code = it
             }, label = {
-                Text("TOTP code")
+                Text(stringResource(Res.string.totp_code))
             })
         })
     }

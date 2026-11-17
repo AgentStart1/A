@@ -1,0 +1,15 @@
+<resources>
+    <string name="select_expiry_time">选择时间</string>
+    <string name="edit_title_description">编辑描述</string>
+    <string name="unselected_reference">未选择</string>
+    <string name="clear_selection">清除</string>
+    <string name="creation_community_name">社区名称</string>
+    <string name="creation_room_name">房间名称</string>
+    <string name="creation_title_name">头衔名称</string>
+    <string name="creation_aid">Aid</string>
+    <string name="creation_member_policy">成员加入策略</string>
+    <string name="title_form_permanent">永久</string>
+    <string name="title_form_description">描述</string>
+    <string name="title_form_description_empty">尚未填写</string>
+    <string name="title_form_choose_scope">选择范围</string>
+</resources>

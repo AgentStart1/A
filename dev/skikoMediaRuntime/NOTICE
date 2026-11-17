@@ -1,16 +1,18 @@
-Skiko 0.150.2 (Apache-2.0), source resolved from Maven Central.
-https://github.com/JetBrains/skiko/tree/v0.150.2
+Skiko 0.156.1 (Apache-2.0), source resolved from Maven Central.
+https://github.com/JetBrains/skiko/tree/v0.156.1
 The import-generator source bodies are preserved from upstream commit
 16bca5bed16bb926b6ae62c0a3fd937a7a159690 (Kotlin 2.4-compatible tooling).
 Project license headers have been added; upstream Apache-2.0 rights remain intact.
-CanvasRenderer.kt and SkiaLayer.web.kt are modified upstream files.
+CanvasRenderer.kt, SkiaLayer.web.kt, and GLTexture.web.kt are modified upstream files.
 WebGLMediaInterop.kt is local.
-The native Skia/Emscripten runtime remains the published 0.150.2 artifact.
+The native Skia/Emscripten runtime remains the published 0.156.1 artifact.
 
-The local WebGLMediaInterop.kt includes the Emscripten texture.name mapping fix.
+The local GLTexture.web.kt includes the Emscripten texture.name mapping fix.
 Upstream issue: https://youtrack.jetbrains.com/issue/SKIKO-1208
 upstream-patches/SKIKO-1208.patch is the minimal forward-port candidate for
 Skiko v0.156.1, skiko/src/webMain/kotlin/org/jetbrains/skiko/GLTexture.web.kt.
 Base-file SHA-256:
 beb199a0e7f35f37e1c57b6b6b7cc5861ff36185147569364d91cf3c5afc993d
-It is retained separately from the active 0.150.2 source overlays.
+The fix is applied by the active GLTexture.web.kt overlay; the minimal upstream
+patch is retained for review. Renderer media-context borrowing and disposal remain
+in CanvasRenderer.kt and WebGLMediaInterop.kt.

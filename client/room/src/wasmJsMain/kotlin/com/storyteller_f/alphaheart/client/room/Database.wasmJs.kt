@@ -19,6 +19,9 @@ actual fun getRoomDatabase(scope: String): AppDatabase {
         .fallbackToDestructiveMigration(true)
         .fallbackToDestructiveMigrationFrom(true)
         .setDriver(CancellationSafeSQLiteDriver(WebWorkerSQLiteDriver(createWorker())))
+        // OPFS WAL requires exclusive locking; TRUNCATE permits concurrent browser connections.
+        // https://sqlite.org/wasm/doc/trunk/persistence.md
+        .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
         .setSingleConnectionPool()
         .build()
 }

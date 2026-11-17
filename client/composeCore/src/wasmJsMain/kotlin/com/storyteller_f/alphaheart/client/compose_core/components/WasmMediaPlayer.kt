@@ -80,7 +80,12 @@ internal external interface PixelFrame : JsAny {
 }
 
 @Composable
-internal fun WasmMediaPlayer(item: RemoteMediaItem, modifier: Modifier, video: Boolean) {
+internal fun WasmMediaPlayer(
+    item: RemoteMediaItem,
+    modifier: Modifier,
+    video: Boolean,
+    layout: MediaSurfaceLayout = MediaSurfaceLayout.Bounded,
+) {
     val gpu = remember { useGpuTextures() }
     val profiling = remember { profileMediaFrames() }
     val textureRenderer = remember(item.url, gpu) { if (gpu && video) WasmTextureRenderer() else null }
@@ -114,7 +119,14 @@ internal fun WasmMediaPlayer(item: RemoteMediaItem, modifier: Modifier, video: B
     }
     SideEffect { bitmapOwner.retain(bitmap) }
     val actions = rememberBrowserMediaActions(host) { state }
-    val surfaceModifier = if (video) modifier else modifier.fillMaxWidth().heightIn(min = 224.dp)
+    val surfaceModifier =
+        if (video) {
+            modifier
+        } else {
+            modifier.fillMaxWidth().heightIn(
+                min = if (item.cover == null) 64.dp else 224.dp,
+            )
+        }
     key(item.url) {
         MediaPlayerSurface(
             item.title ?: item.name,
@@ -124,6 +136,7 @@ internal fun WasmMediaPlayer(item: RemoteMediaItem, modifier: Modifier, video: B
             video,
             sourceUrl = item.url,
             artwork = item.cover?.url,
+            layout = layout,
         ) {
             WasmMediaFrame(item, bitmap, textureRenderer, host)
         }

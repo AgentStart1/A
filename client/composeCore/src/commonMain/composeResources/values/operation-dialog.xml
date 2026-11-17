@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="operation_failed">Operation failed</string>
+    <string name="operation_failed_help">The operation did not complete. Close this message and try again.</string>
+    <string name="error_details">Error details</string>
+</resources>

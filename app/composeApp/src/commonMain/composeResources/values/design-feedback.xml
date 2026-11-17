@@ -1,0 +1,25 @@
+<resources>
+    <string name="record_favorites_empty">No favorites yet</string>
+    <string name="record_subscriptions_empty">No subscriptions yet</string>
+    <string name="record_comments_empty">No comments yet</string>
+    <string name="record_reactions_empty">No reactions yet</string>
+    <string name="record_favorites_end">All favorites shown</string>
+    <string name="record_subscriptions_end">All subscriptions shown</string>
+    <string name="record_comments_end">All comments shown</string>
+    <string name="record_reactions_end">All reaction records shown</string>
+    <string name="configuration_preview">Configuration preview</string>
+    <string name="startup_section_label">Start section</string>
+    <string name="rtc_call_title">Audio and video call</string>
+    <string name="rtc_ready_status">Ready to join</string>
+    <string name="rtc_ready_badge">Ready</string>
+    <string name="rtc_leaving_status">Leaving…</string>
+    <string name="reference_author">Author: %1$s</string>
+    <string name="record_favorites_loading">Loading favorites…</string>
+    <string name="record_favorites_failure">Failed to load favorites</string>
+    <string name="record_subscriptions_loading">Loading subscriptions…</string>
+    <string name="record_subscriptions_failure">Failed to load subscriptions</string>
+    <string name="record_comments_loading">Loading comments…</string>
+    <string name="record_comments_failure">Failed to load comments</string>
+    <string name="record_reactions_loading">Loading reactions…</string>
+    <string name="record_reactions_failure">Failed to load reactions</string>
+</resources>

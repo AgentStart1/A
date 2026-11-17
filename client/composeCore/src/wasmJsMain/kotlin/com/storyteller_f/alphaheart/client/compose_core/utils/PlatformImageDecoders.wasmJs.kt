@@ -52,6 +52,7 @@ import kotlin.uuid.Uuid
 actual fun ImageLoader.Builder.addPlatformImageDecoders(): ImageLoader.Builder {
     val configuredBuilder =
         components {
+            add(BrowserSvgDecoder.Factory())
             add(AvifDecoder.Factory())
         }
     return configuredBuilder
@@ -61,7 +62,7 @@ private class AvifDecoder(private val source: ImageSource, private val options: 
     override suspend fun decode(): DecodeResult {
         val bytes = source.source().use { it.readByteArray() }
         val response = decodeAvif(bytes, options)
-        val bitmap = response.toBitmap()
+        val bitmap = installBrowserImagePixels(response.buffer, response.width, response.height)
         return DecodeResult(
             image = bitmap.asImage(),
             isSampled = response.width < response.sourceWidth || response.height < response.sourceHeight,
@@ -127,7 +128,7 @@ private suspend fun decodeAvif(bytes: ByteArray, options: Options): AvifWorkerRe
     }
 
 @OptIn(ExperimentalSkikoApi::class)
-private suspend fun AvifWorkerResponse.toBitmap(): Bitmap {
+internal suspend fun installBrowserImagePixels(buffer: ArrayBuffer, width: Int, height: Int): Bitmap {
     awaitSkikoReady()
     val bitmap = Bitmap()
     try {
@@ -139,7 +140,7 @@ private suspend fun AvifWorkerResponse.toBitmap(): Bitmap {
             )
         val imageInfo = ImageInfo(colorInfo, width, height)
         check(bitmap.installPixelsFromArrayBuffer(imageInfo, buffer, imageInfo.minRowBytes)) {
-            "Failed to install decoded AVIF pixels"
+            "Failed to install decoded browser image pixels"
         }
         return bitmap.setImmutable()
     } catch (exception: Throwable) {
@@ -229,9 +230,10 @@ private val AvisBytes = "avis".encodeUtf8()
 private const val AVIF_WORKER_SCRIPT = """
 self.onmessage = async (event) => {
     const request = event.data;
+    let source;
     try {
         const blob = new Blob([request.data], { type: 'image/avif' });
-        const source = await createImageBitmap(blob);
+        source = await createImageBitmap(blob);
         const sourceWidth = source.width;
         const sourceHeight = source.height;
         const widthScale = request.targetWidth > 0 ? request.targetWidth / sourceWidth : null;
@@ -253,7 +255,6 @@ self.onmessage = async (event) => {
         const context = canvas.getContext('2d', { willReadFrequently: true });
         if (!context) throw new Error('2D canvas context is unavailable');
         context.drawImage(source, 0, 0, width, height);
-        source.close();
         const buffer = context.getImageData(0, 0, width, height).data.buffer;
         self.postMessage({
             id: request.id,
@@ -276,6 +277,8 @@ self.onmessage = async (event) => {
             width: 0,
             height: 0,
         });
+    } finally {
+        source?.close();
     }
 };
 """

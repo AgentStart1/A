@@ -4,7 +4,6 @@
 
 package com.storyteller_f.alphaheart.app.pages.topic
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
@@ -13,21 +12,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Topic
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetState
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,9 +29,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -56,6 +50,7 @@ import com.storyteller_f.alphaheart.app.common.createTopicsInTopicViewModel
 import com.storyteller_f.alphaheart.app.common.createUserViewModel
 import com.storyteller_f.alphaheart.app.components.AppTopicContentView
 import com.storyteller_f.alphaheart.app.components.InteractionRow
+import com.storyteller_f.alphaheart.app.components.TopicActionsPresentation
 import com.storyteller_f.alphaheart.app.pages.DetailReadingColumn
 import com.storyteller_f.alphaheart.app.pages.room.CommonInputButton
 import com.storyteller_f.alphaheart.app.pages.room.InputGroupInternal
@@ -73,9 +68,9 @@ import com.storyteller_f.alphaheart.client.compose_core.components.bottomAppendi
 import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
 import com.storyteller_f.alphaheart.client.compose_core.components.horizontalSafeArea
 import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.components.rememberAlertDialogController
 import com.storyteller_f.alphaheart.client.compose_core.components.request
 import com.storyteller_f.alphaheart.client.compose_core.components.topPrepend
-import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.core.LoadingState
 import com.storyteller_f.alphaheart.client.core.SimpleUserSessionManager
 import com.storyteller_f.alphaheart.client.core.createTopic
@@ -88,7 +83,6 @@ import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
 import com.storyteller_f.shared.type.UserStatus
 import com.storyteller_f.shared.utils.checkContent
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
@@ -98,22 +92,15 @@ import kotlin.time.Duration.Companion.milliseconds
 fun TopicPage(topicId: PrimaryKey) {
     val viewModel = createTopicViewModel(topicId)
     val subTopicsViewModel = createTopicsInTopicViewModel(topicId)
-    val snackBarHostState =
-        remember {
-            SnackbarHostState()
-        }
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
 
-    Scaffold(snackbarHost = {
-        SnackbarHost(snackBarHostState)
-    }) { paddingValues ->
+    Scaffold { paddingValues ->
         TopicPageInternal(
             Modifier.horizontalSafeArea(paddingValues, LocalLayoutDirection.current),
             topicId,
             viewModel,
             subTopicsViewModel,
-            snackBarHostState,
         ) {
             showBottomSheet = true
         }
@@ -140,50 +127,27 @@ private fun TopicPageInternal(
     topicId: PrimaryKey,
     viewModel: TopicViewModel,
     subTopicsViewModel: TopicsViewModel,
-    snackBarHostState: SnackbarHostState,
     startAddReaction: () -> Unit,
 ) {
     val topicInfo by viewModel.handler.data.collectAsState()
     DetailReadingColumn(modifier) {
-        var showDialog by remember {
-            mutableStateOf(false)
-        }
         detailSearchBar(SearchScope.TopicTopic(topicId)) {
             Row(
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                topicInfo?.let {
+                topicInfo?.takeIf { it.author != LocalUserInfo.current?.id }?.let {
                     val author = it.author
                     val authorViewModel = createUserViewModel(author)
                     val authorInfo by authorViewModel.handler.data.collectAsState()
                     UserIconWithDialog(authorInfo)
                 }
-                val showTopicDialog = {
-                    showDialog = true
-                }
-                Icon(
-                    Icons.Default.Topic,
-                    "topic",
-                    modifier =
-                    Modifier.size(40.dp)
-                        .appiumSemantics(
-                            description = "topic",
-                            onClick = showTopicDialog,
-                        )
-                        .clip(CircleShape)
-                        .clickable(onClick = showTopicDialog)
-                        .padding(8.dp),
-                )
-            }
-            TopicDialog(topicInfo, showDialog) {
-                showDialog = false
             }
         }
         topicInfo?.let {
             if (it.rootId != it.parentId) {
                 Box(modifier = Modifier.padding(horizontal = 20.dp).padding(top = 8.dp)) {
-                    TopicRefCell(it.parentId)
+                    ParentTopicReference(it.parentId)
                 }
             }
         }
@@ -191,7 +155,7 @@ private fun TopicPageInternal(
         TopicPageContent(viewModel, subTopicsViewModel, startAddReaction, lazyListState)
         val scope = rememberCoroutineScope()
         topicInfo?.let {
-            TopicPageInputGroup(it, snackBarHostState) {
+            TopicPageInputGroup(it) {
                 scope.launch {
                     delay(200.milliseconds)
                     lazyListState.animateScrollToItem(1)
@@ -217,40 +181,70 @@ private fun ColumnScope.TopicPageContent(
     }
     StateView(viewModel.handler, modifier = Modifier.weight(1f)) { topicInfo ->
         LazyColumn(
-            modifier = Modifier.weight(1f).fillMaxWidth(),
+            modifier = Modifier.weight(1f).widthIn(max = 740.dp).fillMaxWidth(),
             contentPadding = LayoutDefaults.contentPadding,
             verticalArrangement = LayoutDefaults.pagingVerticalArrangement,
             state = lazyListState,
         ) {
             item {
-                AppTopicContentView(topicInfo)
-                Spacer(modifier = Modifier.height(12.dp))
-                InteractionRow(topicInfo, {
-                    startAddReaction()
-                }) {
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                HorizontalDivider()
+                CurrentTopicContent(topicInfo, startAddReaction)
             }
 
-            topPrepend(subTopics.loadState)
+            topPrepend(subTopics.loadState, subTopics::retry)
             pagingItems(subTopics, {
                 it.id
             }) { subTopicIndex ->
                 subTopics[subTopicIndex]?.let { it1 ->
-                    TopicCell(it1)
+                    if (topicInfo.rootType == ObjectType.ROOM) {
+                        RoomTopicCell(it1, presentation = TopicActionsPresentation.DETAIL_REPLY)
+                    } else {
+                        TopicCell(it1, presentation = TopicActionsPresentation.DETAIL_REPLY)
+                    }
                 }
-                if (subTopics.itemCount - 1 != subTopicIndex) {
+                if (topicInfo.rootType != ObjectType.ROOM && subTopics.itemCount - 1 != subTopicIndex) {
                     HorizontalDivider()
                 }
             }
-            bottomAppending(subTopics.loadState)
+            bottomAppending(subTopics.loadState, subTopics::retry)
         }
     }
 }
 
 @Composable
-private fun TopicPageInputGroup(topic: TopicDetail, snackBarHostState: SnackbarHostState, scrollToNew: () -> Unit) {
+private fun CurrentTopicContent(topicInfo: TopicDetail, startAddReaction: () -> Unit) {
+    if (topicInfo.rootType == ObjectType.ROOM) {
+        val ownMessage = topicInfo.author == LocalUserInfo.current?.id
+        RoomMessageLayout(
+            ownMessage = ownMessage,
+            showIdentity = false,
+            actionsTopPadding = 0.dp,
+            actions = {
+                InteractionRow(
+                    topicInfo,
+                    alignEnd = ownMessage,
+                    startAddReaction = startAddReaction,
+                    presentation = TopicActionsPresentation.DETAIL_MAIN,
+                    startAddComment = null,
+                )
+            },
+        ) {
+            AppTopicContentView(topicInfo)
+        }
+    } else {
+        AppTopicContentView(topicInfo)
+        InteractionRow(
+            topicInfo,
+            startAddReaction = startAddReaction,
+            presentation = TopicActionsPresentation.DETAIL_MAIN,
+            startAddComment = null,
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        HorizontalDivider()
+    }
+}
+
+@Composable
+private fun TopicPageInputGroup(topic: TopicDetail, scrollToNew: () -> Unit) {
     val alertDialogState =
         remember {
             CustomAlertDialogController()
@@ -263,12 +257,12 @@ private fun TopicPageInputGroup(topic: TopicDetail, snackBarHostState: SnackbarH
             topic.rootId,
             roomInfo,
             ObjectTuple(topic.id, ObjectType.TOPIC),
-            snackBarHostState,
-            {},
-            scrollToNew,
+            startJoinRoom = {},
+            currentTopicReadOnly = topic.readOnly,
+            scrollToNew = scrollToNew,
         )
     } else {
-        TopicInputGroup(scrollToNew, topic, snackBarHostState)
+        TopicInputGroup(scrollToNew, topic)
     }
 
     val appNavFactory = LocalAppNavFactory.current
@@ -280,8 +274,8 @@ private fun TopicPageInputGroup(topic: TopicDetail, snackBarHostState: SnackbarH
 }
 
 @Composable
-private fun TopicInputGroup(scrollTo: () -> Unit, topic: TopicDetail, snackBarHostState: SnackbarHostState) {
-    var input by remember {
+private fun TopicInputGroup(scrollTo: () -> Unit, topic: TopicDetail) {
+    var input by rememberSaveable(topic.id) {
         mutableStateOf("")
     }
     val appNavFactory = LocalAppNavFactory.current
@@ -320,28 +314,25 @@ private fun TopicInputGroup(scrollTo: () -> Unit, topic: TopicDetail, snackBarHo
             appNavFactory.newAppNav().gotoTopicCompose(data)
         },
         enabled = canWrite,
+        replyingToTopic = true,
         sendButton = {
             TopicSendButton(topic, input, {
                 input = it
-            }, scrollTo, snackBarHostState)
+            }, scrollTo)
         },
     )
 }
 
 @Composable
-fun TopicSendButton(
-    topic: TopicDetail,
-    input: String,
-    updateInput: (String) -> Unit,
-    scrollToNew: () -> Unit,
-    snackBarHostState: SnackbarHostState,
-) {
+fun TopicSendButton(topic: TopicDetail, input: String, updateInput: (String) -> Unit, scrollToNew: () -> Unit) {
     if (LocalUserInfo.current?.status != UserStatus.NORMAL || topic.readOnly) return
     val focusManager = LocalFocusManager.current
-    val scope = rememberCoroutineScope()
     val globalTask = LocalGlobalTask.current
+    val failureDialog = rememberAlertDialogController()
+    CustomAlertDialog(failureDialog, failureDialog::close, failureDialog::close)
     val key = "topic ${topic.id}"
     val isSending = globalTask.stateMap[key] is LoadingState.Loading
+    val currentInput by rememberUpdatedState(input)
     CommonInputButton(
         LoadingState.Done,
         input,
@@ -350,16 +341,22 @@ fun TopicSendButton(
         sendTopicInTopicPage(
             input,
             topic,
-            SendTopicContext(scope, snackBarHostState, globalTask, key, updateInput, focusManager, scrollToNew),
+            SendTopicContext(
+                globalTask,
+                key,
+                updateInput,
+                { currentInput },
+                focusManager,
+                scrollToNew,
+                failureDialog,
+            ),
         )
     }
 }
 
 private fun sendTopicInTopicPage(input: String, topic: TopicDetail, context: SendTopicContext) {
     checkContent(input).exceptionOrNull()?.let {
-        context.scope.launch {
-            context.snackBarHostState.showSnackbar(it.message.orEmpty())
-        }
+        context.failureDialog.showErrorMessage(it)
         return
     }
     context.globalTask.launch(context.key) {
@@ -367,24 +364,25 @@ private fun sendTopicInTopicPage(input: String, topic: TopicDetail, context: Sen
             request {
                 createTopic(ObjectType.TOPIC, topic.id, input).onSuccess {
                     emitEvent(OnTopicCreated(it))
-                    context.updateInput("")
-                    context.focusManager.clearFocus()
+                    if (context.currentInput() == input) {
+                        context.updateInput("")
+                        context.focusManager.clearFocus()
+                    }
                     context.scrollToNew()
                 }
             }
         }.onFailure {
-            context.snackBarHostState
-                .showSnackbar(it.cause.message.orEmpty())
+            context.failureDialog.showErrorMessage(it.cause)
         }
     }
 }
 
 private data class SendTopicContext(
-    val scope: CoroutineScope,
-    val snackBarHostState: SnackbarHostState,
     val globalTask: CustomGlobalTask<GlobalTaskContext<SimpleUserSessionManager>>,
     val key: String,
     val updateInput: (String) -> Unit,
+    val currentInput: () -> String,
     val focusManager: FocusManager,
     val scrollToNew: () -> Unit,
+    val failureDialog: CustomAlertDialogController,
 )

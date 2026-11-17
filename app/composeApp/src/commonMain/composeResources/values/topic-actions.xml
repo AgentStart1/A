@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="topic_action_comments">Comments %1$s</string>
+    <string name="topic_action_reply_count">Replies %1$s</string>
+    <string name="topic_action_view_replies">View replies</string>
+    <string name="topic_action_view_replies_count">View replies, %1$s</string>
+    <string name="topic_action_react">React</string>
+</resources>

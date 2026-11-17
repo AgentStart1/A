@@ -5,15 +5,10 @@
 package com.storyteller_f.alphaheart.app.pages.community
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -23,7 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.storyteller_f.alphaheart.app.LocalAppNavFactory
+import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.common.OnCommunityUpdated
@@ -31,10 +26,16 @@ import com.storyteller_f.alphaheart.app.common.createCommunityViewModel
 import com.storyteller_f.alphaheart.app.components.FontView
 import com.storyteller_f.alphaheart.app.components.SettingOptionResettableView
 import com.storyteller_f.alphaheart.app.components.SettingOptionView
+import com.storyteller_f.alphaheart.app.configuration_preview
+import com.storyteller_f.alphaheart.app.field_code_font
+import com.storyteller_f.alphaheart.app.field_content_font
+import com.storyteller_f.alphaheart.app.field_not_set
 import com.storyteller_f.alphaheart.app.font_settings
 import com.storyteller_f.alphaheart.app.pages.AdaptiveFormLayout
+import com.storyteller_f.alphaheart.app.pages.ReadingPageToolbar
 import com.storyteller_f.alphaheart.app.pages.user.ObjectSettingDialog
 import com.storyteller_f.alphaheart.app.pages.user.SettingOption
+import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
 import com.storyteller_f.alphaheart.client.compose_core.components.request
 import com.storyteller_f.alphaheart.client.core.updateCommunityInfo
@@ -57,24 +58,14 @@ fun FontSettingsPage(communityId: PrimaryKey) {
     val communityInfo by communityViewModel.handler.data.collectAsState()
     val sheetState = rememberModalBottomSheetState()
     val globalDialogController = LocalGlobalDialog.current
-    val appNavFactory = LocalAppNavFactory.current
     val closeDialog = {
         currentOption = null
     }
 
-    Scaffold(topBar = {
-        TopAppBar(
-            title = { Text(stringResource(Res.string.font_settings)) },
-            navigationIcon = {
-                IconButton(onClick = { appNavFactory.newAppNav().back() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
-                }
-            },
-        )
-    }) { paddingValues ->
-        communityInfo?.let { info ->
+    Scaffold(topBar = { ReadingPageToolbar(stringResource(Res.string.font_settings)) }) { paddingValues ->
+        StateView(communityViewModel.handler, Modifier.padding(paddingValues)) { info ->
             FontSettingsInternal(
-                paddingValues,
+                androidx.compose.foundation.layout.PaddingValues(0.dp),
                 info,
                 communityId,
             ) { opt -> currentOption = opt }
@@ -126,7 +117,7 @@ private fun FontSettingsInternal(
     AdaptiveFormLayout(Modifier.padding(paddingValues)) {
         // Content Font
         FontSettingRow(
-            label = "Content Font",
+            label = stringResource(Res.string.field_content_font),
             fontFile = contentFont,
             onReset = {
                 scope.launch {
@@ -143,7 +134,7 @@ private fun FontSettingsInternal(
 
         // Code Font
         FontSettingRow(
-            label = "Code Font",
+            label = stringResource(Res.string.field_code_font),
             fontFile = codeFont,
             onReset = {
                 scope.launch {
@@ -159,9 +150,9 @@ private fun FontSettingsInternal(
         )
 
         // Preview JSON
-        SettingOptionView("Preview JSON", {
+        SettingOptionView(stringResource(Res.string.configuration_preview), {
             // JSON is already shown inline below
-        }) {
+        }, showDivider = false) {
             Text(
                 commonJson.encodeToString(FontSettings.serializer(), fontSettings),
                 style =
@@ -189,7 +180,7 @@ private fun FontSettingRow(label: String, fontFile: FileInfo?, onReset: () -> Un
             if (fontFile != null) {
                 FontView(fontFile)
             } else {
-                Text("Not set", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(Res.string.field_not_set), style = MaterialTheme.typography.bodyMedium)
             }
         },
     )

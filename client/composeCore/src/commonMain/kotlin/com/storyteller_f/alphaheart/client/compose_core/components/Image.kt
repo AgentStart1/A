@@ -33,7 +33,7 @@ import io.github.aakira.napier.Napier
 @Composable
 fun CommonImage(
     model: String,
-    contentDescription: String,
+    contentDescription: String?,
     modifier: Modifier,
     contentScale: ContentScale = ContentScale.Fit,
 ) {

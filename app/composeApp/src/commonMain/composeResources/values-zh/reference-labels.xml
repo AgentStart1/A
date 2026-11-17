@@ -1,0 +1,10 @@
+<resources>
+    <string name="reference_type_community">社区</string>
+    <string name="reference_type_room">房间</string>
+    <string name="reference_type_topic">话题</string>
+    <string name="reference_type_user">用户</string>
+    <string name="reference_type_title">头衔</string>
+    <string name="reference_type_file">文件</string>
+    <string name="reference_type_panel">面板账号</string>
+    <string name="reference_content_unavailable">内容不可用</string>
+</resources>

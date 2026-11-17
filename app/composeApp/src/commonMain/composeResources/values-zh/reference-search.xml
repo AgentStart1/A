@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="search_scope_content">搜索范围 · %1$s</string>
+    <string name="search_members_content">成员</string>
+    <string name="parent_topic_author">回复 %1$s</string>
+    <string name="parent_topic_view">查看上级话题</string>
+</resources>

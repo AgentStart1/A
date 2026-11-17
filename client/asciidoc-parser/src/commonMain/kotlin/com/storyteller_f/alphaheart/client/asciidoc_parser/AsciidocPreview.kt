@@ -5,7 +5,9 @@
 package com.storyteller_f.alphaheart.client.asciidoc_parser
 
 suspend fun buildAsciidocPreviewHtml(source: String): String {
-    val documentHtml = convertAsciidoc(source)
+    // Keep normalization at this independent renderer boundary without a dependency on business/shared modules.
+    val renderingSource = source.replace("\r\n", "\n").replace('\r', '\n')
+    val documentHtml = convertAsciidoc(renderingSource)
     val previewHtml =
         """
         <!doctype html>

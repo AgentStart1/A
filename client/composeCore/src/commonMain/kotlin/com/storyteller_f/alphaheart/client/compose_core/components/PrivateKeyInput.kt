@@ -16,14 +16,9 @@ import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileOpen
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +36,7 @@ import com.storyteller_f.alphaheart.client.compose_core.confirm
 import com.storyteller_f.alphaheart.client.compose_core.copy
 import com.storyteller_f.alphaheart.client.compose_core.edit_private_key
 import com.storyteller_f.alphaheart.client.compose_core.generate
+import com.storyteller_f.alphaheart.client.compose_core.p256_security_warning
 import com.storyteller_f.alphaheart.client.compose_core.private_key
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.result.onSuccess
@@ -52,6 +48,11 @@ import io.github.vinceglb.filekit.dialogs.openFilePicker
 import io.github.vinceglb.filekit.readBytes
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBasicAlertDialog as BasicAlertDialog
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedTextField as OutlinedTextField
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTextButton as TextButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -152,6 +153,7 @@ fun PrivateKeyEditor(
     onConfirmEncryptionPrivateKey: (String) -> Unit,
     onCancel: () -> Unit,
 ) {
+    var currentAlgo by remember { mutableStateOf(algo) }
     var currentKey by remember { mutableStateOf(privateKey) }
     var currentEncryptionKey by remember { mutableStateOf(encryptionPrivateKey.orEmpty()) }
     Column(
@@ -159,20 +161,20 @@ fun PrivateKeyEditor(
     ) {
         Text(stringResource(Res.string.edit_private_key), style = MaterialTheme.typography.titleMedium)
 
-        AlgoTypeSelector(algo) {
-            onAlgoChange(it)
+        AlgoTypeSelector(currentAlgo) {
+            currentAlgo = it
         }
 
         // 警告提示紧跟算法选择器显示
-        if (algo == AlgoType.P256) {
+        if (currentAlgo == AlgoType.P256) {
             Text(
-                "P256 算法不够安全，可能面临未来被解密的风险",
+                stringResource(Res.string.p256_security_warning),
                 color = androidx.compose.ui.graphics.Color.Red,
                 modifier = Modifier.padding(top = 8.dp),
             )
         }
 
-        PrivateKeyTools(currentKey, enableRandom, algo) {
+        PrivateKeyTools(currentKey, enableRandom, currentAlgo) {
             currentKey = it
         }
 
@@ -190,8 +192,8 @@ fun PrivateKeyEditor(
             maxLines = 5,
         )
 
-        if (algo == AlgoType.DILITHIUM) {
-            PrivateKeyTools(currentEncryptionKey, enableRandom, algo) {
+        if (currentAlgo == AlgoType.DILITHIUM) {
+            PrivateKeyTools(currentEncryptionKey, enableRandom, currentAlgo) {
                 currentEncryptionKey = it
             }
 
@@ -214,8 +216,9 @@ fun PrivateKeyEditor(
                 Text(stringResource(Res.string.cancel))
             }
             TextButton(onClick = {
+                onAlgoChange(currentAlgo)
                 onConfirmPrivateKey(currentKey)
-                if (algo == AlgoType.DILITHIUM) {
+                if (currentAlgo == AlgoType.DILITHIUM) {
                     onConfirmEncryptionPrivateKey(currentEncryptionKey)
                 } else {
                     onConfirmEncryptionPrivateKey("")

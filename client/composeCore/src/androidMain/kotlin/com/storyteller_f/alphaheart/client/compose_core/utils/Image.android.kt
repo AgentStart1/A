@@ -16,43 +16,43 @@ import coil3.toBitmap
 import com.storyteller_f.alphaheart.client.compose_core.error.ImageError
 import com.storyteller_f.result.CustomResult
 import com.storyteller_f.result.captureFailure
+import kotlinx.io.Buffer
 import kotlinx.io.asOutputStream
-import kotlinx.io.buffered
-import kotlinx.io.files.Path
-import kotlinx.io.files.SystemTemporaryDirectory
+import kotlinx.io.readByteArray
 
 actual fun Image.coilImageToImageBitmap(): CustomResult<ImageBitmap, ImageError> =
     captureFailure(
         ImageError::from,
     ) { toBitmap().asImageBitmap() }
 
-actual fun saveImageBitmap(
+actual fun encodeImageBitmap(
     imageBitmap: ImageBitmap,
-    path: String,
     format: ImageFormat,
     quality: Int,
-): CustomResult<Path, ImageError> =
+): CustomResult<ByteArray, ImageError> =
     captureFailure(ImageError::from) {
-        val path = Path(SystemTemporaryDirectory, path)
-        path.safeSink().buffered().asOutputStream().use { outputStream ->
-            imageBitmap.asAndroidBitmap().compress(
-                when (format) {
-                    ImageFormat.PNG -> Bitmap.CompressFormat.PNG
+        val buffer = Buffer()
+        buffer.asOutputStream().buffered().use { outputStream ->
+            check(
+                imageBitmap.asAndroidBitmap().compress(
+                    when (format) {
+                        ImageFormat.PNG -> Bitmap.CompressFormat.PNG
 
-                    ImageFormat.JPEG -> Bitmap.CompressFormat.JPEG
+                        ImageFormat.JPEG -> Bitmap.CompressFormat.JPEG
 
-                    ImageFormat.WEBP ->
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                            Bitmap.CompressFormat.WEBP_LOSSY
-                        } else {
-                            Bitmap.CompressFormat.PNG
-                        }
-                },
-                quality,
-                outputStream,
-            )
+                        ImageFormat.WEBP ->
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                Bitmap.CompressFormat.WEBP_LOSSY
+                            } else {
+                                Bitmap.CompressFormat.PNG
+                            }
+                    },
+                    quality,
+                    outputStream,
+                ),
+            ) { "Image encoding failed: $format" }
         }
-        path
+        buffer.readByteArray().also { require(it.isNotEmpty()) }
     }
 
 actual fun ImageRequest.Builder.androidAllowHardware(b: Boolean): ImageRequest.Builder = allowHardware(b)

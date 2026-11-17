@@ -55,6 +55,9 @@ import kotlinx.serialization.modules.subclass
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 
 @Serializable
+data class SearchScreen(val scope: com.storyteller_f.alphaheart.app.pages.search.SearchScope) : NavKey
+
+@Serializable
 data object HomeScreen : NavKey
 
 @Serializable
@@ -185,6 +188,7 @@ val appNavSerializersModule =
     SerializersModule {
         polymorphic(NavKey::class) {
             subclass(HomeScreen::class)
+            subclass(SearchScreen::class)
             subclass(CommunityScreen::class)
             subclass(RoomScreen::class)
             subclass(RtcCallScreen::class)
@@ -509,6 +513,13 @@ internal fun newAppNav(
     onSignInRequired: () -> Unit,
 ): AppNav = DefaultAppNav(backStack, isSignedIn, onSignInRequired)
 
+/** Successful sign-out must not leave account-only destinations behind the sign-in page. */
+internal fun AppNav.finishSignOut() {
+    backStack.clear()
+    gotoHome()
+    gotoSignIn()
+}
+
 @OptIn(ExperimentalResourceApi::class)
 fun rootEntryProvider(nav: AppNav) =
     entryProvider {
@@ -532,6 +543,9 @@ fun rootEntryProvider(nav: AppNav) =
     }
 
 private fun EntryProviderScope<NavKey>.handleMainScreen() {
+    entry<SearchScreen> { screen ->
+        com.storyteller_f.alphaheart.app.pages.search.ReadingSearchPage(screen.scope)
+    }
     entry<HomeScreen> {
         HomePage()
     }
@@ -564,23 +578,25 @@ private fun EntryProviderScope<NavKey>.handleMainScreen() {
         ReactionListPage(it.topicId)
     }
     entry<FavoriteScreen> {
-        UserFavoritePage()
+        UserHost { UserFavoritePage() }
     }
     entry<SubscriptionScreen> {
-        UserSubscriptionPage()
+        UserHost { UserSubscriptionPage() }
     }
     entry<UserReactionRecordsScreen> {
-        UserReactionRecordsPage()
+        UserHost { UserReactionRecordsPage() }
     }
     entry<UserCommentsScreen> {
-        UserCommentsPage()
+        UserHost { UserCommentsPage() }
     }
 }
 
 private fun EntryProviderScope<NavKey>.handleFileExplorerScreen() {
     entry<FileExplorerScreen> {
-        val id = LocalUserInfo.current?.id ?: return@entry
-        FileExplorerPage(mediaTarget = id ob ObjectType.USER)
+        UserHost {
+            val id = LocalUserInfo.current?.id ?: return@UserHost
+            FileExplorerPage(mediaTarget = id ob ObjectType.USER)
+        }
     }
     entry<RoomFileExplorerScreen> {
         FileExplorerPage(mediaTarget = it.roomId ob ObjectType.ROOM)
@@ -592,7 +608,7 @@ private fun EntryProviderScope<NavKey>.handleFileExplorerScreen() {
 
 private fun EntryProviderScope<NavKey>.handleSettingsScreen() {
     entry<UserSettingScreen> {
-        UserSettingPage()
+        UserHost { UserSettingPage() }
     }
     entry<PreferenceScreen> {
         PreferencePage()

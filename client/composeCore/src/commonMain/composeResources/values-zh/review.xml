@@ -1,0 +1,3 @@
+<resources>
+    <string name="p256_security_warning">P256 可能面临未来被解密的风险。</string>
+</resources>

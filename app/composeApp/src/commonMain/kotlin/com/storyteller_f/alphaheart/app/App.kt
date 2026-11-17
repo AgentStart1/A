@@ -87,12 +87,14 @@ import com.storyteller_f.alphaheart.client.compose_core.components.GlobalDialog
 import com.storyteller_f.alphaheart.client.compose_core.components.GlobalDialogContext
 import com.storyteller_f.alphaheart.client.compose_core.components.GlobalTaskContext
 import com.storyteller_f.alphaheart.client.compose_core.components.LocalMediaPlayerService
+import com.storyteller_f.alphaheart.client.compose_core.components.LocalResourceDownloadAction
 import com.storyteller_f.alphaheart.client.compose_core.components.LocalToaster
 import com.storyteller_f.alphaheart.client.compose_core.components.MediaPlaySession
 import com.storyteller_f.alphaheart.client.compose_core.components.RemoteMediaItem
 import com.storyteller_f.alphaheart.client.compose_core.components.Sonner
 import com.storyteller_f.alphaheart.client.compose_core.components.VideoViewFilled
 import com.storyteller_f.alphaheart.client.compose_core.components.rememberIsInPipMode
+import com.storyteller_f.alphaheart.client.compose_core.components.rememberResourceDownloadAction
 import com.storyteller_f.alphaheart.client.compose_core.utils.BindBrowserNavigation
 import com.storyteller_f.alphaheart.client.compose_core.utils.addPlatformImageDecoders
 import com.storyteller_f.alphaheart.client.compose_core.utils.buildSessionHistoryFactory
@@ -326,6 +328,8 @@ fun CommonEntry(content: @Composable () -> Unit) {
             LocalSessionManager provides currentUserSessionManager,
             LocalCommunityFontStore provides communityFonts,
             LocalClient provides currentUserSessionManager.client,
+            LocalResourceDownloadAction provides
+                rememberResourceDownloadAction(instance.controller, currentUserSessionManager.client),
             LocalToaster provides Sonner(toasterState),
             LocalGlobalDialog provides instance.controller,
             LocalGlobalTask provides instance.task,

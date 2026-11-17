@@ -26,4 +26,24 @@ class AsciidocPreviewTest : PlatformHeadlessTest() {
             assertContains(html, "Hello, <em>AsciiDoc</em> \"reader\"")
             assertFalse(html.contains("<script"))
         }
+
+    @Test
+    fun previewKeepsTheSameDocumentForAllLineEndings() =
+        kotlinx.coroutines.test.runTest {
+            val source =
+                """
+                = Title
+
+                Hello, *reader*
+
+                [source,kotlin]
+                ----
+                val first = 1
+                ----
+                """.trimIndent() + "\n"
+            val expected = buildAsciidocPreviewHtml(source)
+            for (ending in listOf("\r\n", "\r")) {
+                kotlin.test.assertEquals(expected, buildAsciidocPreviewHtml(source.replace("\n", ending)))
+            }
+        }
 }

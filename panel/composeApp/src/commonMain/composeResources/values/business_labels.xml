@@ -1,0 +1,24 @@
+<resources>
+    <string name="review_log_sign_in">Sign in</string>
+    <string name="review_log_sign_up">Sign up</string>
+    <string name="review_log_create">Create</string>
+    <string name="review_log_delete">Delete</string>
+    <string name="review_log_update">Update</string>
+    <string name="review_log_join">Join</string>
+    <string name="review_log_exit">Leave</string>
+    <string name="review_log_add_child">Add child account</string>
+    <string name="review_log_remove_child">Remove child account</string>
+    <string name="review_log_add_favorite">Add favorite</string>
+    <string name="review_log_remove_favorite">Remove favorite</string>
+    <string name="review_log_add_subscription">Subscribe</string>
+    <string name="review_log_remove_subscription">Unsubscribe</string>
+    <string name="review_title_regular">Regular</string>
+    <string name="review_title_join">Membership</string>
+    <string name="review_upload_pending">Pending</string>
+    <string name="review_upload_success">Completed</string>
+    <string name="review_upload_failed">Failed</string>
+    <string name="review_upload_aborted">Aborted</string>
+    <string name="review_user_log_supporting">Type: %1$s | Target: %2$s | Time: %3$s</string>
+    <string name="review_log_update_status">Set %1$s status to %2$s</string>
+    <string name="review_object_panel_account">Admin account</string>
+</resources>

@@ -19,6 +19,7 @@ import org.openqa.selenium.interactions.Actions
 import org.openqa.selenium.interactions.WheelInput.ScrollOrigin
 import org.openqa.selenium.support.ui.WebDriverWait
 import java.io.File
+import java.security.MessageDigest
 import java.time.Duration
 
 private const val EDITOR_INPUT_SELECTOR = "[data-appium-input='true']:not([aria-label='search query'])"
@@ -82,42 +83,43 @@ class WasmAppTestDriver(
     }
 
     internal fun assertPdfPreview(expected: ByteArray) {
-        val frame =
+        val document =
             wait.until {
-                browser.findElements(By.cssSelector("iframe[title='PDF document'][data-pdf-loaded='true']"))
+                browser.findElements(By.cssSelector(".alpha-pdf-document[data-pdf-state='ready']"))
                     .firstOrNull { it.isDisplayed && it.rect.width > 0 && it.rect.height > 0 }
             }
         val javascript = browser as JavascriptExecutor
-        kotlin.test.assertEquals(true, javascript.executeScript("return navigator.pdfViewerEnabled;"))
-        val source = requireNotNull(frame.getAttribute("src"))
-        kotlin.test.assertEquals(
-            true,
-            javascript.executeScript("return arguments[0].startsWith('blob:' + location.origin + '/');", source),
-        )
-        val document =
-            javascript.executeAsyncScript(
+        val expectedDigest =
+            MessageDigest.getInstance("SHA-256").digest(expected)
+                .joinToString("") { "%02x".format(java.util.Locale.ROOT, it.toInt() and 0xff) }
+        kotlin.test.assertEquals(expected.size.toString(), document.getAttribute("data-pdf-byte-length"))
+        kotlin.test.assertEquals(expectedDigest, document.getAttribute("data-pdf-sha256"))
+        val rendered =
+            javascript.executeScript(
                 """
-                const done = arguments[arguments.length - 1];
-                fetch(arguments[0]).then(response => {
-                  if (!response.ok) throw new Error('PDF document is unavailable');
-                  return response.arrayBuffer();
-                }).then(buffer => done({bytes: Array.from(new Uint8Array(buffer))}))
-                  .catch(error => done({error: String(error)}));
+                const page = arguments[0].querySelector('[data-pdf-rendered="true"]');
+                const canvas = page?.querySelector(':scope > canvas');
+                const text = page?.querySelector('.alpha-pdf-text');
+                if (!canvas || canvas.width <= 0 || canvas.height <= 0 || !text?.textContent?.trim()) return false;
+                const pixels = canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+                let ink = false, paper = false;
+                for (let i=0; i<pixels.length; i+=4) {
+                  ink ||= pixels[i]<100 && pixels[i+1]<100 && pixels[i+2]<100;
+                  paper ||= pixels[i]>240 && pixels[i+1]>240 && pixels[i+2]>240;
+                  if (ink && paper) return true;
+                }
+                return false;
                 """.trimIndent(),
-                source,
+                document,
             )
-        val response = kotlin.test.assertIs<Map<*, *>>(document)
-        kotlin.test.assertNull(response["error"])
-        val values = kotlin.test.assertIs<List<*>>(response["bytes"])
-        val bytes = values.map { kotlin.test.assertIs<Number>(it).toByte() }.toByteArray()
-        kotlin.test.assertContentEquals(expected, bytes)
+        kotlin.test.assertEquals(true, rendered, "PDF must render actual text and nonblank page pixels")
         val fillsPage =
             javascript.executeScript(
                 """
                 const rect = arguments[0].getBoundingClientRect();
                 return rect.width >= innerWidth * 0.8 && rect.height >= innerHeight * 0.65;
                 """.trimIndent(),
-                frame,
+                document,
             )
         kotlin.test.assertEquals(true, fillsPage, "PDF must occupy the full-page preview")
     }
@@ -134,7 +136,7 @@ class WasmAppTestDriver(
         }
     }
 
-    internal fun rtcProbe() = WasmRtcProbe(browser)
+    internal fun mediaProbe() = WasmMediaProbe(browser)
     internal fun searchProbe() = WasmSearchProbe(browser, artifactDirectory)
     internal fun uploadGate() = WasmUploadGate(browser)
 
@@ -262,10 +264,23 @@ class WasmAppTestDriver(
         }
     }
 
+    internal fun assertInputContains(expected: String) {
+        wait.until {
+            (browser as JavascriptExecutor).executeScript(
+                "const inputs = document.querySelectorAll(arguments[1]); " +
+                    "return inputs.length === 1 && inputs[0].value.includes(arguments[0]);",
+                expected,
+                EDITOR_INPUT_SELECTOR,
+            ) == true && inputLengthAttributeMatchesValue("data-appium-input-compose-length")
+        }
+    }
+
     fun assertUnreadRoomsIndicator(visible: Boolean) {
         val locator = descriptionLocator("Rooms, Unread messages")
         if (visible) assertVisible(locator) else assertNotVisible(locator, 5)
     }
+
+    internal fun downloadProbe() = WasmDownloadProbe(browser, downloadDirectory)
 
     internal fun socketProbe() = WasmSocketProbe(browser)
 

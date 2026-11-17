@@ -6,127 +6,125 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.HtmlElementView
+import com.storyteller_f.alphaheart.client.compose_core.Res
+import com.storyteller_f.alphaheart.client.compose_core.media_retry
+import com.storyteller_f.alphaheart.client.compose_core.pdf_preview_failed
+import io.github.aakira.napier.Napier
 import kotlinx.browser.document
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.await
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
-import org.w3c.dom.HTMLIFrameElement
+import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.stringResource
+import org.w3c.dom.HTMLElement
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.JsAny
 import kotlin.js.JsException
 import kotlin.js.JsString
 import kotlin.js.Promise
-import kotlin.js.toJsString
 
-private val pdfCoordination = Dispatchers.Default.limitedParallelism(1)
+private enum class BrowserPdfState { LOADING, READY, FAILED }
 
-/** A same-origin document URL preserves cross-origin isolation while using the native PDF viewer. */
+/** Same-origin PDF.js pages replace opaque native plug-ins; readiness requires actual raster and text layers. */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 actual fun PdfView(url: String, modifier: Modifier) {
-    val scope = rememberCoroutineScope()
-    val host =
-        remember(url, scope) {
-            PdfPreviewHost(scope, pdfCoordination, Dispatchers.Default) { openBrowserPdf(url) }
-        }
-    DisposableEffect(host) { onDispose { host.close() } }
-    val state by host.state.collectAsState()
+    val element = remember(url) { document.createElement("div") as HTMLElement }
+    var attempt by remember(url) { mutableStateOf(0) }
+    var state by remember(url) { mutableStateOf(BrowserPdfState.LOADING) }
+    LaunchedEffect(element, attempt) { renderPdfPreview(element, url) { state = it } }
     Box(modifier) {
-        when (val current = state) {
-            PdfPreviewState.Loading -> CenterBox { CircularProgressIndicator() }
+        key(element) {
+            HtmlElementView(
+                factory = { element },
+                modifier = Modifier.fillMaxSize(),
+                update = {
+                    it.style.setProperty("pointer-events", if (state == BrowserPdfState.READY) "auto" else "none")
+                    it.style.visibility = if (state == BrowserPdfState.READY) "visible" else "hidden"
+                },
+            )
+        }
+        when (state) {
+            BrowserPdfState.LOADING -> CenterBox { CircularProgressIndicator() }
 
-            is PdfPreviewState.Failed -> CenterBox { ExceptionCell(current.cause, host::refresh) }
+            BrowserPdfState.FAILED ->
+                CenterBox {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text(stringResource(Res.string.pdf_preview_failed))
+                        ReadingTextButton({ attempt++ }) { Text(stringResource(Res.string.media_retry)) }
+                    }
+                }
 
-            is PdfPreviewState.Ready ->
-                HtmlElementView(
-                    factory = {
-                        (document.createElement("iframe") as HTMLIFrameElement).apply {
-                            title = "PDF document"
-                            style.width = "100%"
-                            style.height = "100%"
-                            style.border = "0"
-                            addEventListener("load", { setAttribute("data-pdf-loaded", "true") })
-                            src = current.url
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                    update = {
-                        if (it.src != current.url) {
-                            it.removeAttribute("data-pdf-loaded")
-                            it.src = current.url
-                        }
-                    },
-                )
+            BrowserPdfState.READY -> Unit
         }
     }
 }
 
-private external interface BrowserPdfRequest : JsAny {
-    val ready: Promise<JsString>
-    fun close()
-}
-
-private fun openBrowserPdf(url: String): PdfPreviewDocument =
+private suspend fun renderPdfPreview(element: HTMLElement, url: String, onState: (BrowserPdfState) -> Unit) {
+    onState(BrowserPdfState.LOADING)
+    val failure = CompletableDeferred<Exception>()
+    var renderer: BrowserPdfSurface? = null
     try {
-        BrowserPdfDocument(startPdfRequest(url.toJsString()))
-    } catch (failure: JsException) {
-        throw BrowserPdfFailure(failure, "Unable to open PDF preview")
+        renderer = createPdfPreview(element, url) { failure.complete(IllegalStateException(it)) }
+        renderer.ready.await()
+        onState(BrowserPdfState.READY)
+        throw failure.await()
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (_: JsException) {
+        Napier.w("PDF preview failed (JavaScript error)")
+        onState(BrowserPdfState.FAILED)
+    } catch (error: Exception) {
+        Napier.w("PDF preview failed (${error::class.simpleName})")
+        onState(BrowserPdfState.FAILED)
+    } finally {
+        val owned = renderer
+        if (owned != null) releasePdfPreview(owned)
     }
-
-// DOM errors can lack a JavaScript stack; preserve their message without retaining an unsafe JS cause.
-private class BrowserPdfFailure(failure: JsException, fallback: String) :
-    IllegalStateException(failure.message ?: fallback)
-
-private class BrowserPdfDocument(private val request: BrowserPdfRequest) : PdfPreviewDocument {
-    override suspend fun awaitUrl(): String =
-        try {
-            request.ready.await().toString()
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (failure: JsException) {
-            currentCoroutineContext().ensureActive()
-            throw BrowserPdfFailure(failure, "Unable to load PDF preview")
-        }
-
-    override fun close() = request.close()
 }
 
-@JsFun(
-    """(url) => {
-    const controller = new AbortController();
-    let objectUrl = null;
-    const ready = (async () => {
-        const response = await fetch(url, {credentials: 'omit', signal: controller.signal});
-        if (!response.ok) throw new Error('PDF request failed: ' + response.status);
-        const buffer = await response.arrayBuffer();
-        if (controller.signal.aborted) throw new DOMException('PDF preview closed', 'AbortError');
-        objectUrl = URL.createObjectURL(new Blob([buffer], {type: 'application/pdf'}));
-        return objectUrl;
-    })();
-    return {
-        ready,
-        close() {
-            controller.abort();
-            if (objectUrl !== null) {
-                URL.revokeObjectURL(objectUrl);
-                objectUrl = null;
-            }
+private suspend fun releasePdfPreview(renderer: BrowserPdfSurface) {
+    withContext(NonCancellable) {
+        try {
+            renderer.close().await()
+        } catch (_: JsException) {
+            Napier.w("PDF preview cleanup failed (JavaScript error)")
+        } catch (error: Exception) {
+            Napier.w("PDF preview cleanup failed (${error::class.simpleName})")
         }
-    };
-}""",
-)
-private external fun startPdfRequest(url: JsString): BrowserPdfRequest
+    }
+}
+
+@JsModule("pdf-preview-host")
+internal external fun createPdfPreview(
+    element: HTMLElement,
+    url: String,
+    onFailure: (String) -> Unit,
+): BrowserPdfSurface
+
+internal external interface BrowserPdfSurface : JsAny {
+    val ready: Promise<JsString>
+    fun close(): Promise<JsAny?>
+}

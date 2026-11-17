@@ -1,0 +1,15 @@
+<resources>
+    <string name="select_expiry_time">Choose time</string>
+    <string name="edit_title_description">Edit description</string>
+    <string name="unselected_reference">Not selected</string>
+    <string name="clear_selection">Clear</string>
+    <string name="creation_community_name">Community name</string>
+    <string name="creation_room_name">Room name</string>
+    <string name="creation_title_name">Title name</string>
+    <string name="creation_aid">Aid</string>
+    <string name="creation_member_policy">Member join policy</string>
+    <string name="title_form_permanent">Permanent</string>
+    <string name="title_form_description">Description</string>
+    <string name="title_form_description_empty">Not provided</string>
+    <string name="title_form_choose_scope">Choose scope</string>
+</resources>

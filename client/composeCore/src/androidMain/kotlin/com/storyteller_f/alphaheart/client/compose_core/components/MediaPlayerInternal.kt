@@ -6,6 +6,7 @@ package com.storyteller_f.alphaheart.client.compose_core.components
 
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.TapAndPlay
 import androidx.compose.material3.Icon
@@ -125,6 +126,7 @@ fun BoxScope.PlayerWaiting(
     localMediaPlaySession: LocalMediaPlaySession,
     remoteMediaItem: RemoteMediaItem,
     video: Boolean = true,
+    layout: MediaSurfaceLayout = MediaSurfaceLayout.Bounded,
 ) {
     val handler = LocalMediaPlayListHandlerProvider.current.playListHandler(remoteMediaItem)
     val playList by handler.data.collectAsState()
@@ -153,8 +155,9 @@ fun BoxScope.PlayerWaiting(
         remoteMediaItem.title ?: remoteMediaItem.name,
         state,
         actions,
-        Modifier.fillMaxSize(),
+        if (layout is MediaSurfaceLayout.EmbeddedVideo) Modifier.fillMaxWidth() else Modifier.fillMaxSize(),
         video = video,
+        layout = layout,
         sourceUrl = remoteMediaItem.url,
         artwork = remoteMediaItem.cover?.url,
     ) {

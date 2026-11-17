@@ -19,7 +19,6 @@ import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.VideoFile
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,13 +35,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.Res
-import com.storyteller_f.alphaheart.app.audio_content_description
 import com.storyteller_f.alphaheart.app.copy_name
-import com.storyteller_f.alphaheart.app.file_content_description
 import com.storyteller_f.alphaheart.app.file_refs
 import com.storyteller_f.alphaheart.app.image_dimension
 import com.storyteller_f.alphaheart.app.image_requires_crop_hint
-import com.storyteller_f.alphaheart.app.video_content_description
 import com.storyteller_f.alphaheart.app.view
 import com.storyteller_f.alphaheart.client.compose_core.components.CustomIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.FileIcon
@@ -50,14 +46,16 @@ import com.storyteller_f.alphaheart.client.compose_core.components.IconRes
 import com.storyteller_f.alphaheart.client.compose_core.components.LocalToaster
 import com.storyteller_f.alphaheart.client.compose_core.components.copyText
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
+import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.shared.model.Dimension
 import com.storyteller_f.shared.model.FileInfo
 import com.storyteller_f.shared.model.checkMediaFileDimensionRatioMatch
-import com.storyteller_f.shared.utils.formatTime
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import nl.jacobras.humanreadable.HumanReadable
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.ExperimentalTime
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 
 @OptIn(ExperimentalTime::class)
 @Composable
@@ -70,7 +68,7 @@ fun FileCell(fileInfo: FileInfo?, requiredDimension: Dimension? = null, clickIte
         Row(
             modifier =
             Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
-                contentDescription = labels.describe(fileInfo.name)
+                contentDescription = labels.describe(fileInfo.name, fileInfo.contentType)
             }.appiumSemantics(text = fileInfo.name, onClick = click, onLongClick = expand)
                 .combinedClickable(role = Role.Button, onLongClick = expand, onClick = click),
         ) {
@@ -105,7 +103,15 @@ private data class FileCellLabels(
     val dimension: String?,
     val warning: String?,
 ) {
-    fun describe(name: String) = listOfNotNull(name, modified, size, dimension, warning).joinToString(", ")
+    fun describe(name: String, type: String) =
+        listOfNotNull(
+            name,
+            type,
+            modified,
+            size,
+            dimension,
+            warning,
+        ).joinToString(", ")
 }
 
 @OptIn(ExperimentalTime::class)
@@ -121,12 +127,20 @@ private fun CreateFileCellLabels(file: FileInfo, requiredDimension: Dimension?):
         } else {
             null
         }
-    return FileCellLabels(file.lastModified.formatTime(), HumanReadable.fileSize(file.size), dimensionText, warning)
+    return FileCellLabels(
+        file.lastModified.formatDisplayTime(),
+        HumanReadable.fileSize(file.size),
+        dimensionText,
+        warning,
+    )
 }
 
 @Composable
 fun FileCellMenu(expanded: Boolean, updateExpanded: (Boolean) -> Unit, fileInfo: FileInfo) {
     val appNavFactory = LocalAppNavFactory.current
+    val clipboardManager = LocalClipboard.current
+    val toast = LocalToaster.current
+    val scope = rememberCoroutineScope()
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = {
@@ -143,18 +157,15 @@ fun FileCellMenu(expanded: Boolean, updateExpanded: (Boolean) -> Unit, fileInfo:
                 appNavFactory.newAppNav().gotoMedia(fileInfo)
             },
         )
-        val clipboardManager = LocalClipboard.current
-        val toast = LocalToaster.current
-        val scope = rememberCoroutineScope()
         DropdownMenuItem(
             leadingIcon = {
                 CustomIcon(IconRes.Vector(Icons.Default.Fullscreen))
             },
             text = { Text(stringResource(Res.string.copy_name)) },
             onClick = {
-                updateExpanded(false)
-                scope.launch {
+                scope.launch(start = CoroutineStart.UNDISPATCHED) {
                     clipboardManager.copyText(fileInfo.name, toast)
+                    updateExpanded(false)
                 }
             },
         )
@@ -178,19 +189,19 @@ fun UploadIcon(contentType: String) {
         contentType.startsWith("audio") ->
             Icon(
                 Icons.Default.AudioFile,
-                contentDescription = stringResource(Res.string.audio_content_description),
+                contentDescription = null,
             )
 
         contentType.startsWith("video") ->
             Icon(
                 Icons.Default.VideoFile,
-                contentDescription = stringResource(Res.string.video_content_description),
+                contentDescription = null,
             )
 
         else ->
             Icon(
                 Icons.Default.AttachFile,
-                contentDescription = stringResource(Res.string.file_content_description),
+                contentDescription = null,
                 modifier = modifier,
             )
     }

@@ -9,7 +9,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -37,7 +36,7 @@ class CommunityFontRenderingUiTest {
 
     @Test
     fun absentFontsKeepTheApplicationDefaults() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val fonts = buildTestCommunityFonts(null, null)
             assertNull(fonts.fonts.content)
             assertNull(fonts.fonts.code)
@@ -46,7 +45,7 @@ class CommunityFontRenderingUiTest {
 
     @Test
     fun isolatesCommunityFontsFromTheApplicationResolver() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val root = rootResolver()
             val application =
                 CommunityFontPresentation(
@@ -63,7 +62,7 @@ class CommunityFontRenderingUiTest {
 
     @Test
     fun keepsBodyAndCodeFamiliesIndependent() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val root = rootResolver()
             val fonts = buildTestCommunityFonts(primary(), code())
             assertEquals(30, width(fonts, "A", root))
@@ -74,7 +73,7 @@ class CommunityFontRenderingUiTest {
 
     @Test
     fun invalidBodyFontKeepsCodeAndApplicationDefaults() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val root = rootResolver()
             val fonts = buildTestCommunityFonts(invalid(), code())
             assertNull(fonts.fonts.content)
@@ -85,7 +84,7 @@ class CommunityFontRenderingUiTest {
 
     @Test
     fun invalidCodeFontKeepsBodyAndUsesItInTheEditor() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val root = rootResolver()
             val fonts = buildTestCommunityFonts(primary(), invalid())
             assertNull(fonts.fonts.code)

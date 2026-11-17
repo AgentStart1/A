@@ -14,7 +14,6 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.storyteller_f.alphaheart.app.Res
@@ -39,7 +38,7 @@ import kotlin.test.assertFalse
 class SignInPromptUiTest {
     @Test
     fun protectedActionWaitsForConfirmation() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val title = getString(Res.string.need_sign_in)
             val confirm = getString(Res.string.go_to_sign_in)
             val stack = NavBackStack<NavKey>(HomeScreen, TopicScreen(1))
@@ -61,7 +60,7 @@ class SignInPromptUiTest {
 
     @Test
     fun cancelKeepsTheSourceTopic() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val title = getString(Res.string.need_sign_in)
             lateinit var cancel: String
             val stack = NavBackStack<NavKey>(HomeScreen, TopicScreen(1))
@@ -81,7 +80,7 @@ class SignInPromptUiTest {
 
     @Test
     fun guestPreviewButtonOpensSigninDirectly() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val signIn = getString(Res.string.sign_in)
             val stack = NavBackStack<NavKey>(HomeScreen, TopicScreen(1))
             var promptCount = 0
@@ -108,7 +107,7 @@ class SignInPromptUiTest {
 
     @Test
     fun signedInPreviewShowsContent() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val signIn = getString(Res.string.sign_in)
             setContent {
                 MaterialTheme {
@@ -122,7 +121,7 @@ class SignInPromptUiTest {
 
     @Test
     fun signingOutHidesPreviewContent() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val signIn = getString(Res.string.sign_in)
             val signedIn = mutableStateOf(true)
             setContent {

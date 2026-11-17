@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,13 +21,9 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.BasicAlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -51,14 +48,15 @@ import androidx.savedstate.serialization.SavedStateConfiguration
 import com.storyteller_f.alphaheart.api.NewUser
 import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.components.AlgoTypeSelector
+import com.storyteller_f.alphaheart.client.compose_core.components.CustomAlertDialog
 import com.storyteller_f.alphaheart.client.compose_core.components.CustomGlobalDialogController
 import com.storyteller_f.alphaheart.client.compose_core.components.DialogContainer
 import com.storyteller_f.alphaheart.client.compose_core.components.GlobalDialogContext
 import com.storyteller_f.alphaheart.client.compose_core.components.LocalToaster
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.Toast
 import com.storyteller_f.alphaheart.client.compose_core.components.copyText
 import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.components.rememberAlertDialogController
 import com.storyteller_f.alphaheart.client.compose_core.components.safeArea
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.core.addUser
@@ -68,22 +66,26 @@ import com.storyteller_f.alphaheart.panel.LocalPanelNav
 import com.storyteller_f.alphaheart.panel.Res
 import com.storyteller_f.alphaheart.panel.add
 import com.storyteller_f.alphaheart.panel.add_user
-import com.storyteller_f.alphaheart.panel.aid
 import com.storyteller_f.alphaheart.panel.all_users
 import com.storyteller_f.alphaheart.panel.common.AddUserViewModel
 import com.storyteller_f.alphaheart.panel.common.AllUsersViewModel
 import com.storyteller_f.alphaheart.panel.common.OnUserAdded
 import com.storyteller_f.alphaheart.panel.common.createPanelAllUserViewModel
+import com.storyteller_f.alphaheart.panel.common.submitPanelRequest
 import com.storyteller_f.alphaheart.panel.components.UserCell
+import com.storyteller_f.alphaheart.panel.components.selectedPanelEntityId
 import com.storyteller_f.alphaheart.panel.edit_private_key
 import com.storyteller_f.alphaheart.panel.encryption_private_key
 import com.storyteller_f.alphaheart.panel.menu
 import com.storyteller_f.alphaheart.panel.nickname
 import com.storyteller_f.alphaheart.panel.private_key_required
 import com.storyteller_f.alphaheart.panel.random
+import com.storyteller_f.alphaheart.panel.review_address_empty
+import com.storyteller_f.alphaheart.panel.review_alias_input
 import com.storyteller_f.result.onSuccess
 import com.storyteller_f.shared.model.AlgoType
 import com.storyteller_f.shared.replaceCrlf
+import com.storyteller_f.shared.type.ObjectType
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.openFilePicker
 import io.github.vinceglb.filekit.readBytes
@@ -93,6 +95,12 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBasicAlertDialog as BasicAlertDialog
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton as OutlinedButton
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedTextField as OutlinedTextField
 
 @Serializable
 private data object AddUserStartScreen : NavKey
@@ -110,6 +118,7 @@ fun AllUsersPage() {
 @Composable
 fun AllUsersPageInternal(viewModel: AllUsersViewModel) {
     val panelNav = LocalPanelNav.current
+    val selectedId = selectedPanelEntityId(panelNav.backStack.lastOrNull(), ObjectType.USER)
     Scaffold(
         topBar = {
             var showDialog by remember {
@@ -137,17 +146,20 @@ fun AllUsersPageInternal(viewModel: AllUsersViewModel) {
         val direction = LocalLayoutDirection.current
         Box(Modifier.safeArea(paddingValues, direction)) {
             StateView(viewModel) { items ->
-                LazyColumn {
+                LazyColumn(contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp)) {
                     pagingItems(items, key = {
                         it.id
-                    }) {
-                        val info = items[it]
-                        UserCell(info) {
-                            val uid = info?.id
-                            if (uid != null) {
-                                panelNav.gotoUserDetail(uid)
+                    }) { index ->
+                        val info = items[index]
+                        Column(Modifier.padding(vertical = 7.dp)) {
+                            UserCell(info, selected = info != null && info.id == selectedId) {
+                                val uid = info?.id
+                                if (uid != null) {
+                                    panelNav.gotoUserDetail(uid)
+                                }
                             }
                         }
+                        if (index < items.itemCount - 1) HorizontalDivider()
                     }
                 }
             }
@@ -188,8 +200,15 @@ fun AddUserInternal(dismiss: () -> Unit) {
                 serializersModule = module
             }
         }
-    DialogContainer {
-        val addUserBackStack = rememberNavBackStack(config, AddUserStartScreen)
+    val addUserBackStack = rememberNavBackStack(config, AddUserStartScreen)
+    DialogContainer(verticalArrangement = Arrangement.spacedBy(20.dp), onDismissRequest = dismiss) {
+        val title =
+            if (addUserBackStack.last() == AddUserStartScreen) Res.string.add_user else Res.string.edit_private_key
+        Text(
+            stringResource(title),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(end = 40.dp),
+        )
         NavDisplay(
             addUserBackStack,
             entryProvider =
@@ -219,14 +238,14 @@ private fun AddUserPrivateKeyPage(addUserViewModel: AddUserViewModel, goBack: ()
     val encryptionPrivateKey by addUserViewModel.encryptionPrivateKey.collectAsState()
     val scope = rememberCoroutineScope()
     val algoType by addUserViewModel.algoType.collectAsState()
-    Column {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         AlgoTypeSelector(algoType) {
             addUserViewModel.updateAlgoType(it)
         }
         // 警告提示紧跟算法选择器显示
         if (algoType == AlgoType.P256) {
             Text(
-                "P256 算法不够安全，可能面临未来被解密的风险",
+                CoreStrings.p256SecurityWarning(),
                 color = androidx.compose.ui.graphics.Color.Red,
                 modifier = Modifier.padding(top = 8.dp),
             )
@@ -262,13 +281,13 @@ private fun AddUserPrivateKeyPage(addUserViewModel: AddUserViewModel, goBack: ()
             addUserViewModel.updatePrivateKey(it)
         }, label = {
             Text(CoreStrings.privateKey())
-        }, minLines = 3, maxLines = 5)
+        }, modifier = Modifier.fillMaxWidth(), minLines = 3, maxLines = 5)
         if (algoType == AlgoType.DILITHIUM) {
             OutlinedTextField(encryptionPrivateKey, {
                 addUserViewModel.updateEncryptionPrivateKey(it)
             }, label = {
                 Text(stringResource(Res.string.encryption_private_key))
-            }, minLines = 3, maxLines = 5)
+            }, modifier = Modifier.fillMaxWidth(), minLines = 3, maxLines = 5)
         }
         Button(goBack) {
             Text(CoreStrings.ok())
@@ -281,17 +300,17 @@ private fun AddUserProfilePage(addUserViewModel: AddUserViewModel, gotoPrivateKe
     val nickname by addUserViewModel.nickname.collectAsState()
     val aid by addUserViewModel.aid.collectAsState()
     val address by addUserViewModel.address.collectAsState()
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         OutlinedTextField(nickname, {
             addUserViewModel.updateNickname(it)
         }, label = {
             Text(stringResource(Res.string.nickname))
-        })
+        }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(aid, {
             addUserViewModel.updateAid(it)
         }, label = {
-            Text(stringResource(Res.string.aid))
-        })
+            Text(stringResource(Res.string.review_alias_input))
+        }, modifier = Modifier.fillMaxWidth())
 
         AddressField(address, gotoPrivateKey)
 
@@ -301,19 +320,18 @@ private fun AddUserProfilePage(addUserViewModel: AddUserViewModel, gotoPrivateKe
 
 @Composable
 private fun AddUserDialogButtons(dismiss: () -> Unit, addUserViewModel: AddUserViewModel) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Button({
-            dismiss()
-        }) {
+    val failureDialog = rememberAlertDialogController()
+    CustomAlertDialog(failureDialog, failureDialog::close, failureDialog::close)
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End)) {
+        OutlinedButton(dismiss) {
             Text(CoreStrings.cancel())
         }
         val globalDialogController = LocalPanelGlobalDialog.current
-        val toast = LocalToaster.current
         val requiredPrivateKeyMessage = stringResource(Res.string.private_key_required)
         Button({
             globalDialogController.addUser(
                 addUserViewModel = addUserViewModel,
-                toast = toast,
+                showFailure = failureDialog::showTitle,
                 dismiss = dismiss,
                 requiredPrivateKeyMessage = requiredPrivateKeyMessage,
             )
@@ -338,7 +356,7 @@ private fun AddressField(address: String?, gotoPrivateKey: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                address.orEmpty(),
+                address ?: stringResource(Res.string.review_address_empty),
                 modifier = Modifier.weight(1f),
             )
             IconButton(gotoPrivateKey) {
@@ -350,7 +368,7 @@ private fun AddressField(address: String?, gotoPrivateKey: () -> Unit) {
 
 private fun CustomGlobalDialogController<GlobalDialogContext<CustomPanelSessionManager>>.addUser(
     addUserViewModel: AddUserViewModel,
-    toast: Toast,
+    showFailure: (String) -> Unit,
     dismiss: () -> Unit,
     requiredPrivateKeyMessage: String,
 ) {
@@ -358,7 +376,7 @@ private fun CustomGlobalDialogController<GlobalDialogContext<CustomPanelSessionM
     val aid = addUserViewModel.aid.value.takeIf { it.isNotBlank() }
     val publicKey = addUserViewModel.publicKey.value?.takeIf { it.isNotBlank() }
     if (publicKey == null) {
-        toast.showMessage(requiredPrivateKeyMessage)
+        showFailure(requiredPrivateKeyMessage)
         return
     }
     val algoType = addUserViewModel.algoType.value
@@ -366,7 +384,7 @@ private fun CustomGlobalDialogController<GlobalDialogContext<CustomPanelSessionM
         if (algoType == AlgoType.DILITHIUM) {
             val encryptionPublicKey = addUserViewModel.encryptionPublicKey.value
             if (encryptionPublicKey == null) {
-                toast.showMessage(requiredPrivateKeyMessage)
+                showFailure(requiredPrivateKeyMessage)
                 return
             }
             com.storyteller_f.alphaheart.api.TransferAuthKey.Dilithium(
@@ -379,13 +397,12 @@ private fun CustomGlobalDialogController<GlobalDialogContext<CustomPanelSessionM
             )
         }
     val newUser = NewUser(nickname, aid, authKey)
-    launch {
-        useResult {
-            context.request { addUser(newUser) }.onSuccess {
-                context.emitEvent(OnUserAdded(it))
+    submitPanelRequest(
+        request = {
+            addUser(newUser).onSuccess {
+                this@addUser.context.emitEvent(OnUserAdded(it))
             }
-        }.onSuccess {
-            dismiss()
-        }
-    }
+        },
+        onSuccess = { dismiss() },
+    )
 }

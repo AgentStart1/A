@@ -6,6 +6,8 @@
 
 package fonts
 
+import androidx.compose.ui.InternalComposeUiApi
+import androidx.compose.ui.platform.registerSkikoComposeImplementation
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -40,6 +42,7 @@ import org.jetbrains.skiko.wasm.onWasmReady
 import kotlin.coroutines.resume
 import kotlin.js.toJsString
 import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -53,6 +56,14 @@ import kotlin.uuid.Uuid
 
 class CommunityFontBrowserTest {
     private val fontFixture = CommunityFontFixture()
+
+    @BeforeTest
+    @OptIn(InternalComposeUiApi::class)
+    fun registerTextBackend() =
+        runTest {
+            suspendCancellableCoroutine { continuation -> onWasmReady { continuation.resume(Unit) } }
+            registerSkikoComposeImplementation()
+        }
 
     @AfterTest
     fun cleanFontFiles() = runTest { fontFixture.close() }

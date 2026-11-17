@@ -10,20 +10,18 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,10 +38,12 @@ import com.storyteller_f.alphaheart.app.common.CommunityScreen
 import com.storyteller_f.alphaheart.app.common.createJoinedCommunitiesViewModel
 import com.storyteller_f.alphaheart.app.common.createJoinedCommunitiesWithPosterViewModel
 import com.storyteller_f.alphaheart.app.common.hasRouteFlow
+import com.storyteller_f.alphaheart.app.communities
 import com.storyteller_f.alphaheart.app.community_view_all
 import com.storyteller_f.alphaheart.app.community_view_poster
 import com.storyteller_f.alphaheart.app.pages.AdaptiveItemGrid
 import com.storyteller_f.alphaheart.client.compose_core.common.PagingViewModel
+import com.storyteller_f.alphaheart.client.compose_core.components.CommunityIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.CommunityPoster
 import com.storyteller_f.alphaheart.client.compose_core.components.LayoutDefaults
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
@@ -60,21 +60,27 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab as Tab
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow as PrimaryTabRow
 
 @Composable
 fun MyCommunitiesPage() {
     val pagerState = rememberPagerState { 2 }
     val scope = rememberCoroutineScope()
     Column {
-        BoxWithConstraints(Modifier.fillMaxWidth()) {
+        Text(
+            stringResource(Res.string.communities),
+            Modifier.padding(horizontal = 28.dp, vertical = 24.dp),
+            style = MaterialTheme.typography.headlineSmall,
+        )
+        Box(Modifier.fillMaxWidth()) {
             val tabs =
                 listOf(
                     stringResource(Res.string.community_view_all),
                     stringResource(Res.string.community_view_poster),
                 )
             PrimaryTabRow(
-                pagerState.currentPage,
-                modifier = if (maxWidth >= 640.dp) Modifier.widthIn(max = 320.dp) else Modifier,
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 tabs.forEachIndexed { i, label ->
                     Tab(selected = pagerState.currentPage == i, onClick = {
@@ -95,23 +101,49 @@ fun MyCommunitiesPage() {
 @Composable
 fun CommunityCellList(onClick: ((CommunityInfo) -> Unit)? = null) {
     val cellViewModel = createJoinedCommunitiesViewModel()
-    CommunityList(cellViewModel, onClick)
+    val nav = LocalAppNavFactory.current
+    StateView(cellViewModel, Modifier.fillMaxSize()) { items ->
+        LazyVerticalGrid(
+            GridCells.Adaptive(128.dp),
+            Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(20.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            pagingItems(items, { it.id }) { index ->
+                val info = items[index]
+                Column(
+                    Modifier.fillMaxWidth().clickable(enabled = info != null) {
+                        info?.let { onClick?.invoke(it) ?: nav.newAppNav().gotoCommunity(it.id, false) }
+                    }.appiumSemantics(text = info?.name).padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    CommunityIcon(info, 52.dp, setClickEvent = info != null) {
+                        info?.let { onClick?.invoke(it) ?: nav.newAppNav().gotoCommunity(it.id, false) }
+                    }
+                    Text(info?.name.orEmpty(), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            bottomAppending(items.loadState, items::retry)
+        }
+    }
 }
 
 @Composable
 fun CommunityPosterGrid(onClick: ((CommunityInfo) -> Unit)? = null) {
     val posterViewModel = createJoinedCommunitiesWithPosterViewModel()
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val posterWidth = if (maxWidth >= 600.dp) 180.dp else 128.dp
+        val posterWidth = 160.dp
         StateView(posterViewModel, modifier = Modifier.fillMaxSize()) { items ->
             LazyVerticalGrid(
-                GridCells.Adaptive(minSize = posterWidth),
+                if (maxWidth >= 600.dp) GridCells.FixedSize(posterWidth) else GridCells.Fixed(2),
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = LayoutDefaults.contentPadding,
                 horizontalArrangement = LayoutDefaults.pagingHorizontalArrangement,
                 verticalArrangement = LayoutDefaults.pagingVerticalArrangement,
             ) {
-                topPrepend(items.loadState)
+                topPrepend(items.loadState, items::retry)
                 pagingItems(
                     items,
                     { it.id.toString() },
@@ -121,7 +153,7 @@ fun CommunityPosterGrid(onClick: ((CommunityInfo) -> Unit)? = null) {
                         CommunityGrid(info, 0.dp, onClick)
                     }
                 }
-                bottomAppending(items.loadState)
+                bottomAppending(items.loadState, items::retry)
             }
         }
     }
@@ -131,9 +163,9 @@ fun CommunityPosterGrid(onClick: ((CommunityInfo) -> Unit)? = null) {
 fun CommunityList(communitiesViewModel: PagingViewModel<CommunityInfo>, onClick: ((CommunityInfo) -> Unit)? = null) {
     StateView(communitiesViewModel, modifier = Modifier.fillMaxSize()) { items ->
         AdaptiveItemGrid {
-            topPrepend(items.loadState)
+            topPrepend(items.loadState, items::retry)
             pagingItems(items, { it.id }) { index -> CommunityCell(items[index], false, onClick) }
-            bottomAppending(items.loadState)
+            bottomAppending(items.loadState, items::retry)
         }
     }
 }
@@ -170,9 +202,10 @@ fun CommunityGrid(communityInfo: CommunityInfo?, padding: Dp, onClick: ((Communi
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (communityInfo != null) {
-                    val commonDialogController = rememberCommonDialogController()
-                    val shown by commonDialogController.shown
-                    CommunityIconWithDialog(communityInfo, shown, 30.dp, onClickIcon = commonDialogController::update)
+                    CommunityIcon(communityInfo, 30.dp, setClickEvent = true) {
+                        onClick?.invoke(communityInfo)
+                            ?: appNavFactory.newAppNav().gotoCommunity(communityInfo.id, false)
+                    }
                     Text(
                         communityInfo.name,
                         Modifier.fillMaxWidth(),

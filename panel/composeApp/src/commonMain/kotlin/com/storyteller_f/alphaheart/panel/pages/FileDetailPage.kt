@@ -11,21 +11,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Article
-import androidx.compose.material.icons.filled.FilePresent
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.PrimaryScrollableTabRow
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -34,15 +25,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.paging.compose.LazyPagingItems
 import com.github.panpf.zoomimage.CoilZoomAsyncImage
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomBottomNav
+import com.storyteller_f.alphaheart.client.compose_core.components.DetailNavigationScaffold
 import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.PdfView
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
 import com.storyteller_f.alphaheart.client.compose_core.components.globalLoader
+import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
+import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.alphaheart.client.core.updateFileStatus
 import com.storyteller_f.alphaheart.panel.LocalPanelGlobalDialog
 import com.storyteller_f.alphaheart.panel.LocalPanelNav
@@ -51,48 +46,49 @@ import com.storyteller_f.alphaheart.panel.common.OnFileStatusUpdated
 import com.storyteller_f.alphaheart.panel.common.PanelLogsTab
 import com.storyteller_f.alphaheart.panel.common.createPanelFileRefsViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelFileViewModel
-import com.storyteller_f.alphaheart.panel.components.InfoTable
+import com.storyteller_f.alphaheart.panel.components.PanelInfoTable
+import com.storyteller_f.alphaheart.panel.components.panelValueText
 import com.storyteller_f.alphaheart.panel.file_can_preview
 import com.storyteller_f.alphaheart.panel.file_detail_title
 import com.storyteller_f.alphaheart.panel.file_detail_title_with_info
 import com.storyteller_f.alphaheart.panel.fullscreen_preview
+import com.storyteller_f.alphaheart.panel.menu
 import com.storyteller_f.alphaheart.panel.preview_image
+import com.storyteller_f.alphaheart.panel.review_author_reference
+import com.storyteller_f.alphaheart.panel.set_normal
+import com.storyteller_f.alphaheart.panel.set_read_only
 import com.storyteller_f.alphaheart.panel.tab_basic_info_file
 import com.storyteller_f.alphaheart.panel.tab_file_refs
 import com.storyteller_f.alphaheart.panel.tab_info
 import com.storyteller_f.alphaheart.panel.tab_logs
 import com.storyteller_f.result.onSuccess
+import com.storyteller_f.shared.model.FileRefInfo
 import com.storyteller_f.shared.obj.UpdateObjectStatusBody
 import com.storyteller_f.shared.type.ObjectStatus
 import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingHorizontalPager as HorizontalPager
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab as Tab
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow as PrimaryScrollableTabRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FileDetailPage(id: PrimaryKey) {
     val pagerState = rememberPagerState { 2 }
-    val scope = rememberCoroutineScope()
-    Scaffold(topBar = { FileTopBar(id) }, bottomBar = {
-        val navRoutes =
-            listOf(
-                NavRoute("/info", Icons.Default.FilePresent, stringResource(Res.string.tab_info)),
-                NavRoute("/logs", Icons.AutoMirrored.Filled.Article, stringResource(Res.string.tab_logs)),
-            )
-        CustomBottomNav(navRoutes[pagerState.currentPage].path, navRoutes) { path ->
-            scope.launch {
-                pagerState.animateScrollToPage(navRoutes.indexOfFirst { it.path == path })
-            }
-        }
-    }) { paddingValues ->
-        Column(Modifier.padding(paddingValues)) {
-            HorizontalPager(pagerState) { pageIndex ->
-                when (pageIndex) {
-                    0 -> FileInfoTabs(id)
-                    else -> FileLogsTab(id)
-                }
-            }
+    val navRoutes =
+        listOf(
+            NavRoute("/info", navigationIcon(NavigationGlyph.INFO), stringResource(Res.string.tab_info)),
+            NavRoute("/logs", navigationIcon(NavigationGlyph.FILE_TEXT), stringResource(Res.string.tab_logs)),
+        )
+    DetailNavigationScaffold(pagerState, navRoutes, topBar = { FileTopBar(id) }) { pageIndex ->
+        when (pageIndex) {
+            0 -> FileInfoTabs(id)
+            else -> FileLogsTab(id)
         }
     }
 }
@@ -116,7 +112,7 @@ private fun FileTopBar(id: PrimaryKey) {
         },
         navigationIcon = {
             IconButton(onClick = { nav.open() }) {
-                Icon(Icons.Default.Menu, null)
+                Icon(Icons.Default.Menu, stringResource(Res.string.menu))
             }
         },
     )
@@ -128,7 +124,7 @@ private fun FileInfoTabs(id: PrimaryKey) {
     val pagerState = rememberPagerState { tabs.size }
     val scope = rememberCoroutineScope()
     Column {
-        PrimaryScrollableTabRow(pagerState.currentPage) {
+        PrimaryScrollableTabRow {
             tabs.forEachIndexed { i, label ->
                 Tab(selected = pagerState.currentPage == i, onClick = {
                     scope.launch { pagerState.scrollToPage(i) }
@@ -182,7 +178,7 @@ private fun FileBasicInfoSection(id: PrimaryKey) {
             ) {
                 Text(stringResource(Res.string.fullscreen_preview))
             }
-            InfoTable(fileBasicInfoItems(info))
+            PanelInfoTable(fileBasicInfoItems(info), Modifier.weight(1f))
             FileReadOnlyToggleButton(info.readOnly) { newValue ->
                 val newStatus = if (newValue) ObjectStatus.READ_ONLY else ObjectStatus.NORMAL
                 scope.launch {
@@ -209,14 +205,15 @@ private fun fileBasicInfoItems(info: com.storyteller_f.shared.model.FileInfo): L
         add("size" to info.size.toString())
         add("owner" to info.owner.toString())
         add("ownerType" to info.ownerType.name)
-        add("lastModified" to info.lastModified.toString())
-        add("dimension" to (info.dimension?.let { "${it.width}x${it.height}" } ?: "null"))
+        add("lastModified" to info.lastModified.formatDisplayTime())
+        val dimension = info.dimension?.takeIf { it.width > 0 && it.height > 0 }
+        add("dimension" to (dimension?.let { "${it.width}x${it.height}" } ?: "null"))
         add("readOnly" to info.readOnly.toString())
     }
 
 @Composable
 private fun FileReadOnlyToggleButton(readOnly: Boolean, onToggle: (Boolean) -> Unit) {
-    val label = if (readOnly) "Set to Writable" else "Set to ReadOnly"
+    val label = stringResource(if (readOnly) Res.string.set_normal else Res.string.set_read_only)
     val toggle = { onToggle(!readOnly) }
     Button(
         onClick = toggle,
@@ -238,37 +235,36 @@ private fun FileRefsSection(id: PrimaryKey) {
     val nav = LocalPanelNav.current
     val vm = createPanelFileRefsViewModel(id)
     StateView(vm, modifier = Modifier.fillMaxSize()) { fileRefs ->
-        LazyColumn {
-            pagingItems(fileRefs, key = { it.fileId }) { index ->
-                val ref = fileRefs[index]
-                ListItem(
-                    modifier =
-                    Modifier.clickable {
-                        when (ref?.objectType) {
-                            com.storyteller_f.shared.type.ObjectType.COMMUNITY ->
-                                nav.gotoCommunityDetail(ref.objectId)
-
-                            com.storyteller_f.shared.type.ObjectType.ROOM ->
-                                nav.gotoRoomDetail(ref.objectId)
-
-                            com.storyteller_f.shared.type.ObjectType.TOPIC ->
-                                nav.gotoTopicDetail(ref.objectId)
-
-                            com.storyteller_f.shared.type.ObjectType.USER ->
-                                nav.gotoUserDetail(ref.objectId)
-
-                            else -> {}
-                        }
-                    },
-                    headlineContent = {
-                        Text("${ref?.objectType?.name ?: "Unknown"} #${ref?.objectId ?: "Unknown"}")
-                    },
-                    supportingContent = {
-                        Text("Author: ${ref?.author ?: "Unknown"}")
-                    },
-                )
-                HorizontalDivider()
+        PanelFileReferenceList(fileRefs) { ref ->
+            when (ref.objectType) {
+                ObjectType.COMMUNITY -> nav.gotoCommunityDetail(ref.objectId)
+                ObjectType.ROOM -> nav.gotoRoomDetail(ref.objectId)
+                ObjectType.TOPIC -> nav.gotoTopicDetail(ref.objectId)
+                ObjectType.USER -> nav.gotoUserDetail(ref.objectId)
+                else -> {}
             }
+        }
+    }
+}
+
+@Composable
+internal fun PanelFileReferenceList(fileRefs: LazyPagingItems<FileRefInfo>, navigate: (FileRefInfo) -> Unit) {
+    LazyColumn {
+        pagingItems(fileRefs, key = { it.id }) { index ->
+            val ref = fileRefs[index]
+            ListItem(
+                modifier = Modifier.clickable { ref?.let(navigate) },
+                headlineContent = {
+                    val type = panelValueText(ref?.objectType?.name ?: "Unknown")
+                    val objectId = ref?.objectId?.toString() ?: panelValueText("Unknown")
+                    Text("$type #$objectId")
+                },
+                supportingContent = {
+                    val author = ref?.author?.toString() ?: panelValueText("Unknown")
+                    Text(stringResource(Res.string.review_author_reference, author))
+                },
+            )
+            if (index < fileRefs.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
         }
     }
 }

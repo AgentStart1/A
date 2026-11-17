@@ -7,19 +7,10 @@ package com.storyteller_f.alphaheart.panel.pages
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Title
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.PrimaryScrollableTabRow
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -28,18 +19,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomBottomNav
+import com.storyteller_f.alphaheart.client.compose_core.components.DetailNavigationScaffold
 import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
+import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.alphaheart.client.core.updateTitleStatus
 import com.storyteller_f.alphaheart.panel.LocalPanelGlobalDialog
 import com.storyteller_f.alphaheart.panel.Res
 import com.storyteller_f.alphaheart.panel.common.OnTitleStatusUpdated
 import com.storyteller_f.alphaheart.panel.common.PanelLogsTab
 import com.storyteller_f.alphaheart.panel.common.createPanelTitleViewModel
-import com.storyteller_f.alphaheart.panel.components.InfoTable
+import com.storyteller_f.alphaheart.panel.components.PanelInfoTable
+import com.storyteller_f.alphaheart.panel.menu
+import com.storyteller_f.alphaheart.panel.set_normal
+import com.storyteller_f.alphaheart.panel.set_read_only
 import com.storyteller_f.alphaheart.panel.tab_basic_info
+import com.storyteller_f.alphaheart.panel.tab_logs
 import com.storyteller_f.alphaheart.panel.title_detail_title
 import com.storyteller_f.alphaheart.panel.title_detail_title_with_info
 import com.storyteller_f.result.onSuccess
@@ -49,31 +47,26 @@ import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingHorizontalPager as HorizontalPager
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab as Tab
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow as PrimaryScrollableTabRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TitleDetailPage(id: PrimaryKey) {
     val pagerState = rememberPagerState { 2 }
-    val scope = rememberCoroutineScope()
-    Scaffold(topBar = { TitleTopBar(id) }, bottomBar = {
-        val navRoutes =
-            listOf(
-                NavRoute("/info", Icons.Default.Title, "Info"),
-                NavRoute("/logs", Icons.AutoMirrored.Filled.Article, "Logs"),
-            )
-        CustomBottomNav(navRoutes[pagerState.currentPage].path, navRoutes) { path ->
-            scope.launch {
-                pagerState.animateScrollToPage(navRoutes.indexOfFirst { it.path == path })
-            }
-        }
-    }) { paddingValues ->
-        Column(Modifier.padding(paddingValues)) {
-            HorizontalPager(pagerState) { pageIndex ->
-                when (pageIndex) {
-                    0 -> TitleInfoTabs(id)
-                    else -> TitleLogsTab(id)
-                }
-            }
+    val navRoutes =
+        listOf(
+            NavRoute("/info", navigationIcon(NavigationGlyph.INFO), stringResource(Res.string.tab_basic_info)),
+            NavRoute("/logs", navigationIcon(NavigationGlyph.FILE_TEXT), stringResource(Res.string.tab_logs)),
+        )
+    DetailNavigationScaffold(pagerState, navRoutes, topBar = { TitleTopBar(id) }) { pageIndex ->
+        when (pageIndex) {
+            0 -> TitleInfoTabs(id)
+            else -> TitleLogsTab(id)
         }
     }
 }
@@ -96,7 +89,7 @@ private fun TitleTopBar(id: PrimaryKey) {
         },
         navigationIcon = {
             IconButton(onClick = { nav.open() }) {
-                Icon(Icons.Default.Menu, null)
+                Icon(Icons.Default.Menu, stringResource(Res.string.menu))
             }
         },
     )
@@ -108,7 +101,7 @@ private fun TitleInfoTabs(id: PrimaryKey) {
     val pagerState = rememberPagerState { tabs.size }
     val scope = rememberCoroutineScope()
     Column {
-        PrimaryScrollableTabRow(pagerState.currentPage) {
+        PrimaryScrollableTabRow {
             tabs.forEachIndexed { i, label ->
                 Tab(selected = pagerState.currentPage == i, onClick = {
                     scope.launch { pagerState.scrollToPage(i) }
@@ -133,7 +126,7 @@ private fun TitleBasicInfoSection(id: PrimaryKey) {
             buildList {
                 add("id" to info.id.toString())
                 add("name" to info.name)
-                add("createdTime" to info.createdTime.toString())
+                add("createdTime" to info.createdTime.formatDisplayTime())
                 add("type" to info.type.name)
                 add("creator" to info.creator.toString())
                 add("receiver" to info.receiver.toString())
@@ -143,7 +136,7 @@ private fun TitleBasicInfoSection(id: PrimaryKey) {
                 add("readOnly" to info.readOnly.toString())
             }
         Column {
-            InfoTable(items, Modifier.padding(16.dp).weight(1f))
+            PanelInfoTable(items, Modifier.padding(16.dp).weight(1f))
             Button(onClick = {
                 val newStatus = if (info.readOnly) ObjectStatus.NORMAL else ObjectStatus.READ_ONLY
                 scope.launch {
@@ -156,7 +149,7 @@ private fun TitleBasicInfoSection(id: PrimaryKey) {
                     }
                 }
             }, modifier = Modifier.padding(16.dp)) {
-                Text(if (info.readOnly) "Set to Writable" else "Set to ReadOnly")
+                Text(stringResource(if (info.readOnly) Res.string.set_normal else Res.string.set_read_only))
             }
         }
     }

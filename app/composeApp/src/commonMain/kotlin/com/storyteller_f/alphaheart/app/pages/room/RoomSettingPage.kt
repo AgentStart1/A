@@ -19,16 +19,24 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.AppGlobalDialogController
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
+import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.common.OnRoomUpdated
 import com.storyteller_f.alphaheart.app.common.createRoomViewModel
 import com.storyteller_f.alphaheart.app.components.SettingOptionResettableView
 import com.storyteller_f.alphaheart.app.components.SettingOptionView
+import com.storyteller_f.alphaheart.app.field_alias
+import com.storyteller_f.alphaheart.app.field_icon
+import com.storyteller_f.alphaheart.app.field_name
 import com.storyteller_f.alphaheart.app.pages.AdaptiveFormLayout
+import com.storyteller_f.alphaheart.app.pages.ReadingPageToolbar
 import com.storyteller_f.alphaheart.app.pages.user.ObjectSettingDialog
 import com.storyteller_f.alphaheart.app.pages.user.SettingOption
+import com.storyteller_f.alphaheart.app.settings_title
 import com.storyteller_f.alphaheart.client.compose_core.components.LocalToaster
+import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
 import com.storyteller_f.alphaheart.client.compose_core.components.request
 import com.storyteller_f.alphaheart.client.core.updateRoomInfo
@@ -37,6 +45,7 @@ import com.storyteller_f.shared.model.RoomInfo
 import com.storyteller_f.shared.obj.UpdateRoomBody
 import com.storyteller_f.shared.type.PrimaryKey
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,9 +59,15 @@ fun RoomSettingPage(roomId: PrimaryKey) {
     val closeDialog = {
         currentOption = null
     }
-    Scaffold { padding ->
-        roomInfo?.let { it1 ->
-            RoomSettingInternal(padding, { option: SettingOption ->
+    Scaffold(
+        topBar = {
+            ReadingPageToolbar(
+                stringResource(Res.string.settings_title) + roomInfo?.name?.let { " · $it" }.orEmpty(),
+            )
+        },
+    ) { padding ->
+        StateView(roomViewModel.handler, Modifier.padding(padding)) { it1 ->
+            RoomSettingInternal(PaddingValues(0.dp), { option: SettingOption ->
                 currentOption = option
             }, it1)
         }
@@ -88,7 +103,7 @@ private fun RoomSettingInternal(values: PaddingValues, showDialog: (SettingOptio
     val globalDialogController = LocalGlobalDialog.current
     AdaptiveFormLayout(Modifier.padding(values)) {
         SettingOptionResettableView(
-            "Icon",
+            stringResource(Res.string.field_icon),
             roomInfo.icon != null,
             { shouldReset ->
                 if (shouldReset) {
@@ -113,15 +128,15 @@ private fun RoomSettingInternal(values: PaddingValues, showDialog: (SettingOptio
                 RoomIconWithDialog(roomInfo, showDialog = false, setClickEvent = false) {}
             },
         )
-        SettingOptionView("Name", {
+        SettingOptionView(stringResource(Res.string.field_name), {
             showDialog(SettingOption.Name(roomInfo.name))
-        }, {
+        }, content = {
             Text(roomInfo.name, textDecoration = TextDecoration.Underline)
         })
         val aid = roomInfo.aid
-        SettingOptionView("Aid", {
+        SettingOptionView(stringResource(Res.string.field_alias), {
             toasterState.showMessage("forbid")
-        }, {
+        }, showDivider = false, content = {
             Text(aid)
         })
     }

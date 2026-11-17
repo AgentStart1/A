@@ -1,5 +1,9 @@
 import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.report.ReportMergeTask
+import org.gradle.api.attributes.Usage
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.targets.js.KotlinWasmTargetType
+import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrTarget
 import org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinNpmInstallTask
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin
@@ -42,8 +46,53 @@ plugins.withType<WasmYarnPlugin> {
     }
 }
 
+// Compose's runtime discovery filters out composite project components. Consume the included
+// Skiko build's verified native-runtime variant explicitly through the public Wasm link-sync API.
+val skikoMediaRuntime = configurations.create("skikoMediaRuntime") {
+    isCanBeConsumed = false
+    attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named("skiko-runtime"))
+}
+dependencies.add(skikoMediaRuntime.name, "org.jetbrains.skiko:skiko-wasm-js")
+
+abstract class SkikoRuntimeArchiveOperations {
+    @get:javax.inject.Inject abstract val archives: org.gradle.api.file.ArchiveOperations
+}
+val skikoRuntimeArchives = objects.newInstance<SkikoRuntimeArchiveOperations>()
+val skikoMediaRuntimeFiles = skikoMediaRuntime.elements
+val unpackSkikoMediaRuntime = tasks.register<Sync>("unpackSkikoMediaRuntime") {
+    val unpack = skikoRuntimeArchives.archives
+    from(skikoMediaRuntimeFiles.map { files -> files.map { unpack.zipTree(it.asFile) } })
+    exclude("META-INF/**")
+    into(layout.buildDirectory.dir("skiko-media-runtime"))
+}
+
+allprojects {
+    plugins.withId("org.jetbrains.compose") {
+        plugins.withId("org.jetbrains.kotlin.multiplatform") {
+            extensions.configure<KotlinMultiplatformExtension> {
+                targets.withType<KotlinJsIrTarget>().configureEach {
+                    if (wasmTargetType == KotlinWasmTargetType.JS) {
+                        compilations.configureEach {
+                            binaries.configureEach {
+                                linkSyncTask.configure {
+                                    dependsOn(unpackSkikoMediaRuntime)
+                                    from.from(unpackSkikoMediaRuntime.map { it.destinationDir })
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 val wasmMediaHostSources = layout.projectDirectory.dir("client/composeCore/wasm-media-host").asFileTree.matching {
     include("host.mjs", "decode-worker.mjs", "gpu-bridge.mjs", "video-sample.mjs", "package.json", "NOTICE")
+}
+
+val pdfPreviewHostSources = layout.projectDirectory.dir("client/composeCore/pdf-preview-host").asFileTree.matching {
+    include("*.mjs", "package.json", "NOTICE", "LICENSE-pdfjs")
 }
 
 val downloadWorkerSources = layout.projectDirectory.dir("app/composeApp/file-worker").asFileTree.matching {
@@ -51,11 +100,19 @@ val downloadWorkerSources = layout.projectDirectory.dir("app/composeApp/file-wor
     exclude("*.test.mjs")
 }
 
+val sqliteWorkerSources = layout.projectDirectory.dir("client/room/sqlite-web-worker").asFileTree.matching {
+    include("*.js", "package.json")
+}
+
 // Yarn file dependencies retain stale source copies unless installation is forced.
 tasks.withType<KotlinNpmInstallTask>().matching { it.name == "kotlinWasmNpmInstall" }.configureEach {
     inputs.files(wasmMediaHostSources).withPropertyName("wasmMediaHostSources")
         .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(pdfPreviewHostSources).withPropertyName("pdfPreviewHostSources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.files(downloadWorkerSources).withPropertyName("downloadWorkerSources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(sqliteWorkerSources).withPropertyName("sqliteWorkerSources")
         .withPathSensitivity(PathSensitivity.RELATIVE)
     args.add("--force")
 }
@@ -66,12 +123,24 @@ val wasmMediaHostConsumers = setOf(
 )
 
 allprojects {
+    tasks.matching { it.name == "wasmJsBrowserTest" }.configureEach {
+        inputs.files(pdfPreviewHostSources).withPropertyName("pdfPreviewHostSources")
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+        inputs.files(sqliteWorkerSources).withPropertyName("sqliteWorkerSources")
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+    }
     tasks.withType<KotlinWebpack>().configureEach {
         if (project.path in setOf(":app:composeApp", ":app:webApp") && name.startsWith("wasmJs")) {
             inputs.files(downloadWorkerSources).withPropertyName("downloadWorkerSources")
                 .withPathSensitivity(PathSensitivity.RELATIVE)
         }
+        if (name.startsWith("wasmJs")) {
+            inputs.files(sqliteWorkerSources).withPropertyName("sqliteWorkerSources")
+                .withPathSensitivity(PathSensitivity.RELATIVE)
+        }
         if (project.path in wasmMediaHostConsumers && name.startsWith("wasmJs")) {
+            inputs.files(pdfPreviewHostSources).withPropertyName("pdfPreviewHostSources")
+                .withPathSensitivity(PathSensitivity.RELATIVE)
             inputs.files(wasmMediaHostSources).withPropertyName("wasmMediaHostSources")
                 .withPathSensitivity(PathSensitivity.RELATIVE)
         }

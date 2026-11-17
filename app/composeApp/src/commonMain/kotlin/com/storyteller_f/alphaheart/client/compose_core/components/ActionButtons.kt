@@ -4,19 +4,17 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.runtime.Composable
 import com.storyteller_f.alphaheart.api.NewFavorite
 import com.storyteller_f.alphaheart.api.NewSubscription
 import com.storyteller_f.alphaheart.app.LocalGlobalTask
+import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.common.OnAddFavorite
 import com.storyteller_f.alphaheart.app.common.OnAddSubscription
 import com.storyteller_f.alphaheart.app.common.OnRemoveFavorite
 import com.storyteller_f.alphaheart.app.common.OnRemoveSubscription
+import com.storyteller_f.alphaheart.app.favorite_action_label
+import com.storyteller_f.alphaheart.app.subscription_action_label
 import com.storyteller_f.alphaheart.client.core.LoadingState
 import com.storyteller_f.alphaheart.client.core.addFavorite
 import com.storyteller_f.alphaheart.client.core.addSubscription
@@ -25,6 +23,7 @@ import com.storyteller_f.alphaheart.client.core.removeSubscription
 import com.storyteller_f.result.onSuccess
 import com.storyteller_f.shared.obj.ObjectTuple
 import com.storyteller_f.shared.type.PrimaryKey
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun FavoriteButton(favoriteId: PrimaryKey?, infoTuple: ObjectTuple) {
@@ -35,11 +34,11 @@ fun FavoriteButton(favoriteId: PrimaryKey?, infoTuple: ObjectTuple) {
         if (state is LoadingState.Loading) {
             IconRes.Loading
         } else if (favoriteId != null) {
-            IconRes.Vector(Icons.Default.Favorite)
+            IconRes.Vector(actionIcon(ActionGlyph.HEART, selected = true))
         } else {
-            IconRes.Vector(Icons.Default.FavoriteBorder)
+            IconRes.Vector(actionIcon(ActionGlyph.HEART))
         }
-    ButtonNav(icon, "Favorite", semanticDescription = "favorite-action") {
+    ButtonNav(icon, stringResource(Res.string.favorite_action_label), semanticDescription = "favorite-action") {
         dialogController.launch(taskId) {
             use {
                 request {
@@ -67,11 +66,11 @@ fun SubscriptionButton(subscriptionId: PrimaryKey?, infoTuple: ObjectTuple) {
         if (state is LoadingState.Loading) {
             IconRes.Loading
         } else if (subscriptionId != null) {
-            IconRes.Vector(Icons.Default.NotificationsActive)
+            IconRes.Vector(actionIcon(ActionGlyph.BELL, selected = true))
         } else {
-            IconRes.Vector(Icons.Default.NotificationsOff)
+            IconRes.Vector(actionIcon(ActionGlyph.BELL))
         }
-    ButtonNav(icon, "Subscription", semanticDescription = "subscribe-action") {
+    ButtonNav(icon, stringResource(Res.string.subscription_action_label), semanticDescription = "subscribe-action") {
         dialogController.launch(taskId) {
             use {
                 request {

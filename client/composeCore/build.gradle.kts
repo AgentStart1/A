@@ -19,7 +19,12 @@ val buildIosTarget = project.findProperty("target.ios") == "true"
 kotlin {
     android {
         namespace = "com.storyteller_f.alphaheart.client.compose_core"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        compileSdk {
+            version =
+                release(libs.versions.android.compileSdk.get().toInt()) {
+                    minorApiLevel = libs.versions.android.compileSdkMinor.get().toInt()
+                }
+        }
         minSdk = libs.versions.android.minSdk.get().toInt()
         androidResources {
             enable = true
@@ -85,6 +90,7 @@ kotlin {
             implementation(libs.material)
             implementation(libs.material3)
             implementation(libs.material.icons.extended)
+            implementation(libs.icons.lucide)
             implementation(libs.ui)
             implementation(libs.components.resources)
             implementation(libs.ui.tooling.preview)
@@ -160,6 +166,7 @@ kotlin {
                 implementation(libs.kotlinx.browser)
                 implementation(npm("local-font-access", project.file("local-font-access")))
                 implementation(npm("wasm-media-host", project.file("wasm-media-host")))
+                implementation(npm("pdf-preview-host", project.file("pdf-preview-host")))
                 implementation(npm("mermaid-ffi-wasm", libs.versions.mermaidFfi.get()))
             }
         }

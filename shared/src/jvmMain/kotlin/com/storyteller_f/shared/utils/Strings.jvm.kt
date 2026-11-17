@@ -27,7 +27,9 @@ actual fun checkContent(text: String): CustomResult<Unit, ContentValidationError
     var end = breakIterator.next()
     while (end != BreakIterator.DONE) {
         val sub = text.substring(start, end)
-        if (!regexp.toRegex().matches(sub) && !emojiSet.contains(sub) && !nerdFontSet.contains(sub)) {
+        val isSupported =
+            sub == "\r\n" || regexp.toRegex().matches(sub) || emojiSet.contains(sub) || nerdFontSet.contains(sub)
+        if (!isSupported) {
             return CustomResult.Failure(ContentValidationError.UnsupportedCharacters("unsupported $sub"))
         }
         start = end

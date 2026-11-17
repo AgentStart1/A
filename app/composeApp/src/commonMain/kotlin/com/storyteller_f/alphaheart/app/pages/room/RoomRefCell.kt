@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -19,7 +20,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalRefCellHandlerProvider
+import com.storyteller_f.alphaheart.app.components.ActionMenuReference
 import com.storyteller_f.alphaheart.client.compose_core.components.RefCellStateView
+import com.storyteller_f.alphaheart.client.compose_core.components.RoomIcon
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.core.LoadingHandler
 import com.storyteller_f.shared.model.RoomInfo
@@ -65,5 +68,15 @@ private fun RoomRefCellInternal(handler: LoadingHandler<RoomInfo>, onClick: ((Ro
             .padding(10.dp),
     ) {
         UnboundedRoomCell(it)
+    }
+}
+
+@Composable
+fun RoomMenuRefCell(id: PrimaryKey, onClick: (RoomInfo) -> Unit) {
+    val handler = LocalRefCellHandlerProvider.current.roomHandler(id)
+    RefCellStateView(handler, Modifier.fillMaxWidth().heightIn(min = 52.dp)) { info ->
+        ActionMenuReference(info.name, { onClick(info) }) {
+            RoomIcon(info, 48.dp, false, 4.dp) {}
+        }
     }
 }

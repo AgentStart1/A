@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -87,14 +88,12 @@ private fun VideoPlayer(
     }
     val pipModifier = Modifier.androidPipMode(enablePip, ratio)
     EnablePipPre31(enablePip, localMediaPlaySession)
-    Box(
-        modifier =
-        if (fill) pipModifier.fillMaxSize() else pipModifier.aspectRatio(ratio.toFloat()),
-    ) {
+    val layout = if (fill) MediaSurfaceLayout.Bounded else MediaSurfaceLayout.EmbeddedVideo(ratio.toFloat())
+    Box(modifier = if (fill) pipModifier.fillMaxSize() else pipModifier.fillMaxWidth()) {
         when {
-            player == null -> PlayerWaiting(localMediaPlaySession, remoteMediaItem)
+            player == null -> PlayerWaiting(localMediaPlaySession, remoteMediaItem, layout = layout)
 
-            playingSession == null -> PlayerWaiting(localMediaPlaySession, remoteMediaItem)
+            playingSession == null -> PlayerWaiting(localMediaPlaySession, remoteMediaItem, layout = layout)
 
             playingSession.lastUuid == localMediaPlaySession.uuid ->
                 VideoPlayerInternal(
@@ -102,11 +101,15 @@ private fun VideoPlayer(
                     remoteMediaItem,
                     localMediaPlaySession,
                     playingSession,
+                    layout,
                 )
 
-            playingSession.id == localMediaPlaySession.id -> PlayerOccupy(localMediaPlaySession)
+            playingSession.id == localMediaPlaySession.id ->
+                Box(if (fill) Modifier.fillMaxSize() else Modifier.fillMaxWidth().aspectRatio(ratio.toFloat())) {
+                    PlayerOccupy(localMediaPlaySession)
+                }
 
-            else -> PlayerWaiting(localMediaPlaySession, remoteMediaItem)
+            else -> PlayerWaiting(localMediaPlaySession, remoteMediaItem, layout = layout)
         }
     }
 }
@@ -119,6 +122,7 @@ private fun BoxScope.VideoPlayerInternal(
     item: RemoteMediaItem,
     localSession: LocalMediaPlaySession,
     playingSession: MediaPlaySession,
+    layout: MediaSurfaceLayout,
 ) {
     player ?: return
     AndroidPlayerContainer(player) {
@@ -128,8 +132,13 @@ private fun BoxScope.VideoPlayerInternal(
             player,
             localSession,
             playingSession,
-            Modifier.fillMaxSize(),
+            if (!isPip && layout is MediaSurfaceLayout.EmbeddedVideo) {
+                Modifier.fillMaxWidth()
+            } else {
+                Modifier.fillMaxSize()
+            },
             controlsVisible = !isPip,
+            layout = if (isPip) MediaSurfaceLayout.Bounded else layout,
         ) {
             AndroidView(
                 factory = { PlayerView(it).apply { useController = false } },

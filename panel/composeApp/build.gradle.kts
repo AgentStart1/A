@@ -28,7 +28,12 @@ val buildType = project.findProperty("server.buildType") as String
 kotlin {
     android {
         namespace = "com.storyteller_f.alphaheart.panel.android_library"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        compileSdk {
+            version =
+                release(libs.versions.android.compileSdk.get().toInt()) {
+                    minorApiLevel = libs.versions.android.compileSdkMinor.get().toInt()
+                }
+        }
         minSdk = libs.versions.android.minSdk.get().toInt()
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
@@ -155,7 +160,6 @@ kotlin {
             implementation(libs.aboutlibraries.core)
             implementation(libs.aboutlibraries.compose.m3)
             implementation(libs.zoomimage.compose.coil3)
-            implementation(libs.fonticons.core)
             implementation(libs.krop.ui)
 
             implementation(libs.haze)
@@ -180,6 +184,9 @@ kotlin {
         }
         jvmTest {
             dependsOn(headlessTest)
+            dependencies {
+                implementation(libs.kotlinx.coroutines.swing)
+            }
         }
     }
     compilerOptions {

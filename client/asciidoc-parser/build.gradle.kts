@@ -32,7 +32,12 @@ kotlin {
 
     android {
         namespace = "com.storyteller_f.alphaheart.client.asciidoc_parser"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        compileSdk {
+            version =
+                release(libs.versions.android.compileSdk.get().toInt()) {
+                    minorApiLevel = libs.versions.android.compileSdkMinor.get().toInt()
+                }
+        }
         minSdk = libs.versions.android.minSdk.get().toInt()
         androidResources {
             enable = true

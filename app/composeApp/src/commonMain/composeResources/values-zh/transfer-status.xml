@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="transfer_waiting">等待上传</string>
+    <string name="transfer_uploading">正在上传</string>
+    <string name="transfer_paused">已暂停</string>
+    <string name="transfer_failed">失败</string>
+    <string name="transfer_completed">已完成</string>
+    <string name="transfer_pending">未完成</string>
+    <string name="transfer_cancelled">已取消</string>
+    <string name="transfer_field_path">路径</string>
+    <string name="transfer_field_hash">哈希值</string>
+    <string name="transfer_field_size">大小</string>
+    <string name="transfer_field_status">状态</string>
+    <string name="transfer_field_message">消息</string>
+    <string name="transfer_field_name">名称</string>
+    <string name="transfer_field_content_type">内容类型</string>
+    <string name="transfer_pause">暂停</string>
+    <string name="transfer_resume">恢复</string>
+    <string name="transfer_retry">重试</string>
+    <string name="transfer_upload_action">%1$s上传 %2$s</string>
+    <string name="transfer_upload_progress">上传进度 %1$s：%2$d/%3$d</string>
+    <string name="transfer_not_downloaded">未下载</string>
+    <string name="transfer_downloading">正在下载</string>
+    <string name="transfer_downloaded">下载完成</string>
+    <string name="transfer_download_failed">下载失败</string>
+    <string name="transfer_process_failed">处理失败</string>
+    <string name="transfer_field_error">错误</string>
+    <string name="transfer_field_url">链接</string>
+    <string name="transfer_start">开始</string>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="member_policy_open">Open</string>
+    <string name="member_policy_invite_only">Invite Only</string>
+    <string name="member_policy_open_help">Anyone can join this community.</string>
+    <string name="member_policy_invite_only_help">Only invited members can join this community.</string>
+</resources>

@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 
 /** Measures fields against their own pane and retains composition when columns change. */
 @Composable
-fun AdaptiveFormLayout(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+fun AdaptiveFormLayout(modifier: Modifier = Modifier, maxColumns: Int = 2, content: @Composable () -> Unit) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         Layout(
             content = content,
@@ -29,7 +29,7 @@ fun AdaptiveFormLayout(modifier: Modifier = Modifier, content: @Composable () ->
             Modifier.widthIn(max = 1200.dp).fillMaxWidth()
                 .verticalScroll(rememberScrollState()).padding(20.dp),
         ) { measurables, constraints ->
-            val columns = if (constraints.maxWidth >= 800.dp.roundToPx()) 2 else 1
+            val columns = if (maxColumns > 1 && constraints.maxWidth >= 800.dp.roundToPx()) 2 else 1
             val gap = 24.dp.roundToPx()
             val fieldWidth = ((constraints.maxWidth - gap * (columns - 1)) / columns).coerceAtLeast(0)
             val fields = measurables.map { it.measure(Constraints.fixedWidth(fieldWidth)) }

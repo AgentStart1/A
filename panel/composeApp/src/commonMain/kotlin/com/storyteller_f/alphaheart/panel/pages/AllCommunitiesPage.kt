@@ -6,13 +6,12 @@ package com.storyteller_f.alphaheart.panel.pages
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -30,7 +29,15 @@ import com.storyteller_f.alphaheart.panel.Res
 import com.storyteller_f.alphaheart.panel.all_communities
 import com.storyteller_f.alphaheart.panel.common.AllCommunitiesViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelAllCommunitiesViewModel
+import com.storyteller_f.alphaheart.panel.components.panelDirectoryRowColors
+import com.storyteller_f.alphaheart.panel.components.panelDirectorySelection
+import com.storyteller_f.alphaheart.panel.components.panelValueText
+import com.storyteller_f.alphaheart.panel.components.selectedPanelEntityId
+import com.storyteller_f.alphaheart.panel.menu
+import com.storyteller_f.shared.type.ObjectType
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
 @Composable
 fun AllCommunitiesPage() {
@@ -42,12 +49,13 @@ fun AllCommunitiesPage() {
 @Composable
 fun AllCommunitiesPageInternal(viewModel: AllCommunitiesViewModel) {
     val panelNav = LocalPanelNav.current
+    val selectedId = selectedPanelEntityId(panelNav.backStack.lastOrNull(), ObjectType.COMMUNITY)
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(Res.string.all_communities)) },
                 navigationIcon = {
-                    IconButton({ panelNav.open() }) { Icon(Icons.Default.Menu, null) }
+                    IconButton({ panelNav.open() }) { Icon(Icons.Default.Menu, stringResource(Res.string.menu)) }
                 },
             )
         },
@@ -55,12 +63,15 @@ fun AllCommunitiesPageInternal(viewModel: AllCommunitiesViewModel) {
         val direction = LocalLayoutDirection.current
         Box(Modifier.safeArea(paddingValues, direction)) {
             StateView(viewModel) { items ->
-                LazyColumn {
+                LazyColumn(contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp)) {
                     pagingItems(items, key = { it.id }) { index ->
                         val info = items[index]
                         if (info != null) {
                             ListItem(
-                                modifier = Modifier.clickable { panelNav.gotoCommunityDetail(info.id) },
+                                colors = panelDirectoryRowColors(info.id == selectedId),
+                                modifier =
+                                Modifier.panelDirectorySelection(info.id == selectedId)
+                                    .clickable { panelNav.gotoCommunityDetail(info.id) },
                                 leadingContent = {
                                     CommunityIcon(info, 40.dp, false) {}
                                 },
@@ -69,17 +80,17 @@ fun AllCommunitiesPageInternal(viewModel: AllCommunitiesViewModel) {
                                 supportingContent = {
                                     val owner = info.owner.toString()
                                     val members = info.memberCount.toString()
-                                    val policy = info.memberPolicy.name
+                                    val policy = panelValueText(info.memberPolicy.name)
                                     Text(
                                         listOf(owner, members, policy).filter { it.isNotEmpty() }
                                             .joinToString(" • "),
                                     )
                                 },
                             )
-                            HorizontalDivider()
+                            if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                         } else {
                             ListItem(headlineContent = { Text("") })
-                            HorizontalDivider()
+                            if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                         }
                     }
                 }

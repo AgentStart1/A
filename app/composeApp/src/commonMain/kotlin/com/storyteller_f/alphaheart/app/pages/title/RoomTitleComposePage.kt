@@ -55,8 +55,8 @@ private fun RoomTitleComposeInternal(roomId: PrimaryKey) {
                 appNavFactory.newAppNav().back()
             }
         }
-    }) {
-        TitleComposeInternalEdit(vm)
+    }) { actions ->
+        TitleComposeInternalEdit(vm, actions)
     }
     TitleComposeSheet(vm)
 }

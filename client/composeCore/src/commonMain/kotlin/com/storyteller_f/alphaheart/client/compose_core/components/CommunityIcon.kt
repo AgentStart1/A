@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
@@ -42,7 +41,7 @@ fun CommunityIcon(communityInfo: CommunityInfo?, iconSize: Dp, setClickEvent: Bo
                 .appiumSemantics(text = firstCharacter, onClick = openDialog)
                 .clip(shape)
                 .clickable(setClickEvent) { onClickIcon(true) }
-                .border(1.dp, Color.Gray, shape),
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
         )
     } else {
         Box(
@@ -52,7 +51,7 @@ fun CommunityIcon(communityInfo: CommunityInfo?, iconSize: Dp, setClickEvent: Bo
                 .size(iconSize)
                 .appiumSemantics(text = firstCharacter, onClick = openDialog)
                 .clickable(setClickEvent) { onClickIcon(true) }
-                .border(1.dp, Color.Gray, shape),
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
             contentAlignment = Alignment.Center,
         ) {
             CharSequenceText(firstCharacter.orEmpty())

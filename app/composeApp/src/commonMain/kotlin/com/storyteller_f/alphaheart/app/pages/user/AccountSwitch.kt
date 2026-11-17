@@ -4,23 +4,24 @@
 
 package com.storyteller_f.alphaheart.app.pages.user
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Input
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Badge
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.Icon
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -34,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -42,13 +44,16 @@ import com.storyteller_f.alphaheart.app.IAccountInstance
 import com.storyteller_f.alphaheart.app.LocalAccountSwitcher
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
 import com.storyteller_f.alphaheart.app.LocalUiViewModel
+import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.UIViewModel
+import com.storyteller_f.alphaheart.app.add_child_account
+import com.storyteller_f.alphaheart.app.child_account
 import com.storyteller_f.alphaheart.app.common.ChildAccountsViewModel
 import com.storyteller_f.alphaheart.app.common.getChildAccountsViewModel
-import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
+import com.storyteller_f.alphaheart.app.current_account
+import com.storyteller_f.alphaheart.app.main_account
+import com.storyteller_f.alphaheart.app.switch_account
 import com.storyteller_f.alphaheart.client.compose_core.components.BaseSheet
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.SheetContainer
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.UserIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
@@ -62,7 +67,12 @@ import com.storyteller_f.shared.Type2Algo
 import com.storyteller_f.shared.algoRunCatching
 import com.storyteller_f.shared.getAlgo
 import com.storyteller_f.shared.model.ChildAccountInfo
+import com.storyteller_f.shared.model.UserInfo
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBadge as Badge
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton as OutlinedButton
 
 class AccountSwitcher(val state: MutableState<Boolean> = mutableStateOf(false)) {
     fun switch() {
@@ -85,10 +95,8 @@ fun AccountSwitch() {
     BaseSheet(expand, sheetState, {
         expand = false
     }) {
-        SheetContainer {
-            val viewModel = getChildAccountsViewModel()
-            AccountSwitchInternal(viewModel)
-        }
+        val viewModel = getChildAccountsViewModel()
+        AccountSwitchInternal(viewModel)
     }
 }
 
@@ -105,31 +113,43 @@ private fun AccountSwitchInternal(viewModel: ChildAccountsViewModel) {
     val mainSessionManager = mainInstance.sessionManager
     val globalDialogController = LocalGlobalDialog.current
     val scope = rememberCoroutineScope()
-    Row(modifier = Modifier.padding(horizontal = 10.dp)) {
-        if (isInChildAccount) {
-            FilledIconButton({
-                uiViewModel.switchToMain()
-            }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Switch to main account")
-            }
-        }
-        val pagingItems = viewModel.flow.collectAsLazyPagingItems()
-        LaunchedEffect(Unit) {
-            pagingItems.refresh()
-        }
-        FilledIconButton({
+    Text(
+        stringResource(Res.string.switch_account),
+        style = MaterialTheme.typography.titleLarge,
+        modifier = Modifier.padding(end = 40.dp, bottom = 24.dp),
+    )
+    val pagingItems = viewModel.flow.collectAsLazyPagingItems()
+    LaunchedEffect(Unit) { pagingItems.refresh() }
+    Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalArrangement = Arrangement.End) {
+        OutlinedButton({
             scope.launch {
-                if (globalDialogController.useResult {
-                        mainSessionManager.addChildAccount()
-                    }.isSuccess
-                ) {
+                if (globalDialogController.useResult { mainSessionManager.addChildAccount() }.isSuccess) {
                     pagingItems.refresh()
                 }
             }
         }) {
-            Icon(Icons.Default.Add, "add")
+            Icon(Icons.Default.Add, null)
+            Text(stringResource(Res.string.add_child_account), Modifier.padding(start = 8.dp))
         }
     }
+    val mainUser by mainSessionManager.model.userHandler.data.collectAsState()
+    mainUser?.let {
+        AccountSwitchRow(
+            it,
+            stringResource(if (isInChildAccount) Res.string.main_account else Res.string.current_account),
+            selected = !isInChildAccount,
+        ) { if (isInChildAccount) uiViewModel.switchToMain() }
+        if (pagingItems.itemCount > 0) {
+            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+        }
+    }
+    ChildAccountList(viewModel) {
+        scope.launch { globalDialogController.switchUser(it, uiViewModel) }
+    }
+}
+
+@Composable
+private fun ChildAccountList(viewModel: ChildAccountsViewModel, onSelect: (ChildAccountInfo) -> Unit) {
     StateView(viewModel, modifier = Modifier.height(300.dp)) { pagingItems ->
         LazyColumn(
             contentPadding = PaddingValues(10.dp),
@@ -143,11 +163,8 @@ private fun AccountSwitchInternal(viewModel: ChildAccountsViewModel) {
             ) { index ->
                 val childAccountInfo = pagingItems[index]
                 childAccountInfo?.let {
-                    ChildAccountCell(it) {
-                        scope.launch {
-                            globalDialogController.switchUser(it, uiViewModel)
-                        }
-                    }
+                    ChildAccountCell(it) { onSelect(it) }
+                    if (index < pagingItems.itemCount - 1) HorizontalDivider(Modifier.padding(top = 12.dp))
                 }
             }
         }
@@ -156,36 +173,42 @@ private fun AccountSwitchInternal(viewModel: ChildAccountsViewModel) {
 
 @Composable
 fun ChildAccountCell(childAccountInfo: ChildAccountInfo, onClick: () -> Unit) {
-    val userInfo = childAccountInfo.userInfo
+    val instance by LocalUiViewModel.current.instance.collectAsState()
+    val selected = instance.address == childAccountInfo.userInfo.address
+    AccountSwitchRow(
+        childAccountInfo.userInfo,
+        stringResource(if (selected) Res.string.current_account else Res.string.child_account),
+        selected,
+        childAccountInfo.hasUnreadRoomMessage,
+        onClick,
+    )
+}
+
+@Composable
+private fun AccountSwitchRow(
+    userInfo: UserInfo,
+    role: String,
+    selected: Boolean,
+    hasUnread: Boolean = false,
+    onClick: () -> Unit,
+) {
     Row(
         modifier =
-        Modifier.padding(8.dp)
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+            .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
             .appiumSemantics(text = userInfo.address, onClick = onClick)
-            .clickable(onClick = onClick),
+            .clickable(enabled = !selected, onClick = onClick).padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        BadgedBox(badge = {
-            if (childAccountInfo.hasUnreadRoomMessage) {
-                Badge(containerColor = Color.Red)
-            }
-        }) {
-            UserIcon(
-                setClickEvent = false,
-                avatarUrl = userInfo.avatar?.url,
-            ) {}
+        BadgedBox(badge = { if (hasUnread) Badge(containerColor = Color.Red) }) {
+            UserIcon(setClickEvent = false, avatarUrl = userInfo.avatar?.url) {}
         }
-        Column {
-            Text(userInfo.nickname, style = MaterialTheme.typography.titleMedium)
-            val aid = userInfo.aid
-            if (aid != null) {
-                Text(CoreStrings.aid(aid), style = MaterialTheme.typography.labelSmall)
-            } else {
-                Text(CoreStrings.ad(userInfo.address), style = MaterialTheme.typography.labelSmall)
-            }
-            Text(childAccountInfo.algoType.name)
+        Column(Modifier.weight(1f)) {
+            Text(userInfo.nickname, style = MaterialTheme.typography.bodyLarge)
+            Text(role, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        CustomIcon(Icons.AutoMirrored.Filled.Input)
+        if (!selected) Icon(Icons.Default.ChevronRight, null, Modifier.size(18.dp))
     }
 }
 

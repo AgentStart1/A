@@ -8,6 +8,7 @@ import com.storyteller_f.shared.commonJson
 import com.storyteller_f.shared.utils.MarkdownObject
 import com.storyteller_f.shared.utils.astNode
 import com.storyteller_f.shared.utils.getLang
+import com.storyteller_f.shared.utils.normalizeMarkdownLineEndings
 import com.storyteller_f.shared.utils.readCodeFence
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.MarkdownTokenTypes
@@ -23,10 +24,11 @@ fun parseMarkdownToBlocks(markdown: String): List<ContentBlock> {
         return listOf(createEmptyParagraphBlock())
     }
 
-    val ast = astNode(markdown)
+    val source = normalizeMarkdownLineEndings(markdown)
+    val ast = astNode(source)
     val blocks = mutableListOf<ContentBlock>()
 
-    parseAstNode(ast, markdown, blocks)
+    parseAstNode(ast, source, blocks)
 
     return if (blocks.isEmpty()) {
         listOf(createEmptyParagraphBlock())

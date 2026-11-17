@@ -49,25 +49,51 @@ import kotlinx.io.Buffer
 import kotlin.time.ExperimentalTime
 
 interface Uploader {
-    fun upload(clipData: ImmutableList<ClientFile>)
+    fun upload(clipData: ImmutableList<ClientFile>, owner: ObjectTuple? = null)
 
-    fun resume(pathHash: String)
-    fun pause(pathHash: String)
+    fun resume(pathHash: String, owner: ObjectTuple? = null)
+    fun pause(pathHash: String, owner: ObjectTuple? = null)
 
-    suspend fun forget(pathHash: String)
+    suspend fun forget(pathHash: String, owner: ObjectTuple? = null)
 }
 
-class UploaderImpl(
-    val uiViewModel: UIViewModel,
+internal data class UploadRuntime(val sessionManager: SimpleUserSessionManager, val database: ModelStorage)
+
+internal fun uploadTaskKey(owner: ObjectTuple, pathHash: String): String =
+    "upload:${owner.objectType.name}:${owner.objectId}:$pathHash"
+
+class UploaderImpl internal constructor(
+    private val captureRuntime: () -> UploadRuntime?,
     val taskRegister: TaskRegister,
     private val retainSelectedFiles: Boolean = false,
     private val persistTransportProgress: Boolean = true,
+    private val defaultChunkSize: Long = 10L * 1024 * 1024,
 ) : Uploader {
+    constructor(
+        uiViewModel: UIViewModel,
+        taskRegister: TaskRegister,
+        retainSelectedFiles: Boolean = false,
+        persistTransportProgress: Boolean = true,
+    ) : this(
+        captureRuntime = {
+            val instance = uiViewModel.instance.value
+            if (instance.sessionManager.model.uid == null) {
+                null
+            } else {
+                UploadRuntime(instance.sessionManager, instance.database)
+            }
+        },
+        taskRegister,
+        retainSelectedFiles,
+        persistTransportProgress,
+    )
+
     private val selectedFiles = mutableMapOf<String, ClientFile>()
     private val selectedFilesMutex = Mutex()
 
-    override suspend fun forget(pathHash: String) {
-        selectedFilesMutex.withLock { selectedFiles.remove(pathHash) }
+    override suspend fun forget(pathHash: String, owner: ObjectTuple?) {
+        val target = owner ?: captureRuntime()?.sessionManager?.model?.uid?.let { it ob ObjectType.USER } ?: return
+        selectedFilesMutex.withLock { selectedFiles.remove(uploadTaskKey(target, pathHash)) }
     }
 
     private suspend fun releaseCompletedFile(
@@ -77,10 +103,14 @@ class UploaderImpl(
     ) {
         if (!retainSelectedFiles) return
         val record = modelStorage.upload.getDocument(collection, pathHash)
-        if (record == null || record.status == UploadStatus.SUCCESS) forget(pathHash)
+        if (record == null || record.status == UploadStatus.SUCCESS) {
+            selectedFilesMutex.withLock {
+                selectedFiles.remove(uploadTaskKey(collection.objectId ob collection.objectType, pathHash))
+            }
+        }
     }
 
-    override fun upload(clipData: ImmutableList<ClientFile>) {
+    override fun upload(clipData: ImmutableList<ClientFile>, owner: ObjectTuple?) {
         if (clipData.isEmpty()) {
             return
         }
@@ -91,17 +121,20 @@ class UploaderImpl(
                 }
             }"
         }
-        val instance = uiViewModel.instance.value
-        val myUid = instance.sessionManager.model.uid ?: return
-        val modelStorage = instance.database
-        val userSession = instance.sessionManager
+        val runtime = captureRuntime() ?: return
+        val target = owner ?: runtime.sessionManager.model.uid?.let { it ob ObjectType.USER } ?: return
+        val modelStorage = runtime.database
+        val userSession = runtime.sessionManager
+        val collection = UploadCollection.fromOwner(target)
         clipData.forEach {
-            taskRegister.lockTask(md5(it.path)) {
+            taskRegister.lockTask(uploadTaskKey(target, md5(it.path))) {
                 val pathHash = md5(it.path)
-                if (retainSelectedFiles) selectedFilesMutex.withLock { selectedFiles[pathHash] = it }
+                if (retainSelectedFiles) {
+                    selectedFilesMutex.withLock { selectedFiles[uploadTaskKey(target, pathHash)] = it }
+                }
                 try {
-                    uploadIfNeed(userSession, myUid, it, modelStorage, UploadCollection(myUid))
-                    releaseCompletedFile(modelStorage, UploadCollection(myUid), pathHash)
+                    uploadIfNeed(userSession, target, it, modelStorage, collection)
+                    releaseCompletedFile(modelStorage, collection, pathHash)
                 } catch (cancellation: kotlin.coroutines.cancellation.CancellationException) {
                     throw cancellation
                 } catch (e: Exception) {
@@ -113,18 +146,19 @@ class UploaderImpl(
         }
     }
 
-    override fun resume(pathHash: String) {
+    override fun resume(pathHash: String, owner: ObjectTuple?) {
         Napier.i {
             "resume upload $pathHash"
         }
-        val instance = uiViewModel.instance.value
-        val myUid = instance.sessionManager.model.uid ?: return
-        val modelStorage = instance.database
-        val userSession = instance.sessionManager
-        taskRegister.lockTask(pathHash) {
+        val runtime = captureRuntime() ?: return
+        val target = owner ?: runtime.sessionManager.model.uid?.let { it ob ObjectType.USER } ?: return
+        val modelStorage = runtime.database
+        val userSession = runtime.sessionManager
+        val collection = UploadCollection.fromOwner(target)
+        taskRegister.lockTask(uploadTaskKey(target, pathHash)) {
             try {
-                resumeIfNeed(modelStorage, myUid, pathHash, userSession, UploadCollection(myUid))
-                releaseCompletedFile(modelStorage, UploadCollection(myUid), pathHash)
+                resumeIfNeed(modelStorage, target, pathHash, userSession, collection)
+                releaseCompletedFile(modelStorage, collection, pathHash)
             } catch (cancellation: kotlin.coroutines.cancellation.CancellationException) {
                 throw cancellation
             } catch (e: Exception) {
@@ -135,15 +169,16 @@ class UploaderImpl(
         }
     }
 
-    override fun pause(pathHash: String) {
+    override fun pause(pathHash: String, owner: ObjectTuple?) {
         Napier.i {
             "pause upload $pathHash"
         }
-        val instance = uiViewModel.instance.value
-        val myUid = instance.sessionManager.model.uid ?: return
-        val modelStorage = instance.database
-        taskRegister.stop(pathHash) {
-            updateUploadInfo(modelStorage, UploadCollection(myUid), pathHash) {
+        val runtime = captureRuntime() ?: return
+        val target = owner ?: runtime.sessionManager.model.uid?.let { it ob ObjectType.USER } ?: return
+        val modelStorage = runtime.database
+        val collection = UploadCollection.fromOwner(target)
+        taskRegister.stop(uploadTaskKey(target, pathHash)) {
+            updateUploadInfo(modelStorage, collection, pathHash) {
                 it.copy(status = UploadStatus.PAUSED)
             }
         }
@@ -151,7 +186,7 @@ class UploaderImpl(
 
     private suspend fun resumeIfNeed(
         modelStorage: ModelStorage,
-        myUid: PrimaryKey,
+        owner: ObjectTuple,
         pathHash: String,
         userSession: SimpleUserSessionManager,
         collection: UploadCollection,
@@ -164,14 +199,15 @@ class UploaderImpl(
             return
         }
         val clientFile =
-            selectedFilesMutex.withLock { selectedFiles[pathHash] } ?: getClientFile(uploadInfo.path) ?: return
-        upload(userSession, myUid, clientFile, UploadContext(modelStorage, collection, pathHash, uploadInfo))
+            selectedFilesMutex.withLock { selectedFiles[uploadTaskKey(owner, pathHash)] }
+                ?: getClientFile(uploadInfo.path) ?: return
+        upload(userSession, owner, clientFile, UploadContext(modelStorage, collection, pathHash, uploadInfo))
     }
 
     @OptIn(ExperimentalTime::class)
     private suspend fun uploadIfNeed(
         userSession: SimpleUserSessionManager,
-        myUid: PrimaryKey,
+        owner: ObjectTuple,
         clipFile: ClientFile,
         modelStorage: ModelStorage,
         collection: UploadCollection,
@@ -195,7 +231,8 @@ class UploaderImpl(
         val uploadInfo =
             UploadInfo.EMPTY.copy(
                 id = id,
-                objectId = myUid,
+                objectId = owner.objectId,
+                objectType = owner.objectType,
                 pathHash = pathHash,
                 path = clipFile.path,
                 sha256 = checksums.sha256,
@@ -203,11 +240,11 @@ class UploaderImpl(
                 total = clipFile.size,
                 status = UploadStatus.UPLOADING,
                 name = clipFile.name,
-                contentType = clipFile.contentType.contentType,
-                chunkSize = 10L * 1024 * 1024, // 10MB
+                contentType = clipFile.contentType.toString(),
+                chunkSize = defaultChunkSize,
             )
         modelStorage.upload.saveLast(UploadCollection.fromInfo(uploadInfo), uploadInfo)
-        upload(userSession, myUid, clipFile, UploadContext(modelStorage, collection, pathHash, uploadInfo))
+        upload(userSession, owner, clipFile, UploadContext(modelStorage, collection, pathHash, uploadInfo))
     }
 
     private data class UploadContext(
@@ -219,7 +256,7 @@ class UploaderImpl(
 
     private suspend fun upload(
         userSession: SimpleUserSessionManager,
-        myUid: PrimaryKey,
+        owner: ObjectTuple,
         clientFile: ClientFile,
         context: UploadContext,
     ) {
@@ -232,7 +269,7 @@ class UploaderImpl(
                 it.copy(status = UploadStatus.UPLOADING)
             }
         }
-        val objectTuple = myUid ob ObjectType.USER
+        val objectTuple = owner
         val chunkThreshold = uploadInfo.chunkSize
         val fileSha256 = uploadInfo.sha256
         if (clientFile.size > chunkThreshold) {
@@ -248,10 +285,11 @@ class UploaderImpl(
             clientFile.getUploadDataFromClipFile(fileSha256),
         ) { sent, _ ->
             if (persistTransportProgress) progress.update(sent)
-        }.onSuccess {
+        }.onSuccess { response ->
             updateUploadInfo(modelStorage, collection, pathHash) {
                 it.copy(status = UploadStatus.SUCCESS, progress = it.total)
             }
+            cacheUploadedFiles(response.data, modelStorage.fileInfo)
         }.onFailure { throwable ->
             updateUploadInfo(modelStorage, collection, pathHash) {
                 it.copy(status = UploadStatus.FAILED, message = throwable.cause.safeMessage())
@@ -282,10 +320,11 @@ class UploaderImpl(
             uploadChunkedFiles(userSession, it.id, clipFile, modelStorage, uploadInfo, it)
         }.andThen(UploadError::fromError) {
             userSession.completeChunkUpload(it)
-        }.onSuccess {
+        }.onSuccess { file ->
             updateUploadInfo(modelStorage, collection, pathHash) {
                 it.copy(status = UploadStatus.SUCCESS, progress = it.total)
             }
+            cacheUploadedFiles(listOf(file), modelStorage.fileInfo)
         }.onFailure { throwable ->
             updateUploadInfo(modelStorage, collection, pathHash) {
                 it.copy(status = UploadStatus.FAILED, message = throwable.cause.safeMessage())

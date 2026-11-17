@@ -8,10 +8,6 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -28,6 +24,8 @@ import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.back_to_pre_page
 import com.storyteller_f.alphaheart.app.utils.appPlatform
+import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.utils.BindBrowserNavigation
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import kotlinx.serialization.Serializable
@@ -35,6 +33,8 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
 @Serializable
 data object SignIn : NavKey
@@ -84,7 +84,7 @@ fun SignInAndSignUpPage() {
                     onClick = goBack,
                     modifier = Modifier.appiumSemantics(description = backDescription, onClick = goBack),
                 ) {
-                    Icon(Icons.AutoMirrored.Default.ArrowBack, backDescription)
+                    Icon(actionIcon(ActionGlyph.ARROW_LEFT), backDescription)
                 }
             }
             SignInNavDisplay(backStack, nav)

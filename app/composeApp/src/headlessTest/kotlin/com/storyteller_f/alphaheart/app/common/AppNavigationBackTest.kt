@@ -26,4 +26,24 @@ class AppNavigationBackTest {
         nav.back()
         assertEquals(listOf(HomeScreen), backStack.toList())
     }
+
+    @Test
+    fun finishSignOutDiscardsPersonalRouteHistory() {
+        val backStack = NavBackStack<NavKey>(HomeScreen, RoomScreen(1), FavoriteScreen, UserSettingScreen)
+        val nav = newAppNav(backStack, isSignedIn = { false }, onSignInRequired = {})
+        nav.finishSignOut()
+        assertEquals(listOf(HomeScreen, SignSessionScreen), backStack.toList())
+        repeat(2) { nav.back() }
+        assertEquals(listOf(HomeScreen), backStack.toList())
+    }
+
+    @Test
+    fun finishSignOutCreatesHomeForRestoredStack() {
+        val backStack = NavBackStack<NavKey>(FavoriteScreen, UserSettingScreen)
+        val nav = newAppNav(backStack, isSignedIn = { false }, onSignInRequired = {})
+        nav.finishSignOut()
+        assertEquals(listOf(HomeScreen, SignSessionScreen), backStack.toList())
+        nav.back()
+        assertEquals(listOf(HomeScreen), backStack.toList())
+    }
 }

@@ -1,0 +1,16 @@
+{
+  "name": "pdf-preview-host",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "host.mjs",
+  "dependencies": {
+    "pdfjs-dist": "6.5.438"
+  },
+  "files": [
+    "host.mjs",
+    "pdf-worker.mjs",
+    "NOTICE",
+    "LICENSE-pdfjs"
+  ]
+}

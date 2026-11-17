@@ -17,8 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.android.tools.screenshot.PreviewTest
+import com.storyteller_f.alphaheart.client.compose_core.components.InfoTable
 import com.storyteller_f.alphaheart.panel.common.PanelNav
-import com.storyteller_f.alphaheart.panel.components.InfoTable
 import com.storyteller_f.alphaheart.panel.components.TopicCell
 import com.storyteller_f.alphaheart.panel.ui.theme.PanelTheme
 import com.storyteller_f.shared.model.TaskRecordType

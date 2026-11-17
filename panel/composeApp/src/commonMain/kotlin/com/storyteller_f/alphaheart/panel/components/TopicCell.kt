@@ -6,9 +6,11 @@ package com.storyteller_f.alphaheart.panel.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.alphaheart.panel.Res
 import com.storyteller_f.alphaheart.panel.common.PanelNav
 import com.storyteller_f.alphaheart.panel.encrypted
@@ -19,7 +21,7 @@ import com.storyteller_f.shared.model.TopicDetail
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun TopicCell(info: TopicDetail, panelNav: PanelNav) {
+fun TopicCell(info: TopicDetail, panelNav: PanelNav, selected: Boolean? = null) {
     val text =
         when (val content = info.content) {
             is TopicContent.Plain -> content.plain
@@ -42,13 +44,16 @@ fun TopicCell(info: TopicDetail, panelNav: PanelNav) {
         ).joinToString(" • ")
     val supporting =
         listOf(
-            info.createdTime.toString(),
+            info.createdTime.formatDisplayTime(),
             counts,
             flags,
         ).filter { it.isNotEmpty() }.joinToString(" • ")
 
     ListItem(
-        modifier = Modifier.clickable { panelNav.gotoTopicDetail(info.id) },
+        colors = selected?.let { panelDirectoryRowColors(it) } ?: ListItemDefaults.colors(),
+        modifier =
+        Modifier.let { if (selected != null) it.panelDirectorySelection(selected) else it }
+            .clickable { panelNav.gotoTopicDetail(info.id) },
         headlineContent = { Text(text) },
         overlineContent = { Text(overline) },
         supportingContent = {

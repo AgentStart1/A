@@ -4,10 +4,9 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.hrm.latex.renderer.Latex
@@ -26,6 +25,7 @@ import com.storyteller_f.shared.utils.getLang
 import com.storyteller_f.shared.utils.readCodeFence
 import org.jetbrains.compose.resources.stringResource
 import kotlin.collections.get
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTextButton as TextButton
 
 @Composable
 fun CustomCodeFence(
@@ -116,8 +116,10 @@ private fun FileObjectBlock(
             cover = coverInfo,
             title = obj.title,
         )
-    Column {
-        UploadedFileAction(mediaInfo, onClick)
+    CompositionLocalProvider(
+        LocalMediaPreviewAction provides { onClick(mediaInfo) },
+        LocalResourceDownloadFile provides mediaInfo,
+    ) {
         if (contentType.startsWith("video/")) {
             VideoViewEmbed(obj1)
         } else {

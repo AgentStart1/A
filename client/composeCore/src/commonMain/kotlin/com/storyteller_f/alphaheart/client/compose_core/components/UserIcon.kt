@@ -27,7 +27,7 @@ fun UserIcon(setClickEvent: Boolean, avatarUrl: String?, size: Dp = 40.dp, onCli
     if (avatarUrl != null) {
         CommonImage(
             avatarUrl,
-            contentDescription = "avatar",
+            contentDescription = if (setClickEvent) "avatar" else null,
             modifier =
             Modifier.size(size).clip(shape).let {
                 if (setClickEvent) {
@@ -41,7 +41,7 @@ fun UserIcon(setClickEvent: Boolean, avatarUrl: String?, size: Dp = 40.dp, onCli
     } else {
         Image(
             Icons.Default.AccountCircle,
-            contentDescription = "avatar",
+            contentDescription = if (setClickEvent) "avatar" else null,
             modifier =
             Modifier.size(size)
                 .clip(shape)

@@ -67,7 +67,7 @@ fun AppiumTestBase<AppAppiumHelper, WasmAppiumHelper>.testBrowserSocketReconnect
                 restarted.awaitOpen()
                 scenarioVerifyInjectedSessionLoaded(scope.driver, data.authenticated.session.address)
                 scope.driver.clickByText("Sign out")
-                scope.driver.clickByText("Yes")
+                scope.driver.clickByText("OK")
                 scope.driver.clickByDescription("avatar")
                 scope.driver.assertVisibleByText("Sign in")
                 restarted.assertNoFurtherAttempts()

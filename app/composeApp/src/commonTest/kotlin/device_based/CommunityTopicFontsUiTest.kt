@@ -13,7 +13,6 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
-import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -60,7 +59,7 @@ class CommunityTopicFontsUiTest {
 
     @Test
     fun markdownFontsDoNotChangeTheApplicationTheme() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             setContent {
                 MaterialTheme {
                     val original = MaterialTheme.typography
@@ -85,7 +84,7 @@ class CommunityTopicFontsUiTest {
 
     @Test
     fun fontCompletionPreservesTheSourceDraftAndCursor() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
             try {
                 val release = CompletableDeferred<Unit>()
@@ -110,7 +109,7 @@ class CommunityTopicFontsUiTest {
                     assertNull(family)
                     release.complete(Unit)
                 }
-                waitUntil { family != null }
+                awaitExternalCondition { family != null }
                 onNode(hasSetTextAction()).performTextInput("!")
                 runOnIdle { assertEquals("AAA draft!", input.value) }
             } finally {
@@ -120,7 +119,7 @@ class CommunityTopicFontsUiTest {
 
     @Test
     fun clearsPreviousFontWhileLoadingNewSettings() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
             try {
                 val second = CompletableDeferred<Unit>()
@@ -145,12 +144,12 @@ class CommunityTopicFontsUiTest {
                         }
                     }
                 }
-                waitUntil { family != null }
+                awaitExternalCondition { family != null }
                 val previous = assertNotNull(family)
                 runOnIdle { selected.value = settings(2) }
-                waitUntil { family == null }
+                awaitExternalCondition { family == null }
                 runOnIdle { second.complete(Unit) }
-                waitUntil { family != null }
+                awaitExternalCondition { family != null }
                 runOnIdle {
                     assertNotSame(previous, family)
                     assertEquals("AAA draft", input.value)
@@ -162,7 +161,7 @@ class CommunityTopicFontsUiTest {
 
     @Test
     fun visibleFontsShareTheirConstructionFlows() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
             try {
                 val reads = MutableStateFlow(emptyMap<Long, Int>())
@@ -187,7 +186,7 @@ class CommunityTopicFontsUiTest {
                         }
                     }
                 }
-                waitUntil { fonts.content != null && fonts.code != null }
+                awaitExternalCondition { fonts.content != null && fonts.code != null }
                 waitForIdle()
                 runOnIdle {
                     assertEquals(mapOf(1L to 1, 2L to 1), reads.value)
@@ -201,7 +200,7 @@ class CommunityTopicFontsUiTest {
 
     @Test
     fun bodyRetryRefreshesOnlyTheMatchingFont() =
-        runComposeUiTest {
+        runAppComposeUiTest {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
             try {
                 val reads = MutableStateFlow(emptyMap<Long, Int>())
@@ -221,13 +220,13 @@ class CommunityTopicFontsUiTest {
                         }
                     }
                 }
-                waitUntil { reads.value[1] == 1 && fonts.code != null }
+                awaitExternalCondition { reads.value[1] == 1 && fonts.code != null }
                 val previousCode = assertNotNull(fonts.code)
                 runOnIdle {
                     assertNull(fonts.content)
                     scope.launch { store.retry(assertNotNull(selected.contentFont)) }
                 }
-                waitUntil { fonts.content != null }
+                awaitExternalCondition { fonts.content != null }
                 runOnIdle {
                     assertSame(previousCode, fonts.code)
                     assertEquals(mapOf(1L to 2, 2L to 1), reads.value)

@@ -4,32 +4,28 @@
 
 package com.storyteller_f.alphaheart.app.pages.topic
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.PermMedia
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,26 +33,43 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
 import com.storyteller_f.alphaheart.app.LocalUserInfo
 import com.storyteller_f.alphaheart.app.Res
+import com.storyteller_f.alphaheart.app.add_attachment
+import com.storyteller_f.alphaheart.app.attachments
 import com.storyteller_f.alphaheart.app.common.MarkdownMediasViewModel
 import com.storyteller_f.alphaheart.app.common.OnTopicCreated
 import com.storyteller_f.alphaheart.app.common.createRoomViewModel
+import com.storyteller_f.alphaheart.app.common.createTopicViewModel
 import com.storyteller_f.alphaheart.app.common.getMarkdownMediasViewModel
 import com.storyteller_f.alphaheart.app.components.AppTopicContentView
+import com.storyteller_f.alphaheart.app.compose_topic
+import com.storyteller_f.alphaheart.app.composer_readonly
+import com.storyteller_f.alphaheart.app.content_blocks
+import com.storyteller_f.alphaheart.app.editor_source
 import com.storyteller_f.alphaheart.app.input_is_empty
 import com.storyteller_f.alphaheart.app.pages.AdaptiveEditorLayout
+import com.storyteller_f.alphaheart.app.pages.ReadingPageToolbar
 import com.storyteller_f.alphaheart.app.pages.community.CommunityTopicContent
 import com.storyteller_f.alphaheart.app.pages.room.RoomSendButton
+import com.storyteller_f.alphaheart.app.pages.search.SearchScope
+import com.storyteller_f.alphaheart.app.pages.search.searchScopeName
+import com.storyteller_f.alphaheart.app.parent_topic_load_failed_retry
 import com.storyteller_f.alphaheart.app.preview
-import com.storyteller_f.alphaheart.app.raw
+import com.storyteller_f.alphaheart.app.scope_community
+import com.storyteller_f.alphaheart.app.scope_room
+import com.storyteller_f.alphaheart.app.search_users
 import com.storyteller_f.alphaheart.app.submit
+import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.CustomAlertDialog
+import com.storyteller_f.alphaheart.client.compose_core.components.CustomAlertDialogController
 import com.storyteller_f.alphaheart.client.compose_core.components.LocalTopicContentFonts
+import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.block.BlockEditor
 import com.storyteller_f.alphaheart.client.compose_core.components.block.BlockToolbar
 import com.storyteller_f.alphaheart.client.compose_core.components.block.rememberBlockEditorState
@@ -65,6 +78,7 @@ import com.storyteller_f.alphaheart.client.compose_core.components.rememberAlert
 import com.storyteller_f.alphaheart.client.compose_core.components.request
 import com.storyteller_f.alphaheart.client.compose_core.components.safeArea
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
+import com.storyteller_f.alphaheart.client.core.LoadingState
 import com.storyteller_f.alphaheart.client.core.createTopic
 import com.storyteller_f.result.onSuccess
 import com.storyteller_f.shared.model.TopicContent
@@ -74,10 +88,14 @@ import com.storyteller_f.shared.obj.ob
 import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
 import com.storyteller_f.shared.type.UserStatus
-import io.github.aakira.napier.Napier
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab as Tab
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow as PrimaryTabRow
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTextButton as TextButton
 
 sealed interface TopicComposeData {
     fun getMediaTarget(): ObjectTuple?
@@ -131,26 +149,21 @@ private fun TopicComposeScaffold(data: TopicComposeData, mediaTarget: ObjectTupl
     var showSheet by remember {
         mutableStateOf(false)
     }
-    Scaffold(topBar = {
-        TopAppBar({
-        }, navigationIcon = {
-            IconButton(onClick = {
-                showSheet = true
-            }) {
-                Icon(Icons.Filled.PermMedia, contentDescription = null)
-            }
-        }, actions = {
-            TopicComposeSubmitButton(input, data) {
-                input = ""
-                backPrePage()
-            }
-        })
-    }) { paddingValues ->
+    Scaffold(topBar = { ReadingPageToolbar(stringResource(Res.string.compose_topic)) }) { paddingValues ->
         val direction = LocalLayoutDirection.current
         Column(modifier = Modifier.safeArea(paddingValues, direction)) {
-            TopicComposeInternal(input, mediaTarget, data) {
-                input = it
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp).heightIn(min = 44.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Box(Modifier.weight(1f)) { TopicComposeScopeCaption(data) }
+                TopicComposeAction(input, data) {
+                    input = ""
+                    backPrePage()
+                }
             }
+            TopicComposeInternal(input, mediaTarget, data, { showSheet = true }) { input = it }
         }
     }
     val sheetState = rememberModalBottomSheetState()
@@ -163,54 +176,81 @@ private fun TopicComposeScaffold(data: TopicComposeData, mediaTarget: ObjectTupl
     }
 }
 
+@Composable
+private fun TopicComposeAction(input: String, data: TopicComposeData, onSent: () -> Unit) {
+    val parent = data.getParent()
+    val readOnly =
+        if (parent.objectType == ObjectType.TOPIC) {
+            val handler = createTopicViewModel(parent.objectId).handler
+            val parentTopic by handler.data.collectAsState()
+            val parentState by handler.state.collectAsState()
+            if (parentTopic == null && parentState is LoadingState.Error) {
+                TextButton(handler::refresh) { Text(stringResource(Res.string.parent_topic_load_failed_retry)) }
+                return
+            }
+            parentTopic?.readOnly
+        } else {
+            null
+        }
+    when (topicEditorAccess(LocalUserInfo.current?.status, parent.objectType, readOnly)) {
+        TopicEditorAccess.WRITABLE -> TopicComposeSubmitButton(input, data, onSent)
+
+        TopicEditorAccess.LOADING -> CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+
+        TopicEditorAccess.READ_ONLY ->
+            Text(
+                stringResource(Res.string.composer_readonly),
+                modifier = Modifier.widthIn(max = 200.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TopicComposeInternal(
     input: String,
     mediaTarget: ObjectTuple,
     data: TopicComposeData,
+    showAttachments: () -> Unit,
     updateInput: (String) -> Unit,
 ) {
-    val pagerState =
-        rememberPagerState {
-            3
-        }
+    var selected by rememberSaveable { mutableStateOf(0) }
     val tabs =
         listOf(
+            stringResource(Res.string.editor_source),
+            stringResource(Res.string.content_blocks),
             stringResource(Res.string.preview),
-            stringResource(Res.string.raw),
-            "Block",
         )
-    val selected = pagerState.currentPage
-    val coroutineScope = rememberCoroutineScope()
-
     val communityId = composeCommunityId(data)
-    AdaptiveEditorLayout(preview = { PreviewTopicPage(input, mediaTarget, communityId) }) { wide ->
-        LaunchedEffect(wide) {
-            if (wide && pagerState.currentPage == 0) pagerState.scrollToPage(1)
-        }
-        val visibleTabs = if (wide) tabs.drop(1) else tabs
-        val visibleSelected = if (wide) selected.coerceAtLeast(1) - 1 else selected
-        PrimaryTabRow(visibleSelected) {
-            visibleTabs.forEachIndexed { i, label ->
-                val page = if (wide) i + 1 else i
-                val selectTab: () -> Unit = {
-                    coroutineScope.launch { pagerState.scrollToPage(page) }
-                }
+    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp).padding(bottom = 20.dp)) {
+        PrimaryTabRow {
+            tabs.forEachIndexed { index, label ->
+                val selectTab = { selected = index }
                 Tab(
-                    selected = visibleSelected == i,
+                    selected = selected == index,
                     onClick = selectTab,
                     modifier = Modifier.appiumSemantics(text = label, onClick = selectTab),
-                ) {
-                    Text(text = label, modifier = Modifier.padding(vertical = 12.dp))
-                }
+                ) { Text(label, Modifier.padding(vertical = 12.dp)) }
+            }
+            TextButton(showAttachments) {
+                Icon(actionIcon(ActionGlyph.PAPERCLIP), stringResource(Res.string.add_attachment))
+                Text(stringResource(Res.string.attachments), Modifier.padding(start = 8.dp))
             }
         }
-        HorizontalPager(pagerState, key = tabs::get, userScrollEnabled = !wide) { index ->
-            when {
-                index == 0 && !wide -> PreviewTopicPage(input, mediaTarget, communityId)
-                index == 2 -> CommunityTopicContent(communityId) { BlockEditTopicPage(input, updateInput) }
-                else -> CommunityTopicContent(communityId) { EditTopicPage(input, updateInput) }
+        Box(Modifier.weight(1f).padding(top = 20.dp)) {
+            AdaptiveEditorLayout(
+                preview = { PreviewTopicPage(input, mediaTarget, communityId) },
+                previewOnly = selected == 2,
+            ) {
+                CommunityTopicContent(communityId) {
+                    if (selected == 1) {
+                        BlockEditTopicPage(input, updateInput)
+                    } else {
+                        EditTopicPage(input, updateInput)
+                    }
+                }
             }
         }
     }
@@ -221,37 +261,21 @@ private fun TopicComposeSubmitButton(input: String, data: TopicComposeData, back
     if (LocalUserInfo.current?.status != UserStatus.NORMAL) return
     val alertDialogController = rememberAlertDialogController()
     CustomAlertDialog(alertDialogController, alertDialogController::close) {}
-    if (data is TopicComposeData.PublicRoom) {
-        val roomViewModel = createRoomViewModel(data.roomId)
-        val roomData by roomViewModel.handler.data.collectAsState()
-        roomData?.let {
-            RoomSendButton(
-                input,
-                it,
-                data.parentTuple,
-                alertDialogController,
-            ) {
-            }
+    val roomId =
+        when (data) {
+            is TopicComposeData.PublicRoom -> data.roomId
+            is TopicComposeData.PrivateRoom -> data.roomId
+            else -> null
         }
-        return
-    }
-    if (data is TopicComposeData.PrivateRoom) {
-        val roomViewModel = createRoomViewModel(data.roomId)
-        val roomData by roomViewModel.handler.data.collectAsState()
-        roomData?.let {
-            RoomSendButton(
-                input,
-                it,
-                data.parentTuple,
-                alertDialogController,
-            ) {}
-        }
+    if (roomId != null) {
+        TopicComposeRoomSubmitButton(input, roomId, data.getParent(), alertDialogController, backPrePage)
         return
     }
     val (objectId, objectType) = data.getParent()
     val scope = rememberCoroutineScope()
     val globalDialogController = LocalGlobalDialog.current
-    val submit = {
+    val emptyInputMessage = stringResource(Res.string.input_is_empty)
+    val submit: () -> Unit = {
         val finalInput = input.trim()
         if (finalInput.isNotEmpty()) {
             scope.launch {
@@ -264,9 +288,11 @@ private fun TopicComposeSubmitButton(input: String, data: TopicComposeData, back
                     backPrePage()
                 }
             }
+        } else {
+            alertDialogController.showTitle(emptyInputMessage)
         }
     }
-    IconButton(
+    Button(
         onClick = submit,
         modifier =
         Modifier.appiumSemantics(
@@ -274,7 +300,22 @@ private fun TopicComposeSubmitButton(input: String, data: TopicComposeData, back
             onClick = submit,
         ),
     ) {
-        Icon(imageVector = Icons.AutoMirrored.Filled.Send, stringResource(Res.string.submit))
+        Icon(imageVector = actionIcon(ActionGlyph.SEND), null)
+        Text(stringResource(Res.string.submit), Modifier.padding(start = 8.dp))
+    }
+}
+
+@Composable
+private fun TopicComposeRoomSubmitButton(
+    input: String,
+    roomId: PrimaryKey,
+    parent: ObjectTuple,
+    controller: CustomAlertDialogController,
+    onSent: () -> Unit,
+) {
+    val roomInfo by createRoomViewModel(roomId).handler.data.collectAsState()
+    roomInfo?.let {
+        RoomSendButton(input, it, parent, controller, onSent = onSent, scrollToNew = {})
     }
 }
 
@@ -299,7 +340,7 @@ private fun PreviewTopicInternal(
             ),
         )
     LazyColumn(
-        modifier = Modifier.fillMaxSize().navigationBarsPadding().padding(horizontal = 20.dp),
+        modifier = Modifier.fillMaxSize().navigationBarsPadding(),
     ) {
         item {
             AppTopicContentView(topicInfo, communityId = communityId)
@@ -358,10 +399,32 @@ fun BlockEditTopicPage(input: String, updateInput: (String) -> Unit) {
             modifier = Modifier.weight(1f),
             blocks = editorState.blocks,
         ) { newMarkdown ->
-            Napier.i {
-                "block editor markdown $newMarkdown"
-            }
             updateInput(newMarkdown)
         }
     }
+}
+
+@Composable
+private fun TopicComposeScopeCaption(data: TopicComposeData) {
+    val scope =
+        when (data) {
+            is TopicComposeData.Community -> SearchScope.CommunityTopic(data.communityId)
+            is TopicComposeData.PublicRoom -> SearchScope.RoomTopic(data.roomId)
+            is TopicComposeData.PrivateRoom -> SearchScope.RoomTopic(data.roomId)
+            is TopicComposeData.User -> SearchScope.UserTopic(data.uid)
+        }
+    val label =
+        stringResource(
+            when (data) {
+                is TopicComposeData.Community -> Res.string.scope_community
+                is TopicComposeData.PublicRoom, is TopicComposeData.PrivateRoom -> Res.string.scope_room
+                is TopicComposeData.User -> Res.string.search_users
+            },
+        )
+    val owner = searchScopeName(scope).orEmpty()
+    Text(
+        "$label · $owner",
+        style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
+        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }

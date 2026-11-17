@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,9 +23,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.app.Res
+import com.storyteller_f.alphaheart.app.edit
+import com.storyteller_f.alphaheart.app.reset
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun SettingOptionView(title: String, onClick: () -> Unit, content: @Composable () -> Unit) {
+fun SettingOptionView(
+    title: String,
+    onClick: () -> Unit,
+    showDivider: Boolean = true,
+    content: @Composable () -> Unit,
+) {
     Column {
         val shape = RoundedCornerShape(8.dp)
         Row(
@@ -39,7 +48,7 @@ fun SettingOptionView(title: String, onClick: () -> Unit, content: @Composable (
             Spacer(modifier = Modifier.weight(1f))
             content()
         }
-        HorizontalDivider()
+        if (showDivider) HorizontalDivider()
     }
 }
 
@@ -72,18 +81,20 @@ fun SettingOptionResettableView(
             DropdownMenu(expended, {
                 expended = false
             }) {
-                DropdownMenuItem({
-                    expended = false
-                    onClick(true)
-                }) {
-                    Text("Reset")
-                }
-                DropdownMenuItem({
-                    onClick(false)
-                    expended = false
-                }) {
-                    Text("Edit")
-                }
+                DropdownMenuItem(
+                    text = { Text(stringResource(Res.string.reset)) },
+                    onClick = {
+                        expended = false
+                        onClick(true)
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(Res.string.edit)) },
+                    onClick = {
+                        onClick(false)
+                        expended = false
+                    },
+                )
             }
         }
         HorizontalDivider()

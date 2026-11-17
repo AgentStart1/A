@@ -11,7 +11,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.text.font.FontFamily
 import com.storyteller_f.alphaheart.app.common.createCommunityViewModel
 import com.storyteller_f.alphaheart.app.common.createRoomViewModel
@@ -79,7 +78,6 @@ internal fun CommunityFontContent(
     val presentation = rememberCommunityFonts(settings, store)
     CompositionLocalProvider(
         LocalTopicContentFonts provides presentation.fonts,
-        LocalFontFamilyResolver provides (presentation.resolver ?: LocalFontFamilyResolver.current),
         content = content,
     )
 }

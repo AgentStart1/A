@@ -35,7 +35,7 @@
     <string name="input_search_user_received_titles">Input to search received titles</string>
     <string name="input_search_user_created_titles">Input to search received titles</string>
     <string name="refresh">Refresh</string>
-    <string name="no_content_yet">No content yet ┑(￣Д ￣)┍</string>
+    <string name="no_content_yet">No content yet</string>
     <string name="copy_failed">Unable to copy. Please try again.</string>
     <string name="copy">Copy</string>
     <string name="snapshot">Snapshot</string>
@@ -67,4 +67,15 @@
     <string name="media_pip">Picture in picture</string>
     <string name="media_download">Download</string>
     <string name="media_retry">Retry</string>
+    <string name="refresh_failed_retry">Refresh failed · Retry</string>
+    <string name="loading_more">Loading more…</string>
+    <string name="load_more_failed_retry">Could not load more · Retry</string>
+    <string name="pdf_preview_failed">Unable to load PDF preview</string>
+    <string name="crop_title">Crop avatar / icon</string>
+    <string name="crop_confirm">Confirm crop</string>
+    <string name="crop_rotate_left">Rotate left</string>
+    <string name="crop_rotate_right">Rotate right</string>
+    <string name="crop_flip_horizontal">Flip horizontally</string>
+    <string name="crop_flip_vertical">Flip vertically</string>
+    <string name="crop_reset">Reset crop</string>
 </resources>

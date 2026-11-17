@@ -125,6 +125,7 @@ class MarkdownTest {
             {
                 "contentType": "image/png",
                 "name": "imag.png",
+                "title": "Image title",
                 "hello": "world"
             }
             ```
@@ -138,7 +139,7 @@ class MarkdownTest {
             ```
             
             ```object
-            {"name":"imag.png","contentType":"image/png"}
+            {"name":"imag.png","title":"Image title"}
             ```
             """.trimIndent(),
             message,
@@ -156,4 +157,63 @@ class MarkdownTest {
 
         assertEquals(markdownText, trimMarkdownUnusedContent(markdownText))
     }
+
+    @Test
+    fun trimPreservesGenericFenceLanguagesAndNormalizesMixedLineEndings() {
+        val crlf = charArrayOf('\r', '\n').concatToString()
+        val inputFences =
+            listOf(
+                """
+                ```kotlin
+                val answer = 42
+                ```
+                """.trimIndent().withCrLfLineEndings(),
+                """
+                ```mermaid
+                flowchart LR
+                A --> B
+                ```
+                """.trimIndent(),
+                """
+                ```math
+                x^2 + y^2 = z^2
+                ```
+                """.trimIndent().withCrLfLineEndings(),
+                """
+                ```
+                plain code
+                ```
+                """.trimIndent(),
+            )
+        val input = inputFences.joinToString(crlf + crlf)
+        val expected =
+            """
+            ```kotlin
+            val answer = 42
+            ```
+
+            ```mermaid
+            flowchart LR
+            A --> B
+            ```
+
+            ```math
+            x^2 + y^2 = z^2
+            ```
+
+            ```
+            plain code
+            ```
+            """.trimIndent().trimEnd()
+
+        assertEquals(expected, trimMarkdownUnusedContent(input))
+    }
 }
+
+private fun String.withCrLfLineEndings(): String =
+    buildString {
+        for (character in this@withCrLfLineEndings) {
+            if (character == '\n') append('\r')
+            append(character)
+        }
+    }

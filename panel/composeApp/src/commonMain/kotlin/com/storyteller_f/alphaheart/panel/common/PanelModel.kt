@@ -10,10 +10,12 @@ import com.storyteller_f.alphaheart.api.CustomApi
 import com.storyteller_f.alphaheart.api.PaginationQuery
 import com.storyteller_f.alphaheart.client.compose_core.common.CachedLoadingHandler
 import com.storyteller_f.alphaheart.client.compose_core.common.PagingViewModel
+import com.storyteller_f.alphaheart.client.compose_core.common.RegularPagingSource
 import com.storyteller_f.alphaheart.client.compose_core.common.SimpleViewModel
 import com.storyteller_f.alphaheart.client.compose_core.common.buildPager
 import com.storyteller_f.alphaheart.client.core.LoadingHandler
 import com.storyteller_f.alphaheart.client.core.PanelSessionManager
+import com.storyteller_f.alphaheart.client.core.RequestError
 import com.storyteller_f.alphaheart.client.core.SimpleLoadingHandler
 import com.storyteller_f.alphaheart.client.core.getAllCommunities
 import com.storyteller_f.alphaheart.client.core.getAllFiles
@@ -51,6 +53,7 @@ import com.storyteller_f.alphaheart.client.core.getWorkerTasks
 import com.storyteller_f.alphaheart.client.core.markTaskRecordForRetry
 import com.storyteller_f.alphaheart.client.core.overview
 import com.storyteller_f.alphaheart.client.core.updateWorkerTask
+import com.storyteller_f.result.CustomResult
 import com.storyteller_f.result.fold
 import com.storyteller_f.result.map
 import com.storyteller_f.result.onFailure
@@ -79,8 +82,10 @@ import com.storyteller_f.shared.model.UserLogItem
 import com.storyteller_f.shared.model.UserOverview
 import com.storyteller_f.shared.model.UserSubscriptionItem
 import com.storyteller_f.shared.model.WorkerTask
+import com.storyteller_f.shared.obj.ListResponse
 import com.storyteller_f.shared.type.JoinStatusSearch
 import com.storyteller_f.shared.type.PrimaryKey
+import com.storyteller_f.shared.type.UserStatus
 import com.storyteller_f.storage.CommunityCollection
 import com.storyteller_f.storage.FileCollection
 import com.storyteller_f.storage.ModelStorage
@@ -95,12 +100,20 @@ import com.storyteller_f.storage.getName
 import com.storyteller_f.storage.mergeActivity
 import com.storyteller_f.storage.wrap
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -298,16 +311,42 @@ class IdUserViewModel(sessionManager: PanelSessionManager, modelStorage: ModelSt
         }
 }
 
-class IdUserOverviewViewModel(sessionManager: PanelSessionManager, modelStorage: ModelStorage, id: PrimaryKey) :
-    SimpleViewModel<UserOverview>() {
+class IdUserOverviewViewModel internal constructor(
+    private val ownerId: PrimaryKey,
+    events: Flow<Any> = emptyFlow(),
+    private val loader: suspend () -> CustomResult<UserOverview, RequestError>,
+) : SimpleViewModel<UserOverview>() {
+    constructor(sessionManager: PanelSessionManager, id: PrimaryKey, events: Flow<Any>) :
+        this(id, events, { sessionManager.getUserOverview(id) })
+
+    // Arbitrary user details must not overwrite the signed-in account's singleton overview.
+    private val cachedOverview = MutableStateFlow<UserOverview?>(null)
+    private var statusOverride: UserStatusRevision? = null
     override val handler: LoadingHandler<UserOverview> =
-        CachedLoadingHandler(
-            modelStorage.userOverview.observeDatum(),
-            viewModelScope,
-            { modelStorage.userOverview.save(it) },
-        ) {
-            sessionManager.getUserOverview(id)
+        CachedLoadingHandler(cachedOverview, viewModelScope, { cachedOverview.value = it }, ::loadOverview)
+
+    init {
+        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            events.filterIsInstance<OnUserStatusUpdated>().collect { event ->
+                if (event.uid == ownerId) {
+                    statusOverride = UserStatusRevision((statusOverride?.revision ?: 0) + 1, event.status)
+                    cachedOverview.update { it?.withStatus(event.status) }
+                }
+            }
         }
+    }
+
+    private suspend fun loadOverview(): CustomResult<UserOverview, RequestError> {
+        val startedAtRevision = statusOverride?.revision
+        return loader().map { overview ->
+            val latest = statusOverride
+            if (latest != null && latest.revision != startedAtRevision) overview.withStatus(latest.status) else overview
+        }
+    }
+
+    private fun UserOverview.withStatus(status: UserStatus) = copy(userInfo = userInfo.copy(status = status))
+
+    private data class UserStatusRevision(val revision: Long, val status: UserStatus)
 }
 
 class IdCommunityViewModel(sessionManager: PanelSessionManager, modelStorage: ModelStorage, id: PrimaryKey) :
@@ -420,24 +459,16 @@ class UserJoinedCommunitiesViewModel(
         }.flow.cachedIn(viewModelScope)
 }
 
-class UserJoinedRoomsViewModel(sessionManager: PanelSessionManager, modelStorage: ModelStorage, uid: PrimaryKey) :
-    PagingViewModel<RoomInfo>() {
-    private val modelCollection =
-        RoomCollection.SearchRoom(
-            word = "",
-            communityId = null,
-            joinStatusSearch = JoinStatusSearch.JOINED,
-        )
+class UserJoinedRoomsViewModel internal constructor(
+    loader: suspend (String?, Int) -> CustomResult<ListResponse<RoomInfo>, RequestError>,
+) : PagingViewModel<RoomInfo>() {
+    constructor(sessionManager: PanelSessionManager, uid: PrimaryKey) : this({ key, size ->
+        sessionManager.getUserJoinedRooms(uid, PaginationQuery(key, size = size))
+    })
 
-    @OptIn(ExperimentalPagingApi::class)
+    // Keep this owner's pages in its VM; SearchRoom has no target-user cache key.
     override val flow: Flow<PagingData<RoomInfo>> =
-        buildPager(
-            modelCollection,
-            modelStorage.remoteKey.wrap(modelCollection.getName()),
-            modelStorage.room,
-        ) { key, size ->
-            sessionManager.getUserJoinedRooms(uid, PaginationQuery(key, size = size))
-        }.flow.cachedIn(viewModelScope)
+        Pager(PagingConfig(pageSize = 20)) { RegularPagingSource(loader) }.flow.cachedIn(viewModelScope)
 }
 
 class UserReceivedTitlesViewModel(
@@ -647,23 +678,39 @@ class TopicTopicsViewModel(sessionManager: PanelSessionManager, modelStorage: Mo
         }.flow.cachedIn(viewModelScope)
 }
 
-class PanelLogsViewModel(
-    sessionManager: PanelSessionManager,
-    modelStorage: ModelStorage,
+class PanelLogsViewModel internal constructor(
     targetId: PrimaryKey,
     objectType: com.storyteller_f.shared.type.ObjectType,
+    events: Flow<Any>,
+    createPages: () -> Flow<PagingData<PanelLogInfo>>,
 ) : PagingViewModel<PanelLogInfo>() {
-    private val modelCollection = com.storyteller_f.storage.PanelLogCollection.PanelLogs(targetId, objectType)
-
     @OptIn(ExperimentalPagingApi::class)
-    override val flow: Flow<PagingData<PanelLogInfo>> =
+    constructor(
+        sessionManager: PanelSessionManager,
+        modelStorage: ModelStorage,
+        targetId: PrimaryKey,
+        objectType: com.storyteller_f.shared.type.ObjectType,
+        events: Flow<Any>,
+    ) : this(targetId, objectType, events, {
+        val collection = com.storyteller_f.storage.PanelLogCollection.PanelLogs(targetId, objectType)
         buildPager(
-            modelCollection,
-            modelStorage.remoteKey.wrap(modelCollection.getName()),
+            collection,
+            modelStorage.remoteKey.wrap(collection.getName()),
             modelStorage.panelLog,
         ) { key, size ->
             sessionManager.getPanelLogs(targetId, objectType, PaginationQuery(key, size = size))
-        }.flow.cachedIn(viewModelScope)
+        }.flow
+    })
+
+    private val collection = com.storyteller_f.storage.PanelLogCollection.PanelLogs(targetId, objectType)
+
+    // Keep observing while a visited tab is offscreen: its cached pager otherwise retains an empty result.
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override val flow: Flow<PagingData<PanelLogInfo>> =
+        events.filter { it.statusLogCollection() == collection }
+            .onStart { emit(Unit) }
+            .flatMapLatest { createPages() }
+            .cachedIn(viewModelScope)
 }
 
 class TaskRecordsViewModel(
@@ -682,7 +729,7 @@ class TaskRecordsViewModel(
     private val sessionManager = sessionManager
     private val _retryRequestedIds = MutableStateFlow(emptySet<PrimaryKey>())
 
-    /** IDs optimistically marked for retry during this screen session. */
+    /** IDs acknowledged as retry requests during this screen session. */
     val retryRequestedIds: StateFlow<Set<PrimaryKey>> = _retryRequestedIds.asStateFlow()
 
     @OptIn(ExperimentalPagingApi::class)
@@ -700,14 +747,11 @@ class TaskRecordsViewModel(
             )
         }.flow.cachedIn(viewModelScope)
 
-    /** Requests that the worker retry a failed task execution. */
-    fun markForRetry(id: PrimaryKey) {
-        viewModelScope.launch {
-            sessionManager.markTaskRecordForRetry(id).onSuccess {
-                _retryRequestedIds.value = _retryRequestedIds.value + id
-            }
+    /** Returns request failures to the caller's global dialog instead of discarding them. */
+    suspend fun markForRetry(id: PrimaryKey): CustomResult<Unit, RequestError> =
+        sessionManager.markTaskRecordForRetry(id).onSuccess {
+            _retryRequestedIds.update { it + id }
         }
-    }
 }
 
 internal class TaskRecordSummariesViewModel(sessionManager: PanelSessionManager) :
@@ -732,9 +776,19 @@ internal data class WorkerTasksUiState(
     val error: String? = null,
 )
 
+internal sealed interface WorkerTaskEffect {
+    data object InvalidConfiguration : WorkerTaskEffect
+    data class SaveFailed(val message: String?) : WorkerTaskEffect
+}
+
 internal class WorkerTasksViewModel(private val sessionManager: PanelSessionManager) : ViewModel() {
     private val mutableUiState = MutableStateFlow(WorkerTasksUiState())
     val uiState: StateFlow<WorkerTasksUiState> = mutableUiState.asStateFlow()
+    private val effectChannel =
+        kotlinx.coroutines.channels.Channel<WorkerTaskEffect>(
+            kotlinx.coroutines.channels.Channel.BUFFERED,
+        )
+    val effects = effectChannel.receiveAsFlow()
 
     init {
         refresh()
@@ -779,7 +833,11 @@ internal class WorkerTasksViewModel(private val sessionManager: PanelSessionMana
         val editor = mutableUiState.value.configs.firstOrNull { it.type == type } ?: return
         val config = editor.toWorkerTaskOrNull()
         if (config == null) {
-            mutableUiState.update { it.copy(error = "Fetch size and wait duration must be greater than zero") }
+            viewModelScope.launch {
+                effectChannel.send(
+                    WorkerTaskEffect.InvalidConfiguration,
+                )
+            }
             return
         }
         viewModelScope.launch {
@@ -791,9 +849,9 @@ internal class WorkerTasksViewModel(private val sessionManager: PanelSessionMana
                 },
                 onFailure = { failure ->
                     setSaving(type, false)
-                    mutableUiState.update {
-                        it.copy(error = failure.cause.message ?: "Failed to save task configuration")
-                    }
+                    effectChannel.send(
+                        WorkerTaskEffect.SaveFailed(failure.cause.message),
+                    )
                 },
             )
         }

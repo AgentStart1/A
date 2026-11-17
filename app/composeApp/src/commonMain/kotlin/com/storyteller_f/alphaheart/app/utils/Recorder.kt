@@ -4,42 +4,60 @@
 
 package com.storyteller_f.alphaheart.app.utils
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import kotlinx.io.files.Path
-import kotlinx.io.files.SystemTemporaryDirectory
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.io.readByteArray
 import space.kodio.core.AudioRecordingSession
 import space.kodio.core.SystemAudioSystem
 import space.kodio.core.io.files.AudioFileFormat
-import space.kodio.core.io.files.writeToFile
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
+import space.kodio.core.io.files.collectAsBuffer
 
-object Recorder {
-    var recording: AudioRecordingSession? = null
-    val isRecording: MutableState<Boolean> = mutableStateOf(false)
+internal sealed interface RecordingState {
+    data object Idle : RecordingState
+    class Starting : RecordingState
+    data class Active(val session: AudioRecordingSession) : RecordingState
+}
+
+/** Owns capture for one recorder surface; closing it discards the recording. */
+internal class Recorder(
+    private val createSession: suspend () -> AudioRecordingSession = { SystemAudioSystem.createRecordingSession() },
+) {
+    private val mutableState = MutableStateFlow<RecordingState>(RecordingState.Idle)
+    val state = mutableState.asStateFlow()
 
     suspend fun startRecord() {
-        if (isRecording.value) {
-            return
+        if (mutableState.value !is RecordingState.Idle) return
+        val pending = RecordingState.Starting()
+        mutableState.value = pending
+        try {
+            val session = runRecordingOperation { createSession() }
+            AutoCloseable {
+                if ((mutableState.value as? RecordingState.Active)?.session !== session) session.stop()
+            }.use {
+                runRecordingOperation { session.start() }
+                currentCoroutineContext().ensureActive()
+                if (mutableState.value === pending) mutableState.value = RecordingState.Active(session)
+            }
+        } finally {
+            if (mutableState.value === pending) mutableState.value = RecordingState.Idle
         }
-        isRecording.value = true
-        val session = SystemAudioSystem.createRecordingSession()
-        recording = session
-        session.start()
     }
 
-    @OptIn(ExperimentalUuidApi::class)
-    suspend fun stopRecord(): Path? {
-        if (!isRecording.value) {
-            return null
-        }
-        val session = recording ?: return null
-        session.stop()
-        isRecording.value = false
-        val flow = session.audioFlow.value ?: return null
-        val path = Path(SystemTemporaryDirectory, "${Uuid.random().toHexString()}.wav")
-        flow.writeToFile(AudioFileFormat.Wav, path)
-        return path
+    fun cancelRecord() {
+        val previous = mutableState.value
+        mutableState.value = RecordingState.Idle
+        if (previous is RecordingState.Active) previous.session.stop()
+    }
+
+    suspend fun stopRecord(): ByteArray? {
+        val active = mutableState.value as? RecordingState.Active ?: return null
+        mutableState.value = RecordingState.Idle
+        active.session.stop()
+        val flow = active.session.audioFlow.value ?: return null
+        return flow.collectAsBuffer(AudioFileFormat.Wav).use { it.readByteArray() }
     }
 }
+
+internal expect suspend fun <T> runRecordingOperation(block: suspend () -> T): T

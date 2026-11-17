@@ -7,7 +7,6 @@ package com.storyteller_f.alphaheart.app.pages.topic
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,19 +42,19 @@ fun TopicRefCell(topicAid: String) {
 fun TopicRefCellInternal(handler: LoadingHandler<TopicDetail>) {
     val topicInfo by handler.data.collectAsState()
     val appNavFactory = LocalAppNavFactory.current
-    val shape = RoundedCornerShape(4.dp)
+    val shape = MaterialTheme.shapes.medium
     RefCellStateView(
         handler,
         modifier =
         Modifier
             .fillMaxWidth()
-            .height(120.dp)
+            .heightIn(min = 120.dp)
             .background(MaterialTheme.colorScheme.surfaceContainer, shape)
             .clip(shape)
             .clickable {
                 topicInfo?.let { it1 -> appNavFactory.newAppNav().gotoTopic(it1.id) }
             }
-            .padding(10.dp),
+            .padding(16.dp),
     ) {
         TopicRefCellContent(it)
     }

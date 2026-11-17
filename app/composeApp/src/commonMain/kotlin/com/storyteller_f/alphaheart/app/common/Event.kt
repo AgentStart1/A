@@ -122,11 +122,7 @@ private suspend fun processCommunityCreated(event: OnCommunityCreated, database:
 }
 
 private suspend fun processOnMediaUploaded(event: OnMediaUploaded, database: ModelStorage) {
-    event.fileInfos.forEach {
-        database.fileInfo.saveToDefault(it)
-        // 同时保存到对应的 FileList 集合中
-        database.fileInfo.saveFirst(FileCollection.FileList(it.owner), it)
-    }
+    cacheUploadedFiles(event.fileInfos, database.fileInfo)
 }
 
 private suspend fun processOnAddFavorite(event: OnAddFavorite, database: ModelStorage) {

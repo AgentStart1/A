@@ -4,66 +4,47 @@
 
 package com.storyteller_f.alphaheart.app.pages.room
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.AddHome
 import androidx.compose.material.icons.filled.ArrowCircleDown
-import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.CardMembership
-import androidx.compose.material.icons.filled.ChatBubble
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.OpenInFull
-import androidx.compose.material.icons.filled.PermMedia
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.compose.LocalPlatformContext
 import com.storyteller_f.alphaheart.app.AppGlobalDialogController
-import com.storyteller_f.alphaheart.app.IAccountInstance
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
 import com.storyteller_f.alphaheart.app.LocalSessionManager
@@ -72,9 +53,8 @@ import com.storyteller_f.alphaheart.app.LocalUserInfo
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.aid_display
 import com.storyteller_f.alphaheart.app.all_members
+import com.storyteller_f.alphaheart.app.belongs_to_community
 import com.storyteller_f.alphaheart.app.bubble
-import com.storyteller_f.alphaheart.app.check_mark
-import com.storyteller_f.alphaheart.app.clear_input
 import com.storyteller_f.alphaheart.app.common.AppNavFactory
 import com.storyteller_f.alphaheart.app.common.IdRoomViewModel
 import com.storyteller_f.alphaheart.app.common.OnRoomExited
@@ -89,21 +69,18 @@ import com.storyteller_f.alphaheart.app.common.hasRoute
 import com.storyteller_f.alphaheart.app.common.hasRouteFlow
 import com.storyteller_f.alphaheart.app.error
 import com.storyteller_f.alphaheart.app.error.RoomActionError
-import com.storyteller_f.alphaheart.app.exclamation_mark
 import com.storyteller_f.alphaheart.app.exit_room
 import com.storyteller_f.alphaheart.app.files_title
 import com.storyteller_f.alphaheart.app.input_is_empty
 import com.storyteller_f.alphaheart.app.join_room
 import com.storyteller_f.alphaheart.app.join_room_prompt
-import com.storyteller_f.alphaheart.app.open_in_full
+import com.storyteller_f.alphaheart.app.message_result_unconfirmed
 import com.storyteller_f.alphaheart.app.pages.DetailReadingColumn
-import com.storyteller_f.alphaheart.app.pages.community.CommunityRefCell
+import com.storyteller_f.alphaheart.app.pages.community.CommunityMenuRefCell
 import com.storyteller_f.alphaheart.app.pages.search.SearchScope
 import com.storyteller_f.alphaheart.app.pages.search.detailSearchBar
-import com.storyteller_f.alphaheart.app.pages.topic.FilePicker
 import com.storyteller_f.alphaheart.app.pages.topic.RoomTopicList
 import com.storyteller_f.alphaheart.app.pages.topic.TopicComposeData
-import com.storyteller_f.alphaheart.app.pages.topic.insertContent
 import com.storyteller_f.alphaheart.app.pages.user.ButtonBadgeSuffix
 import com.storyteller_f.alphaheart.app.permission_denied
 import com.storyteller_f.alphaheart.app.private_room_pub_key_loading
@@ -113,20 +90,23 @@ import com.storyteller_f.alphaheart.app.settings_title
 import com.storyteller_f.alphaheart.app.start_call
 import com.storyteller_f.alphaheart.app.success
 import com.storyteller_f.alphaheart.app.utils.appPlatformImpl
+import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.ButtonNav
 import com.storyteller_f.alphaheart.client.compose_core.components.CustomAlertDialog
 import com.storyteller_f.alphaheart.client.compose_core.components.CustomAlertDialogController
-import com.storyteller_f.alphaheart.client.compose_core.components.DialogContainer
 import com.storyteller_f.alphaheart.client.compose_core.components.FavoriteButton
+import com.storyteller_f.alphaheart.client.compose_core.components.IconActionMenu
 import com.storyteller_f.alphaheart.client.compose_core.components.IconRes
 import com.storyteller_f.alphaheart.client.compose_core.components.LocalToaster
+import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingActionMenuSurface
 import com.storyteller_f.alphaheart.client.compose_core.components.RoomIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.SubscriptionButton
-import com.storyteller_f.alphaheart.client.compose_core.components.Toast
+import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
 import com.storyteller_f.alphaheart.client.compose_core.components.horizontalSafeArea
-import com.storyteller_f.alphaheart.client.compose_core.components.imeAnimation
+import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.rememberAlertDialogController
 import com.storyteller_f.alphaheart.client.compose_core.components.rememberCommonDialogController
 import com.storyteller_f.alphaheart.client.compose_core.components.request
@@ -143,6 +123,7 @@ import com.storyteller_f.alphaheart.client.core.sendMessage
 import com.storyteller_f.result.captureFailure
 import com.storyteller_f.result.exceptionOrNull
 import com.storyteller_f.result.getOrThrow
+import com.storyteller_f.result.onFailure
 import com.storyteller_f.result.onSuccess
 import com.storyteller_f.shared.getPlatform
 import com.storyteller_f.shared.model.RoomInfo
@@ -156,12 +137,20 @@ import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
 import com.storyteller_f.shared.type.UserStatus
 import com.storyteller_f.shared.utils.checkContent
+import com.storyteller_f.shared.utils.trimMarkdownUnusedContent
 import io.github.aakira.napier.Napier
+import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBasicAlertDialog as BasicAlertDialog
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
 @Composable
 fun RoomPage(roomId: PrimaryKey, needShowDialog: Boolean) {
@@ -171,14 +160,7 @@ fun RoomPage(roomId: PrimaryKey, needShowDialog: Boolean) {
 
 @Composable
 private fun RoomPageInternal(room: IdRoomViewModel, needShowDialog: Boolean, roomId: PrimaryKey) {
-    val snackBarHost =
-        remember {
-            SnackbarHostState()
-        }
-
-    Scaffold(snackbarHost = {
-        SnackbarHost(snackBarHost)
-    }) { paddingValues ->
+    Scaffold { paddingValues ->
         DetailReadingColumn(Modifier.horizontalSafeArea(paddingValues, LocalLayoutDirection.current)) {
             var showDialog by remember {
                 mutableStateOf(false)
@@ -213,7 +195,7 @@ private fun RoomPageInternal(room: IdRoomViewModel, needShowDialog: Boolean, roo
             }
             val scope = rememberCoroutineScope()
             roomInfo?.let {
-                RoomInputGroup(roomId, it, roomId ob ObjectType.ROOM, snackBarHost, {
+                RoomInputGroup(roomId, it, roomId ob ObjectType.ROOM, {
                     showDialog = true
                 }) {
                     scope.launch {
@@ -274,49 +256,21 @@ fun RoomInputGroup(
     roomId: PrimaryKey,
     roomInfo: RoomInfo?,
     parentTarget: ObjectTuple,
-    snackBarHost: SnackbarHostState,
     startJoinRoom: () -> Unit,
+    currentTopicReadOnly: Boolean = false,
     scrollToNew: () -> Unit,
 ) {
     val appNavFactory = LocalAppNavFactory.current
-    var input by remember {
+    var input by rememberSaveable(roomId, parentTarget) {
         mutableStateOf("")
     }
-    val userSessionManager = LocalSessionManager.current
-    val myInfo = LocalUserInfo.current
     val controller =
         remember {
             CustomAlertDialogController()
         }
-    val wsClient = userSessionManager.webSocketClient
-    LaunchedEffect(wsClient.frameFlow) {
-        wsClient.frameFlow.collect { frame ->
-            if (frame is RoomFrame.Error) {
-                snackBarHost.showSnackbar(frame.error, withDismissAction = true)
-            } else if (frame is RoomFrame.NewTopicInfo) {
-                val plainFrame =
-                    if (frame.topicInfo.content is TopicContent.Encrypted) {
-                        val topicInfo = decryptCreatedTopic(frame.topicInfo, userSessionManager)
-                        RoomFrame.NewTopicInfo(topicInfo)
-                    } else {
-                        frame
-                    }
-                val topicInfo = plainFrame.topicInfo
-                val content = topicInfo.content
-                if (content is TopicContent.Plain && myInfo?.id == topicInfo.author && content.plain == input) {
-                    input = ""
-                }
-            }
-        }
-    }
     if (roomInfo != null) {
-        val localState by wsClient.localState.collectAsState()
-        val isSending = localState is LoadingState.Loading
-
-        RoomInputGroupInternal(roomId, roomInfo, parentTarget, controller, input, scrollToNew) {
-            if (!isSending) {
-                input = it
-            }
+        RoomInputGroupInternal(roomId, roomInfo, parentTarget, controller, input, scrollToNew, currentTopicReadOnly) {
+            input = it
         }
     }
 
@@ -335,10 +289,11 @@ private fun RoomInputGroupInternal(
     controller: CustomAlertDialogController,
     input: String,
     scrollToNew: () -> Unit,
+    currentTopicReadOnly: Boolean,
     updateInput: (String) -> Unit,
 ) {
     val myInfo = LocalUserInfo.current
-    val canWrite = myInfo?.status == UserStatus.NORMAL && roomInfo.isJoined && !roomInfo.readOnly
+    val canWrite = canWriteRoomMessage(myInfo?.status, roomInfo.isJoined, roomInfo.readOnly, currentTopicReadOnly)
     val mediaTarget =
         if (roomInfo.isPrivate) {
             ObjectTuple(roomInfo.id, ObjectType.ROOM)
@@ -364,32 +319,30 @@ private fun RoomInputGroupInternal(
         },
         {
             if (canWrite) {
-                RoomSendButton(input, roomInfo, parentTarget, controller, scrollToNew)
+                RoomSendButton(
+                    input,
+                    roomInfo,
+                    parentTarget,
+                    controller,
+                    onSent = { updateInput("") },
+                    scrollToNew = scrollToNew,
+                )
             }
         },
         enabled = canWrite,
+        replyingToTopic = parentTarget.objectType == ObjectType.TOPIC,
     )
 }
 
 @Composable
 private fun RoomInputTopContent(roomInfo: RoomInfo) {
     val keysViewModel = createRoomKeysViewModel(roomInfo.id, roomInfo)
-    val keysData by keysViewModel.handler.data.collectAsState()
     val keysState by keysViewModel.handler.state.collectAsState()
     if (roomInfo.isPrivate) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            when (val ks = keysState) {
-                LoadingState.Done -> Text(stringResource(Res.string.check_mark))
-
-                is LoadingState.Error ->
-                    Text(
-                        ks.e.message?.take(10) ?: stringResource(Res.string.exclamation_mark),
-                    )
-
-                else -> CircularProgressIndicator(modifier = Modifier.size(10.dp), strokeWidth = 2.dp)
-            }
-            Text("${keysData?.size ?: 0}/${roomInfo.memberCount}")
-        }
+        com.storyteller_f.alphaheart.client.compose_core.components.CachedRefreshIndicator(
+            keysState,
+            keysViewModel.handler::refresh,
+        )
     }
 }
 
@@ -399,32 +352,78 @@ private fun sendRoomTopic(roomInfo: RoomInfo, input: String, context: SendRoomTo
     val keyState = handler.state.value
     val keyData = handler.data.value
     checkContent(input).exceptionOrNull()?.let {
-        context.toasterState.showMessage(it.message.orEmpty())
+        context.failureDialog.showErrorMessage(it)
         return
     }
     if ((keyState !is LoadingState.Done || keyData == null) && roomInfo.isPrivate) {
         context.scope.launch {
-            context.toasterState.showMessage(getString(Res.string.private_room_pub_key_loading))
+            context.failureDialog.showTitle(getString(Res.string.private_room_pub_key_loading))
         }
         return
     }
+    val connection = context.wsClient.connectionHandler.data.value ?: return
+    if (!context.wsClient.isCurrentConnection(connection)) return
+    val message = PendingRoomMessage(input, context.parentTarget, context.author)
+    context.pending.value = message
     context.scope.launch {
-        context.wsClient.useWebSocket {
-            sendMessage(context.parentTarget, roomInfo.isPrivate, input, keyData.orEmpty())
-            delay(500)
-            context.scrollToNew()
-        }
+        captureFailure({ it }) {
+            val currentKeys =
+                if (roomInfo.isPrivate) context.keysViewModel.loadCurrentKeys().getOrThrow() else emptyList()
+            val submitted =
+                prepareRoomMessage(message, { context.pending.value }, {
+                    context.wsClient.isCurrentConnection(connection)
+                }) {
+                    if (roomInfo.isPrivate) {
+                        input
+                    } else {
+                        withContext(Dispatchers.Default) { trimMarkdownUnusedContent(input) }
+                    }
+                }
+            submitted to currentKeys
+        }.onSuccess { (submitted, currentKeys) ->
+            if (submitted != null) {
+                context.wsClient.useWebSocket {
+                    if (
+                        this === connection && context.wsClient.isCurrentConnection(connection) &&
+                        message.owns(context.pending.value)
+                    ) {
+                        context.pending.value = submitted
+                        sendMessage(context.parentTarget, roomInfo.isPrivate, input, currentKeys)
+                    } else {
+                        context.failPendingRoomMessage(message)
+                    }
+                }.onFailure { context.failPendingRoomMessage(message, it.cause) }
+            } else {
+                context.failPendingRoomMessage(message)
+            }
+        }.onFailure { context.failPendingRoomMessage(message, it) }
     }
 }
 
 private data class SendRoomTopicContext(
-    val scrollToNew: () -> Unit,
+    val pending: MutableState<PendingRoomMessage?>,
+    val author: PrimaryKey,
     val scope: CoroutineScope,
-    val toasterState: Toast,
+    val failureDialog: CustomAlertDialogController,
     val keysViewModel: RoomKeysViewModel,
     val wsClient: WebSocketClient,
     val parentTarget: ObjectTuple,
 )
+
+private fun WebSocketClient.isCurrentConnection(connection: DefaultClientWebSocketSession): Boolean =
+    connectionHandler.state.value is LoadingState.Done &&
+        connectionHandler.data.value === connection && connection.isActive
+
+/** A late preparation/send failure must never clear a newer operation's draft ownership. */
+private suspend fun SendRoomTopicContext.failPendingRoomMessage(message: PendingRoomMessage, error: Throwable? = null) {
+    if (!message.owns(pending.value)) return
+    pending.value = null
+    if (error != null) {
+        failureDialog.showErrorMessage(error)
+    } else {
+        failureDialog.showTitle(getString(Res.string.message_result_unconfirmed))
+    }
+}
 
 private fun checkRoomRouteAndAlert(appNavFactory: AppNavFactory, roomId: PrimaryKey, startJoinRoom: () -> Unit) {
     val appNav = appNavFactory.newAppNav()
@@ -444,24 +443,46 @@ fun RoomSendButton(
     roomInfo: RoomInfo,
     parentTarget: ObjectTuple,
     controller: CustomAlertDialogController,
+    onSent: (() -> Unit)? = null,
     scrollToNew: () -> Unit,
 ) {
     if (LocalUserInfo.current?.status != UserStatus.NORMAL || roomInfo.readOnly) return
-    val toasterState = LocalToaster.current
+    val failureDialog = rememberAlertDialogController()
+    CustomAlertDialog(failureDialog, failureDialog::close, failureDialog::close)
     val scope = rememberCoroutineScope()
     val uiViewModel = LocalUiViewModel.current
     val instance by uiViewModel.instance.collectAsState()
     val wsClient = instance.sessionManager.webSocketClient
     val state by wsClient.connectionHandler.state.collectAsState()
     val sendState by wsClient.localState.collectAsState()
-    val isSending = sendState is LoadingState.Loading
+    val pending =
+        rememberRoomMessageReceipt(
+            wsClient,
+            roomInfo.id,
+            parentTarget,
+            input,
+            onSent,
+            scrollToNew,
+            failureDialog,
+        )
+    val myInfo = LocalUserInfo.current
+    val isSending = sendState is LoadingState.Loading || pending.value != null
     val keysViewModel = createRoomKeysViewModel(roomInfo.id, roomInfo)
     CommonInputButton(state, input, isSending, retry = { wsClient.retryConnection() }) {
+        if (pending.value != null) return@CommonInputButton
         if (roomInfo.isJoined) {
             sendRoomTopic(
                 roomInfo,
                 input,
-                SendRoomTopicContext(scrollToNew, scope, toasterState, keysViewModel, wsClient, parentTarget),
+                SendRoomTopicContext(
+                    pending,
+                    myInfo?.id ?: 0,
+                    scope,
+                    failureDialog,
+                    keysViewModel,
+                    wsClient,
+                    parentTarget,
+                ),
             )
         } else {
             scope.launch {
@@ -474,6 +495,60 @@ fun RoomSendButton(
 }
 
 @Composable
+private fun rememberRoomMessageReceipt(
+    wsClient: WebSocketClient,
+    roomId: PrimaryKey,
+    parentTarget: ObjectTuple,
+    input: String,
+    onSent: (() -> Unit)?,
+    scrollToNew: () -> Unit,
+    failureDialog: CustomAlertDialogController,
+): MutableState<PendingRoomMessage?> {
+    val state by wsClient.connectionHandler.state.collectAsState()
+    val sendState by wsClient.localState.collectAsState()
+    val pending = remember(roomId, parentTarget) { mutableStateOf<PendingRoomMessage?>(null) }
+    var pendingMessage by pending
+    val currentInput by rememberUpdatedState(input)
+    val completeDraft by rememberUpdatedState(onSent)
+    val showLatest by rememberUpdatedState(scrollToNew)
+    val sessionManager = LocalSessionManager.current
+    LaunchedEffect(sendState) {
+        (sendState as? LoadingState.Error)?.let {
+            pendingMessage = null
+            failureDialog.showErrorMessage(it.e)
+        }
+    }
+    LaunchedEffect(state) {
+        if (state !is LoadingState.Done && pendingMessage != null) {
+            pendingMessage = null
+            failureDialog.showTitle(getString(Res.string.message_result_unconfirmed))
+        }
+    }
+    LaunchedEffect(wsClient, parentTarget) {
+        wsClient.frameFlow.collect { frame ->
+            if (frame is RoomFrame.Error && pendingMessage != null) {
+                pendingMessage = null
+                failureDialog.showTitle(frame.error)
+            } else if (frame is RoomFrame.NewTopicInfo) {
+                val pending = pendingMessage ?: return@collect
+                val topic =
+                    if (frame.topicInfo.content is TopicContent.Encrypted) {
+                        decryptCreatedTopic(frame.topicInfo, sessionManager)
+                    } else {
+                        frame.topicInfo
+                    }
+                if (pending.owns(pendingMessage) && pending.matches(topic)) {
+                    pendingMessage = null
+                    showLatest()
+                    if (currentInput == pending.content) completeDraft?.invoke()
+                }
+            }
+        }
+    }
+    return pending
+}
+
+@Composable
 fun CommonInputButton(
     state: LoadingState?,
     input: String,
@@ -483,7 +558,8 @@ fun CommonInputButton(
 ) {
     val alertDialogController = rememberAlertDialogController()
     val scope = rememberCoroutineScope()
-    Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+    CustomAlertDialog(alertDialogController, alertDialogController::close, alertDialogController::close)
+    Box(modifier = Modifier.size(44.dp), contentAlignment = Alignment.Center) {
         when (state) {
             is LoadingState.Done -> {
                 val submit: () -> Unit = {
@@ -495,8 +571,10 @@ fun CommonInputButton(
                         send()
                     }
                 }
-                IconButton(
+                androidx.compose.material3.Button(
                     onClick = submit,
+                    shape = MaterialTheme.shapes.small,
+                    contentPadding = PaddingValues(0.dp),
                     modifier =
                     Modifier.appiumSemantics(
                         description = stringResource(Res.string.send),
@@ -504,7 +582,11 @@ fun CommonInputButton(
                     ),
                     enabled = !isSending,
                 ) {
-                    Icon(Icons.AutoMirrored.Default.Send, stringResource(Res.string.send))
+                    if (isSending) {
+                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        Icon(actionIcon(ActionGlyph.SEND), stringResource(Res.string.send))
+                    }
                 }
             }
 
@@ -528,130 +610,30 @@ fun CommonInputButton(
 }
 
 @Composable
-fun InputGroupInternal(
-    mediaTarget: ObjectTuple,
-    backgroundColor: Color,
-    input: String,
-    updateInput: (String) -> Unit,
-    gotoCompose: () -> Unit,
-    topContent: @Composable () -> Unit = {},
-    sendButton: @Composable () -> Unit,
-    enabled: Boolean = true,
-) {
-    Column(
-        Modifier.background(
-            backgroundColor,
-            shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp),
-        ).padding(horizontal = 20.dp).padding(top = 10.dp).navigationBarsPadding().imePadding()
-            .imeAnimation(),
-    ) {
-        topContent()
-        Row(
-            modifier = Modifier.padding(bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            OutlinedTextField(
-                input,
-                updateInput,
-                enabled = enabled,
-                modifier =
-                Modifier.weight(1f).appiumSemantics(
-                    input = true,
-                    inputValue = input,
-                    onInputValueChange = { if (enabled) updateInput(it) },
-                ),
-                suffix = {
-                    if (enabled && input.isNotEmpty()) {
-                        Icon(
-                            Icons.Default.Clear,
-                            stringResource(Res.string.clear_input),
-                            modifier =
-                            Modifier.clickable {
-                                updateInput("")
-                            },
-                        )
-                    }
-                },
-            )
-
-            if (enabled) {
-                InputGroupSuffix(input, updateInput, mediaTarget, gotoCompose)
-            }
-
-            sendButton()
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun InputGroupSuffix(
-    input: String,
-    updateInput: (String) -> Unit,
-    mediaTarget: ObjectTuple,
-    gotoCompose: () -> Unit,
-) {
-    val uIViewModel = LocalUiViewModel.current
-    val instance by uIViewModel.instance.collectAsState()
-    val appNavFactory = LocalAppNavFactory.current
-    val alreadySignIn = instance !is IAccountInstance.None
-    var showSheet by remember {
-        mutableStateOf(false)
-    }
-
-    IconButton({
-        if (alreadySignIn) {
-            gotoCompose()
-        } else {
-            appNavFactory.newAppNav().requestSignIn()
-        }
-    }) {
-        Icon(Icons.Default.OpenInFull, stringResource(Res.string.open_in_full))
-    }
-    IconButton({
-        if (alreadySignIn) {
-            showSheet = true
-        } else {
-            appNavFactory.newAppNav().requestSignIn()
-        }
-    }) {
-        Icon(Icons.Filled.PermMedia, contentDescription = null)
-    }
-    val sheetState = rememberModalBottomSheetState()
-    FilePicker(
-        showSheet,
-        sheetState,
-        mediaTarget,
-        onClickItems = { info ->
-            insertContent(info.first(), input, updateInput)
-        },
-    ) {
-        showSheet = false
-    }
-}
-
-@Composable
 fun RoomDialogInternal(roomInfo: RoomInfo, dismiss: () -> Unit) {
     val appNavFactory = LocalAppNavFactory.current
-    DialogContainer {
+    ReadingActionMenuSurface(onDismiss = dismiss, heading = {
         Row(
             modifier =
-            Modifier.fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceDim, RoundedCornerShape(8.dp))
-                .padding(8.dp),
+            Modifier.fillMaxWidth(),
             Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             val commonDialogController = rememberCommonDialogController()
-            RoomIcon(roomInfo, 50.dp, false, commonDialogController::update)
-            Column {
-                Text(roomInfo.name)
-                Text(stringResource(Res.string.aid_display, roomInfo.aid))
+            RoomIcon(roomInfo, 48.dp, false, 4.dp, commonDialogController::update)
+            Column(Modifier.weight(1f)) {
+                Text(roomInfo.name, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                Text(stringResource(Res.string.aid_display, roomInfo.aid), fontSize = 12.sp)
             }
         }
-
+    }) {
         roomInfo.communityId?.let { communityId ->
-            CommunityRefCell(communityId) {
+            Text(
+                stringResource(Res.string.belongs_to_community),
+                modifier = Modifier.padding(top = 18.dp, bottom = 8.dp),
+                fontSize = 12.sp,
+            )
+            CommunityMenuRefCell(communityId) {
                 dismiss()
                 appNavFactory.newAppNav().gotoCommunity(communityId, false)
             }
@@ -666,7 +648,7 @@ private fun RoomDialogButtons(roomInfo: RoomInfo, dismiss: () -> Unit) {
     val appNavFactory = LocalAppNavFactory.current
     val me = LocalUserInfo.current
     val globalDialogController = LocalGlobalDialog.current
-    Column {
+    IconActionMenu {
         val isRoomPage = appNavFactory.hasRouteFlow<RoomScreen>()
         if (isRoomPage) {
             RoomAllMembers(roomInfo, dismiss, appNavFactory)
@@ -685,7 +667,7 @@ private fun RoomDialogButtons(roomInfo: RoomInfo, dismiss: () -> Unit) {
 @Composable
 private fun RoomSettings(roomInfo: RoomInfo, me: UserInfo?, dismiss: () -> Unit, appNavFactory: AppNavFactory) {
     if (roomInfo.creator == me?.id) {
-        ButtonNav(Icons.Default.Settings, stringResource(Res.string.settings_title)) {
+        ButtonNav(actionIcon(ActionGlyph.SETTINGS), stringResource(Res.string.settings_title)) {
             dismiss()
             appNavFactory.newAppNav().gotoSettingPage(roomInfo.id, ObjectType.ROOM)
         }
@@ -694,7 +676,7 @@ private fun RoomSettings(roomInfo: RoomInfo, me: UserInfo?, dismiss: () -> Unit,
 
 @Composable
 private fun RoomFileExplorerButton(roomInfo: RoomInfo, dismiss: () -> Unit, appNavFactory: AppNavFactory) {
-    ButtonNav(Icons.Default.Folder, stringResource(Res.string.files_title)) {
+    ButtonNav(navigationIcon(NavigationGlyph.FOLDER), stringResource(Res.string.files_title)) {
         dismiss()
         appNavFactory.newAppNav().gotoFileExplorer(roomInfo.id ob ObjectType.ROOM)
     }
@@ -703,7 +685,7 @@ private fun RoomFileExplorerButton(roomInfo: RoomInfo, dismiss: () -> Unit, appN
 @Composable
 private fun RoomAllMembers(roomInfo: RoomInfo, dismiss: () -> Unit, appNavFactory: AppNavFactory) {
     ButtonNav(
-        IconRes.Vector(Icons.Default.CardMembership),
+        IconRes.Vector(navigationIcon(NavigationGlyph.USERS)),
         stringResource(Res.string.all_members),
         {
             ButtonBadgeSuffix(roomInfo.memberCount)
@@ -721,7 +703,7 @@ private fun RoomMemberStatus(roomInfo: RoomInfo, globalDialogController: AppGlob
 
     val toasterState = LocalToaster.current
     if (roomInfo.isJoined) {
-        ButtonNav(Icons.Default.Close, stringResource(Res.string.exit_room)) {
+        ButtonNav(navigationIcon(NavigationGlyph.LOG_OUT), stringResource(Res.string.exit_room)) {
             scope.launch {
                 exitRoom(roomInfo, globalDialogController) {
                     toasterState.showMessage(getString(Res.string.success))
@@ -729,7 +711,7 @@ private fun RoomMemberStatus(roomInfo: RoomInfo, globalDialogController: AppGlob
             }
         }
     } else {
-        ButtonNav(Icons.Default.AddHome, stringResource(Res.string.join_room)) {
+        ButtonNav(actionIcon(ActionGlyph.LOG_IN), stringResource(Res.string.join_room)) {
             scope.launch {
                 joinRoom(roomInfo, globalDialogController) {
                     val message = getString(Res.string.success)
@@ -747,13 +729,13 @@ private fun StartCallButton(roomInfo: RoomInfo, dismiss: () -> Unit) {
 
     val scope = rememberCoroutineScope()
 
-    ButtonNav(Icons.Default.Call, stringResource(Res.string.start_call)) {
+    ButtonNav(actionIcon(ActionGlyph.PHONE), stringResource(Res.string.start_call)) {
         dismiss()
         nav.gotoCall(roomInfo.id)
     }
     if (getPlatform().name.contains("android", ignoreCase = true)) {
         val context = LocalPlatformContext.current
-        ButtonNav(Icons.Default.ChatBubble, stringResource(Res.string.bubble)) {
+        ButtonNav(actionIcon(ActionGlyph.MESSAGE_CIRCLE), stringResource(Res.string.bubble)) {
             scope.launch {
                 val bitmap =
                     roomInfo.icon?.let { getRemoteImageBitmap(sessionManager, context, it) }

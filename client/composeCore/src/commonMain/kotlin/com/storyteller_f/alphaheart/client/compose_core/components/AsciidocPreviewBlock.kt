@@ -17,9 +17,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material3.BasicAlertDialog
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -44,6 +41,9 @@ import com.storyteller_f.shared.utils.readCodeFence
 import dev.nucleusframework.webview.web.WebView
 import dev.nucleusframework.webview.web.rememberWebViewStateWithHTMLData
 import kotlinx.coroutines.launch
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBasicAlertDialog as BasicAlertDialog
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
 @Composable
 fun AsciidocPreviewBlock(modal: MarkdownComponentModel) {

@@ -6,24 +6,20 @@
 
 package com.storyteller_f.alphaheart.panel.common
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
@@ -72,6 +68,7 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton as OutlinedButton
 
 @Serializable
 data object LoginSelectScreen : NavKey
@@ -302,6 +299,11 @@ private class DefaultPanelNav(
     }
 }
 
+/** Child navigation keeps the parent's selected section and loaded list alive for Back. */
+internal fun PanelNav.gotoChildTopicDetail(id: Long) {
+    backStack.add(PanelTopicDetailScreen(id))
+}
+
 internal fun newPanelNav(backStack: NavBackStack<NavKey>, drawerState: DrawerState, scope: CoroutineScope): PanelNav =
     DefaultPanelNav(backStack, drawerState, scope)
 
@@ -396,11 +398,13 @@ private fun EntryProviderScope<NavKey>.addListDetailEntries() {
 
 @Composable
 private fun PanelDetailPlaceholder() {
-    CenterBox {
-        Text(
-            text = stringResource(Res.string.select_an_item),
-            style = MaterialTheme.typography.bodyLarge,
-        )
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        CenterBox {
+            Text(
+                text = stringResource(Res.string.select_an_item),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
     }
 }
 
@@ -461,24 +465,12 @@ fun PanelLoginPage(back: () -> Unit) {
 
 @Composable
 private fun PanelSelectLoginPage(gotoInput: () -> Unit) {
-    CenterBox {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(40.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+    com.storyteller_f.alphaheart.client.compose_core.components.ReadingAuthLayout(stringResource(Res.string.sign_in)) {
+        OutlinedButton(
+            gotoInput,
+            modifier = Modifier.appiumSemantics(text = stringResource(Res.string.input), onClick = gotoInput),
         ) {
-            Text(stringResource(Res.string.sign_in), style = MaterialTheme.typography.headlineMedium)
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                OutlinedButton(
-                    gotoInput,
-                    modifier = Modifier.appiumSemantics(text = stringResource(Res.string.input), onClick = gotoInput),
-                    shape = ButtonDefaults.outlinedShape,
-                ) {
-                    Text(stringResource(Res.string.input))
-                }
-            }
+            Text(stringResource(Res.string.input))
         }
     }
 }

@@ -56,8 +56,8 @@ private fun CommunityTitleComposeInternal(communityId: PrimaryKey) {
                 appNavFactory.newAppNav().back()
             }
         }
-    }) {
-        TitleComposeInternalEdit(vm)
+    }) { actions ->
+        TitleComposeInternalEdit(vm, actions)
     }
     TitleComposeSheet(vm)
 }

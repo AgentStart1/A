@@ -15,6 +15,10 @@ import androidx.compose.ui.node.GlobalPositionAwareModifierNode
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.UnplacedAwareModifierNode
 import androidx.compose.ui.platform.InspectorInfo
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import kotlinx.browser.document
 import kotlinx.browser.window
 import org.w3c.dom.HTMLElement
@@ -35,9 +39,22 @@ actual fun Modifier.appiumSemantics(
     onInputSubmit: (() -> Unit)?,
     onLongClick: (() -> Unit)?,
 ): Modifier {
-    if (!window.location.search.contains("appium=true")) return this
+    // Bridge text can contain hashes or raw markup. Production accessibility uses the
+    // real visible Text descendants and only explicitly supplied accessibility descriptions.
+    val nativeSemantics =
+        semantics {
+            testTag?.let { this.testTag = it }
+            description?.let { contentDescription = it }
+            onClick?.let { action ->
+                this.onClick {
+                    action()
+                    true
+                }
+            }
+        }
+    if (!window.location.search.contains("appium=true")) return nativeSemantics
     val semanticsModifier =
-        composed {
+        nativeSemantics.composed {
             val id = remember { nextAppiumSemanticsId++ }
             DisposableEffect(id) {
                 onDispose { AppiumHtmlSemantics.remove(id) }

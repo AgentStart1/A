@@ -1,0 +1,13 @@
+Kodio Web 0.2.0 sample-rate compatibility patch
+
+Upstream: https://github.com/dosier/kodio
+Published sources: https://repo.maven.apache.org/maven2/space/kodio/core-wasm-js/0.2.0/core-wasm-js-0.2.0-sources.jar
+License: Apache License 2.0, https://www.apache.org/licenses/LICENSE-2.0
+
+This build verifies the official source archive and changes one expression in
+WebAudioRecordingSession.prepareRecording: missing or nonpositive track sample
+rates use the requested recording format instead of constructing AudioContext
+with zero. All other upstream sources are unchanged. Android retains its
+published artifact; the separate JVM build retains its Java 21 compatibility.
+Remove this patch when the upstream browser recording session handles these
+track settings. Real Firefox synthetic capture and persisted WAV tests cover it.

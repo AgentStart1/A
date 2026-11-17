@@ -55,6 +55,11 @@ import com.storyteller_f.alphaheart.client.compose_core.components.MediaObjectBl
 import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
 import com.storyteller_f.alphaheart.client.compose_core.components.Pill
 import com.storyteller_f.alphaheart.client.compose_core.components.PrivateKeyEditor
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedTextField
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow
 import com.storyteller_f.alphaheart.client.compose_core.components.SheetContainer
 import com.storyteller_f.alphaheart.client.compose_core.components.SignInButton
 import com.storyteller_f.shared.model.CommunityInfo
@@ -264,7 +269,6 @@ fun WideRoomRowScreenshot() {
             true,
             Modifier.padding(20.dp),
             { Icon(Icons.Default.Groups, null, Modifier.size(60.dp)) },
-            {},
         )
     }
 }
@@ -370,7 +374,6 @@ fun LargeTextRoomRowScreenshot() {
             true,
             Modifier.padding(20.dp),
             { Icon(Icons.Default.Groups, null, Modifier.size(60.dp)) },
-            {},
         )
     }
 }
@@ -407,7 +410,6 @@ fun ActivityRoomRowScreenshot() {
                 maxWidth >= 760.dp,
                 Modifier.padding(20.dp),
                 { Icon(Icons.Default.Groups, null, Modifier.size(60.dp)) },
-                {},
                 RoomActivityPreview(
                     room,
                     42,
@@ -482,6 +484,126 @@ fun AdaptiveEditorScreenshot() {
         AdaptiveEditorLayout(preview = { Text("Rendered topic preview", Modifier.padding(20.dp)) }) {
             Text("Raw / Block", Modifier.padding(20.dp))
             BasicTextField("Draft topic content", {}, Modifier.fillMaxSize().padding(20.dp))
+        }
+    }
+}
+
+@PreviewTest
+@Preview(showBackground = true, widthDp = 390, heightDp = 600)
+@Composable
+fun ReadingRefreshFailureCompactScreenshot() {
+    ReadingRefreshFixture()
+}
+
+@PreviewTest
+@Preview(showBackground = true, widthDp = 1100, heightDp = 700)
+@Composable
+fun ReadingRefreshFailureWideScreenshot() {
+    ReadingRefreshFixture()
+}
+
+@Composable
+private fun ReadingRefreshFixture() {
+    ScreenshotAppTheme {
+        Column(Modifier.fillMaxSize()) {
+            Text("Community", Modifier.padding(24.dp), style = MaterialTheme.typography.headlineSmall)
+            androidx.compose.material3.HorizontalDivider()
+            androidx.compose.foundation.layout.Box(Modifier.weight(1f).fillMaxWidth()) {
+                Text(
+                    "Existing content remains in the same position",
+                    Modifier.padding(horizontal = 24.dp, vertical = 64.dp),
+                )
+                com.storyteller_f.alphaheart.client.compose_core.components.CachedRefreshIndicator(
+                    com.storyteller_f.alphaheart.client.core.LoadingState.Error(IllegalStateException("offline")),
+                )
+            }
+        }
+    }
+}
+
+@PreviewTest
+@Preview(showBackground = true, widthDp = 390)
+@Composable
+fun ReadingIconMenuScreenshot() {
+    ScreenshotAppTheme {
+        PaddedPreview {
+            com.storyteller_f.alphaheart.client.compose_core.components.IconActionMenu {
+                ButtonNav(Icons.Default.Edit, "Edit")
+                ButtonNav(Icons.Default.Groups, "Members")
+                ButtonNav(Icons.Default.Settings, "Settings")
+                ButtonNav(Icons.Default.Lock, "Privacy")
+            }
+        }
+    }
+}
+
+@PreviewTest
+@Preview(showBackground = true, widthDp = 390, heightDp = 260)
+@Preview(showBackground = true, widthDp = 1000, heightDp = 260)
+@Composable
+fun ReadingControlsScreenshot() {
+    ScreenshotAppTheme {
+        Column(Modifier.padding(20.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                ReadingOutlinedButton({}) { Text("Search") }
+                ReadingButton({}) { Text("Save") }
+            }
+            ReadingTabRow {
+                ReadingTab(true, {}) { Text("All", Modifier.padding(vertical = 10.dp)) }
+                ReadingTab(false, {}) { Text("Posters", Modifier.padding(vertical = 10.dp)) }
+            }
+            ReadingOutlinedTextField("Retained draft", {}, Modifier.fillMaxWidth())
+        }
+    }
+}
+
+@PreviewTest
+@Preview(showBackground = true, widthDp = 390, heightDp = 500)
+@Preview(showBackground = true, widthDp = 1280, heightDp = 500)
+@Preview(
+    showBackground = true,
+    widthDp = 390,
+    heightDp = 500,
+    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+fun ReadingLabeledFormScreenshot() {
+    ScreenshotAppTheme {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            ReadingOutlinedTextField("Retained draft", {}, Modifier.fillMaxWidth(), label = { Text("Name") })
+            com.storyteller_f.alphaheart.client.compose_core.components.ReadingSelect(
+                "Member policy",
+                "open",
+                listOf("open" to "Open", "invite" to "Invite Only"),
+                {},
+                Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@PreviewTest
+@Preview(showBackground = true, widthDp = 390, heightDp = 600)
+@Preview(showBackground = true, widthDp = 1280, heightDp = 600)
+@Composable
+fun ReadingCreateCommunityScreenshot() {
+    ScreenshotAppTheme {
+        com.storyteller_f.alphaheart.app.pages.community.CommunityComposeInternal()
+    }
+}
+
+@PreviewTest
+@Preview(showBackground = true, widthDp = 390, heightDp = 600)
+@Preview(showBackground = true, widthDp = 1280, heightDp = 600)
+@Composable
+fun ReadingAuthLayoutScreenshot() {
+    ScreenshotAppTheme {
+        com.storyteller_f.alphaheart.client.compose_core.components.ReadingAuthLayout("Sign in") {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                ReadingButton({}) { Text("Use private key") }
+                ReadingOutlinedButton({}) { Text("Session history") }
+            }
+            ReadingOutlinedButton({}) { Text("Create an identity") }
         }
     }
 }

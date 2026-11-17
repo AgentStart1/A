@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +20,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalRefCellHandlerProvider
+import com.storyteller_f.alphaheart.app.components.ActionMenuReference
+import com.storyteller_f.alphaheart.client.compose_core.components.CommunityIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.RefCellStateView
 import com.storyteller_f.alphaheart.client.core.LoadingHandler
 import com.storyteller_f.shared.model.CommunityInfo
@@ -50,7 +53,7 @@ private fun CommunityRefCellInternal(
         Modifier
             .fillMaxWidth()
             .height(70.dp)
-            .background(MaterialTheme.colorScheme.secondaryContainer, shape)
+            .background(MaterialTheme.colorScheme.surfaceContainer, shape)
             .clip(shape)
             .clickable {
                 communityInfo?.let { onClick?.invoke(it) ?: appNavFactory.newAppNav().gotoCommunity(it.id, false) }
@@ -58,5 +61,15 @@ private fun CommunityRefCellInternal(
             .padding(10.dp),
     ) {
         CommunityCell(it, true, onClick)
+    }
+}
+
+@Composable
+fun CommunityMenuRefCell(id: PrimaryKey, onClick: (CommunityInfo) -> Unit) {
+    val handler = LocalRefCellHandlerProvider.current.communityHandler(id)
+    RefCellStateView(handler, Modifier.fillMaxWidth().heightIn(min = 52.dp)) { info ->
+        ActionMenuReference(info.name, { onClick(info) }) {
+            CommunityIcon(info, 36.dp, false) {}
+        }
     }
 }

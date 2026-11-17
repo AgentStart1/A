@@ -1,0 +1,3 @@
+<resources>
+    <string name="message_result_unconfirmed">The connection closed before delivery was confirmed. Your draft is retained. Check the conversation before sending it again.</string>
+</resources>

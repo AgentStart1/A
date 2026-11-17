@@ -4,24 +4,20 @@
 
 package com.storyteller_f.alphaheart.app.utils
 
+import com.storyteller_f.alphaheart.client.compose_core.components.ResourceDownloadRequest
+import com.storyteller_f.alphaheart.client.compose_core.components.ResourceSaveOutcome
+import com.storyteller_f.alphaheart.client.compose_core.components.saveRemoteResource
 import com.storyteller_f.shared.model.FileInfo
-import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.FileKitDialogSettings
-import io.github.vinceglb.filekit.download
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.get
-import io.ktor.http.HttpStatusCode
 
 internal actual suspend fun saveUploadedFile(
     client: HttpClient,
     file: FileInfo,
     dialogSettings: FileKitDialogSettings,
-): FileSaveOutcome {
-    val response = client.get(file.url)
-    check(response.status == HttpStatusCode.OK) { "Download failed: ${response.status}" }
-    val bytes = response.body<ByteArray>()
-    check(bytes.size.toLong() == file.size) { "Downloaded file size does not match" }
-    FileKit.download(bytes = bytes, fileName = file.name)
-    return FileSaveOutcome.STARTED
-}
+): FileSaveOutcome =
+    when (saveRemoteResource(client, ResourceDownloadRequest(file.url, file.name, file.size), dialogSettings)) {
+        ResourceSaveOutcome.SAVED -> FileSaveOutcome.SAVED
+        ResourceSaveOutcome.HANDED_OFF -> FileSaveOutcome.STARTED
+        ResourceSaveOutcome.CANCELLED -> FileSaveOutcome.CANCELLED
+    }

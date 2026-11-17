@@ -20,8 +20,6 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Title
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,6 +28,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.Res
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_bullet_list
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_code
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_divider
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_heading
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_image
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_insert_media
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_math
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_numbered_list
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_quote
+import com.storyteller_f.alphaheart.client.compose_core.block_editor_reference_csa
+import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
 /**
  * Block 工具栏
@@ -60,7 +72,11 @@ fun BlockToolbar(onInsertBlock: (ContentBlock) -> Unit, modifier: Modifier = Mod
 
         // 媒体插入菜单
         IconButton(onClick = { showAddMenu = true }) {
-            Icon(Icons.Default.Image, "Insert media", modifier = Modifier.size(20.dp))
+            Icon(
+                Icons.Default.Image,
+                stringResource(Res.string.block_editor_insert_media),
+                modifier = Modifier.size(20.dp),
+            )
         }
 
         BlockToolBarMenu(showAddMenu, onInsertBlock) {
@@ -76,7 +92,11 @@ private fun DividerAddButton(onInsertBlock: (ContentBlock) -> Unit) {
             ContentBlock.Divider(id = generateBlockId()),
         )
     }) {
-        Icon(Icons.Default.HorizontalRule, "Divider", modifier = Modifier.size(20.dp))
+        Icon(
+            Icons.Default.HorizontalRule,
+            stringResource(Res.string.block_editor_divider),
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
@@ -91,7 +111,11 @@ private fun MathAddButton(onInsertBlock: (ContentBlock) -> Unit) {
             ),
         )
     }) {
-        Icon(Icons.AutoMirrored.Filled.Note, "Math Formula", modifier = Modifier.size(20.dp))
+        Icon(
+            Icons.AutoMirrored.Filled.Note,
+            stringResource(Res.string.block_editor_math),
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
@@ -106,7 +130,7 @@ private fun CodeBlockAddButton(onInsertBlock: (ContentBlock) -> Unit) {
             ),
         )
     }) {
-        Icon(Icons.Default.Code, "Code Block", modifier = Modifier.size(20.dp))
+        Icon(Icons.Default.Code, stringResource(Res.string.block_editor_code), modifier = Modifier.size(20.dp))
     }
 }
 
@@ -120,7 +144,7 @@ private fun QuotaAddButton(onInsertBlock: (ContentBlock) -> Unit) {
             ),
         )
     }) {
-        Icon(Icons.Default.FormatQuote, "Quote", modifier = Modifier.size(20.dp))
+        Icon(Icons.Default.FormatQuote, stringResource(Res.string.block_editor_quote), modifier = Modifier.size(20.dp))
     }
 }
 
@@ -135,7 +159,11 @@ private fun NumberListAddButton(onInsertBlock: (ContentBlock) -> Unit) {
             ),
         )
     }) {
-        Icon(Icons.Default.FormatListNumbered, "Numbered List", modifier = Modifier.size(20.dp))
+        Icon(
+            Icons.Default.FormatListNumbered,
+            stringResource(Res.string.block_editor_numbered_list),
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
@@ -152,7 +180,7 @@ private fun ListAddButton(onInsertBlock: (ContentBlock) -> Unit) {
     }) {
         Icon(
             Icons.AutoMirrored.Filled.FormatListBulleted,
-            "Bullet List",
+            stringResource(Res.string.block_editor_bullet_list),
             modifier = Modifier.size(20.dp),
         )
     }
@@ -169,7 +197,7 @@ private fun TextAddButton(onInsertBlock: (ContentBlock) -> Unit) {
             ),
         )
     }) {
-        Icon(Icons.Default.Title, "Heading", modifier = Modifier.size(20.dp))
+        Icon(Icons.Default.Title, stringResource(Res.string.block_editor_heading), modifier = Modifier.size(20.dp))
     }
 }
 
@@ -180,7 +208,7 @@ private fun BlockToolBarMenu(showAddMenu: Boolean, onInsertBlock: (ContentBlock)
         onDismissRequest = { update(false) },
     ) {
         DropdownMenuItem(
-            text = { Text("Image") },
+            text = { Text(stringResource(Res.string.block_editor_image)) },
             onClick = {
                 onInsertBlock(
                     ContentBlock.ImageBlock(id = generateBlockId(), name = "", url = "", alt = ""),
@@ -189,7 +217,7 @@ private fun BlockToolBarMenu(showAddMenu: Boolean, onInsertBlock: (ContentBlock)
             },
         )
         DropdownMenuItem(
-            text = { Text("Reference (CSA)") },
+            text = { Text(stringResource(Res.string.block_editor_reference_csa)) },
             onClick = {
                 onInsertBlock(
                     ContentBlock.RefBlock(
