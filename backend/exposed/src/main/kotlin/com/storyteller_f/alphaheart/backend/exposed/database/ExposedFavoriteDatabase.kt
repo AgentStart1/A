@@ -98,13 +98,8 @@ class ExposedFavoriteDatabase(private val databaseSession: ExposedDatabaseSessio
             }
         }
 
-    override suspend fun getUserFavoriteCount() =
-        databaseSession.dbSearch {
-            search {
-                UserFavorites.selectAll()
-            }
-            count()
-        }
+    override suspend fun getUserFavoriteCount(uid: PrimaryKey) =
+        getFavoriteCountByPredicate { where { UserFavorites.uid eq uid } }
 
     private suspend fun getFavoriteListByPredicate(queryBuilder: Query.() -> Query = { this }) =
         databaseSession.dbSearch {

@@ -15,7 +15,6 @@ import com.storyteller_f.alphaheart.backend.core.service.FileDocument
 import com.storyteller_f.alphaheart.backend.core.types.FileRecord
 import com.storyteller_f.alphaheart.backend.core.types.Quota
 import com.storyteller_f.alphaheart.backend.core.types.toQuotaInfo
-import com.storyteller_f.alphaheart.backend.core.types.toUploadRecordInfo
 import com.storyteller_f.alphaheart.cloud.core.service.error.ContainerError
 import com.storyteller_f.result.ConstraintFailure
 import com.storyteller_f.result.CustomResult
@@ -343,23 +342,18 @@ suspend fun <E : FailureDetails> Backend.lockQuotaInfo(
 }
 
 suspend fun Backend.getQuotaInfo(quotaType: QuotaType, objectTuple: ObjectTuple) =
-    getQuotaDetail(quotaType, objectTuple).map { it.quotaInfo }
+    database.container.getQuotaInfo(objectTuple.objectId, quotaType).andThen(ContainerError::fromError) { quota ->
+        if (quota == null) insertQuotaAndGet(quotaType, objectTuple) else CustomResult.success(quota.toQuotaInfo())
+    }
 
 suspend fun Backend.getQuotaDetail(quotaType: QuotaType, objectTuple: ObjectTuple) =
-    database.container.getQuotaInfo(objectTuple.objectId, quotaType).andThen(ContainerError::fromError) { quota ->
-        if (quota == null) {
-            insertQuotaAndGet(quotaType, objectTuple).map { QuotaDetail(it) }
+    getQuotaInfo(quotaType, objectTuple).andThen(ContainerError::fromError) { info ->
+        val lockId = info.lockId
+        if (lockId == null) {
+            CustomResult.success(QuotaDetail(info))
         } else {
-            val info = quota.toQuotaInfo()
-            val lockId = info.lockId
-            if (lockId != null) {
-                database.file.getUploadRecord(lockId).andThen(ContainerError::fromError) { rec ->
-                    CustomResult.success(
-                        QuotaDetail(info, rec?.toUploadRecordInfo()),
-                    )
-                }
-            } else {
-                CustomResult.success(QuotaDetail(info))
+            database.file.getUploadRecord(lockId).andThen(ContainerError::fromError) { record ->
+                loadUploadQuotaSnapshot(record).map { QuotaDetail(info, it) }
             }
         }
     }

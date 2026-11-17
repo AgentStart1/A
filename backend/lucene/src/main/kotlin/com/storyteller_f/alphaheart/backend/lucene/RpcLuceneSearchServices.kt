@@ -129,8 +129,10 @@ class LuceneUserSearchService(private val connection: RpcServiceProvider<LuceneR
     constructor(rpc: LuceneRpc) : this(RpcServiceProvider { rpc })
     override suspend fun saveDocument(documents: List<UserDocument>) =
         rpcResult {
-            connection.acquire().save(
+            if (documents.isEmpty()) return@rpcResult Unit
+            connection.acquire().replace(
                 "user",
+                RpcLuceneQuery(mustLongSet = mapOf(DOCUMENT_ID_FIELD to documents.map { it.id })),
                 documents.map { LuceneUserDocument(it).save() },
             )
         }

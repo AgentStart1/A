@@ -25,11 +25,14 @@ import com.storyteller_f.alphaheart.client.core.getUserJoinedCommunities
 import com.storyteller_f.alphaheart.client.core.joinCommunity
 import com.storyteller_f.alphaheart.client.core.searchCommunityTopics
 import com.storyteller_f.alphaheart.client.core.updateCommunityInfo
+import com.storyteller_f.alphaheart.client.core.upload
 import com.storyteller_f.result.getOrThrow
 import com.storyteller_f.shared.model.CommunityInfo
 import com.storyteller_f.shared.model.FontSettings
 import com.storyteller_f.shared.model.MemberPolicy
 import com.storyteller_f.shared.model.TitleType
+import com.storyteller_f.shared.obj.UpdateCommunityBody
+import com.storyteller_f.shared.obj.ob
 import com.storyteller_f.shared.type.ObjectType
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -39,12 +42,16 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import kotlinx.datetime.LocalDateTime
+import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
+import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CommunityTest {
@@ -58,6 +65,43 @@ class CommunityTest {
                         client.get("/communities/$objectId?fillJoinInfo=true").body<CommunityInfo>()
                     }
                 assertEquals(HttpStatusCode.Unauthorized, failure.status)
+            }
+        }
+
+    @Test
+    fun `community media resets preserve the other field`() =
+        test(mapOf("DISABLE_TEST_WS" to "true")) {
+            attachSession { session ->
+                val community = createCommunityForTest()
+                val owner = session.uid ob ObjectType.USER
+                val iconUpload =
+                    getUploadDataFromBytes(createCommunityImageBytes(40, 40)).copy(name = "community-icon.png")
+                val posterUpload =
+                    getUploadDataFromBytes(createCommunityImageBytes(30, 40)).copy(name = "community-poster.png")
+                val icon = upload(owner, iconUpload).getOrThrow().data.first()
+                val poster = upload(owner, posterUpload).getOrThrow().data.first()
+                updateCommunityInfo(community.id, UpdateCommunityBody(icon = icon.id, poster = poster.id)).getOrThrow()
+                val invalid =
+                    assertFailsWith<ServerErrorException> {
+                        updateCommunityInfo(community.id, UpdateCommunityBody(poster = icon.id)).getOrThrow()
+                    }
+                assertEquals(HttpStatusCode.BadRequest, invalid.status)
+                val unchanged = getCommunityInfo(community.id).getOrThrow()
+                assertEquals(icon.id, unchanged.icon?.id)
+                assertEquals(poster.id, unchanged.poster?.id)
+
+                updateCommunityInfo(community.id, UpdateCommunityBody(poster = 0)).getOrThrow()
+                val withoutPoster = getCommunityInfo(community.id).getOrThrow()
+                assertEquals(community.name, withoutPoster.name)
+                assertEquals(icon.id, withoutPoster.icon?.id)
+                assertNull(withoutPoster.poster)
+
+                updateCommunityInfo(community.id, UpdateCommunityBody(poster = poster.id)).getOrThrow()
+                updateCommunityInfo(community.id, UpdateCommunityBody(icon = 0)).getOrThrow()
+                val withoutIcon = getCommunityInfo(community.id).getOrThrow()
+                assertEquals(community.name, withoutIcon.name)
+                assertNull(withoutIcon.icon)
+                assertEquals(poster.id, withoutIcon.poster?.id)
             }
         }
 
@@ -364,3 +408,11 @@ suspend fun UserSessionManager.createCommunityForTest(
     id: String = "c1",
     memberPolicy: MemberPolicy = MemberPolicy.OPEN,
 ): CommunityInfo = createCommunity(NewCommunity(name, id, memberPolicy = memberPolicy)).getOrThrow()
+
+private fun createCommunityImageBytes(width: Int, height: Int): ByteArray =
+    ByteArrayOutputStream().use { output ->
+        output.buffered().use { buffered ->
+            ImageIO.write(BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB), "png", buffered)
+        }
+        output.toByteArray()
+    }

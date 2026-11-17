@@ -238,7 +238,7 @@ class ExposedReactionDatabase(val databaseSession: ExposedDatabaseSession) : Rea
 
     override suspend fun getReactionCountForEmoji(objectId: List<PrimaryKey>, emoji: String) =
         databaseSession.dbSearch {
-            val column = ReactionRecords.emoji.countDistinct()
+            val column = ReactionRecords.uid.countDistinct()
             val lastReactionId = ReactionRecords.id.max()
             search {
                 ReactionRecords.select(ReactionRecords.objectId, column, lastReactionId).where {

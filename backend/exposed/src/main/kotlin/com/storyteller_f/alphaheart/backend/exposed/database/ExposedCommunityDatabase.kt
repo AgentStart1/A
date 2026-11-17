@@ -219,10 +219,10 @@ class ExposedCommunityDatabase(val databaseSession: ExposedDatabaseSession, val 
                         it[Communities.name] = newName
                     }
                     if (newIcon != null) {
-                        it[Communities.icon] = newIcon
+                        it[Communities.icon] = newIcon.takeUnless { it == 0L }
                     }
                     if (newPoster != null) {
-                        it[Communities.poster] = newPoster
+                        it[Communities.poster] = newPoster.takeUnless { it == 0L }
                     }
                     if (newFontSettings != null) {
                         it[Communities.fontSettings] = json.encodeToString(newFontSettings)

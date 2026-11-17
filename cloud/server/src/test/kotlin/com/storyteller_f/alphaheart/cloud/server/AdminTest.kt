@@ -49,6 +49,7 @@ import com.storyteller_f.alphaheart.client.core.getUserUploadRecords
 import com.storyteller_f.alphaheart.client.core.initChunkUpload
 import com.storyteller_f.alphaheart.client.core.joinCommunity
 import com.storyteller_f.alphaheart.client.core.overview
+import com.storyteller_f.alphaheart.client.core.searchAllMembers
 import com.storyteller_f.alphaheart.client.core.sendMessage
 import com.storyteller_f.alphaheart.client.core.upload
 import com.storyteller_f.result.getOrThrow
@@ -196,6 +197,8 @@ class AdminTest {
             ) {
                 val info = getUserInfo(it.uid).getOrThrow()
                 assertEquals(info.id, userInfo.id)
+                val matches = searchAllMembers(null, 100, info.nickname).getOrThrow().data
+                assertEquals(listOf(info.id), matches.map { user -> user.id })
             }
         }
 

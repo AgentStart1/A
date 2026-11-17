@@ -245,7 +245,7 @@ class ExposedRoomDatabase(val databaseSession: ExposedDatabaseSession, val conta
                                 it[Rooms.name] = newName
                             }
                             if (newIcon != null) {
-                                it[Rooms.icon] = newIcon
+                                it[Rooms.icon] = newIcon.takeUnless { it == 0L }
                             }
                         } > 0
                     } else {

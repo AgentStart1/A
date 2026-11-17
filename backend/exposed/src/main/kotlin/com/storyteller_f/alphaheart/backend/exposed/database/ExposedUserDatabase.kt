@@ -625,6 +625,7 @@ class ExposedUserDatabase(
                     it[UserTwoFactors.recoveryCodeHashes] = encodeRecoveryCodeHashes(twoFactor.recoveryCodeHashes)
                     it[UserTwoFactors.updatedAt] = twoFactor.updatedAt
                 }) {
+                    it[id] = twoFactor.uid
                     it[uid] = twoFactor.uid
                     it[enabled] = twoFactor.enabled
                     it[type] = twoFactor.type

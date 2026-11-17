@@ -45,6 +45,7 @@ import com.storyteller_f.result.map
 import com.storyteller_f.result.mapError
 import com.storyteller_f.result.mapPresent
 import com.storyteller_f.result.onFailure
+import com.storyteller_f.result.onSuccess
 import com.storyteller_f.result.recover
 import com.storyteller_f.shared.getAlgo
 import com.storyteller_f.shared.model.ChildAccountInfo
@@ -80,7 +81,9 @@ suspend fun Backend.updateUser(uid: PrimaryKey, old: UpdateUserBody): CustomResu
     return database.user.updateUserInfo(uid, newUpdate).andThen(UserError::fromError) {
         if (it) {
             addUserLog(uid, UserLogType.UPDATE, uid ob ObjectType.USER)
-            getUserInfo(ObjectFetch.IdFetch(uid))
+            getUserInfo(ObjectFetch.IdFetch(uid)).onSuccess { info ->
+                info?.let { user -> saveUserSearchDocument(UserDocument(user.id, user.nickname, user.aid)) }
+            }
         } else {
             CustomResult.success(null)
         }
@@ -332,12 +335,7 @@ suspend fun Backend.addChildAccount(
                     user,
                     request.encryptedEncryptionPrivateKey,
                 ).getOrThrow()
-                userSearchService.saveDocument(listOf(UserDocument.fromUser(user)))
-                    .onFailure { throwable ->
-                        Napier.e(throwable.cause) {
-                            "save user document failed"
-                        }
-                    }
+                saveUserSearchDocument(UserDocument.fromUser(user))
                 addUserLog(uid, UserLogType.ADD_ALTERNATIVE_ACCOUNT, id ob ObjectType.USER)
                 ChildAccountInfo(
                     hostId = uid,

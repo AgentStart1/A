@@ -216,7 +216,7 @@ internal class LuceneRpcImpl(private val base: Path) : LuceneRpc {
             source.mustKeyword.forEach { (field, value) ->
                 add(TermQuery(Term(field, value)), BooleanClause.Occur.MUST)
             }
-            source.text.forEach { text -> addTextQuery(text) }
+            source.text.forEach { text -> addTextQuery(text, analyzer) }
             val filters =
                 listOf(
                     source.mustLong.size,

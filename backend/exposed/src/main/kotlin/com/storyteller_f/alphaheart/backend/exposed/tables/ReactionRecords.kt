@@ -41,7 +41,7 @@ object Reactions : Table() {
     val emoji = emoji()
     val count = long("count")
     val lastReactionId = customPrimaryKey("last_reaction_id")
-    override val primaryKey = PrimaryKey(emoji)
+    override val primaryKey = PrimaryKey(objectId, emoji)
 
     init {
         index("reaction-stats-main", false, objectId, count, lastReactionId)

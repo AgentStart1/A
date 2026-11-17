@@ -29,6 +29,7 @@ import com.storyteller_f.alphaheart.client.core.getUserOverview
 import com.storyteller_f.alphaheart.client.core.hasUnreadRooms
 import com.storyteller_f.alphaheart.client.core.removeFavorite
 import com.storyteller_f.alphaheart.client.core.removeSubscription
+import com.storyteller_f.alphaheart.client.core.searchAllMembers
 import com.storyteller_f.alphaheart.client.core.sendMessage
 import com.storyteller_f.alphaheart.client.core.updateUserInfo
 import com.storyteller_f.alphaheart.client.core.upload
@@ -50,6 +51,35 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class UserTest {
+    @Test
+    fun `registered user is searchable immediately`() =
+        test {
+            attachSession {
+                val user = getUserInfo(it.uid).getOrThrow()
+                val results = searchAllMembers(null, 100, user.nickname).getOrThrow().data
+                assertEquals(listOf(user.id), results.map { result -> result.id })
+            }
+        }
+
+    @Test
+    fun `profile changes replace searchable nickname and add aid`() =
+        test {
+            attachSession {
+                val uid = it.uid
+                updateUserInfo(UpdateUserBody(nickname = "oldname")).getOrThrow()
+                val oldMatches = searchAllMembers(null, 100, "oldname").getOrThrow().data
+                assertEquals(listOf(uid), oldMatches.map { user -> user.id })
+                updateUserInfo(UpdateUserBody(nickname = "newname", aid = "newaid")).getOrThrow()
+                updateUserInfo(UpdateUserBody(nickname = "newname")).getOrThrow()
+                val current = searchAllMembers(null, 100, "newname").getOrThrow().data.single()
+                assertEquals(uid, current.id)
+                assertEquals("newaid", current.aid)
+                val aidMatches = searchAllMembers(null, 100, "newaid").getOrThrow().data
+                assertEquals(listOf(uid), aidMatches.map { user -> user.id })
+                assertTrue(searchAllMembers(null, 100, "oldname").getOrThrow().data.none { user -> user.id == uid })
+            }
+        }
+
     @Test
     fun `test get user`() =
         test {

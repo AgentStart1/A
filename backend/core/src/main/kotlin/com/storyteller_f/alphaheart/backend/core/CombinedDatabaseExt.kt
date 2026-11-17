@@ -27,7 +27,7 @@ import com.storyteller_f.shared.utils.associateByPair
 suspend fun CombinedDatabase.getUserOverview(uid: PrimaryKey): CustomResult<RawUserOverview, DatabaseError> =
     captureFailure(DatabaseError::from) {
         val subscriptionCount = subscription.getUserSubscriptionCount(uid).getOrThrow()
-        val favoriteCount = favorite.getUserFavoriteCount().getOrThrow()
+        val favoriteCount = favorite.getUserFavoriteCount(uid).getOrThrow()
         val childAccountCount = user.getChildAccountCount(uid).getOrThrow()
         val reactionRecordCount = reaction.getUserReactionRecordCount(uid).getOrThrow()
         val commentCount = topic.getUserCommentCount(uid).getOrThrow()
@@ -183,5 +183,16 @@ suspend fun CombinedDatabase.getLatestRawTopic(
     parentId: PrimaryKey,
 ): CustomResult<List<RawTopic>, DatabaseError> =
     topic.getLatestTopic(parentId).andThen(DatabaseError::fromError) {
+        processTopicToRawTopic(uid, it)
+    }
+
+/** Enriches per-parent latest replies together while retaining each parent's query order. */
+suspend fun CombinedDatabase.getLatestRawTopics(
+    uid: PrimaryKey?,
+    parentIds: List<PrimaryKey>,
+): CustomResult<List<RawTopic>, DatabaseError> =
+    captureFailure(DatabaseError::from) {
+        parentIds.distinct().flatMap { topic.getLatestTopic(it).getOrThrow() }
+    }.andThen(DatabaseError::fromError) {
         processTopicToRawTopic(uid, it)
     }

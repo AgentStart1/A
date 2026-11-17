@@ -278,7 +278,10 @@ suspend fun Backend.updateRoom(
 }
 
 private suspend fun Backend.checkRoomIcon(update: UpdateRoomBody): CustomResult<Unit, RoomError> =
-    checkIcon(update.icon, Dimension.ROOM_DIMENSION).andThen(RoomError::fromError) { checkResult ->
+    checkIcon(
+        update.icon?.takeUnless { it == 0L },
+        Dimension.ROOM_DIMENSION,
+    ).andThen(RoomError::fromError) { checkResult ->
         when (checkResult) {
             MediaCheckResult.NOT_FOUND ->
                 CustomResult.Failure(
@@ -299,7 +302,7 @@ private suspend fun Backend.checkRoomIcon(update: UpdateRoomBody): CustomResult<
         }
     }.mapError(RoomError::fromError)
 
-private fun checkRoomName(update: UpdateRoomBody): CustomResult<Unit, RoomError> =
+internal fun checkRoomName(update: UpdateRoomBody): CustomResult<Unit, RoomError> =
     when (
         checkNickname(
             update.name,
@@ -320,7 +323,9 @@ private fun checkRoomName(update: UpdateRoomBody): CustomResult<Unit, RoomError>
 
         StringCheckResult.SUCCESS -> CustomResult.Success(Unit)
 
-        StringCheckResult.NULL, StringCheckResult.EMPTY ->
+        StringCheckResult.NULL -> CustomResult.Success(Unit)
+
+        StringCheckResult.EMPTY ->
             CustomResult.Failure(RoomError.from(CustomBadRequestException("room name must be visible")))
     }.mapError(RoomError::fromError)
 

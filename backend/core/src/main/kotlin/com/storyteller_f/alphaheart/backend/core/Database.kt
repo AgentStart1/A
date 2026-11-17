@@ -366,7 +366,7 @@ interface FavoriteDatabase {
         uid: PrimaryKey,
     ): CustomResult<List<UserFavorite>, DatabaseError>
 
-    suspend fun getUserFavoriteCount(): CustomResult<Long, DatabaseError>
+    suspend fun getUserFavoriteCount(uid: PrimaryKey): CustomResult<Long, DatabaseError>
 }
 
 interface SubscriptionDatabase {

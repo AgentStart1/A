@@ -51,6 +51,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.vendors.PostgreSQLDialect
 import org.jetbrains.exposed.v1.migration.r2dbc.MigrationUtils
 import org.jetbrains.exposed.v1.r2dbc.Query
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabase
@@ -298,6 +299,8 @@ object ExposedDatabaseFactory {
             "migration"
         }
         suspendTransaction(database) {
+            maxAttempts = 1
+            migrateReactionPrimaryKey()
             val statements = MigrationUtils.statementsRequiredForDatabaseMigration(*tables)
             statements.forEach {
                 Napier.i(tag = "database") { "migration: $it" }
@@ -305,4 +308,39 @@ object ExposedDatabaseFactory {
             }
         }
     }
+}
+
+/** Exposed adds missing keys, but does not replace the legacy globally unique emoji key. */
+private suspend fun R2dbcTransaction.migrateReactionPrimaryKey() {
+    val existing = db.dialectMetadata.existingPrimaryKeys(Reactions)[Reactions] ?: return
+    if (existing.columnNames.singleOrNull()?.equals(Reactions.emoji.name, ignoreCase = true) != true) return
+    check(db.dialect is PostgreSQLDialect) { "Legacy reaction primary key migration requires PostgreSQL" }
+    // Finish existing record writes and keep the source set stable until the derived stats are rebuilt.
+    exec("LOCK TABLE ${identity(ReactionRecords)} IN SHARE MODE")
+    val keyName = db.identifierManager.quoteIdentifierWhenWrongCaseOrNecessary(existing.name)
+    val columns = listOf(Reactions.objectId, Reactions.emoji).joinToString(", ") { identity(it) }
+    // Keep the original constraint name and rebuild only derived stats in the same transaction; no CASCADE.
+    exec(
+        "ALTER TABLE ${identity(Reactions)} DROP CONSTRAINT $keyName, " +
+            "ADD CONSTRAINT $keyName PRIMARY KEY ($columns)",
+    )
+    rebuildReactionStats()
+    db.dialectMetadata.resetCaches()
+}
+
+/** ReactionRecords are business data; Reactions contains only their derived, non-zero aggregates. */
+private suspend fun R2dbcTransaction.rebuildReactionStats() {
+    val targets =
+        listOf(Reactions.objectId, Reactions.objectType, Reactions.emoji, Reactions.count, Reactions.lastReactionId)
+    val targetColumns = targets.joinToString(", ") { identity(it) }
+    val grouping = listOf(ReactionRecords.objectId, ReactionRecords.objectType, ReactionRecords.emoji)
+    val groupColumns = grouping.joinToString(", ") { identity(it) }
+    val uid = identity(ReactionRecords.uid)
+    val recordId = identity(ReactionRecords.id)
+    exec("DELETE FROM ${identity(Reactions)}")
+    exec(
+        "INSERT INTO ${identity(Reactions)} ($targetColumns) " +
+            "SELECT $groupColumns, COUNT(DISTINCT $uid), MAX($recordId) " +
+            "FROM ${identity(ReactionRecords)} GROUP BY $groupColumns",
+    )
 }

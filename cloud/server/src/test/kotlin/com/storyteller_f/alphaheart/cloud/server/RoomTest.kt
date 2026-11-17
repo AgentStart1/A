@@ -28,6 +28,7 @@ import com.storyteller_f.alphaheart.client.core.searchCurrentUserRooms
 import com.storyteller_f.alphaheart.client.core.searchRoomMembers
 import com.storyteller_f.alphaheart.client.core.sendFrame
 import com.storyteller_f.alphaheart.client.core.updateRoomInfo
+import com.storyteller_f.alphaheart.client.core.upload
 import com.storyteller_f.alphaheart.cloud.core.service.checkRoomWritePermission
 import com.storyteller_f.alphaheart.cloud.ws.rtcSession
 import com.storyteller_f.result.getOrThrow
@@ -38,6 +39,7 @@ import com.storyteller_f.shared.obj.CustomAnswer
 import com.storyteller_f.shared.obj.CustomOffer
 import com.storyteller_f.shared.obj.RoomFrame
 import com.storyteller_f.shared.obj.UpdateRoomBody
+import com.storyteller_f.shared.obj.ob
 import com.storyteller_f.shared.type.JoinStatusSearch
 import com.storyteller_f.shared.type.MemberStatus
 import com.storyteller_f.shared.type.ObjectType
@@ -56,12 +58,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.LocalDateTime
+import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
 import java.util.concurrent.CopyOnWriteArrayList
+import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -319,6 +325,33 @@ class RoomTest {
                 val roomId = createPublicRoomForTest(id, "r1", "name1").id
                 updateRoomInfo(roomId, UpdateRoomBody("new-name")).getOrThrow()
                 assertEquals("new-name", getRoomInfo(roomId).getOrThrow().name)
+            }
+        }
+
+    @Test
+    fun `room icon update and reset preserve name`() =
+        test(mapOf("DISABLE_TEST_WS" to "true")) {
+            attachSession { session ->
+                val room = createRoom(NewRoom("Icon fixture", "room-icon-fixture")).getOrThrow()
+                val bytes =
+                    ByteArrayOutputStream().use { output ->
+                        output.buffered().use { buffered ->
+                            ImageIO.write(BufferedImage(40, 30, BufferedImage.TYPE_INT_ARGB), "png", buffered)
+                        }
+                        output.toByteArray()
+                    }
+                val icon =
+                    upload(session.uid ob ObjectType.USER, getUploadDataFromBytes(bytes)).getOrThrow().data.first()
+                updateRoomInfo(room.id, UpdateRoomBody(icon = icon.id)).getOrThrow()
+                val changed = getRoomInfo(room.id).getOrThrow()
+                assertEquals(room.name, changed.name)
+                assertEquals(icon.id, changed.icon?.id)
+                assertFails { updateRoomInfo(room.id, UpdateRoomBody(name = " ")).getOrThrow() }
+                assertEquals(icon.id, getRoomInfo(room.id).getOrThrow().icon?.id)
+                updateRoomInfo(room.id, UpdateRoomBody(icon = 0)).getOrThrow()
+                val restored = getRoomInfo(room.id).getOrThrow()
+                assertEquals(room.name, restored.name)
+                assertNull(restored.icon)
             }
         }
 

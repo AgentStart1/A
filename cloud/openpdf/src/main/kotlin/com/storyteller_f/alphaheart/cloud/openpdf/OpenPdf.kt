@@ -14,6 +14,7 @@ import com.storyteller_f.result.map
 import com.storyteller_f.shared.model.UserInfo
 import com.storyteller_f.shared.utils.astNode
 import com.storyteller_f.shared.utils.extractImageUrl
+import com.storyteller_f.shared.utils.normalizeMarkdownLineEndings
 import com.storyteller_f.shared.utils.readCodeFence
 import dev.snipme.highlights.Highlights
 import dev.snipme.highlights.model.ColorHighlight
@@ -65,8 +66,9 @@ class OpenPdf : PdfService {
                     writer.pageEvent = SnapshotPageEvent(fontBundle)
                     document.open()
                     SnapshotLayout.addSummary(document, fontBundle, creatorInfo, authorInfo, pdfGenerationSpec)
-                    val parsedTree = astNode(content)
-                    parsedTree.accept(OpenPdfVisitor(document, fontBundle, content, map))
+                    val markdown = normalizeMarkdownLineEndings(content)
+                    val parsedTree = astNode(markdown)
+                    parsedTree.accept(OpenPdfVisitor(document, fontBundle, markdown, map))
                 }
             }
             when (snapshotGeneration) {

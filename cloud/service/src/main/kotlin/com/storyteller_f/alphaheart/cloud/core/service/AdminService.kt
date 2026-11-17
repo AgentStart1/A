@@ -12,6 +12,7 @@ import com.storyteller_f.alphaheart.backend.core.CustomBadRequestException
 import com.storyteller_f.alphaheart.backend.core.PaginationResult
 import com.storyteller_f.alphaheart.backend.core.PrimaryKeyFetch
 import com.storyteller_f.alphaheart.backend.core.UnauthorizedException
+import com.storyteller_f.alphaheart.backend.core.service.UserDocument
 import com.storyteller_f.alphaheart.backend.core.types.PanelLog
 import com.storyteller_f.alphaheart.backend.core.types.User
 import com.storyteller_f.alphaheart.backend.core.types.toPanelLogInfo
@@ -104,7 +105,9 @@ suspend fun Backend.addUser(newUser: NewUser): CustomResult<UserInfo, AdminError
                 algoType,
                 notificationId,
             ),
-        ).getOrThrow().toUserInfo()
+        ).getOrThrow().also {
+            saveUserSearchDocument(UserDocument.fromUser(it))
+        }.toUserInfo()
     }.mapError(AdminError::fromError)
 }
 

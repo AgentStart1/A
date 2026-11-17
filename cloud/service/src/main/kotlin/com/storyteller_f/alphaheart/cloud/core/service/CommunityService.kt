@@ -398,7 +398,7 @@ private suspend fun Backend.checkCommunityFontSettingsForUpdate(
         } else {
             val invalidFile =
                 files.firstOrNull {
-                    !it.contentType.startsWith("font/") && !it.contentType.startsWith("application/font-")
+                    !isCommunityFontType(it.contentType)
                 }
             if (invalidFile != null) {
                 CustomResult.Failure(
@@ -416,7 +416,10 @@ private suspend fun Backend.checkCommunityFontSettingsForUpdate(
 private suspend fun Backend.checkCommunityPosterForUpdate(
     newCommunity: UpdateCommunityBody,
 ): CustomResult<Unit, CommunityError> =
-    checkIcon(newCommunity.poster, Dimension.COMMUNITY_POSTER).andThen(CommunityError::fromError) { checkResult ->
+    checkIcon(
+        newCommunity.poster?.takeUnless { it == 0L },
+        Dimension.COMMUNITY_POSTER,
+    ).andThen(CommunityError::fromError) { checkResult ->
         when (checkResult) {
             MediaCheckResult.NOT_FOUND ->
                 CustomResult.Failure(
@@ -440,7 +443,10 @@ private suspend fun Backend.checkCommunityPosterForUpdate(
 private suspend fun Backend.checkCommunityIconForUpdate(
     newCommunity: UpdateCommunityBody,
 ): CustomResult<Unit, CommunityError> =
-    checkIcon(newCommunity.icon, Dimension.DEFAULT_DIMENSION).andThen(CommunityError::fromError) { checkResult ->
+    checkIcon(
+        newCommunity.icon?.takeUnless { it == 0L },
+        Dimension.DEFAULT_DIMENSION,
+    ).andThen(CommunityError::fromError) { checkResult ->
         when (checkResult) {
             MediaCheckResult.NOT_FOUND ->
                 CustomResult.Failure(

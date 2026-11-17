@@ -1,9 +1,9 @@
 package com.storyteller_f.alphaheart.cloud.pdfbox
 
-import com.storyteller_f.result.CustomResult
-import com.storyteller_f.result.map
-import com.storyteller_f.result.firstOrNull
 import com.storyteller_f.alphaheart.cloud.pdf.PdfError
+import com.storyteller_f.result.CustomResult
+import com.storyteller_f.result.firstOrNull
+import com.storyteller_f.result.map
 
 import com.storyteller_f.alphaheart.cloud.pdf.PdfGenerationSpec
 import com.storyteller_f.alphaheart.cloud.pdf.PdfService
@@ -13,6 +13,7 @@ import com.storyteller_f.alphaheart.cloud.pdf.getFont
 import com.storyteller_f.alphaheart.cloud.pdf.getMonoFont
 import com.storyteller_f.shared.model.UserInfo
 import com.storyteller_f.shared.utils.astNode
+import com.storyteller_f.shared.utils.normalizeMarkdownLineEndings
 import com.storyteller_f.shared.utils.extractImageUrl
 import com.storyteller_f.shared.utils.readCodeFence
 import dev.snipme.highlights.Highlights
@@ -75,8 +76,9 @@ class PdfBox : PdfService {
             add(Paragraph().apply {
                 addText("capture at ${pdfGenerationSpec.captured}", 14f, font)
             })
-            val parsedTree = astNode(content)
-            parsedTree.accept(PdfBoxVisitor(font, content, map, this))
+            val markdown = normalizeMarkdownLineEndings(content)
+            val parsedTree = astNode(markdown)
+            parsedTree.accept(PdfBoxVisitor(font, markdown, map, this))
             save(saveToFile)
         }
         when (snapshotGeneration) {

@@ -10,6 +10,7 @@ import com.storyteller_f.alphaheart.api.SignInResponse
 import com.storyteller_f.alphaheart.api.SignUpBody
 import com.storyteller_f.alphaheart.backend.core.Backend
 import com.storyteller_f.alphaheart.backend.core.CustomBadRequestException
+import com.storyteller_f.alphaheart.backend.core.service.UserDocument
 import com.storyteller_f.alphaheart.backend.core.types.PanelAccount
 import com.storyteller_f.alphaheart.backend.core.types.User
 import com.storyteller_f.alphaheart.backend.core.types.toUserInfo
@@ -81,7 +82,9 @@ private suspend fun Backend.signUpInternal(algo: Algo, pack: SignUpBody, f: Stri
             algoType,
             notificationId,
         )
-    return database.user.createUser(user).getOrThrow()
+    return database.user.createUser(user).getOrThrow().also {
+        saveUserSearchDocument(UserDocument.fromUser(it))
+    }
 }
 
 suspend fun Backend.signIn(data: String, pack: SignInBody): CustomResult<SignInServiceResponse, AccountError> {

@@ -188,46 +188,24 @@ suspend fun DefaultWebSocketServerSession.processNewMessage(
     uid: PrimaryKey,
 ) {
     val newTopic = frame.newTopic
-    val content = newTopic.content
-    when (content) {
-        is TopicContent.Plain -> {
-            if (content.plain.isBlank()) {
-                sendFrame(RoomFrame.Error("plain is empty"))
-                return
+    processValidatedRoomMessage(
+        newTopic.content,
+        reject = { sendFrame(RoomFrame.Error(it)) },
+    ) {
+        backend.createTopicAtRoom(newTopic, uid).onSuccess {
+            if (it == null) {
+                sendFrame(RoomFrame.Error("not found"))
+            } else {
+                backend.addUserLog(uid, UserLogType.CREATE, it.tuple())
+                val raw = RoomFrame.NewTopicInfo(it)
+                sendFrame(raw)
+                messageResponseFlow.emit(raw)
             }
-            if (content.plain.length > 1000) {
-                sendFrame(RoomFrame.Error("plain is too long"))
-            }
+        }.onFailure {
+            val message = it.cause.message ?: "unknown error"
+            call.application.log.error(it.cause)
+            sendFrame(RoomFrame.Error(message))
         }
-
-        is TopicContent.Encrypted -> {
-            if (content.encrypted.isBlank()) {
-                sendFrame(RoomFrame.Error("message is empty"))
-                return
-            }
-            if (content.encrypted.length > 1000) {
-                sendFrame(RoomFrame.Error("message is too long"))
-            }
-        }
-
-        else -> {
-            sendFrame(RoomFrame.Error("not support message type"))
-            return
-        }
-    }
-    backend.createTopicAtRoom(newTopic, uid).onSuccess {
-        if (it == null) {
-            sendFrame(RoomFrame.Error("not found"))
-        } else {
-            backend.addUserLog(uid, UserLogType.CREATE, it.tuple())
-            val raw = RoomFrame.NewTopicInfo(it)
-            sendFrame(raw)
-            messageResponseFlow.emit(raw)
-        }
-    }.onFailure {
-        val message = it.cause.message ?: "unknown error"
-        call.application.log.error(it.cause)
-        sendFrame(RoomFrame.Error(message))
     }
 }
 

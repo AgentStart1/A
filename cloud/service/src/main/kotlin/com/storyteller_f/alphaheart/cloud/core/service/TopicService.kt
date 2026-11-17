@@ -19,7 +19,7 @@ import com.storyteller_f.alphaheart.backend.core.ReactionFetch
 import com.storyteller_f.alphaheart.backend.core.UnauthorizedException
 import com.storyteller_f.alphaheart.backend.core.fixedSort
 import com.storyteller_f.alphaheart.backend.core.getAllRawTopics
-import com.storyteller_f.alphaheart.backend.core.getLatestRawTopic
+import com.storyteller_f.alphaheart.backend.core.getLatestRawTopics
 import com.storyteller_f.alphaheart.backend.core.getRawTopic
 import com.storyteller_f.alphaheart.backend.core.getRawTopicByParentId
 import com.storyteller_f.alphaheart.backend.core.getRawTopicListByIds
@@ -564,9 +564,7 @@ private suspend fun Backend.processTopicProjection(
         val rooms = getRoomMapByTopics(topics)
         val subTopicsMap =
             if (addLatestSubTopic) {
-                topics.flatMap { t ->
-                    database.getLatestRawTopic(uid, t.topic.id).getOrThrow()
-                }.groupBy {
+                database.getLatestRawTopics(uid, topics.map { it.topic.id }).getOrThrow().groupBy {
                     it.topic.parentId
                 }
             } else {

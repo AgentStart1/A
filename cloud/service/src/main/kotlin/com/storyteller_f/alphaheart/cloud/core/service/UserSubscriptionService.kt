@@ -10,6 +10,7 @@ import com.storyteller_f.alphaheart.backend.core.Backend
 import com.storyteller_f.alphaheart.backend.core.ForbiddenException
 import com.storyteller_f.alphaheart.backend.core.PrimaryKeyFetch
 import com.storyteller_f.alphaheart.backend.core.addIfNotExists
+import com.storyteller_f.alphaheart.backend.core.getRawTopicListByIds
 import com.storyteller_f.alphaheart.backend.core.mapPagingResultNotNull
 import com.storyteller_f.alphaheart.backend.core.types.UserSubscription
 import com.storyteller_f.alphaheart.backend.core.types.toUserSubscriptionInfo
@@ -20,6 +21,7 @@ import com.storyteller_f.result.captureFailure
 import com.storyteller_f.result.firstOrNull
 import com.storyteller_f.result.getOrThrow
 import com.storyteller_f.result.onSuccess
+import com.storyteller_f.shared.model.TopicDetail
 import com.storyteller_f.shared.model.UserLogType
 import com.storyteller_f.shared.model.UserSubscriptionItem
 import com.storyteller_f.shared.type.ObjectType
@@ -87,15 +89,26 @@ suspend fun Backend.getUserSubscriptions(uid: PrimaryKey, fetch: PrimaryKeyFetch
 
 suspend fun Backend.buildSubscriptionItems(uid: PrimaryKey, userSubscriptions: List<UserSubscription>) =
     captureFailure(UserSubscriptionError::from) {
+        val topics = loadSubscriptionTopics(uid, userSubscriptions)
         userSubscriptions.map {
-            val favoriteInfo = it.toUserSubscriptionInfo()
-            when (it.objectType) {
-                ObjectType.TOPIC -> {
-                    val topicInfo = getTopic(it.objectId, uid, true).getOrThrow()
-                    UserSubscriptionItem(favoriteInfo, topicInfo)
-                }
-
-                else -> UserSubscriptionItem(favoriteInfo)
-            }
+            val subscriptionInfo = it.toUserSubscriptionInfo()
+            val topicInfo = if (it.objectType == ObjectType.TOPIC) topics[it.objectId] else null
+            UserSubscriptionItem(subscriptionInfo, topicInfo)
         }
     }
+
+private suspend fun Backend.loadSubscriptionTopics(
+    uid: PrimaryKey,
+    subscriptions: List<UserSubscription>,
+): Map<PrimaryKey, TopicDetail> {
+    val topicIds = subscriptions.filter { it.objectType == ObjectType.TOPIC }.map { it.objectId }.distinct()
+    val readableIds =
+        topicIds.filter { id ->
+            val permission = checkTopicReadPermission(id, uid).getOrThrow()
+            if (permission != null && !permission.hasRead) throw ForbiddenException("Permission Denied")
+            permission != null
+        }
+    if (readableIds.isEmpty()) return emptyMap()
+    val topics = database.getRawTopicListByIds(uid, readableIds).getOrThrow()
+    return processTopicDetails(topics, uid).getOrThrow().orEmpty().associateBy { it.id }
+}
