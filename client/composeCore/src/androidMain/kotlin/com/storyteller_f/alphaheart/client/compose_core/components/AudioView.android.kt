@@ -20,7 +20,7 @@ import io.github.aakira.napier.Napier
 import kotlin.uuid.ExperimentalUuidApi
 
 @Composable
-actual fun AudioViewEmbed(remoteMediaItem: RemoteMediaItem) {
+actual fun AudioViewEmbed(remoteMediaItem: RemoteMediaItem, loadOnPlay: Boolean) {
     MediaPlayerEmbed(remoteMediaItem) { playingSession, localMediaPlaySession ->
         AudioPlayer(playingSession, localMediaPlaySession, remoteMediaItem)
     }

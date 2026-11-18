@@ -9,8 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
 @Composable
-actual fun AudioViewEmbed(remoteMediaItem: RemoteMediaItem) {
-    WasmMediaPlayer(remoteMediaItem, Modifier, video = false)
+actual fun AudioViewEmbed(remoteMediaItem: RemoteMediaItem, loadOnPlay: Boolean) {
+    WasmMediaPlayer(remoteMediaItem, Modifier, video = false, loadOnPlay = loadOnPlay)
 }
 
 @Composable

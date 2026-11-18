@@ -123,7 +123,7 @@ private fun FileObjectBlock(
         if (contentType.startsWith("video/")) {
             VideoViewEmbed(obj1)
         } else {
-            AudioViewEmbed(obj1)
+            AudioViewEmbed(obj1, loadOnPlay = true)
         }
     }
 }

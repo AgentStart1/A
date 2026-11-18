@@ -66,11 +66,12 @@ export class MediaHost {
     this.ready = Promise.resolve();
     if (dependencies.autoStart !== false) this.start();
   }
-  start() {
-    if (this.status !== "idle") return this.ready;
+  start(waitForPlayback = false) {
+    if (this.status !== "idle" && !(waitForPlayback && this.status === "error"))
+      return this.ready;
     if (typeof document !== "undefined")
       document.addEventListener("visibilitychange", this.visibility);
-    this.ready = this.open(0);
+    this.ready = this.open(0, waitForPlayback);
     return this.ready;
   }
   publish(error = this.errorMessage, force = true) {
@@ -161,7 +162,7 @@ export class MediaHost {
     this.frame = null;
     this.firstAudio = null;
   }
-  async open(time) {
+  async open(time, waitForPlayback = false) {
     this.cancelGeneration();
     const generation = this.generation;
     this.position = time;
@@ -224,8 +225,10 @@ export class MediaHost {
       this.frame = null;
       if (frame) await this.presentPreview(frame, generation);
       if (generation !== this.generation) return;
-      this.status = "paused";
-      this.publish();
+      if (!waitForPlayback) {
+        this.status = "paused";
+        this.publish();
+      }
     } catch (error) {
       this.fail(error, generation);
     }
@@ -250,6 +253,37 @@ export class MediaHost {
     if (this.intent === "playing") this.pause();
     else await this.play();
   }
+  async togglePlaybackOnDemand() {
+    if (this.status !== "idle" && this.status !== "error")
+      return this.togglePlayback();
+
+    let generation = this.generation;
+    try {
+      // Request audio activation on the click stack before awaiting media reads.
+      this.prepareAudio();
+      const activation = this.context.resume();
+      const ready = this.start(true);
+      generation = this.generation;
+      await Promise.all([activation, ready]);
+      if (generation !== this.generation || this.status !== "loading") return;
+      this.status = "paused";
+      await this.play();
+    } catch (error) {
+      this.fail(error, generation);
+    }
+  }
+  prepareAudio() {
+    this.context = this.createAudio();
+    if (this.context.destination.maxChannelCount === 0)
+      throw new Error("No audio output device is available.");
+    this.context.onstatechange = () => {
+      if (this.context.state === "suspended" && this.status === "playing")
+        this.pause();
+    };
+    this.gain = this.context.createGain();
+    this.gain.connect(this.context.destination);
+    this.gain.gain.value = this.muted ? 0 : this.volume;
+  }
   toggleMute() {
     this.setVolume(this.volume, !this.muted);
   }
@@ -264,18 +298,7 @@ export class MediaHost {
     const generation = this.generation;
     try {
       // Called synchronously by the Compose button to retain user activation.
-      if (this.metadata.audio && !this.context) {
-        this.context = this.createAudio();
-        if (this.context.destination.maxChannelCount === 0)
-          throw new Error("No audio output device is available.");
-        this.context.onstatechange = () => {
-          if (this.context.state === "suspended" && this.status === "playing")
-            this.pause();
-        };
-        this.gain = this.context.createGain();
-        this.gain.connect(this.context.destination);
-        this.setVolume(this.volume, this.muted);
-      }
+      if (this.metadata.audio && !this.context) this.prepareAudio();
       if (this.context) await this.context.resume();
       if (generation !== this.generation) return;
       this.clockStart = this.context

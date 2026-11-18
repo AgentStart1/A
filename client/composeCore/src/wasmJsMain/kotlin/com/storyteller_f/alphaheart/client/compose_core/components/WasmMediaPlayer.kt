@@ -56,6 +56,7 @@ private external fun createHost(
 private external interface BrowserMediaHost : JsAny {
     fun start(): Promise<JsAny?>
     fun togglePlayback(): Promise<JsAny?>
+    fun togglePlaybackOnDemand(): Promise<JsAny?>
     fun seek(time: Double): Promise<JsAny?>
     fun setVolume(volume: Double, muted: Boolean)
     fun failRendering()
@@ -85,6 +86,7 @@ internal fun WasmMediaPlayer(
     modifier: Modifier,
     video: Boolean,
     layout: MediaSurfaceLayout = MediaSurfaceLayout.Bounded,
+    loadOnPlay: Boolean = false,
 ) {
     val gpu = remember { useGpuTextures() }
     val profiling = remember { profileMediaFrames() }
@@ -110,7 +112,7 @@ internal fun WasmMediaPlayer(
     }
     DisposableEffect(host) {
         textureRenderer?.setFailureHandler { host.failRendering() }
-        host.start()
+        if (!loadOnPlay) host.start()
         onDispose {
             host.close()
             bitmapOwner.close()
@@ -118,7 +120,7 @@ internal fun WasmMediaPlayer(
         }
     }
     SideEffect { bitmapOwner.retain(bitmap) }
-    val actions = rememberBrowserMediaActions(host) { state }
+    val actions = rememberBrowserMediaActions(host, loadOnPlay) { state }
     val surfaceModifier =
         if (video) {
             modifier
@@ -130,7 +132,7 @@ internal fun WasmMediaPlayer(
     key(item.url) {
         MediaPlayerSurface(
             item.title ?: item.name,
-            state.toControlState(),
+            state.toControlState(loadOnPlay),
             actions,
             surfaceModifier,
             video,
@@ -146,19 +148,24 @@ internal fun WasmMediaPlayer(
 @Composable
 private fun rememberBrowserMediaActions(
     host: BrowserMediaHost,
+    loadOnPlay: Boolean,
     readSnapshot: () -> MediaSnapshot?,
 ): MediaControlActions {
     val snapshot = rememberUpdatedState(readSnapshot)
-    return remember(host) {
+    return remember(host, loadOnPlay) {
         val volume = MediaVolumeControl { level, muted -> host.setVolume(level.toDouble(), muted) }
+        val togglePlayback: () -> Unit = {
+            if (loadOnPlay) host.togglePlaybackOnDemand() else host.togglePlayback()
+        }
         MediaControlActions(
-            { host.togglePlayback() },
+            togglePlayback,
             { host.seek(it) },
             volume::setVolume,
             {
                 val state = snapshot.value()
                 volume.toggleMute(state?.volume?.toFloat() ?: 1f, state?.muted ?: false)
             },
+            retry = togglePlayback.takeIf { loadOnPlay },
         )
     }
 }
@@ -239,15 +246,19 @@ private external fun recordPixelStage(stage: String, timestamp: Double)
 private fun profileMediaFrames(): Boolean =
     js("new URLSearchParams(globalThis.location.search).get('mediaProfile') === 'true'")
 
-private fun MediaSnapshot?.toControlState(): MediaControlState {
-    val status = this?.status ?: "loading"
+private fun MediaSnapshot?.toControlState(loadOnPlay: Boolean): MediaControlState {
+    val status = this?.status ?: if (loadOnPlay) "idle" else "loading"
+    val duration = this?.duration ?: 0.0
+    val startingOnDemand = loadOnPlay && status == "starting"
     return MediaControlState(
         playing = status in listOf("playing", "buffering"),
-        loading = status in listOf("loading", "buffering"),
+        loading = status in listOf("loading", "buffering") || startingOnDemand,
         failed = !this?.error.isNullOrEmpty(),
-        enabled = status in listOf("playing", "buffering", "paused", "ended"),
+        enabled = status in listOf("idle", "playing", "buffering", "paused", "ended"),
+        volumeEnabled = status != "idle",
+        durationKnown = !loadOnPlay || duration > 0.0,
         position = this?.position ?: 0.0,
-        duration = this?.duration ?: 0.0,
+        duration = duration,
         volume = this?.volume?.toFloat() ?: 1f,
         muted = this?.muted == true || this?.volume == 0.0,
     )

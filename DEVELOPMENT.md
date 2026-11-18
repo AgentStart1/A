@@ -761,7 +761,9 @@ OpenPDF 快照使用 A4、48 point 左右边距、双语快照标题、来源面
 
 ## Wasm 媒体组合实验
 
-实验性 Wasm 媒体路径使用 `client/composeCore` 中独立于 UI 的 `wasm-media-host` npm 包。专用 Worker 管理 Mediabunny input、网络读取、demux、decoder iterator 和 offscreen canvas。主线程 Host 管理播放协调、不可变快照、Web Audio graph 及媒体时钟。Compose 适配层只管理展示状态、Skia bitmap 和接管的 texture Image，创建延迟启动的 Host，在组合提交后的 DisposableEffect 中启动 Worker。顶层 `@JsModule` factory 导入 npm default export；必须同时保留验证使用的具名 JavaScript factory。实验不改变 Android 和桌面 actual。
+实验性 Wasm 媒体路径使用 `client/composeCore` 中独立于 UI 的 `wasm-media-host` npm 包。专用 Worker 管理 Mediabunny input、网络读取、demux、decoder iterator 和 offscreen canvas。主线程 Host 管理播放协调、不可变快照、Web Audio graph 及媒体时钟。Compose 适配层管理展示状态、Skia bitmap 和接管的 texture Image。话题内嵌音频在播放或重试点击时请求 Web Audio 激活，再打开媒体并自动开始播放。列表项离开组合时关闭 Host，重新进入时显示待播放。其他媒体在组合提交后的 DisposableEffect 中启动 Worker。顶层 `@JsModule` factory 导入 npm default export，同时保留验证使用的具名 JavaScript factory。
+
+`node client/composeCore/wasm-media-host/verify-audio-on-demand.mjs` 使用编译后的 Compose 夹具，在 Chrome 和 Edge 上检查未播放时滚动零媒体请求、加载中滚出后释放资源、返回后一次点击直接播放。
 
 Mediabunny 固定为 **1.62.1**，采用 MPL-2.0，来自[官方包](https://github.com/Vanilagy/mediabunny/blob/main/package.json)。`client/composeCore/wasm-media-host/NOTICE` 标明未修改包及准确源码归档；分发 bundle 时保留上游声明及源码可获得性。Wasm Yarn lock 记录包完整性。Codec 可用性通过实际每条输入 track 的 `canDecode()` 检查；[容器支持不保证浏览器 codec 支持](https://mediabunny.dev/guide/supported-formats-and-codecs)。本实现要求 HTTPS 或 localhost、module Worker、压缩 track 所需 WebCodecs、声音所需 Web Audio，以及跨源媒体读取的 CORS 权限。使用有限、可 seek 媒体；直播流和与浏览器原生控件完全一致不在实验范围内。不声称选择硬件解码器。
 
@@ -860,7 +862,7 @@ Wasm 开发和生产分发必须分开 Gradle 调用。Kotlin 2.4.21 通过同�
 
 ### Wasm 媒体回归执行器
 
-`npm --prefix client/composeCore/wasm-media-host run test:browser` 使用 Node 内置 `node:test`，顺序运行九个 verify 模块，每个模块在独立受监督 worker 进程中执行，无需新测试框架依赖。已有 `*.test.mjs` 单元约定保留独立 `npm test` 入口。通过 `npm --prefix client/composeCore/wasm-media-host run test:browser -- worker-regressions` 选择套件，支持多个名称，并保留全部适用矩阵参数。未知名称在运行开始前失败。直接 `node verify-*.mjs` 便于调试，但绕过进程监督器。
+`npm --prefix client/composeCore/wasm-media-host run test:browser` 使用 Node 内置 `node:test`，顺序运行 verify 模块，每个模块在独立受监督 worker 进程中执行，无需新测试框架依赖。已有 `*.test.mjs` 单元约定保留独立 `npm test` 入口。通过 `npm --prefix client/composeCore/wasm-media-host run test:browser -- worker-regressions` 选择套件，支持多个名称，并保留全部适用矩阵参数。未知名称在运行开始前失败。直接 `node verify-*.mjs` 便于调试，但绕过进程监督器。
 
 | 套件 | 独立用例／有依赖的约定 |
 | --- | --- |

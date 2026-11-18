@@ -24,6 +24,7 @@ const batches = [
       "bitmap-ownership",
       "gpu-lifecycle",
       "player-expansion",
+      "audio-on-demand",
     ],
     {},
   ],

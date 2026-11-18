@@ -83,6 +83,7 @@ internal data class MediaControlState(
     val volume: Float = 1f,
     val muted: Boolean = false,
     val title: String? = null,
+    val durationKnown: Boolean = true,
 )
 
 internal data class MediaControlActions(
@@ -378,7 +379,8 @@ private fun CompactAudioPosition(
                 .appiumSemantics(testTag = "media-position", description = label)
                 .semantics { contentDescription = label },
         )
-        val progress = "${formatMediaTime(seekDraft?.toDouble() ?: position)} / ${formatMediaTime(duration)}"
+        val durationLabel = if (state.durationKnown) formatMediaTime(duration) else "--:--"
+        val progress = "${formatMediaTime(seekDraft?.toDouble() ?: position)} / $durationLabel"
         Text(progress, style = MaterialTheme.typography.labelSmall, maxLines = 1)
     }
 }

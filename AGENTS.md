@@ -210,6 +210,7 @@
 - 快照时间戳渲染独立于宿主默认时区；PdfGenerationSpec 携带 UTC calendar 值，明确标注显示的 UTC offset。
 - MultilineExpressionWrapping 启用时保持 FunctionSignature.functionBodyExpressionWrapping=multiline，让两条规则对多行函数体保持一致。
 - Wasm 媒体实验区分 Host 帧分发、实际 Compose 渲染和物理声音／显示输出。合成夹具和会话指标保留在 build 下；不从 snapshot API 文档推断共享 Skiko GPU context，不以 DOM media/canvas overlay 取代复制路径。归属和验证见 DEVELOPMENT.md。
+- 网页话题内嵌音频只在播放或重试点击时打开媒体。异步读取前在点击回调中请求 Web Audio 激活，列表项离开组合时释放解码资源。浏览器回归覆盖滚动零请求、一次点击播放和加载取消，见 DEVELOPMENT.md。
 - 本地 Wasm npm 模块实现文件作为 npm-install 任务输入，变化时刷新 Yarn 复制的 file dependency；仅 package.json 不足。验证已安装模块和打包 Worker，而不只编译 Kotlin。
 - 隔离 worktree 的截图参考 PNG 是 Git LFS 指针时，验证前恢复原始 LFS 对象。不得重新生成 golden 来掩盖参考内容缺失。
 - Skiko 源码和 API 调查应匹配 Wasm 实际解析版本（含导入的 npm runtime 元数据），不能使用 Gradle 缓存里最先找到的任意版本。

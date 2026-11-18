@@ -8,9 +8,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -38,6 +41,7 @@ import kotlinx.browser.window
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
     enableMediaTestControls()
+    if (window.location.search.contains("loadOnPlay=true")) return launchOnDemandAudioFixture()
     ComposeViewport(document.body!!) {
         MaterialTheme {
             var mounted by remember { mutableStateOf(true) }
@@ -86,6 +90,19 @@ fun main() {
                         text = { Text("Compose dialog above decoded frames") },
                     )
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+private fun launchOnDemandAudioFixture() {
+    ComposeViewport(document.body!!) {
+        MaterialTheme {
+            val audioItem = remember { createFixtureItem(audio = true, alternate = false) }
+            LazyColumn(Modifier.width(640.dp).padding(16.dp)) {
+                item { AudioViewEmbed(audioItem, loadOnPlay = true) }
+                items(8) { Spacer(Modifier.height(400.dp)) }
             }
         }
     }
