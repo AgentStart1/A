@@ -14,9 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.add_reaction
 import com.storyteller_f.alphaheart.app.topic_action_comments
-import com.storyteller_f.alphaheart.app.topic_action_react
 import com.storyteller_f.alphaheart.app.topic_action_reply_count
-import com.storyteller_f.alphaheart.app.topic_action_view_replies
 import com.storyteller_f.alphaheart.app.topic_action_view_replies_count
 import com.storyteller_f.alphaheart.app.topic_menu
 import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
@@ -58,9 +56,6 @@ internal fun TopicActionsRow(
         } else {
             PillAppearance.CONTEXT_ACTION
         }
-    val showReactionText =
-        state.presentation == TopicActionsPresentation.FEED ||
-            state.presentation == TopicActionsPresentation.CHAT_LIST
     Box(Modifier.padding(top = state.presentation.topGap).testTag("topic-actions")) {
         EmojiRow(
             state.reactions,
@@ -70,7 +65,6 @@ internal fun TopicActionsRow(
                     Pill(text = "+${state.reactions.size - shown}") { onOverflow(shown) }
                 }
                 Pill(
-                    text = if (showReactionText) stringResource(Res.string.topic_action_react) else null,
                     icon = actionIcon(ActionGlyph.SMILE),
                     description = stringResource(Res.string.add_reaction),
                     appearance = appearance,
@@ -95,27 +89,16 @@ internal fun TopicActionsRow(
 @Composable
 private fun TopicCommentAction(state: TopicActionState, appearance: PillAppearance, onClick: () -> Unit) {
     val count = state.commentCount.toString()
-    val text =
-        when (state.presentation) {
-            TopicActionsPresentation.FEED -> stringResource(Res.string.topic_action_comments, count)
-            TopicActionsPresentation.CHAT_LIST -> count
-            TopicActionsPresentation.DETAIL_REPLY -> stringResource(Res.string.topic_action_view_replies)
-            TopicActionsPresentation.DETAIL_MAIN -> return
-        }
+    if (state.presentation == TopicActionsPresentation.DETAIL_MAIN) return
     val description =
         when (state.presentation) {
             TopicActionsPresentation.CHAT_LIST -> stringResource(Res.string.topic_action_reply_count, count)
             TopicActionsPresentation.DETAIL_REPLY -> stringResource(Res.string.topic_action_view_replies_count, count)
-            else -> text
+            else -> stringResource(Res.string.topic_action_comments, count)
         }
     Pill(
-        text,
-        icon =
-        if (state.presentation == TopicActionsPresentation.DETAIL_REPLY) {
-            null
-        } else {
-            actionIcon(ActionGlyph.MESSAGE_SQUARE)
-        },
+        count,
+        icon = actionIcon(ActionGlyph.MESSAGE_SQUARE),
         selected = state.hasComment,
         description = description,
         appearance = appearance,

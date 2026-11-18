@@ -49,7 +49,6 @@ import com.storyteller_f.alphaheart.app.components.TopicActionsRow
 import com.storyteller_f.alphaheart.app.topic_action_comments
 import com.storyteller_f.alphaheart.app.topic_action_react
 import com.storyteller_f.alphaheart.app.topic_action_reply_count
-import com.storyteller_f.alphaheart.app.topic_action_view_replies
 import com.storyteller_f.alphaheart.app.topic_action_view_replies_count
 import com.storyteller_f.alphaheart.app.topic_menu
 import com.storyteller_f.alphaheart.client.compose_core.components.Pill
@@ -67,6 +66,7 @@ class TopicActionsPresentationUiTest {
     fun actionCopySpacingAndNullableMainActionFollowTheirOwnContextAtBothWidths() =
         runAppComposeUiTest {
             val width = mutableStateOf(390.dp)
+            val count = mutableStateOf(0L)
             val mode = mutableStateOf(TopicActionsPresentation.DETAIL_MAIN)
             var comments = 0
             val onComment: () -> Unit = { comments += 1 }
@@ -78,7 +78,7 @@ class TopicActionsPresentationUiTest {
             setContent {
                 ActionFixture(width.value) {
                     TopicActionsRow(
-                        TopicActionState(emptyList(), 2, true, mode.value),
+                        TopicActionState(emptyList(), count.value, true, mode.value),
                         onComment.takeUnless { mode.value == TopicActionsPresentation.DETAIL_MAIN },
                         { reactions += 1 },
                         { menus += 1 },
@@ -87,31 +87,28 @@ class TopicActionsPresentationUiTest {
                     )
                 }
             }
-            for (size in listOf(390.dp, 1280.dp)) {
-                for (presentation in TopicActionsPresentation.entries) {
-                    runOnIdle {
-                        width.value = size
-                        mode.value = presentation
-                    }
-                    assertCommentPresentation(presentation, reaction)
-                    if (presentation == TopicActionsPresentation.FEED ||
-                        presentation == TopicActionsPresentation.CHAT_LIST
-                    ) {
-                        paintedActionCaption(reactText, reaction).assertTextEquals(reactText)
-                    } else {
+            for (commentCount in listOf(0L, 2L)) {
+                for (size in listOf(390.dp, 1280.dp)) {
+                    for (presentation in TopicActionsPresentation.entries) {
+                        runOnIdle {
+                            count.value = commentCount
+                            width.value = size
+                            mode.value = presentation
+                        }
+                        assertCommentPresentation(presentation, reaction, count.value)
                         paintedActionCaption(reactText, reaction).assertDoesNotExist()
+                        onNodeWithContentDescription(reaction).performClick()
+                        onNodeWithContentDescription(more).performClick()
+                        val add = onNodeWithContentDescription(reaction).getUnclippedBoundsInRoot()
+                        val menu = onNodeWithContentDescription(more).getUnclippedBoundsInRoot()
+                        assertEquals(presentation.horizontalGap, menu.left - add.right)
+                        assertTrue(menu.right <= size)
                     }
-                    onNodeWithContentDescription(reaction).performClick()
-                    onNodeWithContentDescription(more).performClick()
-                    val add = onNodeWithContentDescription(reaction).getUnclippedBoundsInRoot()
-                    val menu = onNodeWithContentDescription(more).getUnclippedBoundsInRoot()
-                    assertEquals(presentation.horizontalGap, menu.left - add.right)
-                    assertTrue(menu.right <= size)
                 }
             }
-            assertEquals(6, comments)
-            assertEquals(8, reactions)
-            assertEquals(8, menus)
+            assertEquals(12, comments)
+            assertEquals(16, reactions)
+            assertEquals(16, menus)
         }
 
     @Test
@@ -150,19 +147,15 @@ class TopicActionsPresentationUiTest {
         }
 }
 
-private suspend fun commentLabel(mode: TopicActionsPresentation): String? =
-    when (mode) {
-        TopicActionsPresentation.FEED -> getString(Res.string.topic_action_comments, "2")
-        TopicActionsPresentation.CHAT_LIST -> "2"
-        TopicActionsPresentation.DETAIL_REPLY -> getString(Res.string.topic_action_view_replies)
-        TopicActionsPresentation.DETAIL_MAIN -> null
-    }
+private fun commentLabel(mode: TopicActionsPresentation, count: Long): String? =
+    if (mode == TopicActionsPresentation.DETAIL_MAIN) null else count.toString()
 
-private suspend fun commentDescription(mode: TopicActionsPresentation): String? =
+private suspend fun commentDescription(mode: TopicActionsPresentation, count: Long): String? =
     when (mode) {
-        TopicActionsPresentation.CHAT_LIST -> getString(Res.string.topic_action_reply_count, "2")
-        TopicActionsPresentation.DETAIL_REPLY -> getString(Res.string.topic_action_view_replies_count, "2")
-        else -> commentLabel(mode)
+        TopicActionsPresentation.CHAT_LIST -> getString(Res.string.topic_action_reply_count, count.toString())
+        TopicActionsPresentation.DETAIL_REPLY -> getString(Res.string.topic_action_view_replies_count, count.toString())
+        TopicActionsPresentation.FEED -> getString(Res.string.topic_action_comments, count.toString())
+        TopicActionsPresentation.DETAIL_MAIN -> null
     }
 
 @Composable
@@ -179,13 +172,15 @@ private fun ActionFixture(width: Dp, content: @Composable () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalTestApi::class)
 private suspend fun androidx.compose.ui.test.ComposeUiTest.assertCommentPresentation(
     presentation: TopicActionsPresentation,
     reaction: String,
+    count: Long,
 ) {
-    val commentDescription = commentDescription(presentation)
+    val commentDescription = commentDescription(presentation, count)
     if (commentDescription != null) {
-        val commentText = assertNotNull(commentLabel(presentation))
+        val commentText = assertNotNull(commentLabel(presentation, count))
         onNodeWithContentDescription(commentDescription).assertIsSelected().performClick()
         val caption = paintedActionCaption(commentText, commentDescription)
         caption.assertTextEquals(commentText)
@@ -198,7 +193,7 @@ private suspend fun androidx.compose.ui.test.ComposeUiTest.assertCommentPresenta
         assertEquals(presentation.topGap, comment.top - body.bottom)
         assertEquals(presentation.horizontalGap, next.left - comment.right)
     } else {
-        onNodeWithText("2").assertDoesNotExist()
+        onNodeWithText(count.toString()).assertDoesNotExist()
         assertEquals(2, onAllNodes(hasClickAction()).fetchSemanticsNodes().size)
     }
 }
