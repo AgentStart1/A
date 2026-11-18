@@ -399,3 +399,5 @@
 - Compose 核心库与插件共用版本目录 `compose-core`；Material3、Android 测试工具及 Adaptive／Lifecycle 按各自发布系列维护。升级后实际启动 Nucleus Tao 桌面入口，并对齐 Wasm Skiko 源码与原生 runtime；仅编译通过不能证明兼容。
 
 - Mermaid FFI 升级需验证无效输入可捕获且后续有效 SVG 仍可渲染；Wasm 的 JsException 在平台边界转换为安全 Kotlin 异常，不保留不安全的 JavaScript cause。
+
+- Wasm 镜像的公开静态资源在打包边界固定目录 0755、文件 0644，避免复制构建缓存中的 0600 入口；验证 Nginx worker 能读取全部资源和实际 HTTP 入口。

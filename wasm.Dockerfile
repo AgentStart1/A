@@ -44,7 +44,9 @@ RUN for site in app-wasm panel-wasm; do \
         resource_digest="$(find "deploy/build/$site/composeResources" -type f -exec sha256sum {} + | sort | sha256sum | cut -c1-16)"; \
         sed -i "s|</head>|<meta name=\"compose-resource-version\" content=\"$resource_digest\">\n</head>|" "deploy/build/$site/index.html" && \
         mv "$entry" "deploy/build/$site/webApp.$digest.js" && \
-        sed -i "s/webApp\.js/webApp.$digest.js/g" "deploy/build/$site/index.html" || exit 1; \
+        sed -i "s/webApp\.js/webApp.$digest.js/g" "deploy/build/$site/index.html" && \
+        find "deploy/build/$site" -type d -exec chmod 0755 {} + && \
+        find "deploy/build/$site" -type f -exec chmod 0644 {} + || exit 1; \
     done
 
 FROM nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10 AS app-wasm

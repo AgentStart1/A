@@ -451,6 +451,8 @@ python scripts/test_scripts/run-shell-tests.py --tests test_compose.ComposeTests
 
 JUnit 序列化在全部诊断字段转义 XML 1.0 禁止字符；原始 stdout/stderr 和无损 `junit.raw.json` 保留原诊断。原有浏览器容器生命周期套件仍可通过 `node --test client/composeCore/wasm-media-host/verification-reports.test.mjs` 运行。
 
+Wasm 网页镜像在复制生产分发时，将公开资源目录固定为 0755、文件固定为 0644。Gradle／Webpack 输出或缓存可能保留仅构建用户可读的权限，`cp -a` 会把这些权限带入镜像，导致 Nginx worker 对入口返回 403。发布前需以非 root 用户检查全部资源可读，并通过真实 Nginx 请求验证入口。
+
 ### 隔离部署的增量镜像传输
 
 `deploy-prebuilt-to-remote.sh` 在构建机调用官方 `docker pussh` 0.4.3。先按照 [上游固定版本的安装说明](https://github.com/psviderski/unregistry/tree/v0.4.3#installation) 安装插件，运行 `docker pussh --version` 确认。构建机的 Docker daemon 必须能访问该机的 SSH 回环转发端口；不要将远程 `DOCKER_HOST` 或 SSH Docker context 当作本地 daemon 使用。Windows 操作者应在已有 Linux 构建机上运行部署命令，不复制私钥。
