@@ -599,10 +599,9 @@ private fun MediaSlider(
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     onValueChangeFinished: (() -> Unit)? = null,
 ) {
-    val state = remember(valueRange) { SliderState(value = value, trackRange = valueRange) }
-    SideEffect { state.value = value }
     Slider(
-        state = state,
+        value = value,
+        valueRange = valueRange,
         onValueChange = onValueChange,
         modifier = modifier,
         enabled = enabled,

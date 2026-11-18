@@ -13,7 +13,7 @@ undo/history and platform clipboard implementations, are retained.
 
 Official coordinates and dependencies were checked against Maven Central 1.2.1 Gradle module metadata.
 Compose runtime/foundation/material/material3 and Markdown use the existing workspace catalog versions
-(1.13.0-beta02 and Markdown 0.7.18), matching the consuming application. The latter exposes the real
+(1.12.2 and Markdown 0.7.18), matching the consuming application. The latter exposes the real
 `GFMTokenTypes.EQUALS` token, verified by parser-node identity; no token-name string comparisons are used.
 Ksoup remains the upstream published 0.6.0 dependency (the only version present in the current resolution cache).
 Common/iOS, Android, desktop and Wasm source archive hashes are explicit task inputs in `build.gradle.kts`.

@@ -2,21 +2,15 @@
  * This is a private project. All rights reserved.
  */
 
-// Modified from Skiko 0.156.1; see ../NOTICE and ../LICENSE.
+// Modified from Skiko 0.150.2; see ../NOTICE and ../LICENSE.
 package org.jetbrains.skiko
 
 import kotlinx.browser.window
 import org.jetbrains.skia.Canvas
 import org.jetbrains.skia.Color
 import org.jetbrains.skia.PixelGeometry
-import org.jetbrains.skiko.wasm.EmscriptenWebGLContextAttributes
 import org.jetbrains.skiko.wasm.createWebGLContext
-import org.khronos.webgl.WebGLRenderingContext
 import org.w3c.dom.HTMLCanvasElement
-import kotlin.js.ExperimentalWasmJsInterop
-import kotlin.js.JsNumber
-import kotlin.js.toInt
-import kotlin.js.unsafeCast
 
 /**
  * Provides a way to render the content and to receive the input events.
@@ -26,23 +20,7 @@ import kotlin.js.unsafeCast
  * using [attachTo] method.
  */
 actual open class SkiaLayer {
-
-    companion object {
-        /**
-         * @param emscriptenWebGLContextAttributes - the preferred attributes. It's not guaranteed that the browser will respect them.
-         * https://github.com/emscripten-core/emscripten/blob/main/system/include/emscripten/html5_webgl.h#L31
-         */
-        @InternalSkikoApi
-        fun makeWithContextAttributes(emscriptenWebGLContextAttributes: EmscriptenWebGLContextAttributes): SkiaLayer {
-            return SkiaLayer().apply {
-                requestEmscriptenWebGLContextAttributes = emscriptenWebGLContextAttributes
-            }
-        }
-    }
-
     internal var state: CanvasRenderer? = null
-
-    internal var requestEmscriptenWebGLContextAttributes: EmscriptenWebGLContextAttributes? = null
 
     /**
      * [GraphicsApi.WEBGL] is the only supported renderApi for k/js (browser).
@@ -96,14 +74,6 @@ actual open class SkiaLayer {
         htmlCanvas = null
     }
 
-    /**
-     * Recreates the drawing surface to match the current size of the attached canvas
-     * element. Call this after changing the canvas element's `width`/`height` attributes.
-     */
-    fun resize(width: Int, height: Int) {
-        checkNotNull(state) { "SkiaLayer is not attached to a canvas" }.resize(width, height)
-    }
-
     actual val component: Any?
         get() = this.htmlCanvas
 
@@ -113,32 +83,15 @@ actual open class SkiaLayer {
      * Initializes the [CanvasRenderer] and events listeners.
      * Delegates rendering and events processing to [renderDelegate].
      */
-    @OptIn(ExperimentalWasmJsInterop::class)
     private fun attachTo(htmlCanvas: HTMLCanvasElement) {
         if (this.htmlCanvas === htmlCanvas && state != null) {
-            // Re-attaching to the same canvas: reuse the WebGL context and DirectContext.
-            // Creating a second DirectContext over the same WebGLRenderingContext corrupts
-            // both contexts' GL state caches once either of them is destroyed (CMP-8615).
             state!!.resize(htmlCanvas.width, htmlCanvas.height)
             return
         }
         detach()
         this.htmlCanvas = htmlCanvas
 
-        val contextPointer = createWebGLContext(htmlCanvas, requestEmscriptenWebGLContextAttributes)
-        GL.makeContextCurrent(contextPointer)
-
-        // Get the actual sampling in the current webgl context and pass it to Skia.
-        // This value affects the Skia's antialiasing strategy choice.
-        val sampleCount: Int =
-            currentGLContext(GL)?.getParameter(WebGLRenderingContext.SAMPLES)?.unsafeCast<JsNumber>()?.toInt() ?: 0
-
-        state = object : CanvasRenderer(
-            contextPointer = contextPointer,
-            width = htmlCanvas.width,
-            height = htmlCanvas.height,
-            requestedSampleCount = sampleCount
-        ) {
+        state = object: CanvasRenderer(createWebGLContext(htmlCanvas), htmlCanvas.width, htmlCanvas.height) {
             override fun drawFrame(currentTimestamp: Double) {
                 // currentTimestamp is in milliseconds.
                 val currentNanos = currentTimestamp * 1_000_000

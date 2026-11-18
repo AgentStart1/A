@@ -20,7 +20,7 @@ plugins {
     kotlin("jvm") version "2.4.21" apply false
 }
 group = "org.jetbrains.skiko"
-version = "0.156.1-media1"
+version = "0.150.2-media1"
 
 val upstreamSources = configurations.create("upstreamSources") {
     resolutionStrategy.useGlobalDependencySubstitutionRules = false
@@ -28,10 +28,10 @@ val upstreamSources = configurations.create("upstreamSources") {
 val upstreamRuntime = configurations.create("upstreamRuntime") {
     resolutionStrategy.useGlobalDependencySubstitutionRules = false
 }
-val upstreamVersion = "0.156.1"
+val upstreamVersion = "0.150.2"
 dependencies {
     upstreamSources("org.jetbrains.skiko:skiko-wasm-js:$upstreamVersion:sources@jar")
-    upstreamRuntime("org.jetbrains.skiko:skiko-wasm-js:$upstreamVersion:skiko-runtime@jar")
+    upstreamRuntime("org.jetbrains.skiko:skiko-js-wasm-runtime:$upstreamVersion")
 }
 abstract class VerifySkikoArchive : DefaultTask() {
     @get:InputFile @get:PathSensitive(PathSensitivity.NONE)
@@ -55,11 +55,11 @@ abstract class VerifySkikoArchive : DefaultTask() {
 }
 val verifySourceArchive = tasks.register<VerifySkikoArchive>("verifySourceArchive") {
     archive.set(layout.file(upstreamSources.elements.map { it.single().asFile }))
-    expectedSha256.set("53c72eadfbef5d5e6e64ebd2d7fc5a3ef2ab4d925edf9df1a44c2078d99e90e5")
+    expectedSha256.set("a68a303b1638005b4a9094bd171c69c695816646bc0b9a50616b3d4bac54a174")
 }
 val verifyRuntimeArchive = tasks.register<VerifySkikoArchive>("verifyRuntimeArchive") {
     archive.set(layout.file(upstreamRuntime.elements.map { it.single().asFile }))
-    expectedSha256.set("a9578fa5a70c27b701d9b755acd771afe01f9a8eb6c8448a4e6680e285f748c9")
+    expectedSha256.set("811eaada148b986be198ad5d966f239ce0b3fbdd05994c1efbd0aa5f8074ff79")
 }
 
 val stagedRuntimeArchive = layout.buildDirectory.file("native-runtime/skiko-runtime.jar")

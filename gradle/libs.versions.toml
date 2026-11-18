@@ -15,10 +15,8 @@ buildconfig = "0.24.0"
 coil = "3.6.3"
 commonsImaging = "1.0.0-alpha6"
 commonsLogging = "1.4.0"
-componentsResources = "1.13.0-beta02"
 compose-multiplatform-adaptive = "1.3.0"
-compose-multiplatform-lifecycle = "2.11.0"
-compose-plugin = "1.13.0-beta02"
+compose-core = "1.12.2"
 composeHotReload = "1.2.0"
 composePdf = "2.0.0"
 composeNativeWebview = "1.0.3"
@@ -42,7 +40,6 @@ exposedVersion = "1.6.1"
 filekitCompose = "0.17.0"
 font-icon-core = "2.2.0"
 lucide-icons = "2.2.1"
-foundation = "1.13.0-beta02"
 geoip2 = "5.2.0"
 googleGenai = "2.1.0"
 h2 = "1.1.0.RELEASE"
@@ -81,13 +78,11 @@ ktor = "3.6.1"
 latex = "1.7.2"
 leakcanaryAndroid = "2.14"
 lifecycle = "2.11.0"
-lifecycleViewmodelCompose = "2.11.0"
 litertlmAndroid = "0.19.1"
 logback = "1.6.6"
 luceneCore = "10.6.0"
 markdown = "0.7.18"
-material = "1.13.0-beta02"
-material3 = "1.13.0-beta02"
+material3 = { strictly = "1.9.0" }
 materialIconsExtended = "1.7.3"
 media3Exoplayer = "1.10.1"
 memoryfilesystem = "2.8.3"
@@ -114,7 +109,6 @@ recordCore = "0.5.0"
 richeditorCompose = "1.2.1"
 robolectric = "4.17"
 roomRuntime = "3.0.3"
-runtime = "1.13.0-beta02"
 screenshot = "0.0.1-alpha16"
 selenium = "4.52.0"
 sentryAndroidGradle = "6.26.0"
@@ -124,9 +118,7 @@ sqliteBundled = "2.7.0"
 sqlitenow = "0.17.0"
 testContainer = "1.21.4"
 tikaCore = "4.2.0"
-ui = "1.13.0-beta02"
-uiTestJunit4Android = "1.13.0-beta02"
-uiToolingPreview = "1.13.0-beta02"
+androidx-compose = "1.11.4"
 uiautomator = "2.4.1"
 uriKmp = "0.0.21"
 urlbuilder = "2.0.9"
@@ -155,8 +147,8 @@ androidx-junit = { module = "androidx.test.ext:junit", version.ref = "junit" }
 androidx-test-runner = { module = "androidx.test:runner", version = "1.7.0" }
 androidx-lifecycle-common = { module = "androidx.lifecycle:lifecycle-common", version.ref = "lifecycle" }
 androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
-androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleViewmodelCompose" }
-androidx-lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
+androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3Exoplayer" }
 androidx-media3-exoplayer-dash = { module = "androidx.media3:media3-exoplayer-dash", version.ref = "media3Exoplayer" }
 androidx-media3-exoplayer-hls = { module = "androidx.media3:media3-exoplayer-hls", version.ref = "media3Exoplayer" }
@@ -169,10 +161,10 @@ androidx-room-paging = { module = "androidx.room3:room3-paging", version.ref = "
 androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "roomRuntime" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqliteBundled" }
 androidx-sqlite-web = { module = "androidx.sqlite:sqlite-web", version.ref = "sqliteBundled" }
-androidx-ui-test-junit4-android = { module = "androidx.compose.ui:ui-test-junit4-android", version.ref = "uiTestJunit4Android" }
-androidx-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "uiTestJunit4Android" }
-androidx-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "uiToolingPreview" }
-androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "uiToolingPreview" }
+androidx-ui-test-junit4-android = { module = "androidx.compose.ui:ui-test-junit4-android", version.ref = "androidx-compose" }
+androidx-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidx-compose" }
+androidx-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "androidx-compose" }
+androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "androidx-compose" }
 androidx-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "uiautomator" }
 bcpkix-jdk18on = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bcprovJdk18on" }
 bcprov-jdk18on = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bcprovJdk18on" }
@@ -184,7 +176,7 @@ coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.re
 coil-svg = { module = "io.coil-kt.coil3:coil-svg", version.ref = "coil" }
 commons-imaging = { module = "org.apache.commons:commons-imaging", version.ref = "commonsImaging" }
 commons-logging = { module = "commons-logging:commons-logging", version.ref = "commonsLogging" }
-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "componentsResources" }
+components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose-core" }
 compose-pdf = { module = "dev.zt64:compose-pdf", version.ref = "composePdf" }
 compose-native-webview = { module = "dev.nucleusframework:composewebview", version.ref = "composeNativeWebview" }
 connectivity-compose = { module = "dev.jordond.connectivity:connectivity-compose", version.ref = "connectivity" }
@@ -233,7 +225,7 @@ filekit-dialogs = { module = "io.github.vinceglb:filekit-dialogs", version.ref =
 filekit-dialogs-compose = { module = "io.github.vinceglb:filekit-dialogs-compose", version.ref = "filekitCompose" }
 fonticons-core = { module = "dev.tclement.fonticons:core", version.ref = "font-icon-core" }
 icons-lucide = { module = "com.composables:icons-lucide-cmp", version.ref = "lucide-icons" }
-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "foundation" }
+foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose-core" }
 geoip2 = { module = "com.maxmind.geoip2:geoip2", version.ref = "geoip2" }
 google-genai = { module = "com.google.genai:google-genai", version.ref = "googleGenai" }
 gradle = { module = "com.android.tools.build:gradle", version.ref = "agp" }
@@ -254,7 +246,7 @@ javet-node-linux-x86_x4 = { module = "com.caoccao.javet:javet-node-linux-x86_64"
 javet-node-macos-arm64 = { module = "com.caoccao.javet:javet-node-macos-arm64", version.ref = "javet" }
 javet-node-macos-x86_x4 = { module = "com.caoccao.javet:javet-node-macos-x86_64", version.ref = "javet" }
 javet-node-windows-x86_x4 = { module = "com.caoccao.javet:javet-node-windows-x86_64", version.ref = "javet" }
-jetbrains-lifecycle-viewmodelNavigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "compose-multiplatform-lifecycle" }
+jetbrains-lifecycle-viewmodelNavigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
 jetbrains-material3-adaptiveNavigation3 = { module = "org.jetbrains.compose.material3.adaptive:adaptive-navigation3", version.ref = "compose-multiplatform-adaptive" }
 jetbrains-navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "multiplatform-nav3-ui" }
 kfswatch = { module = "io.github.irgaly.kfswatch:kfswatch", version.ref = "kfswatch" }
@@ -330,7 +322,7 @@ lucene-backward-codecs = { module = "org.apache.lucene:lucene-backward-codecs", 
 lucene-core = { module = "org.apache.lucene:lucene-core", version.ref = "luceneCore" }
 lucene-queryparser = { module = "org.apache.lucene:lucene-queryparser", version.ref = "luceneCore" }
 markdown = { module = "org.jetbrains:markdown", version.ref = "markdown" }
-material = { module = "org.jetbrains.compose.material:material", version.ref = "material" }
+material = { module = "org.jetbrains.compose.material:material", version.ref = "compose-core" }
 material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
 material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
 material3-window-size = { module = "org.jetbrains.compose.material3:material3-window-size-class", version.ref = "material3" }
@@ -358,7 +350,7 @@ qrose = { module = "io.github.alexzhirkevich:qrose", version.ref = "qrose" }
 record-core = { module = "dev.theolm.record:record-core", version.ref = "recordCore" }
 richeditor-compose = { module = "com.mohamedrejeb.richeditor:richeditor-compose", version.ref = "richeditorCompose" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "runtime" }
+runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose-core" }
 screenshot-validation-api = { module = "com.android.tools.screenshot:screenshot-validation-api", version.ref = "screenshot" }
 selenium-chrome-driver = { module = "org.seleniumhq.selenium:selenium-chrome-driver", version.ref = "selenium" }
 selenium-edge-driver = { module = "org.seleniumhq.selenium:selenium-edge-driver", version.ref = "selenium" }
@@ -373,11 +365,11 @@ testcontainers-mysql = { module = "org.testcontainers:mysql", version.ref = "tes
 testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testContainer" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testContainer" }
 tika-core = { module = "org.apache.tika:tika-core", version.ref = "tikaCore" }
-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "ui" }
-ui-backhandler = { module = "org.jetbrains.compose.ui:ui-backhandler", version.ref = "ui" }
-ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "ui" }
-ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "ui" }
-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "ui" }
+ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose-core" }
+ui-backhandler = { module = "org.jetbrains.compose.ui:ui-backhandler", version.ref = "compose-core" }
+ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "compose-core" }
+ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "compose-core" }
+ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "compose-core" }
 uri-kmp = { module = "com.eygraber:uri-kmp", version.ref = "uriKmp" }
 urlbuilder = { module = "io.mikael:urlbuilder", version.ref = "urlbuilder" }
 image-avif = { module = "io.github.storytellerf:image-avif", version.ref = "imageAvif" }
@@ -394,7 +386,7 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 composeHotReload = { id = "org.jetbrains.compose.hot-reload", version.ref = "composeHotReload" }
 detekt = { id = "dev.detekt", version.ref = "detektVersion" }
 easylauncher = { id = "com.starter.easylauncher", version.ref = "easylauncher" }
-jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose-plugin" }
+jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose-core" }
 kotlinBuildConfig = { id = "com.github.gmazzo.buildconfig", version.ref = "kotlin_buildconfig" }
 kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

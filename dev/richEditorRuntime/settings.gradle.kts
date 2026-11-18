@@ -9,13 +9,7 @@ dependencyResolutionManagement {
 }
 rootProject.name = "richeditor-compose"
 
-// KGP's Wasm package graph resolves composite identities from this build as well as the root build.
-// Keep the same two Web runtimes for standalone and parent composite tasks.
-includeBuild("../composeWebInputRuntime") {
-    dependencySubstitution {
-        substitute(module("org.jetbrains.compose.ui:ui-wasm-js")).using(project(":"))
-    }
-}
+// Match the parent build's Skiko media runtime; Compose uses official 1.12 artifacts.
 includeBuild("../skikoMediaRuntime") {
     dependencySubstitution {
         substitute(module("org.jetbrains.skiko:skiko-wasm-js")).using(project(":"))

@@ -395,3 +395,5 @@
 - 固定上游源码重编译的 Compose 模块需在 commonMain 显式声明源码直接使用的 ui-util 等依赖；平台编译通过不能替代公共 metadata 编译检查。
 
 - 跨 Docker 存储传输镜像时，经典 config ID 与 containerd manifest ID 不可直接比较；校验有效配置、平台及有序 RootFS 层摘要。增量部署使用固定版本 docker-pussh 和固定摘要 Unregistry，目标存储切换必须由操作者单独处理，不自动修改运行中的 Docker。
+
+- Compose 核心库与插件共用版本目录 `compose-core`；Material3、Android 测试工具及 Adaptive／Lifecycle 按各自发布系列维护。升级后实际启动 Nucleus Tao 桌面入口，并对齐 Wasm Skiko 源码与原生 runtime；仅编译通过不能证明兼容。

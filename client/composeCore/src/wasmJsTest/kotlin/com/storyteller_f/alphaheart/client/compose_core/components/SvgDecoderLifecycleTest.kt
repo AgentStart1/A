@@ -98,6 +98,7 @@ internal class SvgDecoderLifecycleTest {
         }
 }
 
+@OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
 private suspend fun androidx.compose.ui.test.ComposeUiTest.capturePlatformContext(): PlatformContext {
     var platformContext: PlatformContext? = null
     setContent {

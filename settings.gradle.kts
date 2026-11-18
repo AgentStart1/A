@@ -125,12 +125,7 @@ includeBuild("dev/skikoMediaRuntime") {
     }
 }
 
-// Same-version Compose Web input source fix; native targets retain official artifacts.
-includeBuild("dev/composeWebInputRuntime") {
-    dependencySubstitution {
-        substitute(module("org.jetbrains.compose.ui:ui-wasm-js")).using(project(":"))
-    }
-}
+// Compose 1.13 Web input patch is inactive while the application uses Compose 1.12.
 
 // Preserve Markdown source while editing blocks; published 1.2.1 drops equals and inline-math delimiters.
 includeBuild("dev/richEditorRuntime") {

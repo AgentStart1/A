@@ -318,6 +318,7 @@ class FileExplorerNavigationUiTest {
         }
 }
 
+@OptIn(ExperimentalTestApi::class)
 private fun ComposeUiTest.assertPageFillsNavigator(route: String) {
     val viewport = onNodeWithTag("file-navigator").getUnclippedBoundsInRoot()
     val page = onNodeWithTag("page-$route").getUnclippedBoundsInRoot()

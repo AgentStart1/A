@@ -108,10 +108,10 @@ val upstreamNative = configurations.create("upstreamNative") {
     isCanBeConsumed = false
     resolutionStrategy.useGlobalDependencySubstitutionRules = false
 }
-dependencies { upstreamNative("org.jetbrains.skiko:skiko-wasm-js:0.156.1:skiko-runtime@jar") }
+dependencies { upstreamNative("org.jetbrains.skiko:skiko-js-wasm-runtime:0.150.2") }
 val verifyNative = tasks.register<VerifyRichEditorArchive>("verifyNative") {
     archive.set(layout.file(upstreamNative.elements.map { it.single().asFile }))
-    expectedSha256.set("a9578fa5a70c27b701d9b755acd771afe01f9a8eb6c8448a4e6680e285f748c9")
+    expectedSha256.set("811eaada148b986be198ad5d966f239ce0b3fbdd05994c1efbd0aa5f8074ff79")
 }
 val unpackNative = tasks.register<Sync>("unpackNative") {
     val archiveOperations = archives
@@ -181,7 +181,7 @@ kotlin {
             dependencies {
                 implementation(libs.runtime)
                 implementation(compose.runtimeSaveable)
-                implementation("org.jetbrains.compose.ui:ui-util:${libs.versions.ui.get()}")
+                implementation("org.jetbrains.compose.ui:ui-util:${libs.versions.compose.core.get()}")
                 implementation(libs.foundation)
                 implementation(libs.material)
                 implementation(libs.material3)

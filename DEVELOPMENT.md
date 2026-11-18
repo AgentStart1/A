@@ -96,10 +96,9 @@ Settings 使用 AdaptiveFormLayout，最大 1200dp；扣除内容 padding 后至
 
 ### 浏览器弹窗语义与导航回归
 
-Compose UI 1.12.2 的 Web 语义监听器只保留一个 owner；弹窗移除后不能恢复主页面 owner，会留下旧的可访问性节点。使用已发布的 Compose Multiplatform 1.13.0-beta02 对齐 runtime、UI、foundation、Material、资源和插件，保留可访问性；不要通过禁用可访问性、重载页面或改写编译产物规避。上游版本与组件矩阵见 https://github.com/JetBrains/compose-multiplatform/releases/tag/v1.13.0-beta02 。后续升级需复验打开/关闭模态框后的语义树和点击目标，以及首页单击跨分区导航。
+Compose 核心依赖和插件统一使用版本目录的 `compose-core`（1.12.2），Material3 独立严格锁定 1.9.0（防止表情组件的传递依赖升入不兼容系列），Android Compose 测试与预览工具共享 `androidx-compose`（1.11.4）。Nucleus 2.5.18 的 Tao 入口与该 Compose 系列配套；升级 Compose 时必须实际启动桌面窗口，编译成功不能替代运行验证。独立发布的 Adaptive、Lifecycle 不与 Compose 核心共用版本号。
 
-Compose Web 1.13.0-beta02 的原生前向 Delete 会先修改 contenteditable，再延迟分派 Compose 按键；模型文本尚未变化时，旧实现可能把非空选区应用到浏览器留下的 `<br>`。`dev/composeWebInputRuntime` 仅替换同版本 `ui-wasm-js`，验证官方源包 SHA-256，保留模块 ABI 标识和 JS 输出名称，在整批原生编辑完成前延迟 DOM／选区回写，随后读取现有平台输入请求的最终模型统一同步，避免覆盖待处理输入。前向删除按 beforeinput 权威范围执行一次；缺少单词／行范围时保留原修饰键委托，不猜单码点边界，输入法组合状态仍保留。准确源重编译所需的两个注解／类型推导兼容改动及许可证见该目录 NOTICE。Android/JVM 继续使用官方产物。运行 `:composeWebInputRuntime:wasmJsBrowserTest` 检查完整原生事件队列的最终模型／DOM／选区、快连续输入、Unicode、输入法中间状态、被拒绝的编辑和字段切换边界；这些不等同于原生键盘端到端测试，还需在真实浏览器验证全选／光标 Delete、Backspace 和缩放后继续编辑。上游修复后移除此替换，保留回归验证。
-
+Compose UI 1.12.2 的 Web 语义监听器只保留一个 owner；弹窗移除后不能恢复主页面 owner，可能留下旧的可访问性节点。这是回退后保留的已知上游限制，不能通过禁用可访问性或重载页面规避。`dev/composeWebInputRuntime` 是针对 1.13.0-beta02 的输入补丁，当前不纳入构建，避免将 beta UI 和运行库带回 1.12.2。后续升级需一起复验弹窗关闭后的语义树、首页单击跨分区导航及浏览器原生 Delete／Backspace 编辑。
 
 显式导航直接切换同一个 Pager 的目标页，不通过中间分区；手势滑动仍由 Pager 管理。`SectionNavigationUiTest` 覆盖宽窄屏单击跨两页、选中态和草稿保留。文件导航按当前所有者可用的 Tab 恢复历史，社区和房间不能恢复个人下载页。
 
@@ -762,9 +761,9 @@ Mediabunny 固定为 **1.62.1**，采用 MPL-2.0，来自[官方包](https://git
 
 ### GPU texture 路径与本地 Skiko 边界
 
-Compose 1.13.0-beta02 与 Skiko 0.156.1 对齐，包含新的 `Canvas.recordingContext`、`RenderNodeContext` 和字体 ABI。此前 Compose 1.12.2 / Skiko 0.150.2 的组合不能只升级其中一个 Kotlin 构件；原生 JavaScript/Wasm runtime 也必须来自相同 Skiko 版本，编译成功不足以验证兼容。
+Compose 1.12.2 使用 Skiko 0.150.2；Wasm 媒体补丁以该版本源码重编译，并验证、传递同版本 `skiko-js-wasm-runtime`。不可混入 Compose 1.13 / Skiko 0.156 的图形或字体 ABI；编译后还需验证实际浏览器加载和渲染。
 
-`dev/skikoMediaRuntime` 是仅 Wasm 使用的 included build，替换 `org.jetbrains.skiko:skiko-wasm-js`。它重编译准确且经过 SHA256 检查的 0.156.1 源码归档，保留已发布的 **0.156.1 原生 Skia/Emscripten runtime**。不替换 JVM/Android 构件，也不重建原生 Skia。保留上游 Apache-2.0、源码来源及上游兼容 Kotlin 2.4 的 import-generator（含项目头）。避免配置期 IO，源码验证和提取属于任务输入及 action。`patches` 中的文件是源码覆盖，不是加载到已发布库旁的替换类：
+`dev/skikoMediaRuntime` 是仅 Wasm 使用的 included build，替换 `org.jetbrains.skiko:skiko-wasm-js`。它重编译准确且经过 SHA256 检查的 0.150.2 源码归档，保留已发布的 **0.150.2 原生 Skia/Emscripten runtime**。不替换 JVM/Android 构件，也不重建原生 Skia。保留上游 Apache-2.0、源码来源及上游兼容 Kotlin 2.4 的 import-generator（含项目头）。避免配置期 IO，源码验证和提取属于任务输入及 action。`patches` 中的文件是源码覆盖，不是加载到已发布库旁的替换类：
 
 - `WebGLMediaInterop.kt` 注册 renderer 已有 context，暴露有作用域、借用的 context token。Token 将自身 context 设为 current，再恢复原 context。绝不关闭借用的 `DirectContext`、创建第二个、在回调外保留它，或在回调内挂起。
 - `GLTexture.web.kt` 保留上游 `pushTexture`/`unregisterTexture` 接口并应用 texture-name 修复。注册同时更新 Emscripten texture table 和 texture 对象 `name`，使原生 GL 绑定查询能往返获取数字 handle；注销时清除两者。
@@ -781,7 +780,7 @@ Included build 是仓库自身的临时集成。`patches`、import-generator 源
 
 Skiko 0.156.1 暴露 `Canvas.recordingContext`，但是否可用取决于 canvas：GPU surface canvas 有借用 context，PictureRecorder 和 RenderNode recording canvas 可能返回 null。同步 SkiaLayer render 回调可以结合相同 DOM canvas 已有 `getContext("webgl2")` 使用，但不能据此证明 Compose 绘制回调有同样访问能力。直接 layer interop 验证应与 Compose recording、ABI 兼容验证分开。
 
-0.156.1 的 `GLTexture.web.kt`（[SKIKO-1208](https://youtrack.jetbrains.com/issue/SKIKO-1208)）将外部 texture 注册进 `GL.textures`，却未赋值 Emscripten `texture.name`。因此即使 JavaScript binding 和 table entry 正确，原生 `glGetIntegerv(GL_TEXTURE_BINDING_2D)` 仍可能返回零。本地 0.156.1 overlay 已赋值 name。评估升级时必须保留双向映射；图像渲染成功不能验证原生 GL 状态查询。注册修复还需审查重复注册与注销的归属，不能把 table entry 当成完整约定。
+0.156.1 的 `GLTexture.web.kt`（[SKIKO-1208](https://youtrack.jetbrains.com/issue/SKIKO-1208)）将外部 texture 注册进 `GL.textures`，却未赋值 Emscripten `texture.name`。因此即使 JavaScript binding 和 table entry 正确，原生 `glGetIntegerv(GL_TEXTURE_BINDING_2D)` 仍可能返回零。本地 overlay 保留 name 映射，并将该 helper 回移到 0.150.2 媒体构建。评估升级时必须保留双向映射；图像渲染成功不能验证原生 GL 状态查询。注册修复还需审查重复注册与注销的归属，不能把 table entry 当成完整约定。
 
 默认仍为 `rgba-copy`。通过实验查询参数 `mediaPath=gpu-texture` 选择 `gpu-texture`。Worker 使用 `VideoSampleSink`，克隆并 transfer 解码器支持的 `VideoFrame`，关闭自身 sample。适配层通过 `texImage2D(VideoFrame)` 将帧导入**当前 Compose renderer** 的 WebGL2 context，`pushTexture` 注册 handle，`Image.adoptTextureFrom` 将管理责任转给 Skia。`drawImageRect` 直接将 Image 记录进 Compose scene，不使用 `Image.toComposeImageBitmap` 或 DOM 媒体／canvas overlay。旋转和翻转元数据通过 Skia transform 应用。浏览器内部仍可能转换或复制；本路径只声称移除显式 RGBA readback 和 JavaScript 到 Skiko 像素复制，**不**声称零复制解码或保证硬件解码。实验针对不透明 8-bit SDR 媒体，不承诺 alpha video、HDR 或更广色彩管理一致性。
 

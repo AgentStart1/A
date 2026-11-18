@@ -6,8 +6,6 @@
 
 package fonts
 
-import androidx.compose.ui.InternalComposeUiApi
-import androidx.compose.ui.platform.registerSkikoComposeImplementation
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -58,11 +56,9 @@ class CommunityFontBrowserTest {
     private val fontFixture = CommunityFontFixture()
 
     @BeforeTest
-    @OptIn(InternalComposeUiApi::class)
-    fun registerTextBackend() =
+    fun awaitTextBackend() =
         runTest {
             suspendCancellableCoroutine { continuation -> onWasmReady { continuation.resume(Unit) } }
-            registerSkikoComposeImplementation()
         }
 
     @AfterTest

@@ -133,6 +133,7 @@ internal class SvgTextImageLoaderTest {
     }
 }
 
+@OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
 private suspend fun ComposeUiTest.capturePlatformContext(): PlatformContext {
     var platformContext: PlatformContext? = null
     setContent {
