@@ -94,6 +94,10 @@ Settings 使用 AdaptiveFormLayout，最大 1200dp；扣除内容 padding 后至
 
 `adaptiveUiTest` 验证缓存刷新状态的几何稳定性及跨断点草稿、滚动保留。日期时间通过 `formatDisplayTime` 从存储 UTC 转为本地时间，并带对应瞬间的 UTC 偏移；日期型审计记录保留 UTC 日期，测试覆盖跨日及夏令时。
 
+### Mermaid SVG 渲染
+
+Android、桌面和 Wasm 使用 `io.github.storytellerf:mermaidffi-kmp:0.0.1-alpha6`，Wasm npm 包使用同一版本。该版本通过 FFI Result 传递渲染错误，替代旧版会终止 JVM 的 Rust panic。无效或不支持的输入继续由代码块错误分支显示源码；回归验证错误可捕获且随后仍可渲染有效 SVG。iOS 保留现有未支持状态。
+
 ### 浏览器弹窗语义与导航回归
 
 Compose 核心依赖和插件统一使用版本目录的 `compose-core`（1.12.2），Material3 独立严格锁定 1.9.0（防止表情组件的传递依赖升入不兼容系列），Android Compose 测试与预览工具共享 `androidx-compose`（1.11.4）。Nucleus 2.5.18 的 Tao 入口与该 Compose 系列配套；升级 Compose 时必须实际启动桌面窗口，编译成功不能替代运行验证。独立发布的 Adaptive、Lifecycle 不与 Compose 核心共用版本号。

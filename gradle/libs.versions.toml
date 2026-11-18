@@ -86,7 +86,7 @@ material3 = { strictly = "1.9.0" }
 materialIconsExtended = "1.7.3"
 media3Exoplayer = "1.10.1"
 memoryfilesystem = "2.8.3"
-mermaidFfi = "0.0.1-alpha5"
+mermaidFfi = "0.0.1-alpha6"
 micrometerRegistryPrometheus = "1.17.2"
 minio = "9.0.4"
 mosaicRuntime = "0.18.0"

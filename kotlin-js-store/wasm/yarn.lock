@@ -18,10 +18,10 @@
     glob "8.1.0"
     unxhr "1.2.0"
 
-"@boltffi/runtime@0.31.0":
-  version "0.31.0"
-  resolved "https://registry.yarnpkg.com/@boltffi/runtime/-/runtime-0.31.0.tgz#5bf5851482cef473277160a8660526106d632fac"
-  integrity sha512-nxht21tsG0KLzkdN2gHqSAZv7Ainht5v/Q6ZGVT8xXAmJKdewk4PwwryLeQR4xrejwDOtuWRD7p7OGkKGw8JIQ==
+"@boltffi/runtime@0.32.0":
+  version "0.32.0"
+  resolved "https://registry.yarnpkg.com/@boltffi/runtime/-/runtime-0.32.0.tgz#0c11cbf9467803d1cc49e3c5b82da278231bdff3"
+  integrity sha512-3Lc1wgxuGcEybCzBVUBRPG0VQNe+th8B0pPiPhg+6K15GsVgxiPnBR0vPbW8qKG3758cDQEIBcyR/MUx8+GVjw==
 
 "@js-joda/core@3.2.0":
   version "3.2.0"
@@ -293,12 +293,12 @@ mediabunny@1.62.1:
     "@types/dom-mediacapture-transform" "^0.1.11"
     "@types/dom-webcodecs" "0.1.13"
 
-mermaid-ffi-wasm@0.0.1-alpha5:
-  version "0.0.1-alpha5"
-  resolved "https://registry.yarnpkg.com/mermaid-ffi-wasm/-/mermaid-ffi-wasm-0.0.1-alpha5.tgz#c7e4f424c8ca4b2d67f79e8abc2f753812656057"
-  integrity sha512-1zTHoCPR/42sX330odTgNf1BkS7a+Q5nnX6zfQwFABdIb+GXPT0bnVxOS9x8svQAVScrYWsH5VCTrzTmSkFTNw==
+mermaid-ffi-wasm@0.0.1-alpha6:
+  version "0.0.1-alpha6"
+  resolved "https://registry.yarnpkg.com/mermaid-ffi-wasm/-/mermaid-ffi-wasm-0.0.1-alpha6.tgz#13cc53f37d7ee58c168380403671f1e5669a0312"
+  integrity sha512-4iPQI93VuC1cI4hNIPk1TODeLupE/vNMrYDWLgVPmwt37nZP+Kb9Nc6iRwZR4m/rwqOWvAWKKPbysjZLEDn2ww==
   dependencies:
-    "@boltffi/runtime" "0.31.0"
+    "@boltffi/runtime" "0.32.0"
 
 minimatch@^5.0.1:
   version "5.1.9"
