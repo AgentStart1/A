@@ -172,8 +172,16 @@ private fun TopicContentAndInteraction(
             appNavFactory.newAppNav().gotoTopic(topicId)
         }
         if (topicInfo.subTopics.isNotEmpty()) {
-            androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
-            SubTopics(topicInfo)
+            androidx.compose.foundation.layout.Spacer(
+                Modifier.size(if (presentation == TopicActionsPresentation.FEED) 12.dp else 8.dp),
+            )
+            if (presentation == TopicActionsPresentation.FEED) {
+                TopicReplyPreviews(topicInfo.subTopics) { reply ->
+                    UserIconWithDialog(reply.authorInfo, size = 24.dp)
+                }
+            } else {
+                SubTopics(topicInfo)
+            }
         }
     }
 }
@@ -266,7 +274,11 @@ fun RoomTopicCellInternal(
                     ) {
                         appNavFactory.newAppNav().gotoTopic(topicId)
                     }
-                    if (topicInfo.commentCount > 0) SubTopics(topicInfo)
+                    if (topicInfo.subTopics.isNotEmpty()) {
+                        TopicReplyPreviews(topicInfo.subTopics, chat = true) { reply ->
+                            UserIconWithDialog(reply.authorInfo, size = 24.dp)
+                        }
+                    }
                 }
             },
         ) {

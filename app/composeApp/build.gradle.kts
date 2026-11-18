@@ -484,6 +484,7 @@ tasks.register<Test>("adaptiveUiTest") {
         "device_based/ReactionOverflowUiTest*",
         "device_based/ReactionAggregateListUiTest*",
         "device_based/TopicActionsPresentationUiTest*",
+        "device_based/TopicReplyPreviewsUiTest*",
         "device_based/CreateMenuUiTest*",
         "device_based/ReadingRecordListUiTest*",
         "device_based/QuotaDialogContentUiTest*",
