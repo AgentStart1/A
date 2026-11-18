@@ -36,6 +36,7 @@ import com.mikepenz.markdown.compose.extendedspans.rememberSquigglyUnderlineAnim
 import com.mikepenz.markdown.m3.markdownColor
 import com.mikepenz.markdown.model.ImageData
 import com.mikepenz.markdown.model.ImageTransformer
+import com.mikepenz.markdown.model.markdownAnimations
 import com.mikepenz.markdown.model.markdownAnnotator
 import com.mikepenz.markdown.model.markdownExtendedSpans
 import com.mikepenz.markdown.model.markdownInlineContent
@@ -90,6 +91,7 @@ fun CustomMarkdown(
                 colors = colors,
                 typography = typography,
                 imageTransformer = imageTransformer,
+                animations = markdownAnimations(animateTextSize = { this }),
                 components =
                 markdownComponents(
                     codeFence = codeFence,

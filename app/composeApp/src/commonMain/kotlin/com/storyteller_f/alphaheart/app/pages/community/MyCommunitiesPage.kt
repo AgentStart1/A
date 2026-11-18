@@ -38,7 +38,6 @@ import com.storyteller_f.alphaheart.app.common.CommunityScreen
 import com.storyteller_f.alphaheart.app.common.createJoinedCommunitiesViewModel
 import com.storyteller_f.alphaheart.app.common.createJoinedCommunitiesWithPosterViewModel
 import com.storyteller_f.alphaheart.app.common.hasRouteFlow
-import com.storyteller_f.alphaheart.app.communities
 import com.storyteller_f.alphaheart.app.community_view_all
 import com.storyteller_f.alphaheart.app.community_view_poster
 import com.storyteller_f.alphaheart.app.pages.AdaptiveItemGrid
@@ -68,11 +67,6 @@ fun MyCommunitiesPage() {
     val pagerState = rememberPagerState { 2 }
     val scope = rememberCoroutineScope()
     Column {
-        Text(
-            stringResource(Res.string.communities),
-            Modifier.padding(horizontal = 28.dp, vertical = 24.dp),
-            style = MaterialTheme.typography.headlineSmall,
-        )
         Box(Modifier.fillMaxWidth()) {
             val tabs =
                 listOf(

@@ -71,17 +71,7 @@ import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBadge 
 
 @Composable
 fun MyRoomsPage() {
-    val viewModel = createJoinedRoomsViewModel()
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-        Column(Modifier.widthIn(max = 740.dp).fillMaxSize()) {
-            Text(
-                stringResource(Res.string.rooms),
-                Modifier.padding(horizontal = 28.dp, vertical = 24.dp),
-                style = MaterialTheme.typography.headlineSmall,
-            )
-            Box(Modifier.weight(1f)) { RoomList(viewModel) }
-        }
-    }
+    RoomList(createJoinedRoomsViewModel())
 }
 
 @Composable
