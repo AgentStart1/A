@@ -36,7 +36,7 @@ internal expect suspend fun buildCommunityFont(
     files: FileEngine,
 ): LoadedCommunityFont
 
-internal expect fun createCommunityFontStore(viewModel: UIViewModel): CommunityFontStore
+internal expect fun createCommunityFontStore(viewModel: UIViewModel): CommunityFontStore?
 
 internal fun createDownloadedFontStore(
     viewModel: UIViewModel,

@@ -40,6 +40,10 @@ internal enum class FontLoadStatus { LOADING, READY, FAILED }
 @Composable
 fun FontView(info: FileInfo) {
     val store = LocalCommunityFontStore.current
+    if (store == null) {
+        Text(info.name)
+        return
+    }
     val fileKey = fontFileKey(info)
     val states = remember(store, fileKey) { store.observeFont(info) }
     val state by states.collectAsState(CommunityFontState.Loading)

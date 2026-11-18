@@ -1013,6 +1013,8 @@ Downloader 管理注册、传输、处理和状态发布，FileEngine 提供平�
 
 只有源 writer 关闭、提取成功后，才一起保存 PROCESSED 和新的单调递增 processedGeneration。共享文件租约覆盖快照重检、generation 递增、目录替换和终态发布，包括跨浏览器 tab/worker。数据库 Flow 是快照，不是事件日志，使用者可能错过全部中间重试状态。字体源选择 revision/path/成功 generation，忽略无关进度或行变化，用 mapLatest 在同一文件租约内重查数据库，再验证构造。构造失败发出失败状态并继续观察；同版本 resume 成功始终从新 generation 构造替代。全部平台必须检查重复 weight/style、元数据和 family。提取完成没有独立 manifest。
 
+Wasm 客户端暂不创建应用的社区字体仓库，话题与编辑器沿用应用默认字体，社区字体设置仅显示文件名并保留配置操作。等待 Kotlin/Wasm 多线程支持后，重新测量大字体的校验、注册和实际滚动帧间隔，再评估启用。底层 Wasm 加载与归档实现仍由独立浏览器测试覆盖。
+
 CommunityFontStore 每个公开文件 revision 注册一个 stateIn flow。全部页面和账户共用上游验证构造，接收已构建 family/resolver。没有独立 finished-bundle cache、pending-load cache 或 reload event bus。WhileSubscribed 在五秒停止宽限内保留上游，停止时立即重置 replay。Registry 按 collector 租用 entry，不驱逐活动订阅，宽限后删除并取消 idle entry；旧 idle timer 不能驱逐新订阅 entry。重试期间内容保持已显示 family，直到新成功快照替换。Android/JVM 后台构造，从 native 文件加载，不完整读取源 ByteArray；Wasm 构造仍在浏览器事件循环，归档处理放专用 worker。Skia family 预加载到 family 管理的 resolver。 展示内容继续继承应用的 `LocalFontFamilyResolver`，只局部设置正文、代码和编辑器的 FontFamily；不要用预加载 resolver 覆盖整个内容树，否则会丢失应用已加载的中文字形回退。浏览器回归通过合成 Latin-only 与 CJK 字体验证缺字回退，同时保留原拉丁字宽和外层默认字体。一个读者退订不会取消其他读者或下载任务。
 
 缓存 identity 使用对象元数据，不用会过期的签名 URL。提取目录缺失或为空时从源重建，源缺失则重新下载。每次提取离开 PROCESSED 状态，在共享文件租约内替换 `<source>.extracted`，失败或取消清除部分输出。显式 resume 连非空部分提取也重建。仅目录非空不能授权字体读取。存储拒绝或配额错误显示为失败，不假定浏览器缓存可用。

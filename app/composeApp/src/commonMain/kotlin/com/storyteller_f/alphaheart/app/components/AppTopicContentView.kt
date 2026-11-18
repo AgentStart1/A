@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import com.mikepenz.markdown.compose.components.MarkdownComponentModel
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.pages.community.CommunityTopicContent
-import com.storyteller_f.alphaheart.app.pages.community.topicCommunityId
 import com.storyteller_f.alphaheart.app.pages.topic.TopicRoute
 import com.storyteller_f.alphaheart.client.compose_core.components.TopicContentView
 import com.storyteller_f.shared.model.TopicDetail
@@ -27,8 +26,7 @@ import com.storyteller_f.shared.utils.readCodeFence
 @Composable
 fun AppTopicContentView(topicInfo: TopicDetail, isEmbed: Boolean = false, communityId: PrimaryKey? = null) {
     val appNavFactory = LocalAppNavFactory.current
-    val ownerCommunity = communityId ?: topicCommunityId(topicInfo)
-    CommunityTopicContent(ownerCommunity) {
+    CommunityTopicContent(communityId, topicInfo) {
         TopicContentView(topicInfo.topicInfo, {
             appNavFactory.newAppNav().gotoMedia(it)
         }, isEmbed, {

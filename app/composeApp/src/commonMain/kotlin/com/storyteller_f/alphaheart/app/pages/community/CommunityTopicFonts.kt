@@ -26,9 +26,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 internal val LocalCommunityFontStore =
-    staticCompositionLocalOf<CommunityFontStore> {
-        error("CommunityFontStore must be provided")
-    }
+    staticCompositionLocalOf<CommunityFontStore?> { null }
 
 internal data class CommunityFontPresentation(val fonts: TopicContentFonts, val resolver: FontFamily.Resolver? = null)
 
@@ -39,7 +37,7 @@ internal fun combineCommunityFonts(body: LoadedCommunityFont, code: LoadedCommun
     )
 
 @Composable
-internal fun topicCommunityId(topic: TopicDetail): PrimaryKey? =
+private fun topicCommunityId(topic: TopicDetail): PrimaryKey? =
     when (topic.rootType) {
         ObjectType.COMMUNITY -> topic.rootId
 
@@ -59,14 +57,24 @@ internal fun topicCommunityId(topic: TopicDetail): PrimaryKey? =
 
 /** Keep uploaded font registration and content styles local to each topic. */
 @Composable
-internal fun CommunityTopicContent(communityId: PrimaryKey?, content: @Composable () -> Unit) {
+internal fun CommunityTopicContent(
+    communityId: PrimaryKey?,
+    topic: TopicDetail? = null,
+    content: @Composable () -> Unit,
+) {
+    val store = LocalCommunityFontStore.current
+    if (store == null) {
+        content()
+        return
+    }
+    val ownerCommunity = communityId ?: topic?.let { topicCommunityId(it) }
     val settings =
-        communityId?.let {
+        ownerCommunity?.let {
             val model = createCommunityViewModel(it)
             val community by model.handler.data.collectAsState()
             community?.fontSettings
         }
-    CommunityFontContent(settings, LocalCommunityFontStore.current, content)
+    CommunityFontContent(settings, store, content)
 }
 
 @Composable

@@ -11,6 +11,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -19,8 +21,10 @@ import androidx.compose.ui.text.font.createFontFamilyResolver
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
+import com.storyteller_f.alphaheart.app.components.FontView
 import com.storyteller_f.alphaheart.app.pages.community.CommunityFontContent
 import com.storyteller_f.alphaheart.app.pages.community.CommunityFontStore
+import com.storyteller_f.alphaheart.app.pages.community.CommunityTopicContent
 import com.storyteller_f.alphaheart.client.compose_core.components.LocalTopicContentFonts
 import com.storyteller_f.alphaheart.client.compose_core.components.TopicContentFonts
 import com.storyteller_f.shared.model.FileInfo
@@ -46,6 +50,25 @@ class CommunityFontFallbackBrowserTest {
 
     @AfterTest
     fun cleanFontFiles() = runTest { fontFixture.close() }
+
+    @Test
+    fun unavailableCommunityFontsShowFileNameAndKeepDefaultTopicFonts() =
+        runAppComposeUiTest {
+            val file = FileInfo.EMPTY.copy(id = 1L, name = "Regular.ttf")
+            var topicFonts: TopicContentFonts? = null
+            setContent {
+                MaterialTheme {
+                    CommunityTopicContent(communityId = 1L) {
+                        val fonts = LocalTopicContentFonts.current
+                        SideEffect { topicFonts = fonts }
+                        FontView(file)
+                    }
+                }
+            }
+            onNodeWithText(file.name).assertExists()
+            onNodeWithTag("font-status-slot").assertDoesNotExist()
+            runOnIdle { assertEquals(TopicContentFonts(), topicFonts) }
+        }
 
     @Test
     fun communityProviderPreservesTheApplicationCjkFallback() =
