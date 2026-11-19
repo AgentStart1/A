@@ -290,4 +290,8 @@
     <string name="topic_copy_unavailable">当前话题无法复制</string>
     <string name="expiry_date_label">日期（UTC+00:00）</string>
     <string name="expiry_time_label">时间（UTC+00:00）</string>
+    <string name="topic_time_now">刚刚</string>
+    <string name="topic_time_minutes">%1$s 分钟前</string>
+    <string name="topic_time_hours">%1$s 小时前</string>
+    <string name="topic_time_days">%1$s 天前</string>
 </resources>

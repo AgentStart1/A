@@ -51,7 +51,14 @@ fun InteractionRowInternal(
     val userSessionManager = LocalSessionManager.current
     var showMenu by remember { mutableStateOf(false) }
     TopicActionsRow(
-        TopicActionState(data, topicInfo.commentCount, topicInfo.hasComment, presentation, alignEnd),
+        TopicActionState(
+            data,
+            topicInfo.commentCount,
+            topicInfo.hasComment,
+            presentation,
+            alignEnd,
+            topicInfo.reactionCount,
+        ),
         onComment = startAddComment,
         onReaction = {
             if (userSessionManager.currentIsAlreadySignUp) {

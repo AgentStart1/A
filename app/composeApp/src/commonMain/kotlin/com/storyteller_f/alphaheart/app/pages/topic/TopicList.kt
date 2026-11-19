@@ -98,7 +98,7 @@ fun RoomTopicList(items: LazyPagingItems<TopicDetail>, topicsViewModel: TopicsVi
                         null
                     }
                 val info = items[index]
-                RoomTopicCell(info, info != null && next?.author != info.author)
+                RoomTopicCell(info, info != null && !sameRoomMessageGroup(next, info))
             }
             topPrepend(items.loadState, items::retry)
         }

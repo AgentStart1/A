@@ -21,8 +21,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.datetime.LocalDateTime
 
 /** Presentation only: message renderers and identity/actions retain their own owners. */
 @Composable
@@ -31,6 +33,7 @@ internal fun RoomMessageLayout(
     modifier: Modifier = Modifier,
     senderName: String? = null,
     showIdentity: Boolean = true,
+    sentAt: LocalDateTime? = null,
     avatar: @Composable () -> Unit = {},
     actions: @Composable () -> Unit = {},
     actionsTopPadding: Dp = 4.dp,
@@ -45,15 +48,29 @@ internal fun RoomMessageLayout(
             horizontalArrangement = Arrangement.spacedBy(if (compact) 8.dp else 12.dp),
             verticalAlignment = Alignment.Top,
         ) {
-            if (showIdentity && !ownMessage) Box(Modifier.size(34.dp)) { avatar() }
+            if (!ownMessage && (showIdentity || senderName != null)) {
+                Box(Modifier.size(34.dp)) { if (showIdentity) avatar() }
+            }
             Column(Modifier.weight(1f, fill = false), horizontalAlignment = side) {
-                senderName?.takeIf { showIdentity }?.let {
-                    Text(
-                        it,
+                val visibleSender = senderName?.takeIf { showIdentity && !ownMessage }
+                if (sentAt != null || visibleSender != null) {
+                    Row(
                         Modifier.padding(horizontal = 3.dp).padding(bottom = 6.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (visibleSender != null) {
+                            Text(
+                                visibleSender,
+                                Modifier.weight(1f, fill = false),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (sentAt != null) TopicRelativeTime(sentAt)
+                    }
                 }
                 RoomMessageBubble(ownMessage, compact, content)
                 Box(
@@ -63,7 +80,6 @@ internal fun RoomMessageLayout(
                     actions()
                 }
             }
-            if (showIdentity && ownMessage) Box(Modifier.size(34.dp)) { avatar() }
         }
     }
 }

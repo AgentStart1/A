@@ -10,6 +10,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -39,13 +40,11 @@ import com.storyteller_f.alphaheart.app.LocalGlobalDialog
 import com.storyteller_f.alphaheart.app.LocalUserInfo
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.add_reaction
-import com.storyteller_f.alphaheart.app.common.getUserOverviewViewModel
 import com.storyteller_f.alphaheart.app.components.AppTopicContentView
 import com.storyteller_f.alphaheart.app.components.InteractionRow
 import com.storyteller_f.alphaheart.app.components.TopicActionsPresentation
 import com.storyteller_f.alphaheart.app.invalid_content
 import com.storyteller_f.alphaheart.app.is_pinned
-import com.storyteller_f.alphaheart.app.pages.user.SelfUserIconWithDialog
 import com.storyteller_f.alphaheart.app.pages.user.UserCell
 import com.storyteller_f.alphaheart.app.pages.user.UserIconWithDialog
 import com.storyteller_f.alphaheart.app.pin
@@ -136,7 +135,13 @@ fun TopicCellInternal(
     val topicId = topicInfo.id
     val authorInfo = topicInfo.authorInfo
     CommonTopicCellInternal(topicInfo, supportPin) {
-        UserCell(authorInfo)
+        Row(verticalAlignment = Alignment.Top) {
+            Box(Modifier.weight(1f)) { UserCell(authorInfo) }
+            TopicRelativeTime(
+                topicInfo.createdTime,
+                Modifier.padding(top = 8.dp, end = if (topicInfo.isPin) 32.dp else 8.dp),
+            )
+        }
         TopicContentAndInteraction(topicInfo, startAddReaction, topicId, presentation)
     }
 }
@@ -152,6 +157,10 @@ fun UserTopicCellInternal(
     topicInfo ?: return
     val topicId = topicInfo.id
     CommonTopicCellInternal(topicInfo, supportPin) {
+        TopicRelativeTime(
+            topicInfo.createdTime,
+            Modifier.align(Alignment.End).padding(top = 8.dp, end = if (topicInfo.isPin) 32.dp else 8.dp),
+        )
         TopicContentAndInteraction(topicInfo, startAddReaction, topicId)
     }
 }
@@ -192,7 +201,7 @@ private fun TopicContentAndInteraction(
 fun CommonTopicCellInternal(
     @PreviewParameter(TopicPreviewProvider::class) topicInfo: TopicDetail?,
     supportPin: Boolean = false,
-    block: @Composable () -> Unit = {},
+    block: @Composable ColumnScope.() -> Unit = {},
 ) {
     topicInfo ?: return
     val topicId = topicInfo.id
@@ -250,18 +259,12 @@ fun RoomTopicCellInternal(
                 }, onLongClickLabel = stringResource(Res.string.topic_menu)) {
                     appNavFactory.newAppNav().gotoTopic(topicId)
                 },
-            senderName = authorInfo?.nickname.takeIf { showAvatar },
+            senderName = authorInfo?.nickname,
+            showIdentity = showAvatar,
+            sentAt = topicInfo.createdTime.takeIf { showAvatar },
             avatar = {
-                if (showAvatar) {
-                    if (ownMessage) {
-                        SelfUserIconWithDialog(
-                            authorInfo,
-                            size = 34.dp,
-                            overviewHandler = getUserOverviewViewModel().handler,
-                        )
-                    } else {
-                        UserIconWithDialog(authorInfo, size = 34.dp)
-                    }
+                if (showAvatar && !ownMessage) {
+                    UserIconWithDialog(authorInfo, size = 34.dp)
                 }
             },
             actions = {

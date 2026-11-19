@@ -38,6 +38,7 @@ internal data class TopicActionState(
     val hasComment: Boolean,
     val presentation: TopicActionsPresentation,
     val alignEnd: Boolean = false,
+    val reactionCount: Long = 0,
 )
 
 /** Pure action/aggregate layout; callbacks retain their application-owned lifetime. */
@@ -65,6 +66,7 @@ internal fun TopicActionsRow(
                     Pill(text = "+${state.reactions.size - shown}") { onOverflow(shown) }
                 }
                 Pill(
+                    text = state.reactionCount.toString(),
                     icon = actionIcon(ActionGlyph.SMILE),
                     description = stringResource(Res.string.add_reaction),
                     appearance = appearance,

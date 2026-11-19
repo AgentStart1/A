@@ -30,6 +30,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.pages.topic.RoomMessageLayout
+import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -37,7 +38,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalTestApi::class)
 class RoomMessageLayoutUiTest {
     @Test
-    fun incomingAndOutgoingKeepIdentityBesideBubbleAndActionsBelow() =
+    fun incomingAndOutgoingKeepTimeAndActionsAtBothWidths() =
         runAppComposeUiTest {
             val width = mutableStateOf(1000.dp)
             val own = mutableStateOf(false)
@@ -49,6 +50,7 @@ class RoomMessageLayoutUiTest {
                         RoomMessageLayout(
                             ownMessage = own.value,
                             senderName = "Sender",
+                            sentAt = LocalDateTime(2026, 1, 1, 0, 0),
                             avatar = {
                                 Box(Modifier.size(34.dp).testTag("avatar").clickable { avatarClicks++ })
                             },
@@ -70,32 +72,30 @@ class RoomMessageLayoutUiTest {
                 for (outgoing in listOf(false, true)) {
                     runOnIdle { own.value = outgoing }
                     val pane = onNodeWithTag("pane").getUnclippedBoundsInRoot()
-                    val avatar = onNodeWithTag("avatar").getUnclippedBoundsInRoot()
                     val body = onNodeWithTag("body").getUnclippedBoundsInRoot()
                     val actions = onNodeWithTag("actions").getUnclippedBoundsInRoot()
-                    val sender = onNodeWithText("Sender").getUnclippedBoundsInRoot()
                     val maxWidth = size * if (size < 600.dp) 0.95f else 0.88f
-                    assertTrue(sender.bottom < body.top)
                     assertTrue(actions.top >= body.bottom + 12.dp)
                     if (outgoing) {
-                        assertEquals(pane.right, avatar.right)
-                        assertTrue(avatar.left > body.right)
-                        assertTrue(avatar.right - actions.left <= maxWidth)
-                        assertTrue(avatar.right - body.left <= maxWidth)
+                        onNodeWithTag("avatar").assertDoesNotExist()
+                        onNodeWithText("Sender").assertDoesNotExist()
+                        assertEquals(pane.right - if (size < 600.dp) 12.dp else 18.dp, body.right)
+                        assertTrue(pane.right - actions.left <= maxWidth)
                     } else {
+                        val avatar = onNodeWithTag("avatar").getUnclippedBoundsInRoot()
+                        val sender = onNodeWithText("Sender").getUnclippedBoundsInRoot()
+                        assertTrue(sender.bottom < body.top)
                         assertEquals(pane.left, avatar.left)
                         assertTrue(avatar.right < body.left)
                         assertTrue(actions.right - avatar.left <= maxWidth)
                         assertTrue(body.right - avatar.left <= maxWidth)
+                        onNodeWithTag("avatar").performClick()
                     }
-                    onNodeWithTag("avatar").performClick()
+                    onNodeWithTag("topic-relative-time").assertIsDisplayed()
                     onNodeWithTag("actions").performClick()
                 }
             }
-            runOnIdle {
-                assertEquals(4, avatarClicks)
-                assertEquals(4, actionClicks)
-            }
+            runOnIdle { assertEquals(2 to 4, avatarClicks to actionClicks) }
         }
 
     @Test

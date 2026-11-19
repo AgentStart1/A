@@ -196,7 +196,12 @@ private fun ColumnScope.TopicPageContent(
             }) { subTopicIndex ->
                 subTopics[subTopicIndex]?.let { it1 ->
                     if (topicInfo.rootType == ObjectType.ROOM) {
-                        RoomTopicCell(it1, presentation = TopicActionsPresentation.DETAIL_REPLY)
+                        val previous = if (subTopicIndex > 0) subTopics.peek(subTopicIndex - 1) else topicInfo
+                        RoomTopicCell(
+                            it1,
+                            showAvatar = !sameRoomMessageGroup(previous, it1),
+                            presentation = TopicActionsPresentation.DETAIL_REPLY,
+                        )
                     } else {
                         TopicCell(it1, presentation = TopicActionsPresentation.DETAIL_REPLY)
                     }
@@ -217,6 +222,7 @@ private fun CurrentTopicContent(topicInfo: TopicDetail, startAddReaction: () -> 
         RoomMessageLayout(
             ownMessage = ownMessage,
             showIdentity = false,
+            sentAt = topicInfo.createdTime,
             actionsTopPadding = 0.dp,
             actions = {
                 InteractionRow(

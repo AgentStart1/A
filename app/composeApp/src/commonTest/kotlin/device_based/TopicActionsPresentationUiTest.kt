@@ -24,6 +24,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertHeightIsEqualTo
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -78,7 +79,7 @@ class TopicActionsPresentationUiTest {
             setContent {
                 ActionFixture(width.value) {
                     TopicActionsRow(
-                        TopicActionState(emptyList(), count.value, true, mode.value),
+                        TopicActionState(emptyList(), count.value, true, mode.value, reactionCount = 7),
                         onComment.takeUnless { mode.value == TopicActionsPresentation.DETAIL_MAIN },
                         { reactions += 1 },
                         { menus += 1 },
@@ -97,6 +98,7 @@ class TopicActionsPresentationUiTest {
                         }
                         assertCommentPresentation(presentation, reaction, count.value)
                         paintedActionCaption(reactText, reaction).assertDoesNotExist()
+                        paintedActionCaption("7", reaction).assertIsDisplayed()
                         onNodeWithContentDescription(reaction).performClick()
                         onNodeWithContentDescription(more).performClick()
                         val add = onNodeWithContentDescription(reaction).getUnclippedBoundsInRoot()

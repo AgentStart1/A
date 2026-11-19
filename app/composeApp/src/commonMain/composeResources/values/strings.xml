@@ -310,4 +310,8 @@
     <string name="topic_copy_unavailable">This topic cannot be copied</string>
     <string name="expiry_date_label">Date (UTC+00:00)</string>
     <string name="expiry_time_label">Time (UTC+00:00)</string>
+    <string name="topic_time_now">Just now</string>
+    <string name="topic_time_minutes">%1$s min ago</string>
+    <string name="topic_time_hours">%1$s hr ago</string>
+    <string name="topic_time_days">%1$s d ago</string>
 </resources>
