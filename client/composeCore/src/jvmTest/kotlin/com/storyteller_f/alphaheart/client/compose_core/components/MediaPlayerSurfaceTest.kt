@@ -118,6 +118,9 @@ internal class MediaPlayerSurfaceTest {
                     Modifier.size(360.dp, 203.dp),
                 ) {}
             }
+            onNodeWithText("0:00 / 2:00").assertDoesNotExist()
+            onNodeWithContentDescription("Playback position").assertIsNotEnabled()
+            onNodeWithContentDescription("Play").performClick()
             onNodeWithContentDescription("Playback position").performSemanticsAction(SemanticsActions.SetProgress) {
                 it(45f)
             }
@@ -290,9 +293,9 @@ internal class MediaPlayerSurfaceTest {
                     Modifier.size(360.dp, 203.dp),
                 ) {}
             }
-            onNodeWithText("Retry").performClick()
+            onNodeWithContentDescription("Retry").performClick()
             assertEquals(1, retries)
-            onNodeWithContentDescription("Play").assertIsNotEnabled()
+            onNodeWithContentDescription("Play").assertDoesNotExist()
         }
 
     @Test

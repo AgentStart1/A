@@ -62,6 +62,7 @@
     <string name="media_playlist">播放列表</string>
     <string name="media_pip">画中画</string>
     <string name="media_download">下载</string>
+    <string name="media_replay">重播</string>
     <string name="media_retry">重试</string>
     <string name="refresh_failed_retry">刷新失败 · 重试</string>
     <string name="copied">已复制</string>

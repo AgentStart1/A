@@ -66,6 +66,7 @@
     <string name="media_playlist">Playlist</string>
     <string name="media_pip">Picture in picture</string>
     <string name="media_download">Download</string>
+    <string name="media_replay">Replay</string>
     <string name="media_retry">Retry</string>
     <string name="refresh_failed_retry">Refresh failed · Retry</string>
     <string name="loading_more">Loading more…</string>

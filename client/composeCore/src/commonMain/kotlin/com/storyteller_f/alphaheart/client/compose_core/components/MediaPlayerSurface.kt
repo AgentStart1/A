@@ -5,7 +5,6 @@
 package com.storyteller_f.alphaheart.client.compose_core.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,6 +43,7 @@ import com.storyteller_f.alphaheart.client.compose_core.media_pause
 import com.storyteller_f.alphaheart.client.compose_core.media_play
 import com.storyteller_f.alphaheart.client.compose_core.media_playback_error
 import com.storyteller_f.alphaheart.client.compose_core.media_position
+import com.storyteller_f.alphaheart.client.compose_core.media_replay
 import com.storyteller_f.alphaheart.client.compose_core.media_retry
 import com.storyteller_f.alphaheart.client.compose_core.media_unmute
 import com.storyteller_f.alphaheart.client.compose_core.media_volume
@@ -84,6 +84,8 @@ internal data class MediaControlState(
     val muted: Boolean = false,
     val title: String? = null,
     val durationKnown: Boolean = true,
+    val showTime: Boolean = false,
+    val ended: Boolean = false,
 )
 
 internal data class MediaControlActions(
@@ -124,6 +126,19 @@ internal fun MediaPlayerSurface(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var embeddedSize by remember { mutableStateOf(IntSize.Zero) }
+    var playbackRequested by remember(sourceUrl, title) { mutableStateOf(false) }
+    fun recordPlayback(action: () -> Unit): () -> Unit =
+        {
+            playbackRequested = true
+            action()
+        }
+    val surfaceActions =
+        actions.copy(
+            togglePlayback = recordPlayback(actions.togglePlayback),
+            retry = actions.retry?.let(::recordPlayback),
+        )
+    val showTime = state.showTime || playbackRequested || state.playing || state.ended || state.position > 0
+    val surfaceState = state.copy(showTime = showTime)
     val density = LocalDensity.current
     if (expanded) {
         Dialog(
@@ -132,7 +147,7 @@ internal fun MediaPlayerSurface(
         ) {
             Box(Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
                 MediaSurfaceContent(
-                    state.title ?: title, state, actions,
+                    state.title ?: title, surfaceState, surfaceActions,
                     if (video) Modifier.widthIn(max = 900.dp).fillMaxWidth() else Modifier.fillMaxSize(),
                     video, controlsVisible, true,
                     { expanded = false }, sourceUrl, artwork, layout, menuContent, content,
@@ -147,7 +162,7 @@ internal fun MediaPlayerSurface(
         )
     } else {
         MediaSurfaceContent(
-            state.title ?: title, state, actions,
+            state.title ?: title, surfaceState, surfaceActions,
             modifier.onSizeChanged {
                 embeddedSize = it
             },
@@ -187,11 +202,10 @@ private fun MediaSurfaceContent(
             null
         }
     Column(
-        modifier.clip(RoundedCornerShape(if (expanded) 16.dp else 12.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer).testTag("media-player-shell")
+        modifier.testTag("media-player-shell")
             .then(
                 if (expanded) {
-                    Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+                    Modifier.clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceContainer)
                         .padding(20.dp)
                 } else {
                     Modifier
@@ -203,8 +217,6 @@ private fun MediaSurfaceContent(
         Column(
             Modifier.fillMaxWidth()
                 .then(if (pictureRatio != null) Modifier else Modifier.weight(1f))
-                .clip(RoundedCornerShape(12.dp))
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
                 .testTag("media-player-frame"),
         ) {
             MaterialTheme(colorScheme = readingColorScheme(darkTheme = true)) {
@@ -214,16 +226,16 @@ private fun MediaSurfaceContent(
                     } else {
                         Modifier.fillMaxWidth().weight(1f)
                     }
-                Box(stageModifier.background(Color(0xFF14241A)).testTag("media-player-stage")) {
+                Box(
+                    stageModifier.clip(
+                        RoundedCornerShape(10.dp),
+                    ).background(Color(0xFF14241A)).testTag("media-player-stage"),
+                ) {
                     if (video) content() else MediaAudioArtwork(title, artwork, !expanded && !controlsVisible)
-                    if (controlsVisible) MediaStatus(state, actions.retry, Modifier.align(Alignment.Center))
                 }
             }
             if (controlsVisible) {
-                Column(
-                    Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer)
-                        .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp),
-                ) {
+                Column(Modifier.fillMaxWidth().padding(top = 12.dp)) {
                     MediaTransport(state, actions, expanded, toggleExpanded) {
                         if (!showHeading && sourceUrl != null) MediaOptions(sourceUrl, menuContent)
                     }
@@ -242,8 +254,8 @@ private fun MediaSurfaceHeader(
     menuContent: @Composable (() -> Unit) -> Unit,
 ) {
     Row(
-        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer)
-            .then(if (expanded) Modifier else Modifier.padding(horizontal = 12.dp, vertical = 10.dp))
+        Modifier.fillMaxWidth()
+            .then(if (expanded) Modifier else Modifier.padding(bottom = 8.dp))
             .testTag("media-player-heading"),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -259,7 +271,12 @@ private fun MediaSurfaceHeader(
         )
         if (sourceUrl != null) MediaOptions(sourceUrl, menuContent)
         if (expanded) {
-            MediaIcon(actionIcon(ActionGlyph.X), stringResource(Res.string.media_exit_fullscreen), true, collapse)
+            MediaIcon(
+                actionIcon(ActionGlyph.X),
+                stringResource(Res.string.media_exit_fullscreen),
+                true,
+                action = collapse,
+            )
         }
     }
 }
@@ -275,86 +292,20 @@ private fun CompactAudioSurface(
     sourceUrl: String?,
     menuContent: @Composable (() -> Unit) -> Unit,
 ) {
-    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
-        val wide = maxWidth >= 600.dp
-        val enabled = state.enabled && !state.failed && !state.loading
-        Surface(
-            Modifier.widthIn(max = 740.dp).fillMaxWidth().height(if (wide) 64.dp else 108.dp),
-            shape = RoundedCornerShape(8.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        ) {
-            Box {
-                Column(Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        if (controlsVisible) {
-                            MediaIcon(
-                                if (state.playing) actionIcon(ActionGlyph.PAUSE) else actionIcon(ActionGlyph.PLAY),
-                                stringResource(if (state.playing) Res.string.media_pause else Res.string.media_play),
-                                enabled,
-                                actions.togglePlayback,
-                            )
-                        }
-                        CompactAudioLabel(
-                            if (LocalMediaHeadingVisible.current) title else "",
-                            state,
-                            if (controlsVisible) actions.retry else null,
-                            Modifier.weight(1f),
-                        )
-                        if (wide && controlsVisible) {
-                            CompactAudioPosition(state, actions, Modifier.weight(1.5f), enabled)
-                            MediaVolume(state, actions, enabled && state.volumeEnabled)
-                            MediaIcon(
-                                actionIcon(ActionGlyph.MAXIMIZE_2),
-                                stringResource(Res.string.media_fullscreen),
-                                state.expansionEnabled,
-                                toggleExpanded,
-                            )
-                        }
-                        if (sourceUrl != null && controlsVisible) MediaOptions(sourceUrl, menuContent)
-                    }
-                    if (!wide && controlsVisible) {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            CompactAudioPosition(state, actions, Modifier.weight(1f), enabled)
-                            MediaVolume(state, actions, enabled && state.volumeEnabled)
-                            MediaIcon(
-                                actionIcon(ActionGlyph.MAXIMIZE_2),
-                                stringResource(Res.string.media_fullscreen),
-                                state.expansionEnabled,
-                                toggleExpanded,
-                            )
-                        }
-                    }
-                }
+    Column(modifier.widthIn(max = 740.dp).fillMaxWidth()) {
+        if (LocalMediaHeadingVisible.current) {
+            MediaSurfaceHeader(title, false, toggleExpanded, sourceUrl.takeIf { controlsVisible }, menuContent)
+        }
+        if (controlsVisible) {
+            MediaTransport(state, actions, false, toggleExpanded) {
+                if (!LocalMediaHeadingVisible.current && sourceUrl != null) MediaOptions(sourceUrl, menuContent)
             }
         }
     }
 }
 
 @Composable
-private fun CompactAudioLabel(title: String, state: MediaControlState, retry: (() -> Unit)?, modifier: Modifier) {
-    Row(modifier.heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (state.loading) {
-            CircularProgressIndicator(Modifier.padding(end = 8.dp).size(16.dp), strokeWidth = 2.dp)
-        }
-        Text(
-            when {
-                state.failed -> stringResource(Res.string.media_playback_error)
-                state.loading -> stringResource(Res.string.media_loading)
-                else -> title
-            },
-            Modifier.weight(1f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (state.failed && retry != null) {
-            MediaIcon(actionIcon(ActionGlyph.ROTATE_CW), stringResource(Res.string.media_retry), true, retry)
-        }
-    }
-}
-
-@Composable
-private fun CompactAudioPosition(
+private fun MediaPosition(
     state: MediaControlState,
     actions: MediaControlActions,
     modifier: Modifier,
@@ -362,26 +313,33 @@ private fun CompactAudioPosition(
 ) {
     var seekDraft by remember { mutableStateOf<Float?>(null) }
     val duration = state.duration.takeIf { it.isFinite() && it > 0 } ?: 0.0
-    val position = state.position.takeIf { it.isFinite() }?.coerceIn(0.0, duration) ?: 0.0
+    val position = state.position.takeIf { it.isFinite() }?.coerceAtLeast(0.0) ?: 0.0
     val label = stringResource(Res.string.media_position)
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         MediaSlider(
-            value = seekDraft ?: position.toFloat(),
+            value = seekDraft ?: position.coerceAtMost(duration).toFloat(),
             onValueChange = { seekDraft = it },
             onValueChangeFinished = {
                 seekDraft?.let { actions.seek(it.toDouble()) }
                 seekDraft = null
             },
-            enabled = enabled && duration > 0,
+            enabled = enabled && state.showTime && duration > 0,
             valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
             modifier =
             Modifier.weight(1f).height(32.dp)
                 .appiumSemantics(testTag = "media-position", description = label)
                 .semantics { contentDescription = label },
         )
-        val durationLabel = if (state.durationKnown) formatMediaTime(duration) else "--:--"
+        val durationLabel = if (state.durationKnown && duration > 0) formatMediaTime(duration) else "--:--"
         val progress = "${formatMediaTime(seekDraft?.toDouble() ?: position)} / $durationLabel"
-        Text(progress, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+        if (state.showTime && !state.failed && (!state.loading || position > 0)) {
+            Text(
+                progress,
+                Modifier.appiumSemantics(text = progress),
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -412,31 +370,6 @@ private fun MediaAudioArtwork(title: String, artwork: String?, showTitle: Boolea
 }
 
 @Composable
-private fun MediaStatus(state: MediaControlState, retry: (() -> Unit)?, modifier: Modifier) {
-    val loadingLabel = stringResource(Res.string.media_loading)
-    when {
-        state.failed ->
-            Column(modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    stringResource(Res.string.media_playback_error),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                if (retry != null) TextButton(onClick = retry) { Text(stringResource(Res.string.media_retry)) }
-            }
-
-        state.loading ->
-            CircularProgressIndicator(
-                modifier.size(32.dp).semantics {
-                    contentDescription = loadingLabel
-                },
-                color = MaterialTheme.colorScheme.onSurface,
-                strokeWidth = 2.dp,
-            )
-    }
-}
-
-@Composable
 private fun MediaTransport(
     state: MediaControlState,
     actions: MediaControlActions,
@@ -444,51 +377,58 @@ private fun MediaTransport(
     toggleExpanded: () -> Unit,
     endActions: @Composable () -> Unit,
 ) {
-    var seekDraft by remember { mutableStateOf<Float?>(null) }
-    val duration = state.duration.takeIf { it.isFinite() && it > 0 } ?: 0.0
-    val position = state.position.takeIf { it.isFinite() }?.coerceIn(0.0, duration) ?: 0.0
-    val enabled = state.enabled && !state.failed
-    val positionLabel = stringResource(Res.string.media_position)
+    val enabled = state.enabled && !state.failed && !state.loading
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        MediaIcon(
-            if (state.playing) actionIcon(ActionGlyph.PAUSE) else actionIcon(ActionGlyph.PLAY),
-            stringResource(if (state.playing) Res.string.media_pause else Res.string.media_play),
-            enabled,
-            actions.togglePlayback,
-        )
-        val progress = "${formatMediaTime(seekDraft?.toDouble() ?: position)} / ${formatMediaTime(duration)}"
-        Text(
-            progress,
-            Modifier.weight(1f).appiumSemantics(text = progress),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-        )
+        Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+            MediaPlaybackButton(state, actions, enabled)
+        }
+        MediaPosition(state, actions, Modifier.weight(1f), enabled)
         MediaVolume(state, actions, enabled && state.volumeEnabled)
         if (!expanded) {
             MediaIcon(
                 actionIcon(ActionGlyph.MAXIMIZE_2),
                 stringResource(Res.string.media_fullscreen),
                 state.expansionEnabled,
-                toggleExpanded,
+                action = toggleExpanded,
             )
         }
         endActions()
     }
-    MediaSlider(
-        value = seekDraft ?: position.toFloat(),
-        onValueChange = { seekDraft = it },
-        onValueChangeFinished = {
-            seekDraft?.let { actions.seek(it.toDouble()) }
-            seekDraft = null
-        },
-        valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
-        enabled = enabled && duration > 0,
-        modifier =
-        Modifier.fillMaxWidth().height(28.dp)
-            .appiumSemantics(testTag = "media-position", description = positionLabel)
-            .semantics { contentDescription = positionLabel },
-    )
+}
+
+@Composable
+private fun MediaPlaybackButton(state: MediaControlState, actions: MediaControlActions, enabled: Boolean) {
+    when {
+        state.failed -> {
+            val retry = actions.retry
+            val label = stringResource(if (retry != null) Res.string.media_retry else Res.string.media_playback_error)
+            MediaIcon(actionIcon(ActionGlyph.ROTATE_CW), label, retry != null) { retry?.invoke() }
+        }
+
+        state.loading -> {
+            val label = stringResource(Res.string.media_loading)
+            CircularProgressIndicator(
+                Modifier.size(18.dp).semantics { contentDescription = label },
+                strokeWidth = 2.dp,
+            )
+        }
+
+        else -> {
+            val glyph =
+                when {
+                    state.ended -> ActionGlyph.ROTATE_CW
+                    state.playing -> ActionGlyph.PAUSE
+                    else -> ActionGlyph.PLAY
+                }
+            val label =
+                when {
+                    state.ended -> Res.string.media_replay
+                    state.playing -> Res.string.media_pause
+                    else -> Res.string.media_play
+                }
+            MediaIcon(actionIcon(glyph), stringResource(label), enabled, accent = true, action = actions.togglePlayback)
+        }
+    }
 }
 
 @Composable
@@ -532,18 +472,23 @@ private fun MediaVolume(state: MediaControlState, actions: MediaControlActions, 
 }
 
 @Composable
-private fun MediaIcon(icon: ImageVector, label: String, enabled: Boolean, action: () -> Unit) {
+private fun MediaIcon(
+    icon: ImageVector,
+    label: String,
+    enabled: Boolean,
+    accent: Boolean = false,
+    action: () -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val containerColor = if (accent) scheme.primary else Color.Transparent
+    val tint = if (accent && enabled) scheme.onPrimary else scheme.onSurface
     IconButton(
         onClick = action,
         enabled = enabled,
         modifier = Modifier.appiumSemantics(text = label, onClick = if (enabled) action else null),
+        colors = IconButtonDefaults.iconButtonColors(containerColor = containerColor),
     ) {
-        Icon(
-            icon,
-            label,
-            Modifier.size(17.dp),
-            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else 0.38f),
-        )
+        Icon(icon, label, Modifier.size(17.dp), tint = tint.copy(alpha = if (enabled) 1f else 0.38f))
     }
 }
 

@@ -30,6 +30,7 @@ internal fun readMediaControls(player: Player): MediaControlState =
         playing = !Util.shouldShowPlayButton(player),
         loading = player.playbackState == Player.STATE_BUFFERING,
         failed = player.playerError != null,
+        ended = player.playbackState == Player.STATE_ENDED,
         enabled = player.playbackState != Player.STATE_IDLE || player.playerError == null,
         position = player.currentPosition.coerceAtLeast(0) / 1000.0,
         duration = player.duration.coerceAtLeast(0) / 1000.0,
