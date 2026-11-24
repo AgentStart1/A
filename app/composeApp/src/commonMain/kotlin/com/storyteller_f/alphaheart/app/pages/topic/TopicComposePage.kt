@@ -205,7 +205,7 @@ private fun TopicComposeInternal(
                         selected = selected == index,
                         onClick = selectTab,
                         modifier = Modifier.appiumSemantics(text = label, onClick = selectTab),
-                    ) { Text(label, Modifier.padding(vertical = 12.dp)) }
+                    ) { Text(label) }
                 }
             }
             if (selected == 0) {

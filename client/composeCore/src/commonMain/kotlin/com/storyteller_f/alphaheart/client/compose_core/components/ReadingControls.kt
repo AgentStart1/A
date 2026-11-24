@@ -11,8 +11,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -42,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +56,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.storyteller_f.alphaheart.client.compose_core.theme.NoClickIndication
 
 /** Disable transient Material state layers without removing focus, selection, or click semantics. */
@@ -165,22 +169,38 @@ fun ReadingIconButton(
     )
 }
 
+private val LocalDetailTabHeight = staticCompositionLocalOf<Dp> { Dp.Unspecified }
+
 @Composable
 fun ReadingTabRow(
     modifier: Modifier = Modifier,
     containerColor: Color = Color.Transparent,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     contentPadding: PaddingValues = PaddingValues(start = 20.dp, top = 8.dp, end = 20.dp),
+    wrap: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     Column(modifier.background(containerColor).padding(contentPadding)) {
         androidx.compose.material3.LocalContentColor.let { color ->
             CompositionLocalProvider(color provides contentColor) {
-                Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) { content() }
+                if (wrap) {
+                    BoxWithConstraints(Modifier.fillMaxWidth()) {
+                        val tabHeight = if (maxWidth <= 600.dp) 40.dp else 37.dp
+                        CompositionLocalProvider(LocalDetailTabHeight provides tabHeight) {
+                            FlowRow(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                            ) { content() }
+                        }
+                    }
+                } else {
+                    Row(
+                        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) { content() }
+                }
             }
         }
         HorizontalDivider(Modifier.padding(top = 12.dp))
@@ -196,6 +216,7 @@ fun ReadingTab(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(8.dp)
+    val detailHeight = LocalDetailTabHeight.current
     val bringIntoView = remember { BringIntoViewRequester() }
     var placed by remember { mutableStateOf(false) }
     LaunchedEffect(selected, placed) {
@@ -206,10 +227,22 @@ fun ReadingTab(
             .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
             .semantics { this.selected = selected }
             .clickable(enabled = enabled, role = Role.Tab, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 2.dp),
+            .heightIn(min = if (detailHeight == Dp.Unspecified) 38.dp else detailHeight)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
-        ProvideTextStyle(MaterialTheme.typography.bodyMedium) { content() }
+        val color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+        CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides color) {
+            val baseStyle = MaterialTheme.typography.bodyMedium
+            val style =
+                if (detailHeight == Dp.Unspecified) {
+                    baseStyle.copy(lineHeight = 22.sp)
+                } else {
+                    baseStyle.copy(fontSize = 13.sp, lineHeight = 21.sp)
+                }
+            ProvideTextStyle(style) { content() }
+        }
     }
 }
 

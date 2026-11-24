@@ -66,19 +66,23 @@ fun MyCommunitiesPage() {
     val pagerState = rememberPagerState { 2 }
     val scope = rememberCoroutineScope()
     Column {
-        Box(Modifier.fillMaxWidth()) {
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
             val tabs =
                 listOf(
                     stringResource(Res.string.community_view_all),
                     stringResource(Res.string.community_view_poster),
                 )
-            PrimaryTabRow(
-                modifier = Modifier.fillMaxWidth(),
-            ) {
+            val tabPadding =
+                if (maxWidth <= 600.dp) {
+                    PaddingValues(start = 14.dp, top = 20.dp, end = 14.dp)
+                } else {
+                    PaddingValues(start = 30.dp, top = 30.dp, end = 30.dp)
+                }
+            PrimaryTabRow(Modifier.fillMaxWidth(), contentPadding = tabPadding) {
                 tabs.forEachIndexed { i, label ->
                     Tab(selected = pagerState.currentPage == i, onClick = {
                         scope.launch { pagerState.scrollToPage(i) }
-                    }) { Text(label, modifier = Modifier.padding(vertical = 12.dp)) }
+                    }) { Text(label) }
                 }
             }
         }
@@ -95,29 +99,32 @@ fun MyCommunitiesPage() {
 fun CommunityCellList(onClick: ((CommunityInfo) -> Unit)? = null) {
     val cellViewModel = createJoinedCommunitiesViewModel()
     val nav = LocalAppNavFactory.current
-    StateView(cellViewModel, Modifier.fillMaxSize()) { items ->
-        LazyVerticalGrid(
-            GridCells.Adaptive(128.dp),
-            Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(20.dp),
-            horizontalArrangement = Arrangement.spacedBy(20.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
-        ) {
-            pagingItems(items, { it.id }) { index ->
-                val info = items[index]
-                val dialog = rememberCommonDialogController()
-                Column(
-                    Modifier.fillMaxWidth().clickable(enabled = info != null) {
-                        info?.let { onClick?.invoke(it) ?: nav.newAppNav().gotoCommunity(it.id, false) }
-                    }.appiumSemantics(text = info?.name).padding(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    CommunityIconWithDialog(info, dialog.shown.value, 52.dp, onClickIcon = dialog::update)
-                    Text(info?.name.orEmpty(), maxLines = 2, overflow = TextOverflow.Ellipsis)
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val compact = maxWidth <= 600.dp
+        StateView(cellViewModel, Modifier.fillMaxSize()) { items ->
+            LazyVerticalGrid(
+                if (compact) GridCells.Fixed(2) else GridCells.FixedSize(176.dp),
+                Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = if (compact) 14.dp else 30.dp, vertical = 22.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                pagingItems(items, { it.id }) { index ->
+                    val info = items[index]
+                    val dialog = rememberCommonDialogController()
+                    Column(
+                        Modifier.fillMaxWidth().clickable(enabled = info != null) {
+                            info?.let { onClick?.invoke(it) ?: nav.newAppNav().gotoCommunity(it.id, false) }
+                        }.appiumSemantics(text = info?.name).padding(horizontal = 12.dp, vertical = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        CommunityIconWithDialog(info, dialog.shown.value, 48.dp, onClickIcon = dialog::update)
+                        Text(info?.name.orEmpty(), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
                 }
+                bottomAppending(items.loadState, items::retry)
             }
-            bottomAppending(items.loadState, items::retry)
         }
     }
 }

@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
 import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
@@ -63,7 +64,6 @@ import com.storyteller_f.alphaheart.client.compose_core.components.ReadingHorizo
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab as Tab
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow as PrimaryScrollableTabRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,12 +106,12 @@ private fun CommunityInfoTabs(id: PrimaryKey) {
     val pagerState = rememberPagerState { tabs.size }
     val scope = rememberCoroutineScope()
     Column {
-        PrimaryScrollableTabRow {
+        ReadingTabRow(wrap = true) {
             tabs.forEachIndexed { i, label ->
                 Tab(selected = pagerState.currentPage == i, onClick = {
                     scope.launch { pagerState.scrollToPage(i) }
                 }) {
-                    Text(label, modifier = Modifier.padding(vertical = 12.dp))
+                    Text(label)
                 }
             }
         }

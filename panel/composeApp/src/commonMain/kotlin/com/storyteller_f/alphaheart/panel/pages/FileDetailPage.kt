@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import com.github.panpf.zoomimage.CoilZoomAsyncImage
 import com.storyteller_f.alphaheart.client.compose_core.components.PdfView
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.globalLoader
 import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
@@ -77,7 +78,6 @@ import com.storyteller_f.alphaheart.client.compose_core.components.ReadingHorizo
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab as Tab
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow as PrimaryScrollableTabRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,12 +127,12 @@ private fun FileInfoTabs(id: PrimaryKey) {
     val pagerState = rememberPagerState { tabs.size }
     val scope = rememberCoroutineScope()
     Column {
-        PrimaryScrollableTabRow {
+        ReadingTabRow(wrap = true) {
             tabs.forEachIndexed { i, label ->
                 Tab(selected = pagerState.currentPage == i, onClick = {
                     scope.launch { pagerState.scrollToPage(i) }
                 }) {
-                    Text(label, modifier = Modifier.padding(vertical = 12.dp))
+                    Text(label)
                 }
             }
         }

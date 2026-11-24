@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
@@ -284,6 +285,7 @@ private fun MyRoomSearchContent(current: String) {
                             {
                                 selectedOption = i
                             },
+                            modifier = Modifier.heightIn(min = 40.dp),
                         ) {
                             Text(
                                 stringResource(
@@ -330,6 +332,7 @@ private fun MyCommunitySearchContent(query: String) {
                             {
                                 selectedOption = i
                             },
+                            modifier = Modifier.heightIn(min = 40.dp),
                         ) {
                             Text(
                                 stringResource(
@@ -373,7 +376,7 @@ private fun WorldSearchContent(current: String) {
                                 pagerState.scrollToPage(i)
                             }
                         }) {
-                            Text(text = e, modifier = Modifier.padding(vertical = 12.dp))
+                            Text(e)
                         }
                     }
                 }

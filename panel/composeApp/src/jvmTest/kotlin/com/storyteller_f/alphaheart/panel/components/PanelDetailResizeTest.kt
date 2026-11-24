@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -55,6 +54,7 @@ import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIntera
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow
 import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.utils.readingTypography
 import com.storyteller_f.alphaheart.panel.PanelNavigationDrawer
 import com.storyteller_f.alphaheart.panel.calculatePanelPaneDirective
 import com.storyteller_f.alphaheart.panel.common.PanelAllTitlesScreen
@@ -73,6 +73,36 @@ import com.storyteller_f.alphaheart.client.compose_core.components.ReadingHorizo
 
 @OptIn(ExperimentalTestApi::class, ExperimentalCoroutinesApi::class)
 internal class PanelDetailResizeTest {
+    @Test
+    fun readingTabsKeepTheirHeightAndWrapWhenThePaneNarrows() {
+        runDesktopComposeUiTest(width = 720, height = 300) {
+            val width = mutableStateOf(680.dp)
+            val selected = mutableStateOf(0)
+            val labels = listOf("Communities", "Rooms", "Subscriptions")
+            setContent {
+                MaterialTheme(typography = readingTypography) {
+                    Box(Modifier.width(width.value)) {
+                        ReadingTabRow(wrap = true) {
+                            labels.forEachIndexed { index, label ->
+                                ReadingTab(selected.value == index, { selected.value = index }) { Text(label) }
+                            }
+                        }
+                    }
+                }
+            }
+            fun tab(label: String) = onNode(hasText(label) and hasClickAction())
+            labels.forEach { tab(it).assertHeightIsEqualTo(37.dp) }
+            val firstTop = tab(labels.first()).getUnclippedBoundsInRoot().top
+            assertEquals(firstTop, tab(labels.last()).getUnclippedBoundsInRoot().top)
+            runOnIdle { width.value = 180.dp }
+            val lastNarrowTop = tab(labels.last()).getUnclippedBoundsInRoot().top
+            val firstNarrowTop = tab(labels.first()).getUnclippedBoundsInRoot().top
+            assertTrue(lastNarrowTop > firstNarrowTop)
+            tab(labels.last()).performClick().assertIsSelected().assertHeightIsEqualTo(40.dp)
+            tab(labels.first()).assertIsNotSelected().assertHeightIsEqualTo(40.dp)
+        }
+    }
+
     @Test
     fun detailPagersFillTheNewPaneWithoutLosingDraftTabOrVerticalScroll() {
         // Desktop Compose tests render on Swing's EDT; Nav3 lifecycle checks must use that same main dispatcher.
@@ -251,7 +281,7 @@ private fun NestedInfoFixture(onMount: () -> Unit) {
         onDispose { }
     }
     Column {
-        ReadingTabRow { ReadingTab(true, {}) { Text("Fields", Modifier.padding(vertical = 12.dp)) } }
+        ReadingTabRow { ReadingTab(true, {}) { Text("Fields") } }
         HorizontalPager(nested, Modifier.weight(1f)) {
             Box(Modifier.fillMaxSize().testTag("detail-body")) {
                 Column {

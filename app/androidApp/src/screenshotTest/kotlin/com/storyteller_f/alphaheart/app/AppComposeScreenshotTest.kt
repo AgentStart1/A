@@ -548,8 +548,8 @@ fun ReadingControlsScreenshot() {
                 ReadingButton({}) { Text("Save") }
             }
             ReadingTabRow {
-                ReadingTab(true, {}) { Text("All", Modifier.padding(vertical = 10.dp)) }
-                ReadingTab(false, {}) { Text("Posters", Modifier.padding(vertical = 10.dp)) }
+                ReadingTab(true, {}) { Text("All") }
+                ReadingTab(false, {}) { Text("Posters") }
             }
             ReadingOutlinedTextField("Retained draft", {}, Modifier.fillMaxWidth())
         }

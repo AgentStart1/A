@@ -241,7 +241,7 @@ private fun TaskFailureTypeFilter(selectedFailureType: String?, onSelectedFailur
 
 @Composable
 private fun TaskRecordFilterButton(label: String, selected: Boolean, onClick: () -> Unit) {
-    Tab(selected, onClick) { Text(label, Modifier.padding(vertical = 10.dp)) }
+    Tab(selected, onClick) { Text(label) }
 }
 
 @Composable

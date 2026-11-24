@@ -150,7 +150,7 @@ private fun ProjectIcon() {
     }
     Box(
         modifier =
-        Modifier.size(40.dp).appiumSemantics(description = "about project", onClick = { showDialog = true })
+        Modifier.size(29.dp).appiumSemantics(description = "about project", onClick = { showDialog = true })
             .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
             .clip(RoundedCornerShape(8.dp))
             .clickable {

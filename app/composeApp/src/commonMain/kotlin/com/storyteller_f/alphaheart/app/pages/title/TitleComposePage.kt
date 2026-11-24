@@ -547,7 +547,7 @@ private fun TypeSelector(
             TabRow(contentPadding = PaddingValues(top = 8.dp)) {
                 supportObjectType.forEach { type ->
                     Tab(selected = currentType == type, onClick = { setType(type) }) {
-                        Text(objectTypeLabel(type), Modifier.padding(vertical = 12.dp))
+                        Text(objectTypeLabel(type))
                     }
                 }
             }

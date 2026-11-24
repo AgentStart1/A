@@ -138,7 +138,7 @@ private fun FilePickerTabs(pagerState: PagerState, support: List<String>, action
                         modifier = Modifier.appiumSemantics(text = label, onClick = selectTab),
                     ) {
                         Row(
-                            Modifier.padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
