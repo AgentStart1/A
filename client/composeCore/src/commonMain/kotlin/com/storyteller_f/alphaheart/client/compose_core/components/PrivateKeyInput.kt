@@ -14,7 +14,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -31,14 +30,21 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.Res
+import com.storyteller_f.alphaheart.client.compose_core.account_address_label
+import com.storyteller_f.alphaheart.client.compose_core.address_not_set
+import com.storyteller_f.alphaheart.client.compose_core.auth.ACCOUNT_ADDRESS_DESCRIPTION
 import com.storyteller_f.alphaheart.client.compose_core.cancel
 import com.storyteller_f.alphaheart.client.compose_core.confirm
 import com.storyteller_f.alphaheart.client.compose_core.copy
 import com.storyteller_f.alphaheart.client.compose_core.edit_private_key
 import com.storyteller_f.alphaheart.client.compose_core.generate
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.notifications.LocalToaster
 import com.storyteller_f.alphaheart.client.compose_core.p256_security_warning
 import com.storyteller_f.alphaheart.client.compose_core.private_key
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
+import com.storyteller_f.alphaheart.client.compose_core.utils.copyText
 import com.storyteller_f.result.onSuccess
 import com.storyteller_f.shared.getAlgo
 import com.storyteller_f.shared.model.AlgoType
@@ -85,18 +91,28 @@ fun PrivateKeyInput(
                 .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                address.orEmpty(),
-                modifier =
-                Modifier.weight(1f).appiumSemantics(
-                    description = address?.let { ACCOUNT_ADDRESS_DESCRIPTION },
-                    text = address,
-                ),
-            )
+            Column(Modifier.weight(1f)) {
+                val addressLabel = stringResource(Res.string.account_address_label)
+                val displayAddress = address ?: stringResource(Res.string.address_not_set)
+                Text(
+                    addressLabel,
+                    modifier = Modifier.appiumSemantics(text = addressLabel),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    displayAddress,
+                    modifier =
+                    Modifier.appiumSemantics(
+                        description = address?.let { ACCOUNT_ADDRESS_DESCRIPTION },
+                        text = displayAddress,
+                    ),
+                )
+            }
             IconButton({
                 showDialog = true
             }, modifier = Modifier.appiumSemantics(description = stringResource(Res.string.edit_private_key))) {
-                Icon(Icons.Default.Edit, stringResource(Res.string.edit_private_key))
+                Icon(actionIcon(ActionGlyph.PEN_LINE), stringResource(Res.string.edit_private_key))
             }
         }
     }
@@ -110,8 +126,6 @@ fun PrivateKeyInput(
         }
     }
 }
-
-private const val ACCOUNT_ADDRESS_DESCRIPTION = "account address"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

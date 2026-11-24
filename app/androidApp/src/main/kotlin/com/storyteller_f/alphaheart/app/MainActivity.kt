@@ -18,10 +18,10 @@ import com.google.common.util.concurrent.MoreExecutors
 import com.storyteller_f.alphaheart.app.utils.initEnvironment
 import com.storyteller_f.alphaheart.client.compose_core.PlaybackService
 import com.storyteller_f.alphaheart.client.compose_core.commonForActivity
-import com.storyteller_f.alphaheart.client.compose_core.components.DefaultMediaPlayListHandlerProvider
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalMediaPlayListHandlerProvider
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalMediaPlayerService
-import com.storyteller_f.alphaheart.client.compose_core.components.unbindActivity
+import com.storyteller_f.alphaheart.client.compose_core.media.DefaultMediaPlayListHandlerProvider
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlayListHandlerProvider
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlayerService
+import com.storyteller_f.alphaheart.client.compose_core.permissions.unbindActivity
 import com.storyteller_f.shared.isRunningOnRobolectric
 import io.github.aakira.napier.Napier
 import io.github.vinceglb.filekit.FileKit

@@ -12,7 +12,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.storyteller_f.alphaheart.app.IAccountInstance
 import com.storyteller_f.alphaheart.app.LocalUiViewModel
-import com.storyteller_f.alphaheart.app.pages.search.SearchScope
+import com.storyteller_f.alphaheart.app.search.SearchScope
 import com.storyteller_f.alphaheart.client.core.SimpleUserSessionManager
 import com.storyteller_f.alphaheart.client.core.UserSessionManager
 import com.storyteller_f.shared.model.QuotaType

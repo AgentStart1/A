@@ -18,7 +18,7 @@ class BundledPdfAssets {
   }
 }
 
-export function createPdfPreview(container, url, onFailure) {
+export function createPdfPreview(container, url, onFailure, onPageChange) {
   const controller = new AbortController();
   const worker = new Worker(new URL("./pdf-worker.mjs", import.meta.url), { type: "module" });
   const pdfWorker = new PDFWorker({ port: worker });
@@ -27,10 +27,10 @@ export function createPdfPreview(container, url, onFailure) {
   root.setAttribute("role", "document");
   root.setAttribute("aria-label", "PDF");
   root.tabIndex = 0;
-  root.style.cssText = "position:absolute;inset:0;overflow:auto;overflow-anchor:none;overscroll-behavior:contain;padding:16px;box-sizing:border-box;";
+  root.style.cssText = "position:absolute;inset:0;overflow:auto;overflow-anchor:none;overscroll-behavior:contain;box-sizing:border-box;";
   const style = document.createElement("style");
   style.textContent = `
-.alpha-pdf-page{position:relative;margin:0 auto 16px;background:white;overflow:hidden;flex:none}
+.alpha-pdf-page{position:relative;margin:0 0 16px;background:white;overflow:hidden;flex:none}
 .alpha-pdf-page:last-child{margin-bottom:0}
 .alpha-pdf-text[data-main-rotation="90"]{transform:rotate(90deg) translateY(-100%)}
 .alpha-pdf-text[data-main-rotation="180"]{transform:rotate(180deg) translate(-100%,-100%)}
@@ -45,7 +45,7 @@ export function createPdfPreview(container, url, onFailure) {
   root.append(style);
   container.append(root);
   let closed = false, closePromise = null, loading = null, pdf = null, generation = 0, active = null;
-  let width = 0, pendingSize = null, draining = false;
+  let width = 0, zoom = 1, currentPage = -1, pendingSize = null, draining = false;
   const pages = [], queued = new Set(), visible = new Set();
   const first = Promise.withResolvers();
   first.promise.catch(() => {});
@@ -138,12 +138,34 @@ export function createPdfPreview(container, url, onFailure) {
       }
     }
   }, { root, rootMargin: "100% 0px" });
+  const pageInView = () => {
+    const position = root.scrollTop;
+    let first = 0, last = pages.length;
+    while (first < last) {
+      const middle = Math.floor((first + last) / 2);
+      const page = pages[middle].element;
+      if (page.offsetTop + page.offsetHeight > position) last = middle;
+      else first = middle + 1;
+    }
+    return first;
+  };
+  const publishPage = next => {
+    if (pages[next] && next !== currentPage) {
+      currentPage = next;
+      onPageChange?.(next, pages.length);
+    }
+  };
+  const updatePageIndicator = () => {
+    const bottom = root.scrollTop > 0 && root.scrollTop >= root.scrollHeight - root.clientHeight - 1;
+    publishPage(bottom ? pages.length - 1 : pageInView());
+  };
+  root.addEventListener("scroll", updatePageIndicator, { passive: true });
   let resizeFrame = null;
   const applyResize = () => {
     resizeFrame = null;
-    const next = Math.max(0, root.clientWidth - 32);
+    const next = Math.floor(root.clientWidth * zoom);
     if (!next || next === width || closed) return;
-    const anchor = pages.find(page => page.element.offsetTop + page.element.offsetHeight > root.scrollTop);
+    const anchor = pages[pageInView()];
     const fraction = anchor ? (root.scrollTop - anchor.element.offsetTop) / anchor.element.offsetHeight : 0;
     width = next; generation++;
     cancelActive();
@@ -185,12 +207,24 @@ export function createPdfPreview(container, url, onFailure) {
       pages.push(page); setPageSize(page); root.append(element);
     }
     root.dataset.pdfPages = String(pages.length);
+    updatePageIndicator();
     if (!pages.length) throw new Error("PDF has no pages");
     visible.add(pages[0]); queue(pages[0]);
     for (const page of pages) observer.observe(page.element);
   })().catch(report);
   return {
     ready: first.promise,
+    goToPage(index) {
+      if (closed || !pages[index]) return;
+      root.scrollTop = pages[index].element.offsetTop;
+      publishPage(index);
+    },
+    setZoom(level) {
+      if (closed || !Number.isFinite(level)) return;
+      zoom = Math.min(2, Math.max(0.75, level));
+      if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(applyResize);
+    },
     license: new URL("./LICENSE-pdfjs", import.meta.url).href,
     notice: new URL("./NOTICE", import.meta.url).href,
     close() {

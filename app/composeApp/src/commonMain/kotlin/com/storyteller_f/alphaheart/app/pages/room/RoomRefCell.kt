@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalRefCellHandlerProvider
 import com.storyteller_f.alphaheart.app.components.ActionMenuReference
-import com.storyteller_f.alphaheart.client.compose_core.components.RefCellStateView
+import com.storyteller_f.alphaheart.app.components.RefCellStateView
 import com.storyteller_f.alphaheart.client.compose_core.components.RoomIcon
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.core.LoadingHandler
@@ -72,11 +72,11 @@ private fun RoomRefCellInternal(handler: LoadingHandler<RoomInfo>, onClick: ((Ro
 }
 
 @Composable
-fun RoomMenuRefCell(id: PrimaryKey, onClick: (RoomInfo) -> Unit) {
+fun RoomMenuRefCell(id: PrimaryKey, onClickIcon: ((RoomInfo) -> Unit)? = null, onClick: (RoomInfo) -> Unit) {
     val handler = LocalRefCellHandlerProvider.current.roomHandler(id)
     RefCellStateView(handler, Modifier.fillMaxWidth().heightIn(min = 52.dp)) { info ->
         ActionMenuReference(info.name, { onClick(info) }) {
-            RoomIcon(info, 48.dp, false, 4.dp) {}
+            RoomIcon(info, 48.dp, onClickIcon != null, 4.dp) { onClickIcon?.invoke(info) }
         }
     }
 }

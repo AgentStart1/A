@@ -24,9 +24,15 @@
     <string name="menu">Menu</string>
     <string name="add">Add</string>
     <string name="add_user">Add user</string>
-    <string name="random">Random</string>
+    <string name="generate_private_key">Generate private key</string>
     <string name="edit_private_key">Edit private key</string>
     <string name="encryption_private_key">Encryption private key</string>
+    <string name="signing_private_key">Signing private key</string>
+    <string name="select_private_key">Select private key</string>
+    <string name="import_private_key">Import private key</string>
+    <string name="import_signing_key">Import signing private key</string>
+    <string name="import_encryption_key">Import encryption private key</string>
+    <string name="copy_private_key">Copy private key</string>
     <string name="private_key_required">Private key must be specified</string>
     <string name="room_public">Public</string>
     <string name="room_private">Private</string>
@@ -64,7 +70,7 @@
     <string name="file_detail_title">File Detail</string>
     <string name="file_detail_title_with_info">FileDetail • %1$s</string>
     <string name="preview_image">Preview image</string>
-    <string name="file_can_preview">This file supports fullscreen preview</string>
+    <string name="file_can_preview">This file can be previewed</string>
     <string name="fullscreen_preview">Fullscreen preview</string>
     <string name="unsupported_content_type">Unsupported content type: %1$s</string>
     <string name="view_image">View image</string>
@@ -86,4 +92,5 @@
     <string name="worker_task_save_failed_detail">Could not save task configuration. Your changes have been kept.</string>
     <string name="set_read_only">Set to ReadOnly</string>
     <string name="set_normal">Set to Normal</string>
+    <string name="private_room_detail_title">Private Room Detail</string>
 </resources>

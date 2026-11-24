@@ -134,7 +134,7 @@ private fun ComposeUiTest.assertCreateMenuGeometry(labels: List<String>, compact
                     hasAnyAncestor(hasContentDescription(label) and hasClickAction())
             onAllNodes(inlineCaption, useUnmergedTree = true).assertCountEquals(0)
             onNode(hasContentDescription(label) and !hasClickAction(), useUnmergedTree = true)
-                .assertWidthIsEqualTo(21.dp).assertHeightIsEqualTo(21.dp)
+                .assertWidthIsEqualTo(16.dp).assertHeightIsEqualTo(16.dp)
             tile.performMouseInput {
                 enter(center)
                 exit()

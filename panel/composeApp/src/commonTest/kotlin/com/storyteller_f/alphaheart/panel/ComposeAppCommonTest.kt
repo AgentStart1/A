@@ -22,7 +22,7 @@ import com.storyteller_f.alphaheart.panel.common.PanelRoomDetailScreen
 import com.storyteller_f.alphaheart.panel.common.PanelTitleDetailScreen
 import com.storyteller_f.alphaheart.panel.common.PanelTopicDetailScreen
 import com.storyteller_f.alphaheart.panel.common.PanelUserDetailScreen
-import com.storyteller_f.alphaheart.panel.pages.failureTypeForStatus
+import com.storyteller_f.alphaheart.panel.tasks.failureTypeForStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

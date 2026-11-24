@@ -33,8 +33,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.ComposeViewport
 import com.storyteller_f.alphaheart.client.compose_core.components.AudioViewEmbed
-import com.storyteller_f.alphaheart.client.compose_core.components.RemoteMediaItem
 import com.storyteller_f.alphaheart.client.compose_core.components.VideoViewEmbed
+import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
 import kotlinx.browser.document
 import kotlinx.browser.window
 

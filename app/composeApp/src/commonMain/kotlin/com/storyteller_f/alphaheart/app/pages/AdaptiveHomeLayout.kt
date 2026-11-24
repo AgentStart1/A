@@ -23,7 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import com.storyteller_f.alphaheart.client.compose_core.components.LayoutDefaults
+import com.storyteller_f.alphaheart.app.navigation.adaptiveColumnCount
+import com.storyteller_f.alphaheart.client.compose_core.theme.LayoutDefaults
 
 /** Keeps the reading flow mounted while the optional Home context appears or disappears. */
 @Composable
@@ -46,9 +47,6 @@ fun HomeFeedLayout(modifier: Modifier = Modifier, context: @Composable () -> Uni
         }
     }
 }
-
-internal fun adaptiveColumnCount(widthDp: Float): Int =
-    if (widthDp < 640f) 1 else (widthDp / 300f).toInt().coerceAtLeast(2)
 
 /** A single grid owner retains item keys and reading position while its column count changes. */
 @Composable

@@ -15,6 +15,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
@@ -23,6 +24,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.client.compose_core.Res
 import com.storyteller_f.alphaheart.client.compose_core.close
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.navigation.LocalAdaptiveOverlay
 import org.jetbrains.compose.resources.stringResource
 
 /** Reading dialog chrome; action menus retain their default compact width. */
@@ -36,11 +40,13 @@ fun ReadingActionMenuSurface(
 ) {
     val windowWidth = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
     val padding = if (compact ?: (windowWidth <= 600.dp)) 18.dp else 20.dp
+    val adaptive = LocalAdaptiveOverlay.current
+    val width = if (adaptive) Modifier else Modifier.widthIn(max = maxWidth)
     Surface(
-        Modifier.widthIn(max = maxWidth).fillMaxWidth().testTag("action-menu-surface"),
+        width.fillMaxWidth().testTag("action-menu-surface"),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = if (adaptive) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
+        border = if (adaptive) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(Modifier.padding(1.dp).padding(padding)) {
             Row(

@@ -28,6 +28,9 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPreviewAction
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaControlActions
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaControlState
 import org.jetbrains.skia.Image
 import java.nio.file.Files
 import java.nio.file.Path
@@ -73,7 +76,7 @@ internal class MediaPlayerSurfaceTest {
             }
             onNodeWithContentDescription("Media options").performClick()
             onNodeWithContentDescription("Download").assertDoesNotExist()
-            onNodeWithContentDescription("Copy").assertIsDisplayed()
+            onNodeWithContentDescription("Copy").assertDoesNotExist()
             onNodeWithContentDescription("Preview").assertIsDisplayed()
             runOnIdle { showDownload.value = true }
             onNodeWithContentDescription("Download").assertIsDisplayed()
@@ -299,17 +302,18 @@ internal class MediaPlayerSurfaceTest {
         }
 
     @Test
-    fun `compact audio expansion keeps following content in place at both widths`() =
+    fun `compact audio playback keeps following content in place without fullscreen`() =
         runComposeUiTest {
             val width = mutableStateOf(360.dp)
+            val playing = mutableStateOf(false)
             var followingTop = Float.NaN
             setContent {
                 ReadingInteractions {
                     Column(Modifier.width(width.value)) {
                         MediaPlayerSurface(
                             "Track",
-                            MediaControlState(position = 65.0, duration = 180.0),
-                            MediaControlActions({}, {}, {}, {}),
+                            MediaControlState(playing = playing.value, position = 65.0, duration = 180.0),
+                            MediaControlActions({ playing.value = !playing.value }, {}, {}, {}),
                             Modifier.fillMaxWidth(),
                             video = false,
                         ) {}
@@ -323,16 +327,17 @@ internal class MediaPlayerSurfaceTest {
             listOf(360.dp, 800.dp).forEach { size ->
                 runOnIdle { width.value = size }
                 val before = runOnIdle { followingTop }
-                onNodeWithContentDescription("Expand player").performClick()
-                onNodeWithContentDescription("Exit expanded player").assertIsDisplayed()
-                runOnIdle { assertEquals(before, followingTop, "Expansion moved the following content at $size") }
-                onNodeWithContentDescription("Exit expanded player").performClick()
+                onNodeWithContentDescription("Expand player").assertDoesNotExist()
+                onNodeWithContentDescription("Play").performClick()
+                onNodeWithContentDescription("Pause").assertIsDisplayed()
+                runOnIdle { assertEquals(before, followingTop, "Playing moved the following content at $size") }
+                onNodeWithContentDescription("Pause").performClick()
                 onNodeWithText("Following content").assertIsDisplayed()
                 runOnIdle {
                     assertEquals(
                         before,
                         followingTop,
-                        "Closing expansion moved the following content at $size",
+                        "Pausing moved the following content at $size",
                     )
                 }
             }
@@ -373,19 +378,15 @@ internal class MediaPlayerSurfaceTest {
                 }
                 val before = runOnIdle { followingTop }
                 val menuPixels = onNodeWithContentDescription("Media options").capturePixels()
-                val expandPixels = onNodeWithContentDescription("Expand player").capturePixels()
                 listOf(state.value.copy(loading = true), state.value.copy(failed = true)).forEach { next ->
                     runOnIdle { state.value = next }
                     onNodeWithContentDescription("Media options").assertIsDisplayed().assertHasClickAction()
-                    onNodeWithContentDescription("Expand player").assertIsDisplayed().assertHasClickAction()
+                    onNodeWithContentDescription("Expand player").assertDoesNotExist()
                     assertContentEquals(menuPixels, onNodeWithContentDescription("Media options").capturePixels())
-                    assertContentEquals(expandPixels, onNodeWithContentDescription("Expand player").capturePixels())
                     runOnIdle { assertEquals(before, followingTop, "Status moved the following content at $size") }
                     onNodeWithContentDescription("Media options").performClick()
                     onNodeWithContentDescription("Preview").performClick()
                 }
-                onNodeWithContentDescription("Expand player").performClick()
-                onNodeWithContentDescription("Exit expanded player").assertIsDisplayed().performClick()
                 onNodeWithContentDescription("Retry").performClick()
             }
             runOnIdle {

@@ -27,13 +27,21 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.media.DesktopVideoFrame
+import com.storyteller_f.alphaheart.client.compose_core.media.DesktopVideoHost
+import com.storyteller_f.alphaheart.client.compose_core.media.DesktopVideoState
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaControlActions
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaSurfaceLayout
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaVolumeControl
+import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
+import com.storyteller_f.alphaheart.client.compose_core.media.VlcMediaPlayer
+import com.storyteller_f.alphaheart.client.compose_core.media.desktopVideoCoordination
+import com.storyteller_f.alphaheart.client.compose_core.media.toControlState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.skia.ColorAlphaType
 import org.jetbrains.skia.ColorType
 import org.jetbrains.skia.ImageInfo
-
-private val desktopVideoCoordination = Dispatchers.Default.limitedParallelism(1)
 
 @Composable
 actual fun VideoViewEmbed(remoteMediaItem: RemoteMediaItem) {
@@ -124,20 +132,6 @@ internal fun DesktopMedia(
 
 @Composable
 actual fun rememberIsInPipMode(): Boolean = false
-
-private fun DesktopVideoState.toControlState(): MediaControlState {
-    val ready = this as? DesktopVideoState.Ready
-    return MediaControlState(
-        playing = ready?.playing == true,
-        loading = this == DesktopVideoState.Loading || ready?.buffering == true,
-        failed = this == DesktopVideoState.Failed,
-        enabled = ready != null,
-        position = ready?.position ?: 0.0,
-        duration = ready?.duration ?: 0.0,
-        volume = ready?.volume ?: 1f,
-        muted = ready?.volume == 0f,
-    )
-}
 
 @Composable
 private fun rememberDesktopBitmap(frame: DesktopVideoFrame?): State<ImageBitmap?> =

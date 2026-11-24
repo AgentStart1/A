@@ -4,6 +4,7 @@
 
 package com.storyteller_f.alphaheart.app.pages.topic
 
+import com.storyteller_f.alphaheart.app.topic.originalPlainContent
 import com.storyteller_f.shared.model.TopicContent
 import kotlin.test.Test
 import kotlin.test.assertEquals

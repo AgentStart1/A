@@ -4,8 +4,8 @@
 
 package com.storyteller_f.alphaheart.panel.common
 
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomGlobalDialogController
-import com.storyteller_f.alphaheart.client.compose_core.components.GlobalDialogContext
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomGlobalDialogController
+import com.storyteller_f.alphaheart.client.compose_core.tasks.GlobalDialogContext
 import com.storyteller_f.alphaheart.client.core.RequestError
 import com.storyteller_f.result.CustomResult
 import com.storyteller_f.result.onSuccess

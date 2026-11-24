@@ -20,10 +20,10 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import com.storyteller_f.alphaheart.app.components.block.EditableParagraphBlock
 import com.storyteller_f.alphaheart.app.pages.topic.BlockEditTopicPage
 import com.storyteller_f.alphaheart.app.pages.topic.EditTopicPage
-import com.storyteller_f.alphaheart.client.compose_core.components.block.ContentBlock
-import com.storyteller_f.alphaheart.client.compose_core.components.block.EditableParagraphBlock
+import com.storyteller_f.alphaheart.client.compose_core.markdown.ContentBlock
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals

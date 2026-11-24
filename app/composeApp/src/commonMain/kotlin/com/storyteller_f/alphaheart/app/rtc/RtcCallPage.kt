@@ -21,14 +21,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CallEnd
-import androidx.compose.material.icons.filled.Cameraswitch
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MicOff
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material.icons.filled.VideocamOff
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -45,8 +37,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -56,8 +48,11 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalUiViewModel
+import com.storyteller_f.alphaheart.app.LocalUserInfo
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.common.createRoomViewModel
+import com.storyteller_f.alphaheart.app.common.createUserViewModel
+import com.storyteller_f.alphaheart.app.pages.user.UserIconWithDialog
 import com.storyteller_f.alphaheart.app.rtc_audio_only
 import com.storyteller_f.alphaheart.app.rtc_call_title
 import com.storyteller_f.alphaheart.app.rtc_camera_off
@@ -75,27 +70,23 @@ import com.storyteller_f.alphaheart.app.rtc_media_failed
 import com.storyteller_f.alphaheart.app.rtc_mute
 import com.storyteller_f.alphaheart.app.rtc_muted
 import com.storyteller_f.alphaheart.app.rtc_participant
-import com.storyteller_f.alphaheart.app.rtc_participants
 import com.storyteller_f.alphaheart.app.rtc_ready_badge
-import com.storyteller_f.alphaheart.app.rtc_ready_status
 import com.storyteller_f.alphaheart.app.rtc_switch_camera
 import com.storyteller_f.alphaheart.app.rtc_unmute
 import com.storyteller_f.alphaheart.app.rtc_waiting
 import com.storyteller_f.alphaheart.app.rtc_you
-import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.CustomAlertDialog
-import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.rememberAlertDialogController
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.core.sendFrame
 import com.storyteller_f.result.getOrThrow
 import com.storyteller_f.shared.type.PrimaryKey
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.compose.resources.stringResource
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton as FilledTonalButton
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTextButton as TextButton
 
 // Application-owned serial coordination, separate from rendering on native platforms.
@@ -128,7 +119,7 @@ internal fun RtcCallPage(roomId: PrimaryKey) {
 
 @Composable
 private fun RtcCallContent(roomName: String, state: RtcCallState, host: RtcCallHost) {
-    Scaffold(topBar = { RtcToolbar(host::leave) }) { padding ->
+    Scaffold(topBar = { RtcToolbar(roomName, host::leave) }) { padding ->
         BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
             val compact = maxWidth <= 600.dp
             Column(
@@ -138,7 +129,6 @@ private fun RtcCallContent(roomName: String, state: RtcCallState, host: RtcCallH
                 ),
                 verticalArrangement = Arrangement.spacedBy(22.dp),
             ) {
-                RtcHeading(roomName, state, compact)
                 when (state) {
                     is RtcCallState.Active -> {
                         ParticipantGrid(state, Modifier.weight(1f))
@@ -177,7 +167,7 @@ private fun RtcCallContent(roomName: String, state: RtcCallState, host: RtcCallH
 }
 
 @Composable
-private fun RtcToolbar(leave: () -> Unit) {
+internal fun RtcToolbar(roomName: String, leave: () -> Unit) {
     Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
         Column {
             Row(
@@ -187,38 +177,20 @@ private fun RtcToolbar(leave: () -> Unit) {
                 IconButton(leave, Modifier.appiumSemantics(description = "rtc-back", onClick = leave)) {
                     Icon(actionIcon(ActionGlyph.ARROW_LEFT), stringResource(Res.string.rtc_leave))
                 }
-                Text(stringResource(Res.string.rtc_call_title), Modifier.padding(start = 12.dp))
+                Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                    Text(stringResource(Res.string.rtc_call_title), style = MaterialTheme.typography.titleMedium)
+                    if (roomName.isNotBlank()) {
+                        Text(
+                            roomName,
+                            style = MaterialTheme.typography.labelMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
             }
             androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
-    }
-}
-
-@Composable
-private fun RtcHeading(roomName: String, state: RtcCallState, compact: Boolean) {
-    Row(
-        Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            roomName,
-            Modifier.weight(1f),
-            style =
-            MaterialTheme.typography.headlineSmall.copy(
-                fontSize = if (compact) 23.sp else 26.sp,
-                lineHeight = if (compact) 31.05.sp else 35.1.sp,
-            ),
-        )
-        Text(
-            when (state) {
-                is RtcCallState.Active -> stringResource(Res.string.rtc_participants, state.participants.size + 1)
-                is RtcCallState.Ready -> stringResource(Res.string.rtc_ready_status)
-                RtcCallState.Joining -> stringResource(Res.string.rtc_joining)
-                RtcCallState.Leaving -> stringResource(Res.string.rtc_leaving_status)
-            },
-            style = MaterialTheme.typography.bodySmall,
-        )
     }
 }
 
@@ -253,6 +225,7 @@ internal fun RtcReadyContent(failed: Boolean, join: (Boolean) -> Unit, modifier:
 
 @Composable
 private fun ParticipantGrid(state: RtcCallState.Active, modifier: Modifier) {
+    val me = LocalUserInfo.current
     LazyVerticalGrid(
         columns = GridCells.Adaptive(220.dp),
         modifier = modifier.fillMaxWidth(),
@@ -268,6 +241,7 @@ private fun ParticipantGrid(state: RtcCallState.Active, modifier: Modifier) {
                 stringResource(Res.string.rtc_connected),
                 local = true,
                 failure = state.mediaFailure,
+                userId = me?.id,
             )
         }
         items(state.participants, key = { it.uid }) { peer ->
@@ -284,6 +258,7 @@ private fun ParticipantGrid(state: RtcCallState.Active, modifier: Modifier) {
                         RtcConnectionState.Failed -> Res.string.rtc_failed
                     },
                 ),
+                userId = peer.uid,
             )
         }
         if (state.participants.isEmpty()) {
@@ -307,6 +282,7 @@ private fun ParticipantTile(
     status: String,
     local: Boolean = false,
     failure: Throwable? = null,
+    userId: PrimaryKey? = null,
 ) {
     val errorDialog = rememberAlertDialogController()
     CustomAlertDialog(errorDialog, errorDialog::close, errorDialog::close)
@@ -323,7 +299,7 @@ private fun ParticipantTile(
                 RtcVideoView(video, Modifier.fillMaxSize(), local)
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Person, null, tint = Color.White)
+                    ParticipantAvatar(userId)
                     Text(
                         stringResource(if (videoMuted) Res.string.rtc_camera_off else Res.string.rtc_audio_only),
                         color = Color.White,
@@ -351,43 +327,38 @@ private fun ParticipantTile(
 }
 
 @Composable
+private fun ParticipantAvatar(userId: PrimaryKey?) {
+    val user = userId?.let { createUserViewModel(it).handler.data.collectAsStateWithLifecycle().value }
+    UserIconWithDialog(user, size = 48.dp, setClickEvent = user != null)
+}
+
+@Composable
 private fun ActiveCallControls(state: RtcCallState.Active, host: RtcCallHost) {
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        FilledTonalButton(
+        RtcActionButton(
+            glyph = if (state.audioMuted) ActionGlyph.MIC_OFF else ActionGlyph.MIC,
+            label = stringResource(if (state.audioMuted) Res.string.rtc_unmute else Res.string.rtc_mute),
+            action = "rtc-toggle-audio",
             onClick = host::toggleAudio,
-            modifier = Modifier.appiumSemantics(description = "rtc-toggle-audio", onClick = host::toggleAudio),
-        ) {
-            Icon(if (state.audioMuted) Icons.Default.MicOff else Icons.Default.Mic, null)
-            Text(stringResource(if (state.audioMuted) Res.string.rtc_unmute else Res.string.rtc_mute))
-        }
-        FilledTonalButton(
-            onClick = host::toggleVideo,
+        )
+        RtcActionButton(
+            glyph = if (state.videoMuted) ActionGlyph.VIDEO_OFF else ActionGlyph.VIDEO,
+            label = stringResource(if (state.videoMuted) Res.string.rtc_camera_on else Res.string.rtc_camera_off),
+            action = "rtc-toggle-video",
             enabled = state.localVideo != null,
-            modifier =
-            Modifier.appiumSemantics(
-                description = "rtc-toggle-video",
-                onClick = if (state.localVideo != null) host::toggleVideo else null,
-            ),
-        ) {
-            Icon(if (state.videoMuted) Icons.Default.VideocamOff else Icons.Default.Videocam, null)
-            Text(stringResource(if (state.videoMuted) Res.string.rtc_camera_on else Res.string.rtc_camera_off))
-        }
+            onClick = host::toggleVideo,
+        )
         if (state.localVideo != null && state.media.canSwitchCamera) {
-            FilledTonalButton(
+            RtcActionButton(
+                ActionGlyph.SWITCH_CAMERA,
+                stringResource(Res.string.rtc_switch_camera),
+                "rtc-switch-camera",
                 onClick = host::switchCamera,
-                modifier =
-                Modifier.appiumSemantics(
-                    description = "rtc-switch-camera",
-                    onClick = host::switchCamera,
-                ),
-            ) {
-                Icon(Icons.Default.Cameraswitch, null)
-                Text(stringResource(Res.string.rtc_switch_camera))
-            }
+            )
         }
         LeaveCallButton(host::leave)
     }
@@ -395,27 +366,33 @@ private fun ActiveCallControls(state: RtcCallState.Active, host: RtcCallHost) {
 
 @Composable
 private fun LeaveCallButton(onLeave: () -> Unit) {
-    Button(onClick = onLeave, modifier = Modifier.appiumSemantics(description = "rtc-leave", onClick = onLeave)) {
-        Icon(Icons.Default.CallEnd, null)
-        Text(stringResource(Res.string.rtc_leave))
-    }
+    RtcActionButton(ActionGlyph.PHONE_OFF, stringResource(Res.string.rtc_leave), "rtc-leave", onClick = onLeave)
 }
 
 @Composable
 internal fun DefaultRtcJoinButton(video: Boolean, enabled: Boolean, onJoin: () -> Unit) {
-    FilledTonalButton(
-        onClick = onJoin,
+    RtcActionButton(
+        glyph = if (video) ActionGlyph.VIDEO else ActionGlyph.MIC,
+        label = stringResource(if (video) Res.string.rtc_join_video else Res.string.rtc_join_audio),
+        action = if (video) "rtc-join-video" else "rtc-join-audio",
         enabled = enabled,
-        modifier =
-        Modifier.appiumSemantics(
-            description = if (video) "rtc-join-video" else "rtc-join-audio",
-            onClick = if (enabled) onJoin else null,
-        ),
+        onClick = onJoin,
+    )
+}
+
+@Composable
+private fun RtcActionButton(
+    glyph: ActionGlyph,
+    label: String,
+    action: String,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    IconButton(
+        onClick,
+        Modifier.appiumSemantics(description = action, onClick = onClick.takeIf { enabled }),
+        enabled = enabled,
     ) {
-        Icon(if (video) Icons.Default.Videocam else Icons.Default.Mic, null)
-        Text(
-            stringResource(if (video) Res.string.rtc_join_video else Res.string.rtc_join_audio),
-            Modifier.padding(start = 7.dp),
-        )
+        Icon(actionIcon(glyph), label)
     }
 }

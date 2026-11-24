@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaSurfaceLayout
+import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
 
 @Composable
 actual fun VideoViewEmbed(remoteMediaItem: RemoteMediaItem) {

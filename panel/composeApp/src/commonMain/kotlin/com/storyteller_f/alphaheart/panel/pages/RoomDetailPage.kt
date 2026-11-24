@@ -24,13 +24,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.storyteller_f.alphaheart.client.compose_core.components.DetailNavigationScaffold
-import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
-import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
-import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.tasks.emitEvent
 import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.alphaheart.client.core.updateRoomStatus
 import com.storyteller_f.alphaheart.panel.LocalPanelGlobalDialog
@@ -41,12 +40,14 @@ import com.storyteller_f.alphaheart.panel.common.PanelLogsTab
 import com.storyteller_f.alphaheart.panel.common.createPanelRoomFilesViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelRoomMembersViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelRoomViewModel
+import com.storyteller_f.alphaheart.panel.components.DetailNavigationScaffold
+import com.storyteller_f.alphaheart.panel.components.PanelDetailHeading
 import com.storyteller_f.alphaheart.panel.components.PanelInfoTable
 import com.storyteller_f.alphaheart.panel.components.panelOptionalValueText
 import com.storyteller_f.alphaheart.panel.components.panelValueText
 import com.storyteller_f.alphaheart.panel.menu
+import com.storyteller_f.alphaheart.panel.private_room_detail_title
 import com.storyteller_f.alphaheart.panel.room_detail_title
-import com.storyteller_f.alphaheart.panel.room_detail_title_with_info
 import com.storyteller_f.alphaheart.panel.set_normal
 import com.storyteller_f.alphaheart.panel.set_read_only
 import com.storyteller_f.alphaheart.panel.tab_basic_info
@@ -90,18 +91,12 @@ private fun RoomTopBar(id: PrimaryKey) {
     val vm = createPanelRoomViewModel(id)
     val info by vm.handler.data.collectAsState(null)
     val name = info?.name
-    val aid = info?.aid
-    val title =
-        if (name != null && aid != null) {
-            stringResource(Res.string.room_detail_title_with_info, name, aid)
-        } else {
-            stringResource(Res.string.room_detail_title)
-        }
+    val privateRoom = info?.isPrivate == true
+    val titleResource = if (privateRoom) Res.string.private_room_detail_title else Res.string.room_detail_title
+    val title = stringResource(titleResource)
     val nav = LocalPanelNav.current
     TopAppBar(
-        title = {
-            Text(title)
-        },
+        title = { PanelDetailHeading(title, name) },
         navigationIcon = {
             IconButton(onClick = { nav.open() }) {
                 Icon(Icons.Default.Menu, stringResource(Res.string.menu))

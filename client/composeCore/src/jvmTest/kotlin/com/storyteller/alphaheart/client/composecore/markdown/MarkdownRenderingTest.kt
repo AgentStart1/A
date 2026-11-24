@@ -5,9 +5,9 @@
 package com.storyteller.alphaheart.client.composecore.markdown
 
 import com.hrm.latex.renderer.measure.LatexDimensions
-import com.storyteller_f.alphaheart.client.compose_core.components.CodeFenceKind
-import com.storyteller_f.alphaheart.client.compose_core.components.calculateMathPlaceholderSize
-import com.storyteller_f.alphaheart.client.compose_core.components.codeFenceKind
+import com.storyteller_f.alphaheart.client.compose_core.markdown.CodeFenceKind
+import com.storyteller_f.alphaheart.client.compose_core.markdown.calculateMathPlaceholderSize
+import com.storyteller_f.alphaheart.client.compose_core.markdown.codeFenceKind
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

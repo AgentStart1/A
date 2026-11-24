@@ -17,7 +17,6 @@ suspend fun scenarioSignUp(driver: AppTestDriver): String {
     driver.clickByText("Sign in")
     driver.clickByText("Go to sign up")
     driver.assertVisibleByText("Sign up")
-    driver.clickByText("Private Key")
     driver.clickByDescription("Edit Private Key")
     driver.inputText(privateKey)
     driver.clickByText("Confirm")
@@ -30,7 +29,6 @@ suspend fun scenarioSignUp(driver: AppTestDriver): String {
 suspend fun scenarioSignIn(driver: AppTestDriver, privateKey: String) {
     driver.clickByDescription("avatar")
     driver.clickByText("Sign in")
-    driver.clickByText("Private Key")
     driver.clickByDescription("Edit Private Key")
     driver.inputText(privateKey)
     driver.clickByText("Confirm")

@@ -36,25 +36,18 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.pages.AdaptiveSectionScaffold
-import com.storyteller_f.alphaheart.client.compose_core.components.DetailNavigationScaffold
-import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingInteractions
+import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @OptIn(ExperimentalTestApi::class)
 class SectionNavigationUiTest {
     @Test
-    fun compactSectionNavigationReachesNonAdjacentPageWithOneClick() = verifyNavigation(390.dp, false)
+    fun compactSectionNavigationReachesNonAdjacentPageWithOneClick() = verifyNavigation(390.dp)
 
     @Test
-    fun wideSectionNavigationReachesNonAdjacentPageWithOneClick() = verifyNavigation(1280.dp, false)
-
-    @Test
-    fun compactDetailNavigationReachesNonAdjacentPageWithOneClick() = verifyNavigation(390.dp, true)
-
-    @Test
-    fun wideDetailNavigationReachesNonAdjacentPageWithOneClick() = verifyNavigation(1280.dp, true)
+    fun wideSectionNavigationReachesNonAdjacentPageWithOneClick() = verifyNavigation(1280.dp)
 
     @Test
     fun finalBreakpointKeepsPageMountedAndDraftAcross600And601() =
@@ -106,7 +99,7 @@ class SectionNavigationUiTest {
             }
         }
 
-    private fun verifyNavigation(width: Dp, detail: Boolean) =
+    private fun verifyNavigation(width: Dp) =
         runAppComposeUiTest {
             val routes = List(3) { NavRoute("/section-$it", Icons.Default.Public, "Tab $it") }
             setContent {
@@ -126,11 +119,7 @@ class SectionNavigationUiTest {
                                     }
                                 }
                             }
-                            if (detail) {
-                                DetailNavigationScaffold(pager, routes, topBar = {}) { section(it) }
-                            } else {
-                                AdaptiveSectionScaffold(pager, routes, search = { _, _ -> }) { section(it) }
-                            }
+                            AdaptiveSectionScaffold(pager, routes, search = { _, _ -> }, section = section)
                         }
                     }
                 }

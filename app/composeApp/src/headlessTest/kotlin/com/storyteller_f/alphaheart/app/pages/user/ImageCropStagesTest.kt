@@ -5,8 +5,9 @@
 package com.storyteller_f.alphaheart.app.pages.user
 
 import com.storyteller_f.alphaheart.app.error.AvatarUpdateError
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomGlobalDialogController
-import com.storyteller_f.alphaheart.client.compose_core.components.GlobalDialogState
+import com.storyteller_f.alphaheart.app.media.runImageCropStages
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomGlobalDialogController
+import com.storyteller_f.alphaheart.client.compose_core.tasks.GlobalDialogState
 import com.storyteller_f.result.CustomResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi

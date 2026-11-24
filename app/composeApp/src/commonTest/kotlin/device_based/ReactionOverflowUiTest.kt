@@ -29,7 +29,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.components.EmojiRow
-import com.storyteller_f.alphaheart.client.compose_core.components.Pill
+import com.storyteller_f.alphaheart.app.components.Pill
 import com.storyteller_f.alphaheart.client.compose_core.utils.readingTypography
 import com.storyteller_f.shared.model.ReactionInfo
 import kotlin.test.Test

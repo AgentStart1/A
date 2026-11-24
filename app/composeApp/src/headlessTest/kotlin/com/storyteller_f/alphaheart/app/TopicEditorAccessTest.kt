@@ -4,8 +4,8 @@
 
 package com.storyteller_f.alphaheart.app
 
-import com.storyteller_f.alphaheart.app.pages.topic.TopicEditorAccess
-import com.storyteller_f.alphaheart.app.pages.topic.topicEditorAccess
+import com.storyteller_f.alphaheart.app.topic.TopicEditorAccess
+import com.storyteller_f.alphaheart.app.topic.topicEditorAccess
 import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.UserStatus
 import kotlin.test.Test

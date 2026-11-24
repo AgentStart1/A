@@ -25,6 +25,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.input.InputModeManager
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.platform.testTag
@@ -40,6 +43,7 @@ import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -55,14 +59,15 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigationevent.DirectNavigationEventInput
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.rememberNavigationEventDispatcherOwner
+import com.storyteller_f.alphaheart.app.navigation.FileExplorerRoute
 import com.storyteller_f.alphaheart.app.pages.file.FileExplorerNavigation
-import com.storyteller_f.alphaheart.app.pages.file.FileExplorerRoute
-import com.storyteller_f.alphaheart.app.pages.file.FilePreviewContent
-import com.storyteller_f.alphaheart.app.pages.file.FilePreviewHeading
 import com.storyteller_f.alphaheart.app.pages.file.UploadItemRow
 import com.storyteller_f.alphaheart.app.pages.file.rememberFileExplorerBackStack
-import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingFilePreview
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingFilePreviewHeading
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton
+import com.storyteller_f.alphaheart.client.compose_core.media.ResourceDownloadRequest
+import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
 import com.storyteller_f.shared.model.FileInfo
 import com.storyteller_f.storage.UploadInfo
 import com.storyteller_f.storage.UploadStatus
@@ -110,11 +115,13 @@ class FileExplorerNavigationUiTest {
                 ) {
                     MaterialTheme {
                         val uriHandler = LocalUriHandler.current
-                        FilePreviewHeading(file) { uriHandler.openUri(file.url) }
+                        ReadingFilePreviewHeading(ResourceDownloadRequest(file.url, file.name)) {
+                            uriHandler.openUri(file.url)
+                        }
                     }
                 }
             }
-            onNodeWithText("Download").performClick()
+            onNodeWithContentDescription("Download").performClick()
             runOnIdle { assertEquals(listOf(file.url), opened) }
         }
 
@@ -126,7 +133,7 @@ class FileExplorerNavigationUiTest {
             setContent {
                 MaterialTheme {
                     Box(Modifier.requiredSize(width.value, 700.dp)) {
-                        FilePreviewContent(file, {}) {
+                        ReadingFilePreview(ResourceDownloadRequest(file.url, file.name), {}) {
                             Box(Modifier.fillMaxSize().testTag("file-preview-pixels"))
                         }
                     }
@@ -142,6 +149,10 @@ class FileExplorerNavigationUiTest {
                 assertEquals(main.top + if (size <= 600.dp) 20.dp else inset, content.top)
                 assertEquals(content.left, pixels.left)
                 assertEquals(content.right, pixels.right)
+                val copy = onNodeWithContentDescription("Copy resource address").getUnclippedBoundsInRoot()
+                val download = onNodeWithContentDescription("Download").getUnclippedBoundsInRoot()
+                assertEquals(copy.right, download.left)
+                assertEquals(pixels.right, download.right)
                 onAllNodesWithText(file.name).assertCountEquals(1)
             }
         }
@@ -272,7 +283,9 @@ class FileExplorerNavigationUiTest {
         runAppComposeUiTest {
             val stack = NavBackStack<NavKey>(FileExplorerRoute.Uploaded, FileExplorerRoute.UploadRecord)
             val uploadStatus = mutableStateOf(UploadStatus.PAUSED)
+            lateinit var inputMode: InputModeManager
             setContent {
+                inputMode = LocalInputModeManager.current
                 FileNavigationFixture(stack, 390.dp, uploadStatus = uploadStatus)
             }
 
@@ -280,6 +293,8 @@ class FileExplorerNavigationUiTest {
             val viewport = onNodeWithTag("file-navigator").getUnclippedBoundsInRoot()
             val actionBounds = action.getUnclippedBoundsInRoot()
             assertTrue((actionBounds.left + actionBounds.right) / 2 > (viewport.left + viewport.right) / 2)
+            // Compose key injection dispatches directly to the view on Android. Enter keyboard mode first.
+            runOnIdle { assertTrue(inputMode.requestInputMode(InputMode.Keyboard)) }
             action.performSemanticsAction(SemanticsActions.RequestFocus) { requestFocus ->
                 assertEquals(true, requestFocus())
             }

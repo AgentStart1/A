@@ -15,8 +15,8 @@ import com.storyteller_f.alphaheart.app.common.extractDownloadArchive
 import com.storyteller_f.alphaheart.app.common.extractedFiles
 import com.storyteller_f.alphaheart.app.common.getDownloadRevision
 import com.storyteller_f.alphaheart.app.common.write
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontBundle
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontDownload
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontBundle
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontDownload
 import com.storyteller_f.shared.model.FileInfo
 import com.storyteller_f.storage.DownloadInfo
 import com.storyteller_f.storage.DownloadInfoStorage

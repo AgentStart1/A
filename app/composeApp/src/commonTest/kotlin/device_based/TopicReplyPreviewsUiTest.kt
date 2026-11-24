@@ -89,9 +89,10 @@ class TopicReplyPreviewsUiTest {
                     .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
                 assertEquals(2, layouts.single().lineCount)
                 val layout = layouts.single()
-                // Compose 1.12 Skia returns false for isLineEllipsized; check the measured cutoff.
+                // Skia reports the cutoff through the measured line end.
                 assertTrue(layout.hasVisualOverflow)
-                assertTrue(layout.getLineEnd(1) < layout.layoutInput.text.length)
+                val visibleEnd = layout.getLineEnd(1, visibleEnd = true)
+                assertTrue(layout.isLineEllipsized(1) || visibleEnd < layout.layoutInput.text.length)
             }
         }
 

@@ -1,0 +1,22 @@
+<resources>
+    <string name="settings_profile">个人资料</string>
+    <string name="settings_security">账号安全</string>
+    <string name="settings_basic">基本信息</string>
+    <string name="settings_community_images">社区图片</string>
+    <string name="settings_community">社区设置</string>
+    <string name="settings_room">房间设置</string>
+    <string name="settings_nickname">昵称</string>
+    <string name="settings_community_icon">社区图标</string>
+    <string name="settings_room_icon">房间图标</string>
+    <string name="settings_community_poster">社区海报</string>
+    <string name="settings_font_summary">内容字体 · 代码字体</string>
+    <string name="settings_edit_value">编辑%1$s</string>
+    <string name="settings_reset_value">恢复默认%1$s</string>
+    <string name="settings_personal">个人设置</string>
+    <string name="read_sign_in_prompt">登录后继续查看。</string>
+    <string name="select_content_font">选择内容字体</string>
+    <string name="select_code_font">选择代码字体</string>
+    <string name="settings_aid">Aid</string>
+    <string name="preference_import_config">导入配置</string>
+    <string name="preference_try_translation">试用翻译</string>
+</resources>

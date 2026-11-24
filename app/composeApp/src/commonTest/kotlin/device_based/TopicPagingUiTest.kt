@@ -12,9 +12,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -42,6 +46,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.test.Test
@@ -88,7 +93,7 @@ internal class TopicPagingUiTest {
                     override val flow = pages
                 }
             setContent { TopicPagingContent(model) }
-            awaitExternalCondition {
+            awaitTopicPagingPhase("Initial topic page did not appear") {
                 onAllNodesWithText("Topic 0 revision 0").fetchSemanticsNodes().isNotEmpty()
             }
             onNodeWithTag("topic-list-reading-content").performScrollToIndex(24)
@@ -96,16 +101,29 @@ internal class TopicPagingUiTest {
             onNodeWithTag(tag).assertIsDisplayed()
             val before = onNodeWithTag(tag).getUnclippedBoundsInRoot().top
             runOnIdle { pages.value = PagingData.empty() }
-            awaitExternalCondition {
+            awaitTopicPagingPhase("Transient empty page did not replace the reading list") {
                 onAllNodesWithTag("topic-list-reading-content").fetchSemanticsNodes().isEmpty()
             }
             runOnIdle { pages.value = PagingData.from(rows.map(::updatedTopic)) }
-            awaitExternalCondition {
+            awaitTopicPagingPhase("Refilled topic page did not restore topic 23") {
                 onAllNodesWithText("Topic 23 revision 1").fetchSemanticsNodes().isNotEmpty()
             }
             onNodeWithTag(tag).assertIsDisplayed()
             assertEquals(before, onNodeWithTag(tag).getUnclippedBoundsInRoot().top)
         }
+}
+
+@OptIn(ExperimentalTestApi::class)
+private suspend fun ComposeUiTest.awaitTopicPagingPhase(message: String, condition: () -> Boolean) {
+    try {
+        awaitExternalCondition(condition = condition)
+    } catch (failure: TimeoutCancellationException) {
+        val renderedTopics =
+            onAllNodes(hasText("Topic ", substring = true)).fetchSemanticsNodes().map {
+                it.config.getOrNull(SemanticsProperties.Text)
+            }
+        throw AssertionError("$message. Rendered topics: $renderedTopics", failure)
+    }
 }
 
 @Composable

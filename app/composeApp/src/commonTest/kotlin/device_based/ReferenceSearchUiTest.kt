@@ -15,9 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.pages.search.SearchPageLayout
-import com.storyteller_f.alphaheart.app.pages.search.SearchScope
 import com.storyteller_f.alphaheart.app.pages.search.searchScopeLabel
 import com.storyteller_f.alphaheart.app.pages.topic.ParentTopicReferenceContent
+import com.storyteller_f.alphaheart.app.search.SearchScope
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -101,8 +101,9 @@ class ReferenceSearchUiTest {
                     Text("Results: ${submitted.value}")
                 })
             }
-            onNodeWithContentDescription("search query").performTextReplacement("needle")
-            onNodeWithContentDescription("search query").performImeAction()
+            val field = onNode(hasSetTextAction())
+            field.performTextReplacement("needle")
+            field.performImeAction()
             onNodeWithText("Results: needle").assertExists()
             assertEquals(1, submissions)
             onNode(hasText("Search") and hasClickAction()).performClick()

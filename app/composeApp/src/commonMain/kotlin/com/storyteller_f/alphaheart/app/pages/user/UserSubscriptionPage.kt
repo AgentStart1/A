@@ -4,42 +4,36 @@
 
 package com.storyteller_f.alphaheart.app.pages.user
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.common.SubscriptionsViewModel
 import com.storyteller_f.alphaheart.app.common.getSubscriptionViewModel
 import com.storyteller_f.alphaheart.app.my_subscriptions
+import com.storyteller_f.alphaheart.app.navigation.recordListFooter
 import com.storyteller_f.alphaheart.app.pages.ReadingPageToolbar
 import com.storyteller_f.alphaheart.app.pages.ReadingRecordList
 import com.storyteller_f.alphaheart.app.pages.community.CommunityRefCell
-import com.storyteller_f.alphaheart.app.pages.recordListFooter
 import com.storyteller_f.alphaheart.app.pages.room.RoomRefCell
 import com.storyteller_f.alphaheart.app.pages.topic.TopicCell
+import com.storyteller_f.alphaheart.app.previews.UserSubscriptionPreviewProvider
 import com.storyteller_f.alphaheart.app.record_subscriptions_empty
 import com.storyteller_f.alphaheart.app.record_subscriptions_end
 import com.storyteller_f.alphaheart.app.record_subscriptions_failure
 import com.storyteller_f.alphaheart.app.record_subscriptions_loading
 import com.storyteller_f.alphaheart.app.subscribed_at
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
 import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
-import com.storyteller_f.shared.model.TopicContent
-import com.storyteller_f.shared.model.TopicDetail
 import com.storyteller_f.shared.model.UserSubscriptionItem
 import com.storyteller_f.shared.type.ObjectType
 import org.jetbrains.compose.resources.stringResource
@@ -78,19 +72,6 @@ fun SubscriptionPageInternal(viewModel: SubscriptionsViewModel) {
     }
 }
 
-class UserSubscriptionPreviewProvider : PreviewParameterProvider<UserSubscriptionItem> {
-    override val values: Sequence<UserSubscriptionItem>
-        get() =
-            sequenceOf(
-                UserSubscriptionItem.EMPTY.copy(
-                    topicInfo =
-                    TopicDetail.EMPTY.copy(
-                        topicInfo = TopicDetail.EMPTY.topicInfo.copy(content = TopicContent.Plain("hello")),
-                    ),
-                ),
-            )
-}
-
 @Preview(widthDp = 300)
 @Composable
 fun UserSubscriptionCell(
@@ -108,24 +89,9 @@ fun UserSubscriptionCell(
         )
         when (userFavoriteInfo?.objectType) {
             ObjectType.USER -> UserRefCell(userFavoriteInfo.objectId)
-
             ObjectType.COMMUNITY -> CommunityRefCell(userFavoriteInfo.objectId)
-
             ObjectType.ROOM -> RoomRefCell(userFavoriteInfo.objectId)
-
-            ObjectType.TOPIC ->
-                userFavoriteInfo.topicInfo?.let { topicInfo ->
-                    Box(
-                        modifier =
-                        Modifier.padding(horizontal = 10.dp).background(
-                            MaterialTheme.colorScheme.surfaceContainerHigh,
-                            RoundedCornerShape(8.dp),
-                        ),
-                    ) {
-                        TopicCell(topicInfo)
-                    }
-                }
-
+            ObjectType.TOPIC -> userFavoriteInfo.topicInfo?.let { TopicCell(it) }
             else -> Unit
         }
     }

@@ -4,7 +4,6 @@
 
 package com.storyteller_f.alphaheart.app.pages.file
 
-import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -20,12 +19,17 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import androidx.savedstate.serialization.SavedStateConfiguration
+import com.storyteller_f.alphaheart.app.navigation.FileExplorerRoute
+import com.storyteller_f.alphaheart.app.navigation.FilePagerPosition
+import com.storyteller_f.alphaheart.app.navigation.availableFileRoute
+import com.storyteller_f.alphaheart.app.navigation.fileExplorerRoute
+import com.storyteller_f.alphaheart.app.navigation.normalizeFileExplorerHistory
+import com.storyteller_f.alphaheart.app.navigation.restoreFilePage
+import com.storyteller_f.alphaheart.app.navigation.selectFileExplorerRoute
+import com.storyteller_f.alphaheart.app.navigation.settleIdleFilePage
 import com.storyteller_f.alphaheart.app.pages.AdaptiveSectionScaffold
-import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
 import com.storyteller_f.alphaheart.client.compose_core.utils.BindBrowserNavigation
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
@@ -81,13 +85,6 @@ internal fun FileExplorerNavigation(
     ) { page -> section(fileExplorerRoute(routes[page].path)) }
 }
 
-private data class FilePagerPosition(
-    val history: List<NavKey>,
-    val page: Int,
-    val scrolling: Boolean,
-    val offsetFraction: Float,
-)
-
 @Composable
 private fun BindFileExplorerPager(
     backStack: NavBackStack<NavKey>,
@@ -130,62 +127,3 @@ private fun BindFileExplorerPager(
             }
     }
 }
-
-private fun selectFileExplorerRoute(backStack: NavBackStack<NavKey>, path: String) {
-    val target = fileExplorerRoute(path)
-    if (backStack.last() != target) {
-        val index = backStack.indexOf(target)
-        if (index >= 0) {
-            repeat(backStack.size - index - 1) { backStack.removeLastOrNull() }
-        } else {
-            backStack.add(target)
-        }
-    }
-}
-
-private fun fileExplorerRoute(path: String): FileExplorerRoute =
-    when (path) {
-        "/upload-record" -> FileExplorerRoute.UploadRecord
-        "/download-record" -> FileExplorerRoute.DownloadRecord
-        else -> FileExplorerRoute.Uploaded
-    }
-
-private suspend fun PagerState.restoreFilePage(page: Int) {
-    scroll(MutatePriority.PreventUserInput) { updateCurrentPage(page) }
-}
-
-private suspend fun PagerState.settleIdleFilePage(page: Int) {
-    try {
-        scroll { updateCurrentPage(page) }
-    } catch (e: Exception) {
-        if (e is CancellationException) currentCoroutineContext().ensureActive() else throw e
-    }
-}
-
-/** Removes unavailable owner-specific tabs from restored history, keeping the URL and pager in agreement. */
-internal fun normalizeFileExplorerHistory(
-    backStack: NavBackStack<NavKey>,
-    availablePaths: Set<String>,
-): FileExplorerRoute {
-    val current = backStack.lastOrNull()
-    val restored = availableFileRoute(current, availablePaths)
-    val validHistory = backStack.filter { it.toString() in availablePaths }
-    if (validHistory.size != backStack.size) {
-        backStack.clear()
-        backStack.addAll(validHistory)
-    }
-    if (backStack.isEmpty()) {
-        backStack.add(restored)
-    } else if (current?.toString() !in availablePaths) {
-        selectFileExplorerRoute(backStack, restored.toString())
-    }
-    return restored
-}
-
-private fun availableFileRoute(route: NavKey?, availablePaths: Set<String>): FileExplorerRoute =
-    if (route is FileExplorerRoute && route.toString() in availablePaths) {
-        route
-    } else {
-        require(FileExplorerRoute.Uploaded.toString() in availablePaths) { "Uploaded files must remain available" }
-        FileExplorerRoute.Uploaded
-    }

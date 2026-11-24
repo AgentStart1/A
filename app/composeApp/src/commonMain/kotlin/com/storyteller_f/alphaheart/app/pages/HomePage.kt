@@ -35,7 +35,6 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.runtime.NavKey
 import com.storyteller_f.alphaheart.app.IAccountInstance
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalUiViewModel
@@ -47,23 +46,27 @@ import com.storyteller_f.alphaheart.app.components.SignInRequiredContent
 import com.storyteller_f.alphaheart.app.home_start_destination_communities
 import com.storyteller_f.alphaheart.app.home_start_destination_rooms
 import com.storyteller_f.alphaheart.app.home_start_destination_world
+import com.storyteller_f.alphaheart.app.navigation.HOME_START_DESTINATION_COMMUNITIES
+import com.storyteller_f.alphaheart.app.navigation.HOME_START_DESTINATION_PREFERENCE_KEY
+import com.storyteller_f.alphaheart.app.navigation.HOME_START_DESTINATION_ROOMS
+import com.storyteller_f.alphaheart.app.navigation.HOME_START_DESTINATION_WORLD
+import com.storyteller_f.alphaheart.app.navigation.homePageFromPreference
 import com.storyteller_f.alphaheart.app.open_source_libraries
 import com.storyteller_f.alphaheart.app.pages.community.MyCommunitiesPage
 import com.storyteller_f.alphaheart.app.pages.room.MyRoomsPage
 import com.storyteller_f.alphaheart.app.pages.search.CustomSearchBar
-import com.storyteller_f.alphaheart.app.pages.search.SearchScope
 import com.storyteller_f.alphaheart.app.rooms
+import com.storyteller_f.alphaheart.app.search.SearchScope
 import com.storyteller_f.alphaheart.app.source_repository
 import com.storyteller_f.alphaheart.app.utils.LocalAppPreferences
 import com.storyteller_f.alphaheart.app.world
 import com.storyteller_f.alphaheart.client.compose_core.components.ButtonNav
 import com.storyteller_f.alphaheart.client.compose_core.components.CenterBox
-import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
-import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
-import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import kotlinx.coroutines.flow.Flow
-import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBasicAlertDialog as BasicAlertDialog
 
@@ -130,43 +133,6 @@ internal fun rememberStartupHomePager(values: Flow<String>): PagerState? {
     val initialPage = startupValue?.let(::homePageFromPreference) ?: return null
     return rememberPagerState(initialPage = initialPage) { 3 }
 }
-
-@Serializable
-sealed interface HomeRoute : NavKey {
-    @Serializable
-    data object World : HomeRoute {
-        override fun toString(): String = HOME_START_DESTINATION_WORLD
-    }
-
-    @Serializable
-    data object Communities : HomeRoute {
-        override fun toString(): String = HOME_START_DESTINATION_COMMUNITIES
-    }
-
-    @Serializable
-    data object Rooms : HomeRoute {
-        override fun toString(): String = HOME_START_DESTINATION_ROOMS
-    }
-}
-
-internal const val HOME_START_DESTINATION_PREFERENCE_KEY = "home_start_destination"
-internal const val HOME_START_DESTINATION_WORLD = "/world"
-internal const val HOME_START_DESTINATION_COMMUNITIES = "/communities"
-internal const val HOME_START_DESTINATION_ROOMS = "/rooms"
-
-internal fun homeRouteFromPreference(value: String?): HomeRoute =
-    when (value) {
-        HOME_START_DESTINATION_COMMUNITIES -> HomeRoute.Communities
-        HOME_START_DESTINATION_ROOMS -> HomeRoute.Rooms
-        else -> HomeRoute.World
-    }
-
-internal fun homePageFromPreference(value: String?): Int =
-    when (value) {
-        HOME_START_DESTINATION_COMMUNITIES -> 1
-        HOME_START_DESTINATION_ROOMS -> 2
-        else -> 0
-    }
 
 @Composable
 internal fun homeStartDestinationLabel(value: String?): String =

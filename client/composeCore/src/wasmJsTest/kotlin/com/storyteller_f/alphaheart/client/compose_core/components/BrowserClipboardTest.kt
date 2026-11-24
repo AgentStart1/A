@@ -34,7 +34,14 @@ import com.storyteller_f.alphaheart.client.compose_core.Res
 import com.storyteller_f.alphaheart.client.compose_core.copied
 import com.storyteller_f.alphaheart.client.compose_core.copy
 import com.storyteller_f.alphaheart.client.compose_core.copy_failed
+import com.storyteller_f.alphaheart.client.compose_core.file_copy_address
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaControlActions
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaControlState
+import com.storyteller_f.alphaheart.client.compose_core.media.ResourceDownloadRequest
 import com.storyteller_f.alphaheart.client.compose_core.media_options
+import com.storyteller_f.alphaheart.client.compose_core.notifications.LocalToaster
+import com.storyteller_f.alphaheart.client.compose_core.notifications.Toast
+import com.storyteller_f.alphaheart.client.compose_core.utils.writeBrowserClipboardText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
@@ -151,7 +158,28 @@ internal class BrowserClipboardTest {
         }
 
     @Test
-    fun filePreviewCopyKeepsMenuUntilTheBrowserWriteCompletes() =
+    fun filePreviewCopiesTheExactResourceAddress() =
+        runComposeUiTest {
+            val restore = installClipboard(false)
+            holdClipboardWrites()
+            val url = "https://files.invalid/document.pdf?download=完整值"
+            try {
+                setContent {
+                    MaterialTheme {
+                        ReadingFilePreviewHeading(ResourceDownloadRequest(url, "document.pdf")) {}
+                    }
+                }
+                onNodeWithContentDescription(getString(Res.string.file_copy_address)).performClick()
+                waitUntil { clipboardAttempts() == 1 }
+                resolvePendingClipboardWrite().await()
+                assertEquals(url, clipboardText())
+            } finally {
+                restoreClipboard(restore)
+            }
+        }
+
+    @Test
+    fun standaloneMediaCopyKeepsMenuUntilTheBrowserWriteCompletes() =
         runComposeUiTest {
             val restore = installClipboard(false)
             holdClipboardWrites()

@@ -5,6 +5,8 @@
 package com.storyteller_f.alphaheart.client.compose_core.components
 
 import com.storyteller_f.alphaheart.client.compose_core.error.DialogError
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomGlobalDialogController
+import com.storyteller_f.alphaheart.client.compose_core.tasks.GlobalDialogState
 import com.storyteller_f.alphaheart.client.core.RequestError
 import com.storyteller_f.result.CustomResult
 import kotlinx.collections.immutable.persistentListOf

@@ -77,15 +77,15 @@ import com.storyteller_f.alphaheart.app.pages.ObserveUnreadMessageCountEvents
 import com.storyteller_f.alphaheart.app.pages.RoomActivityPreviewContent
 import com.storyteller_f.alphaheart.app.pages.room.RoomRowContent
 import com.storyteller_f.alphaheart.app.pages.search.DesktopSearchLayout
-import com.storyteller_f.alphaheart.app.pages.topic.addLatestRoomAnchor
 import com.storyteller_f.alphaheart.app.refresh
+import com.storyteller_f.alphaheart.app.topic.addLatestRoomAnchor
 import com.storyteller_f.alphaheart.client.compose_core.common.PagingViewModel
 import com.storyteller_f.alphaheart.client.compose_core.common.RegularPagingSource
-import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingInteractions
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.bottomAppending
+import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.paging.bottomAppending
 import com.storyteller_f.alphaheart.client.core.LoadingHandler
 import com.storyteller_f.alphaheart.client.core.LoadingState
 import com.storyteller_f.result.CustomResult
@@ -225,7 +225,7 @@ class HomeAdaptiveUiTest {
                     }
                 }
             }
-            onNodeWithTag("Rooms").performClick()
+            onNodeWithContentDescription("Rooms").performClick()
             onNodeWithTag("query-2").performTextReplacement("saved room search")
             onNodeWithTag("list-2").performScrollToIndex(20)
             runOnIdle { width.value = 1000.dp }
@@ -647,7 +647,7 @@ class HomeAdaptiveUiTest {
                 }
             }
             val unreadDescription =
-                onNodeWithTag("Rooms").fetchSemanticsNode()
+                onNodeWithContentDescription("Rooms, ", substring = true).fetchSemanticsNode()
                     .config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].first()
             assertTrue(unreadDescription.startsWith("Rooms, "))
             assertTrue(unreadDescription.endsWith(", 123"))

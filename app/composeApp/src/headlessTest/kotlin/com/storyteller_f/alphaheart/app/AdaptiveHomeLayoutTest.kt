@@ -4,7 +4,7 @@
 
 package com.storyteller_f.alphaheart.app
 
-import com.storyteller_f.alphaheart.app.pages.adaptiveColumnCount
+import com.storyteller_f.alphaheart.app.navigation.adaptiveColumnCount
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

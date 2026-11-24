@@ -10,6 +10,10 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.VectorPath
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.compactNavigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

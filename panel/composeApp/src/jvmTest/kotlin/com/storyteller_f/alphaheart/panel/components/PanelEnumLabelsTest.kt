@@ -17,6 +17,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.runComposeUiTest
 import com.storyteller_f.alphaheart.panel.Res
 import com.storyteller_f.alphaheart.panel.log_supporting
+import com.storyteller_f.alphaheart.panel.logs.parsePanelStatusLog
 import com.storyteller_f.alphaheart.panel.review_user_log_supporting
 import com.storyteller_f.shared.model.TaskRecordType
 import com.storyteller_f.shared.model.TitleType

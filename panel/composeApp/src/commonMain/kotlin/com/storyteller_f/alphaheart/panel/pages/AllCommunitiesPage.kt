@@ -20,10 +20,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.components.CommunityIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
-import com.storyteller_f.alphaheart.client.compose_core.components.safeArea
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.theme.safeArea
 import com.storyteller_f.alphaheart.panel.LocalPanelNav
 import com.storyteller_f.alphaheart.panel.Res
 import com.storyteller_f.alphaheart.panel.all_communities
@@ -31,9 +32,8 @@ import com.storyteller_f.alphaheart.panel.common.AllCommunitiesViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelAllCommunitiesViewModel
 import com.storyteller_f.alphaheart.panel.components.panelDirectoryRowColors
 import com.storyteller_f.alphaheart.panel.components.panelDirectorySelection
-import com.storyteller_f.alphaheart.panel.components.panelValueText
-import com.storyteller_f.alphaheart.panel.components.selectedPanelEntityId
 import com.storyteller_f.alphaheart.panel.menu
+import com.storyteller_f.alphaheart.panel.navigation.selectedPanelEntityId
 import com.storyteller_f.shared.type.ObjectType
 import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
@@ -76,16 +76,7 @@ fun AllCommunitiesPageInternal(viewModel: AllCommunitiesViewModel) {
                                     CommunityIcon(info, 40.dp, false) {}
                                 },
                                 headlineContent = { Text(info.name) },
-                                overlineContent = { Text(info.aid) },
-                                supportingContent = {
-                                    val owner = info.owner.toString()
-                                    val members = info.memberCount.toString()
-                                    val policy = panelValueText(info.memberPolicy.name)
-                                    Text(
-                                        listOf(owner, members, policy).filter { it.isNotEmpty() }
-                                            .joinToString(" • "),
-                                    )
-                                },
+                                supportingContent = { Text(CoreStrings.aid(info.aid)) },
                             )
                             if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                         } else {

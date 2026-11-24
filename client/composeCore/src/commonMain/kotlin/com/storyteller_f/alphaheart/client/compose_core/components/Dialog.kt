@@ -15,9 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -28,8 +26,14 @@ import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.Res
 import com.storyteller_f.alphaheart.client.compose_core.close
 import com.storyteller_f.alphaheart.client.compose_core.copy
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.notifications.LocalToaster
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CommonDialogController
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomAlertDialogController
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomAlertDialogState
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.storyteller_f.alphaheart.client.compose_core.utils.copyText
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingAlertDialog as AlertDialog
@@ -38,44 +42,11 @@ import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon a
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTextButton as TextButton
 
-class DialogSaveState {
-    val dialogShown = MutableStateFlow(false)
-    fun markDialogShown() {
-        dialogShown.value = true
-    }
-}
-
 @Composable
 fun rememberAlertDialogController(): CustomAlertDialogController =
     remember {
         CustomAlertDialogController()
     }
-
-class CustomAlertDialogController(val state: MutableState<CustomAlertDialogState?> = mutableStateOf(null)) {
-    fun showMessage(title: String, message: String, enableCopy: Boolean = false) {
-        state.value = CustomAlertDialogState(title, message, enableCopy = enableCopy)
-    }
-
-    fun showTitle(title: String) {
-        state.value = CustomAlertDialogState(title, "")
-    }
-
-    fun close() {
-        state.value = null
-    }
-
-    fun showErrorMessage(e: Throwable) {
-        state.value = CustomAlertDialogState(e.message.orEmpty(), e.stackTraceToString())
-    }
-}
-
-data class CustomAlertDialogState(
-    val title: String?,
-    val message: String,
-    val positiveButton: String? = null,
-    val enableCopy: Boolean = false,
-    val negativeButton: String? = null,
-)
 
 @Composable
 fun CustomAlertDialog(controller: CustomAlertDialogController, dismiss: () -> Unit, onClickOk: () -> Unit) {
@@ -135,12 +106,6 @@ fun rememberCommonDialogController(): CommonDialogController =
     remember {
         CommonDialogController()
     }
-
-class CommonDialogController(val shown: MutableState<Boolean> = mutableStateOf(false)) {
-    fun update(new: Boolean) {
-        shown.value = new
-    }
-}
 
 @Composable
 fun DialogContainer(

@@ -1,0 +1,20 @@
+<resources>
+    <string name="wizard_add">添加到验证器</string>
+    <string name="wizard_add_hint">在验证器中添加账号并扫描二维码。</string>
+    <string name="wizard_continue">已添加，继续</string>
+    <string name="wizard_disable">停用</string>
+    <string name="wizard_done">完成</string>
+    <string name="wizard_off_hint">启用后，登录时需输入验证码。</string>
+    <string name="wizard_on_hint">登录时需输入验证器验证码。</string>
+    <string name="wizard_previous">上一步</string>
+    <string name="wizard_recovery">保存恢复码</string>
+    <string name="wizard_recovery_error">未完成下载，请重试。</string>
+    <string name="wizard_recovery_hint">验证器不可用时，可以用恢复码登录。</string>
+    <string name="wizard_recovery_saved">请妥善保管下载的恢复码。</string>
+    <string name="wizard_scan">扫码添加</string>
+    <string name="wizard_start">开始设置</string>
+    <string name="wizard_verify">验证绑定</string>
+    <string name="wizard_verify_error">验证失败，请检查验证码后重试。</string>
+    <string name="wizard_verify_hint">输入验证器当前显示的 6 位验证码。</string>
+    <string name="wizard_verify_submit">验证并启用</string>
+</resources>

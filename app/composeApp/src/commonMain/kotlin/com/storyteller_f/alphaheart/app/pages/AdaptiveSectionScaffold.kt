@@ -18,9 +18,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomBottomNav
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomRailNav
-import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
+import com.storyteller_f.alphaheart.app.components.CustomBottomNav
+import com.storyteller_f.alphaheart.app.components.CustomRailNav
+import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
 import kotlinx.coroutines.launch
 
 /** Page-local navigation shares one pager and preserves section state across resizes. */

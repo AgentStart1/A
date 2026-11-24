@@ -4,6 +4,8 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components.block
 
+import com.storyteller_f.alphaheart.client.compose_core.markdown.ContentBlock
+import com.storyteller_f.alphaheart.client.compose_core.markdown.parseMarkdownToBlocks
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

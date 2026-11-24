@@ -13,17 +13,17 @@ import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.common.UserCommentsViewModel
 import com.storyteller_f.alphaheart.app.common.getUserCommentsViewModel
 import com.storyteller_f.alphaheart.app.my_comments
+import com.storyteller_f.alphaheart.app.navigation.recordListFooter
 import com.storyteller_f.alphaheart.app.pages.ReadingPageToolbar
 import com.storyteller_f.alphaheart.app.pages.ReadingRecordList
-import com.storyteller_f.alphaheart.app.pages.recordListFooter
 import com.storyteller_f.alphaheart.app.pages.topic.TopicCell
 import com.storyteller_f.alphaheart.app.record_comments_empty
 import com.storyteller_f.alphaheart.app.record_comments_end
 import com.storyteller_f.alphaheart.app.record_comments_failure
 import com.storyteller_f.alphaheart.app.record_comments_loading
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
-import com.storyteller_f.alphaheart.client.compose_core.components.safeArea
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.theme.safeArea
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

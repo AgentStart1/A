@@ -15,10 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.AudioFile
-import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.VideoFile
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.semantics.Role
@@ -36,16 +34,23 @@ import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.copy_name
+import com.storyteller_f.alphaheart.app.file.FileCellLabels
+import com.storyteller_f.alphaheart.app.file_actions
 import com.storyteller_f.alphaheart.app.file_refs
 import com.storyteller_f.alphaheart.app.image_dimension
 import com.storyteller_f.alphaheart.app.image_requires_crop_hint
 import com.storyteller_f.alphaheart.app.view
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomIcon
+import com.storyteller_f.alphaheart.client.compose_core.components.ButtonNav
 import com.storyteller_f.alphaheart.client.compose_core.components.FileIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.IconRes
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalToaster
-import com.storyteller_f.alphaheart.client.compose_core.components.copyText
+import com.storyteller_f.alphaheart.client.compose_core.components.IconActionMenu
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingActionMenuSurface
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingAdaptiveOverlay
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.notifications.LocalToaster
+import com.storyteller_f.alphaheart.client.compose_core.utils.ReadingOverlaySize
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
+import com.storyteller_f.alphaheart.client.compose_core.utils.copyText
 import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.shared.model.Dimension
 import com.storyteller_f.shared.model.FileInfo
@@ -59,7 +64,12 @@ import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon a
 
 @OptIn(ExperimentalTime::class)
 @Composable
-fun FileCell(fileInfo: FileInfo?, requiredDimension: Dimension? = null, clickItem: (List<FileInfo>) -> Unit) {
+fun FileCell(
+    fileInfo: FileInfo?,
+    requiredDimension: Dimension? = null,
+    previewFromMenu: Boolean = false,
+    clickItem: (List<FileInfo>) -> Unit,
+) {
     if (fileInfo != null) {
         var expanded by remember { mutableStateOf(false) }
         val labels = CreateFileCellLabels(fileInfo, requiredDimension)
@@ -71,17 +81,17 @@ fun FileCell(fileInfo: FileInfo?, requiredDimension: Dimension? = null, clickIte
                 contentDescription = labels.describe(fileInfo.name, fileInfo.contentType)
             }.appiumSemantics(text = fileInfo.name, onClick = click, onLongClick = expand)
                 .combinedClickable(role = Role.Button, onLongClick = expand, onClick = click),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             FileIcon(fileInfo)
             Spacer(modifier = Modifier.width(20.dp))
-            Column {
-                Text(fileInfo.name, style = MaterialTheme.typography.labelMedium)
-                Spacer(modifier = Modifier.height(10.dp))
-                Row {
-                    Text(labels.modified, style = MaterialTheme.typography.labelSmall)
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text(labels.size, style = MaterialTheme.typography.labelSmall)
-                }
+            Column(Modifier.weight(1f)) {
+                Text(fileInfo.name, style = MaterialTheme.typography.titleSmall)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    listOf(fileInfo.contentType, labels.size).filter(String::isNotBlank).joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                )
                 labels.dimension?.let { dimension ->
                     Spacer(modifier = Modifier.height(5.dp))
                     Text(dimension, style = MaterialTheme.typography.labelSmall)
@@ -91,27 +101,8 @@ fun FileCell(fileInfo: FileInfo?, requiredDimension: Dimension? = null, clickIte
                 }
             }
         }
-        FileCellMenu(expanded, {
-            expanded = it
-        }, fileInfo)
+        if (expanded) FileCellMenu(fileInfo, previewFromMenu) { expanded = false }
     }
-}
-
-private data class FileCellLabels(
-    val modified: String,
-    val size: String,
-    val dimension: String?,
-    val warning: String?,
-) {
-    fun describe(name: String, type: String) =
-        listOfNotNull(
-            name,
-            type,
-            modified,
-            size,
-            dimension,
-            warning,
-        ).joinToString(", ")
 }
 
 @OptIn(ExperimentalTime::class)
@@ -136,49 +127,35 @@ private fun CreateFileCellLabels(file: FileInfo, requiredDimension: Dimension?):
 }
 
 @Composable
-fun FileCellMenu(expanded: Boolean, updateExpanded: (Boolean) -> Unit, fileInfo: FileInfo) {
+private fun FileCellMenu(fileInfo: FileInfo, previewFromMenu: Boolean, onDismiss: () -> Unit) {
     val appNavFactory = LocalAppNavFactory.current
-    val clipboardManager = LocalClipboard.current
+    val clipboard = LocalClipboard.current
     val toast = LocalToaster.current
     val scope = rememberCoroutineScope()
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = {
-            updateExpanded(false)
-        },
-    ) {
-        DropdownMenuItem(
-            leadingIcon = {
-                CustomIcon(IconRes.Vector(Icons.Default.Fullscreen))
-            },
-            text = { Text(stringResource(Res.string.view)) },
-            onClick = {
-                updateExpanded(false)
-                appNavFactory.newAppNav().gotoMedia(fileInfo)
-            },
-        )
-        DropdownMenuItem(
-            leadingIcon = {
-                CustomIcon(IconRes.Vector(Icons.Default.Fullscreen))
-            },
-            text = { Text(stringResource(Res.string.copy_name)) },
-            onClick = {
-                scope.launch(start = CoroutineStart.UNDISPATCHED) {
-                    clipboardManager.copyText(fileInfo.name, toast)
-                    updateExpanded(false)
+    ReadingAdaptiveOverlay(onDismiss, ReadingOverlaySize.COMPACT) {
+        ReadingActionMenuSurface(
+            onDismiss = onDismiss,
+            heading = { Text(stringResource(Res.string.file_actions), style = MaterialTheme.typography.titleMedium) },
+        ) {
+            IconActionMenu(twoActions = !previewFromMenu) {
+                if (previewFromMenu) {
+                    ButtonNav(actionIcon(ActionGlyph.MAXIMIZE_2), stringResource(Res.string.view)) {
+                        onDismiss()
+                        appNavFactory.newAppNav().gotoMedia(fileInfo)
+                    }
                 }
-            },
-        )
-        DropdownMenuItem(
-            leadingIcon = {
-                CustomIcon(IconRes.Vector(Icons.Default.AttachFile))
-            },
-            text = { Text(stringResource(Res.string.file_refs)) },
-            onClick = {
-                updateExpanded(false)
-                appNavFactory.newAppNav().gotoFileRefs(fileInfo.id)
-            },
-        )
+                ButtonNav(actionIcon(ActionGlyph.COPY), stringResource(Res.string.copy_name)) {
+                    scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                        clipboard.copyText(fileInfo.name, toast)
+                        onDismiss()
+                    }
+                }
+                ButtonNav(actionIcon(ActionGlyph.LINK), stringResource(Res.string.file_refs)) {
+                    onDismiss()
+                    appNavFactory.newAppNav().gotoFileRefs(fileInfo.id)
+                }
+            }
+        }
     }
 }
 

@@ -4,6 +4,9 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
+import com.storyteller_f.alphaheart.client.compose_core.media.PdfPreviewDocument
+import com.storyteller_f.alphaheart.client.compose_core.media.PdfPreviewHost
+import com.storyteller_f.alphaheart.client.compose_core.media.PdfPreviewState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel

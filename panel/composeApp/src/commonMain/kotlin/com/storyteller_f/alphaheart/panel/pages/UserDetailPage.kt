@@ -26,15 +26,14 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.client.compose_core.components.CommunityIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.DetailNavigationScaffold
 import com.storyteller_f.alphaheart.client.compose_core.components.FileIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
-import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.RoomIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
-import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.tasks.emitEvent
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.alphaheart.client.core.updateUserStatus
@@ -53,6 +52,8 @@ import com.storyteller_f.alphaheart.panel.common.createPanelUserReactionsViewMod
 import com.storyteller_f.alphaheart.panel.common.createPanelUserSubscriptionsViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelUserUploadRecordsViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelUserViewModel
+import com.storyteller_f.alphaheart.panel.components.DetailNavigationScaffold
+import com.storyteller_f.alphaheart.panel.components.PanelDetailHeading
 import com.storyteller_f.alphaheart.panel.components.PanelInfoTable
 import com.storyteller_f.alphaheart.panel.components.TopicCell
 import com.storyteller_f.alphaheart.panel.components.panelOptionalValueText
@@ -75,7 +76,6 @@ import com.storyteller_f.alphaheart.panel.tab_user_reactions
 import com.storyteller_f.alphaheart.panel.tab_user_subscriptions
 import com.storyteller_f.alphaheart.panel.upload_records
 import com.storyteller_f.alphaheart.panel.user_detail_title
-import com.storyteller_f.alphaheart.panel.user_detail_title_with_info
 import com.storyteller_f.alphaheart.panel.user_info
 import com.storyteller_f.alphaheart.panel.user_logs
 import com.storyteller_f.result.onSuccess
@@ -118,18 +118,10 @@ private fun UserTopBar(uid: PrimaryKey) {
     val vm = createPanelUserViewModel(uid)
     val info by vm.handler.data.collectAsState(null)
     val nickname = info?.nickname
-    val aid = info?.aid
-    val title =
-        if (nickname != null && aid != null) {
-            stringResource(Res.string.user_detail_title_with_info, nickname, aid)
-        } else {
-            stringResource(Res.string.user_detail_title)
-        }
+    val title = stringResource(Res.string.user_detail_title)
     val nav = LocalPanelNav.current
     TopAppBar(
-        title = {
-            Text(title)
-        },
+        title = { PanelDetailHeading(title, nickname) },
         navigationIcon = {
             IconButton(onClick = { nav.open() }) {
                 Icon(Icons.Default.Menu, stringResource(Res.string.menu))
@@ -385,8 +377,8 @@ private fun UserBasicInfoSection(uid: PrimaryKey) {
                 add("id" to overview.userInfo.id.toString())
                 add("nickname" to overview.userInfo.nickname)
                 add("status" to overview.userInfo.status.name)
-                add("address" to overview.userInfo.address)
                 add("aid" to panelOptionalValueText(overview.userInfo.aid))
+                add("address" to overview.userInfo.address)
                 add("favoriteCount" to overview.favoriteCount.toString())
                 add("subscriptionCount" to overview.subscriptionCount.toString())
                 add("acg" to overview.acg.toString())

@@ -7,11 +7,11 @@ package com.storyteller_f.alphaheart.panel
 import android.app.Application
 import android.content.Intent
 import android.os.StrictMode
-import com.storyteller_f.alphaheart.client.compose_core.components.ConstPlayItem
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalMediaPlaySession
-import com.storyteller_f.alphaheart.client.compose_core.components.MediaPlayerService
-import com.storyteller_f.alphaheart.client.compose_core.components.RemoteMediaItem
-import com.storyteller_f.alphaheart.client.compose_core.components.mainActivityRef
+import com.storyteller_f.alphaheart.client.compose_core.media.ConstPlayItem
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlaySession
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaPlayerService
+import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
+import com.storyteller_f.alphaheart.client.compose_core.permissions.mainActivityRef
 import com.storyteller_f.alphaheart.client.compose_core.startPlayMedia
 import com.storyteller_f.shared.appContextRef
 import com.storyteller_f.shared.loadCryptoLibIfNeed

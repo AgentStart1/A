@@ -1,0 +1,4 @@
+<resources>
+    <string name="admin_auth_title">管理端认证</string>
+    <string name="admin_auth_submit">登录</string>
+</resources>

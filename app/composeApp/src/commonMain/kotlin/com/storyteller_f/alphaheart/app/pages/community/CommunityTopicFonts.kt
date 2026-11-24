@@ -10,31 +10,22 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.text.font.FontFamily
 import com.storyteller_f.alphaheart.app.common.createCommunityViewModel
 import com.storyteller_f.alphaheart.app.common.createRoomViewModel
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalTopicContentFonts
-import com.storyteller_f.alphaheart.client.compose_core.components.TopicContentFonts
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontPresentation
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontStore
+import com.storyteller_f.alphaheart.app.fonts.LoadedCommunityFont
+import com.storyteller_f.alphaheart.app.fonts.LocalCommunityFontStore
+import com.storyteller_f.alphaheart.app.fonts.combineCommunityFonts
+import com.storyteller_f.alphaheart.app.fonts.fontFileKey
+import com.storyteller_f.alphaheart.app.fonts.observeCommunityFont
+import com.storyteller_f.alphaheart.client.compose_core.theme.LocalTopicContentFonts
 import com.storyteller_f.shared.model.FileInfo
 import com.storyteller_f.shared.model.FontSettingsWithInfo
 import com.storyteller_f.shared.model.TopicDetail
 import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-
-internal val LocalCommunityFontStore =
-    staticCompositionLocalOf<CommunityFontStore?> { null }
-
-internal data class CommunityFontPresentation(val fonts: TopicContentFonts, val resolver: FontFamily.Resolver? = null)
-
-internal fun combineCommunityFonts(body: LoadedCommunityFont, code: LoadedCommunityFont): CommunityFontPresentation =
-    CommunityFontPresentation(
-        TopicContentFonts(body.family, code.family, code.family ?: body.family),
-        body.resolver ?: code.resolver,
-    )
 
 @Composable
 private fun topicCommunityId(topic: TopicDetail): PrimaryKey? =
@@ -107,6 +98,3 @@ private fun rememberCommunityFont(file: FileInfo?, store: CommunityFontStore): L
         val loaded by fonts.collectAsState(LoadedCommunityFont(null))
         loaded
     }
-
-internal fun observeCommunityFont(file: FileInfo, store: CommunityFontStore): Flow<LoadedCommunityFont> =
-    store.observeFont(file).map { (it as? CommunityFontState.Ready)?.bundle?.loaded ?: LoadedCommunityFont(null) }

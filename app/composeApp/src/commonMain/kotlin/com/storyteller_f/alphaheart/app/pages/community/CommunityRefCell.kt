@@ -21,8 +21,8 @@ import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalRefCellHandlerProvider
 import com.storyteller_f.alphaheart.app.components.ActionMenuReference
+import com.storyteller_f.alphaheart.app.components.RefCellStateView
 import com.storyteller_f.alphaheart.client.compose_core.components.CommunityIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.RefCellStateView
 import com.storyteller_f.alphaheart.client.core.LoadingHandler
 import com.storyteller_f.shared.model.CommunityInfo
 import com.storyteller_f.shared.type.PrimaryKey
@@ -65,11 +65,15 @@ private fun CommunityRefCellInternal(
 }
 
 @Composable
-fun CommunityMenuRefCell(id: PrimaryKey, onClick: (CommunityInfo) -> Unit) {
+fun CommunityMenuRefCell(
+    id: PrimaryKey,
+    onClickIcon: ((CommunityInfo) -> Unit)? = null,
+    onClick: (CommunityInfo) -> Unit,
+) {
     val handler = LocalRefCellHandlerProvider.current.communityHandler(id)
     RefCellStateView(handler, Modifier.fillMaxWidth().heightIn(min = 52.dp)) { info ->
         ActionMenuReference(info.name, { onClick(info) }) {
-            CommunityIcon(info, 36.dp, false) {}
+            CommunityIcon(info, 36.dp, onClickIcon != null) { onClickIcon?.invoke(info) }
         }
     }
 }

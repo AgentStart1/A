@@ -4,12 +4,14 @@
 
 package com.storyteller_f.alphaheart.app.pages.community
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,42 +43,50 @@ import com.storyteller_f.alphaheart.app.common.createCommunityTopicsViewModel
 import com.storyteller_f.alphaheart.app.common.createCommunityViewModel
 import com.storyteller_f.alphaheart.app.common.hasRouteFlow
 import com.storyteller_f.alphaheart.app.components.FontView
+import com.storyteller_f.alphaheart.app.compose_topic
+import com.storyteller_f.alphaheart.app.create_room_action
+import com.storyteller_f.alphaheart.app.create_title_action
 import com.storyteller_f.alphaheart.app.exit_community
 import com.storyteller_f.alphaheart.app.files_title
 import com.storyteller_f.alphaheart.app.join_community
 import com.storyteller_f.alphaheart.app.pages.AdaptiveSectionScaffold
 import com.storyteller_f.alphaheart.app.pages.room.RoomList
-import com.storyteller_f.alphaheart.app.pages.search.SearchScope
 import com.storyteller_f.alphaheart.app.pages.search.detailSearchBar
 import com.storyteller_f.alphaheart.app.pages.topic.TopicList
 import com.storyteller_f.alphaheart.app.pages.user.ButtonBadgeSuffix
 import com.storyteller_f.alphaheart.app.rooms
+import com.storyteller_f.alphaheart.app.search.SearchScope
 import com.storyteller_f.alphaheart.app.settings_title
+import com.storyteller_f.alphaheart.app.topic.TopicComposeData
 import com.storyteller_f.alphaheart.app.topics
-import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.ButtonNav
 import com.storyteller_f.alphaheart.client.compose_core.components.CommunityIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.FavoriteButton
 import com.storyteller_f.alphaheart.client.compose_core.components.IconActionMenu
-import com.storyteller_f.alphaheart.client.compose_core.components.IconRes
-import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
-import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingActionMenuSurface
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingAdaptiveOverlay
 import com.storyteller_f.alphaheart.client.compose_core.components.SubscriptionButton
-import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
-import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.request
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.IconRes
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.tasks.emitEvent
+import com.storyteller_f.alphaheart.client.compose_core.tasks.request
+import com.storyteller_f.alphaheart.client.compose_core.utils.ReadingOverlaySize
 import com.storyteller_f.alphaheart.client.core.exitCommunity
 import com.storyteller_f.alphaheart.client.core.joinCommunity
 import com.storyteller_f.result.onSuccess
 import com.storyteller_f.shared.model.CommunityInfo
 import com.storyteller_f.shared.obj.ob
+import com.storyteller_f.shared.type.MemberStatus
 import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
+import com.storyteller_f.shared.type.UserStatus
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBasicAlertDialog as BasicAlertDialog
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 
 @Composable
 fun CommunityPage(communityId: PrimaryKey, showDialog: Boolean) {
@@ -108,12 +118,33 @@ private fun CommunityPageInternal(communityId: PrimaryKey, needShowDialog: Boole
         detailSearchBar(searchScope) {
             CommunityIconWithDialog(community, showDialog) { showDialog = it }
         }
+    }, floatingActionButton = {
+        if (pagerState.currentPage == 0) CommunityTopicFab(community)
     }) { page ->
         if (page == 0) {
             TopicList(createCommunityTopicsViewModel(communityId))
         } else {
             RoomList(createCommunityRoomsViewModel(communityId))
         }
+    }
+}
+
+@Composable
+private fun CommunityTopicFab(community: CommunityInfo?) {
+    val user = LocalUserInfo.current ?: return
+    if (community == null) return
+    val hasAccess = community.owner == user.id || community.member?.status == MemberStatus.JOINED
+    if (!hasAccess || community.readOnly || user.status != UserStatus.NORMAL) return
+    val appNav = LocalAppNavFactory.current
+    FloatingActionButton(onClick = {
+        appNav.newAppNav().gotoTopicCompose(
+            TopicComposeData.Community(
+                community.id,
+                community.id ob ObjectType.COMMUNITY,
+            ),
+        )
+    }) {
+        Icon(actionIcon(ActionGlyph.PLUS), stringResource(Res.string.compose_topic))
     }
 }
 
@@ -128,11 +159,7 @@ fun communityNavRoutes(): List<NavRoute> =
 @Composable
 fun CommunityDialog(communityInfo: CommunityInfo?, showDialog: Boolean, dismiss: () -> Unit) {
     if (communityInfo != null && showDialog) {
-        BasicAlertDialog(
-            {
-                dismiss()
-            },
-        ) {
+        ReadingAdaptiveOverlay(dismiss, ReadingOverlaySize.MENU) {
             CommunityDialogInternal(communityInfo, dismiss)
         }
     }
@@ -142,10 +169,15 @@ fun CommunityDialog(communityInfo: CommunityInfo?, showDialog: Boolean, dismiss:
 @Composable
 fun CommunityDialogInternal(communityInfo: CommunityInfo, dismiss: () -> Unit) {
     val communityId = communityInfo.id
+    val appNavFactory = LocalAppNavFactory.current
+    val currentCommunity = appNavFactory.hasRouteFlow<CommunityScreen> { it.communityId == communityId }
     ReadingActionMenuSurface(onDismiss = dismiss, heading = {
         Row(
             modifier =
-            Modifier.fillMaxWidth(),
+            Modifier.fillMaxWidth().clickable(enabled = !currentCommunity) {
+                dismiss()
+                appNavFactory.newAppNav().gotoCommunity(communityId, false)
+            },
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -186,14 +218,10 @@ private fun CommunityMenus(communityId: PrimaryKey, communityInfo: CommunityInfo
             dismiss()
             appNavFactory.newAppNav().gotoMemberPage(communityId, ObjectType.COMMUNITY)
         }
-        val appNavFactory = LocalAppNavFactory.current
-        val isCommunityPage = appNavFactory.hasRouteFlow<CommunityScreen>()
-        if (isCommunityPage) {
-            CommunityMemberStatusButton(communityInfo, globalDialogController, communityId)
-            FavoriteButton(communityInfo.favoriteId, communityInfo.tuple())
-            SubscriptionButton(communityInfo.subscriptionId, communityInfo.tuple())
-            CommunityAdminButtons(communityInfo, dismiss, appNavFactory, communityId)
-        }
+        CommunityMemberStatusButton(communityInfo, globalDialogController, communityId)
+        FavoriteButton(communityInfo.favoriteId, communityInfo.tuple())
+        SubscriptionButton(communityInfo.subscriptionId, communityInfo.tuple())
+        CommunityAdminButtons(communityInfo, dismiss, appNavFactory, communityId)
     }
 }
 
@@ -211,6 +239,16 @@ private fun CommunityAdminButtons(
             appNavFactory.newAppNav().gotoFileExplorer(communityId ob ObjectType.COMMUNITY)
         }
 
+        if (myInfo.status == UserStatus.NORMAL && !communityInfo.readOnly) {
+            ButtonNav(actionIcon(ActionGlyph.MESSAGE_SQUARE_PLUS), stringResource(Res.string.create_room_action)) {
+                dismiss()
+                appNavFactory.newAppNav().gotoRoomCompose(communityId)
+            }
+            ButtonNav(actionIcon(ActionGlyph.BADGE_PLUS), stringResource(Res.string.create_title_action)) {
+                dismiss()
+                appNavFactory.newAppNav().gotoCommunityTitleCompose(communityId)
+            }
+        }
         ButtonNav(actionIcon(ActionGlyph.SETTINGS), stringResource(Res.string.settings_title)) {
             dismiss()
             appNavFactory.newAppNav().gotoSettingPage(communityId, ObjectType.COMMUNITY)

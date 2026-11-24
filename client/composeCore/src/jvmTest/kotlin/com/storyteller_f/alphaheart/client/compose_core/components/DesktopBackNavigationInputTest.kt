@@ -11,6 +11,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.navigationevent.NavigationEventDispatcher
 import androidx.navigationevent.NavigationEventHandler
 import androidx.navigationevent.NavigationEventInfo
+import com.storyteller_f.alphaheart.client.compose_core.navigation.DesktopBackNavigationInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

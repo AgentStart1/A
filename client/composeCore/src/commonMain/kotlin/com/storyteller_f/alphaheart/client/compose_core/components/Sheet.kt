@@ -4,7 +4,6 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -25,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.storyteller_f.alphaheart.client.compose_core.Res
 import com.storyteller_f.alphaheart.client.compose_core.close
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingDialog as Dialog
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
@@ -57,9 +58,4 @@ fun BaseSheet(
             }
         }
     }
-}
-
-@Composable
-fun SheetContainer(block: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(20.dp), content = block)
 }

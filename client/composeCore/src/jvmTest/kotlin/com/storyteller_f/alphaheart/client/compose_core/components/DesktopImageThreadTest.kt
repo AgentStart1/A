@@ -6,6 +6,7 @@ package com.storyteller_f.alphaheart.client.compose_core.components
 
 import com.github.panpf.zoomimage.util.requiredMainThread
 import com.github.panpf.zoomimage.util.setMainThreadChecker
+import com.storyteller_f.alphaheart.client.compose_core.navigation.bindDesktopImageThread
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext

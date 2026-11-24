@@ -6,6 +6,12 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
+import com.storyteller_f.alphaheart.client.compose_core.media.ResourceDownloadRequest
+import com.storyteller_f.alphaheart.client.compose_core.media.ResourceSaveOutcome
+import com.storyteller_f.alphaheart.client.compose_core.media.downloadBrowserResource
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomGlobalDialogController
+import com.storyteller_f.alphaheart.client.compose_core.tasks.GlobalDialogState
+import com.storyteller_f.alphaheart.client.compose_core.tasks.request
 import com.storyteller_f.result.CustomResult
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async

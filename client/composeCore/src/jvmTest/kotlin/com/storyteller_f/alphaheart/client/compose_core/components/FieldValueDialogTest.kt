@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomAlertDialogState
 import kotlinx.coroutines.CompletableDeferred
 import java.awt.datatransfer.DataFlavor
 import java.util.Locale

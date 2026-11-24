@@ -129,6 +129,12 @@
     <string name="search_scope">搜索范围</string>
     <string name="scope_community">社区</string>
     <string name="scope_room">房间</string>
+    <string name="topic_detail_community">社区话题</string>
+    <string name="topic_detail_community_reply">社区子话题</string>
+    <string name="topic_detail_room">房间话题</string>
+    <string name="topic_detail_room_reply">房间子话题</string>
+    <string name="topic_detail_user">用户话题</string>
+    <string name="topic_detail_user_reply">用户子话题</string>
     <string name="scope_user_topics">搜索此用户发布的话题</string>
     <string name="scope_world">世界</string>
     <string name="scope_files">文件</string>
@@ -143,6 +149,8 @@
     <string name="title_scope">作用范围</string>
     <string name="files_uploaded">已上传</string>
     <string name="files_upload_records">上传记录</string>
+    <string name="transfer_upload_details">上传详情</string>
+    <string name="transfer_download_details">下载详情</string>
     <string name="files_download_records">下载记录</string>
     <string name="file_preview_title">文件预览</string>
     <string name="add_attachment">添加附件</string>
@@ -294,4 +302,18 @@
     <string name="topic_time_minutes">%1$s 分钟前</string>
     <string name="topic_time_hours">%1$s 小时前</string>
     <string name="topic_time_days">%1$s 天前</string>
+    <string name="favorited_at">收藏于 %1$s</string>
+    <string name="session_history_title">历史会话</string>
+    <string name="image_actions">图片操作</string>
+    <string name="file_actions">文件操作</string>
+    <string name="upload_actions">上传操作</string>
+    <string name="crop_title">裁剪头像／图标</string>
+    <string name="crop_confirm">确认裁剪</string>
+    <string name="crop_rotate_left">向左旋转</string>
+    <string name="crop_rotate_right">向右旋转</string>
+    <string name="crop_flip_horizontal">水平翻转</string>
+    <string name="crop_flip_vertical">垂直翻转</string>
+    <string name="crop_reset">重置裁剪</string>
+    <string name="unread_rooms">未读房间</string>
+    <string name="unread_messages">未读消息</string>
 </resources>

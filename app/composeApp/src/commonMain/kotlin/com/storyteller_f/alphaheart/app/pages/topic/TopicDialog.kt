@@ -15,12 +15,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -29,11 +27,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.DialogProperties
-import com.storyteller_f.alphaheart.app.AppGlobalDialogController
 import com.storyteller_f.alphaheart.app.IAccountInstance
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
@@ -43,9 +38,11 @@ import com.storyteller_f.alphaheart.app.belongs_to_community
 import com.storyteller_f.alphaheart.app.belongs_to_room
 import com.storyteller_f.alphaheart.app.components.ActionMenuOrigin
 import com.storyteller_f.alphaheart.app.components.AppTopicContentView
+import com.storyteller_f.alphaheart.app.components.ReadingTranslationResult
 import com.storyteller_f.alphaheart.app.copy
-import com.storyteller_f.alphaheart.app.error.TopicActionError
+import com.storyteller_f.alphaheart.app.pages.community.CommunityDialogInternal
 import com.storyteller_f.alphaheart.app.pages.community.CommunityMenuRefCell
+import com.storyteller_f.alphaheart.app.pages.room.RoomDialogInternal
 import com.storyteller_f.alphaheart.app.pages.room.RoomMenuRefCell
 import com.storyteller_f.alphaheart.app.pin
 import com.storyteller_f.alphaheart.app.published_at
@@ -54,7 +51,10 @@ import com.storyteller_f.alphaheart.app.service.buildGPT
 import com.storyteller_f.alphaheart.app.service.buildTranslatePrompt
 import com.storyteller_f.alphaheart.app.snapshot
 import com.storyteller_f.alphaheart.app.success
-import com.storyteller_f.alphaheart.app.topic_actions
+import com.storyteller_f.alphaheart.app.topic.TopicMenuTarget
+import com.storyteller_f.alphaheart.app.topic.TranslationState
+import com.storyteller_f.alphaheart.app.topic.originalPlainContent
+import com.storyteller_f.alphaheart.app.topic.pinOrUnpinTopic
 import com.storyteller_f.alphaheart.app.topic_copy_unavailable
 import com.storyteller_f.alphaheart.app.translate_action
 import com.storyteller_f.alphaheart.app.translation_empty
@@ -66,28 +66,26 @@ import com.storyteller_f.alphaheart.app.translation_retry
 import com.storyteller_f.alphaheart.app.translation_unavailable
 import com.storyteller_f.alphaheart.app.unpin
 import com.storyteller_f.alphaheart.app.utils.rememberStringPreference
-import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.ButtonNav
 import com.storyteller_f.alphaheart.client.compose_core.components.FavoriteButton
 import com.storyteller_f.alphaheart.client.compose_core.components.IconActionMenu
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalToaster
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingActionMenuSurface
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingAdaptiveOverlay
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTranslationResult
 import com.storyteller_f.alphaheart.client.compose_core.components.SubscriptionButton
-import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.copyText
-import com.storyteller_f.alphaheart.client.compose_core.components.request
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.notifications.LocalToaster
+import com.storyteller_f.alphaheart.client.compose_core.tasks.request
+import com.storyteller_f.alphaheart.client.compose_core.utils.ReadingOverlaySize
+import com.storyteller_f.alphaheart.client.compose_core.utils.copyText
 import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.alphaheart.client.compose_core.utils.getCurrentLanguage
 import com.storyteller_f.alphaheart.client.core.createTopicSnapshot
-import com.storyteller_f.alphaheart.client.core.pinTopic
-import com.storyteller_f.alphaheart.client.core.unpinTopic
-import com.storyteller_f.result.CustomResult
 import com.storyteller_f.result.getOrThrow
-import com.storyteller_f.result.map
-import com.storyteller_f.result.mapError
 import com.storyteller_f.result.onSuccess
+import com.storyteller_f.shared.model.CommunityInfo
+import com.storyteller_f.shared.model.RoomInfo
 import com.storyteller_f.shared.model.TopicContent
 import com.storyteller_f.shared.model.TopicDetail
 import com.storyteller_f.shared.type.ObjectType
@@ -100,18 +98,37 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.ExperimentalTime
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingDialog as Dialog
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTextButton as TextButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopicDialog(topicInfo: TopicDetail?, showDialog: Boolean, dismiss: () -> Unit) {
     if (topicInfo != null && showDialog) {
-        var translating by remember(topicInfo.id) { mutableStateOf(false) }
+        var target by remember(topicInfo.id) { mutableStateOf<TopicMenuTarget>(TopicMenuTarget.Actions) }
         TopicActionDialog(
-            translating = translating,
+            translating = target == TopicMenuTarget.Translation,
             dismiss = dismiss,
-            menu = { TopicDialogInternal(topicInfo, dismiss) { translating = true } },
+            menu = {
+                when (val selected = target) {
+                    TopicMenuTarget.Actions ->
+                        TopicDialogInternal(
+                            topicInfo,
+                            dismiss,
+                            onCommunityIcon = { target = TopicMenuTarget.Community(it) },
+                            onRoomIcon = { target = TopicMenuTarget.Room(it) },
+                            translate = { target = TopicMenuTarget.Translation },
+                        )
+
+                    is TopicMenuTarget.Community -> CommunityDialogInternal(selected.info, dismiss)
+
+                    is TopicMenuTarget.Room ->
+                        RoomDialogInternal(selected.info, dismiss) {
+                            target = TopicMenuTarget.Community(it)
+                        }
+
+                    TopicMenuTarget.Translation -> Unit
+                }
+            },
             translation = {
                 TranslationSurface(dismiss) { TopicTranslationBody(topicInfo) }
             },
@@ -128,29 +145,33 @@ internal fun TopicActionDialog(
     menu: @Composable () -> Unit,
     translation: @Composable () -> Unit,
 ) {
-    Dialog(dismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Box(Modifier.padding(20.dp), contentAlignment = Alignment.Center) {
-            if (translating) translation() else menu()
-        }
+    val size = if (translating) ReadingOverlaySize.FORM else ReadingOverlaySize.MENU
+    ReadingAdaptiveOverlay(dismiss, size) {
+        if (translating) translation() else menu()
     }
 }
 
 @OptIn(ExperimentalTime::class)
 @Composable
-fun TopicDialogInternal(topicInfo: TopicDetail, dismissDialog: () -> Unit, translate: () -> Unit) {
+fun TopicDialogInternal(
+    topicInfo: TopicDetail,
+    dismissDialog: () -> Unit,
+    onCommunityIcon: (CommunityInfo) -> Unit,
+    onRoomIcon: (RoomInfo) -> Unit,
+    translate: () -> Unit,
+) {
     val appNavFactory = LocalAppNavFactory.current
     ReadingActionMenuSurface(onDismiss = dismissDialog, heading = {
-        Text(stringResource(Res.string.topic_actions), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-    }) {
         Text(
             stringResource(Res.string.published_at, topicInfo.createdTime.formatDisplayTime()),
+            modifier = Modifier.padding(top = 6.dp),
             style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.padding(top = 16.dp),
         )
+    }) {
         when (topicInfo.rootType) {
             ObjectType.COMMUNITY ->
                 ActionMenuOrigin(stringResource(Res.string.belongs_to_community)) {
-                    CommunityMenuRefCell(topicInfo.rootId) {
+                    CommunityMenuRefCell(topicInfo.rootId, onClickIcon = onCommunityIcon) {
                         dismissDialog()
                         appNavFactory.newAppNav().gotoCommunity(topicInfo.rootId, false)
                     }
@@ -158,7 +179,7 @@ fun TopicDialogInternal(topicInfo: TopicDetail, dismissDialog: () -> Unit, trans
 
             ObjectType.ROOM ->
                 ActionMenuOrigin(stringResource(Res.string.belongs_to_room)) {
-                    RoomMenuRefCell(topicInfo.rootId) {
+                    RoomMenuRefCell(topicInfo.rootId, onClickIcon = onRoomIcon) {
                         dismissDialog()
                         appNavFactory.newAppNav().gotoRoom(topicInfo.rootId, false)
                     }
@@ -221,7 +242,7 @@ private fun SnapshotButton(topicInfo: TopicDetail) {
             globalDialogController.useResult {
                 request { createTopicSnapshot(topicInfo.id) }
             }.onSuccess {
-                toast.showMessage(getString(Res.string.success))
+                toast.showSuccess(getString(Res.string.success))
             }
         }
     }
@@ -252,29 +273,12 @@ private fun TranslateButton(translate: () -> Unit) {
     )
 }
 
-suspend fun AppGlobalDialogController.pinOrUnpinTopic(topicInfo: TopicDetail): CustomResult<Unit, TopicActionError> =
-    useResult {
-        if (topicInfo.isPin) {
-            request { unpinTopic(topicInfo.id) }
-        } else {
-            request { pinTopic(topicInfo.id) }
-        }
-    }.onSuccess {
-        context.emitEvent(
-            com.storyteller_f.alphaheart.app.common.OnTopicPinChanged(it.id, it.parentId, it.rootType, it.isPin),
-        )
-    }.map { Unit }.mapError(TopicActionError::fromError)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopicTranslateSheet(showSheet: Boolean, sheetState: SheetState, topicInfo: TopicDetail, hideSheet: () -> Unit) {
+fun TopicTranslateSheet(showSheet: Boolean, topicInfo: TopicDetail, hideSheet: () -> Unit) {
     if (showSheet) {
-        key(sheetState) {
-            Dialog(hideSheet, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-                Box(Modifier.padding(20.dp), contentAlignment = Alignment.Center) {
-                    TranslationSurface(hideSheet) { TopicTranslationBody(topicInfo) }
-                }
-            }
+        ReadingAdaptiveOverlay(hideSheet, ReadingOverlaySize.FORM) {
+            TranslationSurface(hideSheet) { TopicTranslationBody(topicInfo) }
         }
     }
 }
@@ -332,16 +336,6 @@ private fun TopicTranslationBody(topicInfo: TopicDetail) {
         }
     }
     TranslationContent(translation, topicInfo) { attempt += 1 }
-}
-
-private sealed interface TranslationState {
-    data object Loading : TranslationState
-    data object Unavailable : TranslationState
-    data object PlatformUnavailable : TranslationState
-    data object Empty : TranslationState
-    data class Streaming(val text: String) : TranslationState
-    data class Complete(val text: String) : TranslationState
-    data class Failed(val text: String) : TranslationState
 }
 
 @Composable

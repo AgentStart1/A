@@ -1,0 +1,4 @@
+<resources>
+    <string name="admin_auth_title">Admin authentication</string>
+    <string name="admin_auth_submit">Sign in</string>
+</resources>

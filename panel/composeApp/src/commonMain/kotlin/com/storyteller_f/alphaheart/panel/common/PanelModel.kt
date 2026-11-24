@@ -102,6 +102,7 @@ import com.storyteller_f.storage.wrap
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -238,6 +239,7 @@ class OverviewViewModel(sessionManager: PanelSessionManager, modelStorage: Model
 }
 
 class AddUserViewModel : ViewModel() {
+    private var keyGeneration: Job? = null
     val privateKey = MutableStateFlow("")
     val nickname = MutableStateFlow("")
     val aid = MutableStateFlow("")
@@ -279,6 +281,8 @@ class AddUserViewModel : ViewModel() {
     }
 
     fun updateAlgoType(algoType: AlgoType) {
+        if (this.algoType.value == algoType) return
+        keyGeneration?.cancel()
         this.algoType.value = algoType
         if (algoType != AlgoType.DILITHIUM) {
             encryptionPrivateKey.value = ""
@@ -286,16 +290,22 @@ class AddUserViewModel : ViewModel() {
     }
 
     fun autoGeneratePrivateKey() {
-        viewModelScope.launch {
-            val algo = getAlgo(algoType.value)
-            algo.generatePemKeyPair().onSuccess { (privateKey, _) ->
-                updatePrivateKey(privateKey)
+        keyGeneration?.cancel()
+        val selected = algoType.value
+        val algo = getAlgo(selected)
+        keyGeneration =
+            viewModelScope.launch {
+                val signing = algo.generatePemKeyPair().getOrNull()?.first ?: return@launch
+                val encryption =
+                    if (selected == AlgoType.DILITHIUM) {
+                        val encryptionAlgo = algo.encryptionAlgo as? Type2Algo ?: return@launch
+                        encryptionAlgo.generateEncryptionPemKeyPair().getOrNull()?.first ?: return@launch
+                    } else {
+                        ""
+                    }
+                updatePrivateKey(signing)
+                updateEncryptionPrivateKey(encryption)
             }
-            val encryptionAlgo = algo.encryptionAlgo as Type2Algo
-            encryptionAlgo.generateEncryptionPemKeyPair().onSuccess { (pemPrivateKey, _) ->
-                updateEncryptionPrivateKey(pemPrivateKey)
-            }
-        }
     }
 }
 

@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.storyteller_f.alphaheart.client.compose_core.navigation.readingDialogProperties
 
 /** The platform dialog keeps modal focus and dismissal; only its scrim follows the reading design. */
 @Composable
@@ -86,8 +87,6 @@ fun ReadingAlertDialog(
         }
     }
 }
-
-internal expect fun readingDialogProperties(properties: DialogProperties, scrim: Color): DialogProperties
 
 @Composable
 internal expect fun ReadingDialogBody(

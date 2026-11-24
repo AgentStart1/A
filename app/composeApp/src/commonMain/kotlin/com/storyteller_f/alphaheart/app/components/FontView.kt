@@ -25,17 +25,16 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.font_loaded
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontState
-import com.storyteller_f.alphaheart.app.pages.community.LocalCommunityFontStore
-import com.storyteller_f.alphaheart.app.pages.community.fontFileKey
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontState
+import com.storyteller_f.alphaheart.app.fonts.FontLoadStatus
+import com.storyteller_f.alphaheart.app.fonts.LocalCommunityFontStore
+import com.storyteller_f.alphaheart.app.fonts.fontFileKey
 import com.storyteller_f.alphaheart.app.retry_font_loading
-import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
-import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.shared.model.FileInfo
 import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
-
-internal enum class FontLoadStatus { LOADING, READY, FAILED }
 
 @Composable
 fun FontView(info: FileInfo) {

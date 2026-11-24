@@ -17,9 +17,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.lifecycle.viewModelScope
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomGlobalDialogController
-import com.storyteller_f.alphaheart.client.compose_core.components.GlobalDialogContext
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomGlobalDialogController
+import com.storyteller_f.alphaheart.client.compose_core.tasks.GlobalDialogContext
 import com.storyteller_f.alphaheart.client.core.RequestError
 import com.storyteller_f.alphaheart.panel.Res
 import com.storyteller_f.alphaheart.panel.common.IdUserOverviewViewModel

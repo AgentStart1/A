@@ -14,7 +14,11 @@ import com.storyteller_f.shared.model.AlgoType
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
 
 @Composable
-fun AlgoTypeSelector(selected: AlgoType, onSelected: (AlgoType) -> Unit) {
+fun AlgoTypeSelector(
+    selected: AlgoType,
+    mlDsaLabel: String = AlgoType.DILITHIUM.name,
+    onSelected: (AlgoType) -> Unit,
+) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         AlgoType.entries.forEach { algoType ->
             val isSelected = algoType == selected
@@ -22,7 +26,7 @@ fun AlgoTypeSelector(selected: AlgoType, onSelected: (AlgoType) -> Unit) {
                 onClick = { onSelected(algoType) },
                 colors = if (isSelected) ButtonDefaults.buttonColors() else ButtonDefaults.filledTonalButtonColors(),
             ) {
-                Text(algoType.name)
+                Text(if (algoType == AlgoType.DILITHIUM) mlDsaLabel else algoType.name)
             }
         }
     }

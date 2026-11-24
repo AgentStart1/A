@@ -25,6 +25,7 @@ import com.storyteller_f.alphaheart.app.scope_files
 import com.storyteller_f.alphaheart.app.scope_room
 import com.storyteller_f.alphaheart.app.scope_topic_replies
 import com.storyteller_f.alphaheart.app.scope_world
+import com.storyteller_f.alphaheart.app.search.SearchScope
 import com.storyteller_f.alphaheart.app.search_members_content
 import com.storyteller_f.alphaheart.app.search_scope
 import com.storyteller_f.alphaheart.app.search_scope_content
@@ -129,17 +130,17 @@ private fun userScopeName(id: PrimaryKey): String? {
 }
 
 @Composable
-internal fun SearchScopeIdentity(scope: SearchScope) {
+internal fun SearchScopeIdentity(scope: SearchScope, interactive: Boolean = false) {
     when (scope) {
-        is SearchScope.CommunityTopic -> CommunityScopeIcon(scope.communityId)
+        is SearchScope.CommunityTopic -> CommunityScopeIcon(scope.communityId, interactive)
 
-        is SearchScope.CommunityRoom -> CommunityScopeIcon(scope.communityId)
+        is SearchScope.CommunityRoom -> CommunityScopeIcon(scope.communityId, interactive)
 
-        is SearchScope.CommunityMember -> CommunityScopeIcon(scope.communityId)
+        is SearchScope.CommunityMember -> CommunityScopeIcon(scope.communityId, interactive)
 
-        is SearchScope.RoomTopic -> RoomScopeIcon(scope.roomId)
+        is SearchScope.RoomTopic -> RoomScopeIcon(scope.roomId, interactive)
 
-        is SearchScope.RoomMember -> RoomScopeIcon(scope.roomId)
+        is SearchScope.RoomMember -> RoomScopeIcon(scope.roomId, interactive)
 
         is SearchScope.UserTopic -> UserScopeIcon(scope.userId)
 
@@ -162,15 +163,29 @@ internal fun SearchScopeIdentity(scope: SearchScope) {
 }
 
 @Composable
-private fun CommunityScopeIcon(id: PrimaryKey) {
+private fun CommunityScopeIcon(id: PrimaryKey, interactive: Boolean = false) {
     val info by createCommunityViewModel(id).handler.data.collectAsStateWithLifecycle()
-    com.storyteller_f.alphaheart.client.compose_core.components.CommunityIcon(info, 40.dp, false) {}
+    val dialog = com.storyteller_f.alphaheart.client.compose_core.components.rememberCommonDialogController()
+    com.storyteller_f.alphaheart.app.pages.community.CommunityIconWithDialog(
+        info,
+        dialog.shown.value,
+        40.dp,
+        interactive,
+        dialog::update,
+    )
 }
 
 @Composable
-private fun RoomScopeIcon(id: PrimaryKey) {
+private fun RoomScopeIcon(id: PrimaryKey, interactive: Boolean = false) {
     val info by createRoomViewModel(id).handler.data.collectAsStateWithLifecycle()
-    com.storyteller_f.alphaheart.client.compose_core.components.RoomIcon(info, 48.dp, false) {}
+    val dialog = com.storyteller_f.alphaheart.client.compose_core.components.rememberCommonDialogController()
+    com.storyteller_f.alphaheart.app.pages.room.RoomIconWithDialog(
+        info,
+        dialog.shown.value,
+        48.dp,
+        interactive,
+        dialog::update,
+    )
 }
 
 @Composable

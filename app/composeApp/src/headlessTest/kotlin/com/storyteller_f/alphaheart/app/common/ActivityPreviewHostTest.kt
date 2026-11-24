@@ -8,7 +8,7 @@ import com.storyteller_f.alphaheart.api.RoomActivityInfo
 import com.storyteller_f.alphaheart.api.RoomActivityListResponse
 import com.storyteller_f.alphaheart.api.RoomInfoListResponse
 import com.storyteller_f.alphaheart.api.TopicActivityListResponse
-import com.storyteller_f.alphaheart.app.pages.room.latestVisibleRoomTopicId
+import com.storyteller_f.alphaheart.app.room.latestVisibleRoomTopicId
 import com.storyteller_f.result.CustomResult
 import com.storyteller_f.shared.model.RoomInfo
 import com.storyteller_f.shared.model.TopicActivity

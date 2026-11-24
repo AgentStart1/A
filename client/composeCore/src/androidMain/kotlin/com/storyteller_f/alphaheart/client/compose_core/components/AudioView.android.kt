@@ -16,6 +16,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.media3.session.MediaController
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlaySession
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlayerService
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaPlaySession
+import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
 import io.github.aakira.napier.Napier
 import kotlin.uuid.ExperimentalUuidApi
 
@@ -29,13 +33,6 @@ actual fun AudioViewEmbed(remoteMediaItem: RemoteMediaItem, loadOnPlay: Boolean)
 @Composable
 actual fun AudioViewFilled(remoteMediaItem: RemoteMediaItem) {
     MediaPlayerFilled(remoteMediaItem) { playingSession, localMediaPlaySession ->
-        AudioPlayer(playingSession, localMediaPlaySession, remoteMediaItem, fill = true)
-    }
-}
-
-@Composable
-actual fun AudioViewFullScreen(remoteMediaItem: RemoteMediaItem) {
-    MediaPlayerFullScreen(remoteMediaItem) { playingSession, localMediaPlaySession ->
         AudioPlayer(playingSession, localMediaPlaySession, remoteMediaItem, fill = true)
     }
 }

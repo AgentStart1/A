@@ -12,6 +12,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
+import com.mikepenz.markdown.model.parseMarkdown
 import com.storyteller_f.alphaheart.api.CommunityInfoListResponse
 import com.storyteller_f.alphaheart.api.CustomApi
 import com.storyteller_f.alphaheart.api.NewTitle
@@ -29,7 +30,7 @@ import com.storyteller_f.alphaheart.client.compose_core.common.SectionLoadParams
 import com.storyteller_f.alphaheart.client.compose_core.common.SectionPagingSource
 import com.storyteller_f.alphaheart.client.compose_core.common.SimpleViewModel
 import com.storyteller_f.alphaheart.client.compose_core.common.buildPager
-import com.storyteller_f.alphaheart.client.compose_core.components.DialogSaveState
+import com.storyteller_f.alphaheart.client.compose_core.tasks.DialogSaveState
 import com.storyteller_f.alphaheart.client.compose_core.utils.SavedSession
 import com.storyteller_f.alphaheart.client.core.LoadingHandler
 import com.storyteller_f.alphaheart.client.core.LoadingState
@@ -105,6 +106,7 @@ import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
 import com.storyteller_f.shared.utils.extractMarkdownHeadline
 import com.storyteller_f.shared.utils.extractMarkdownMediaLink
+import com.storyteller_f.shared.utils.normalizeMarkdownLineEndings
 import com.storyteller_f.storage.ChildAccountStorage
 import com.storyteller_f.storage.CommunityCollection
 import com.storyteller_f.storage.DownloadInfo
@@ -127,12 +129,15 @@ import com.storyteller_f.storage.mergeActivity
 import com.storyteller_f.storage.wrap
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -539,7 +544,23 @@ class ReactionsViewModel(sessionManager: UserSessionManager, objectId: PrimaryKe
         }.flow.cachedIn(viewModelScope)
 }
 
-abstract class TopicViewModel : SimpleViewModel<TopicDetail>()
+abstract class TopicViewModel : SimpleViewModel<TopicDetail>() {
+    internal val markdown by lazy {
+        handler.data
+            .map { it?.readingMarkdownSource() }
+            .distinctUntilChanged()
+            .map { source -> source?.let { it to parseMarkdown(it) } }
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.Lazily, null)
+    }
+}
+
+internal fun TopicDetail.readingMarkdownSource(): String? =
+    when (val content = topicInfo.content) {
+        is TopicContent.Plain -> content.plain
+        is TopicContent.Extracted -> content.plain
+        else -> null
+    }?.let(::normalizeMarkdownLineEndings)
 
 class IdTopicViewModel(sessionManager: UserSessionManager, modelStorage: ModelStorage, topicId: PrimaryKey) :
     TopicViewModel() {

@@ -21,7 +21,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
@@ -42,19 +40,21 @@ import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.add_reaction
 import com.storyteller_f.alphaheart.app.components.AppTopicContentView
 import com.storyteller_f.alphaheart.app.components.InteractionRow
-import com.storyteller_f.alphaheart.app.components.TopicActionsPresentation
 import com.storyteller_f.alphaheart.app.invalid_content
 import com.storyteller_f.alphaheart.app.is_pinned
 import com.storyteller_f.alphaheart.app.pages.user.UserCell
 import com.storyteller_f.alphaheart.app.pages.user.UserIconWithDialog
 import com.storyteller_f.alphaheart.app.pin
+import com.storyteller_f.alphaheart.app.previews.TopicPreviewProvider
+import com.storyteller_f.alphaheart.app.topic.TopicActionsPresentation
+import com.storyteller_f.alphaheart.app.topic.pinOrUnpinTopic
 import com.storyteller_f.alphaheart.app.topic_menu
 import com.storyteller_f.alphaheart.app.ui.MaterialSymbolsOutlined
 import com.storyteller_f.alphaheart.app.unpin
-import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.CustomIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.IconRes
-import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.IconRes
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.result.onSuccess
 import com.storyteller_f.shared.model.TopicContent
 import com.storyteller_f.shared.model.TopicDetail
@@ -66,13 +66,12 @@ import org.jetbrains.compose.resources.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopicCell(info: TopicDetail?, presentation: TopicActionsPresentation = TopicActionsPresentation.FEED) {
-    val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
     TopicCellInternal(info, supportPin = false, presentation = presentation) {
         showBottomSheet = true
     }
     info?.let {
-        EmojiPicker(sheetState, showBottomSheet, it) {
+        EmojiPicker(showBottomSheet, it) {
             showBottomSheet = false
         }
     }
@@ -81,13 +80,12 @@ fun TopicCell(info: TopicDetail?, presentation: TopicActionsPresentation = Topic
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserTopicCell(info: TopicDetail?) {
-    val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
     UserTopicCellInternal(info, supportPin = true) {
         showBottomSheet = true
     }
     info?.let {
-        EmojiPicker(sheetState, showBottomSheet, it) {
+        EmojiPicker(showBottomSheet, it) {
             showBottomSheet = false
         }
     }
@@ -100,26 +98,15 @@ fun RoomTopicCell(
     showAvatar: Boolean = true,
     presentation: TopicActionsPresentation = TopicActionsPresentation.CHAT_LIST,
 ) {
-    val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
     RoomTopicCellInternal(info, showAvatar, presentation = presentation) {
         showBottomSheet = true
     }
     info?.let {
-        EmojiPicker(sheetState, showBottomSheet, it) {
+        EmojiPicker(showBottomSheet, it) {
             showBottomSheet = false
         }
     }
-}
-
-class TopicPreviewProvider : PreviewParameterProvider<TopicDetail> {
-    override val values: Sequence<TopicDetail>
-        get() =
-            sequenceOf(
-                TopicDetail.EMPTY.copy(
-                    topicInfo = TopicDetail.EMPTY.topicInfo.copy(content = TopicContent.Plain("hello")),
-                ),
-            )
 }
 
 @OptIn(ExperimentalFoundationApi::class)

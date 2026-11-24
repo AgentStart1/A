@@ -14,16 +14,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
-import com.storyteller_f.alphaheart.client.compose_core.components.safeArea
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.theme.safeArea
 import com.storyteller_f.alphaheart.panel.LocalPanelNav
 import com.storyteller_f.alphaheart.panel.Res
 import com.storyteller_f.alphaheart.panel.all_topics
 import com.storyteller_f.alphaheart.panel.common.AllTopicsViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelAllTopicsViewModel
 import com.storyteller_f.alphaheart.panel.components.TopicCell
-import com.storyteller_f.alphaheart.panel.components.selectedPanelEntityId
 import com.storyteller_f.alphaheart.panel.menu
+import com.storyteller_f.alphaheart.panel.navigation.selectedPanelEntityId
 import com.storyteller_f.shared.type.ObjectType
 import org.jetbrains.compose.resources.stringResource
 

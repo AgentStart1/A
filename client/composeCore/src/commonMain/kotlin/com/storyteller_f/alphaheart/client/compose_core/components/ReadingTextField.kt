@@ -34,8 +34,10 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.storyteller_f.alphaheart.client.compose_core.theme.fieldColors
 
 /** External labels keep a stable position while the native editor retains selection and IME state. */
 @Composable
@@ -123,20 +125,6 @@ fun ReadingOutlinedTextField(
     }
 }
 
-private data class FieldColors(
-    val text: androidx.compose.ui.graphics.Color,
-    val background: androidx.compose.ui.graphics.Color,
-    val border: androidx.compose.ui.graphics.Color,
-)
-
-private fun fieldColors(colors: TextFieldColors, enabled: Boolean, error: Boolean, focused: Boolean): FieldColors =
-    when {
-        !enabled -> FieldColors(colors.disabledTextColor, colors.disabledContainerColor, colors.disabledIndicatorColor)
-        error -> FieldColors(colors.errorTextColor, colors.errorContainerColor, colors.errorIndicatorColor)
-        focused -> FieldColors(colors.focusedTextColor, colors.focusedContainerColor, colors.focusedIndicatorColor)
-        else -> FieldColors(colors.unfocusedTextColor, colors.unfocusedContainerColor, colors.unfocusedIndicatorColor)
-    }
-
 @Composable
 private fun ReadingFieldDecoration(
     value: String,
@@ -155,7 +143,7 @@ private fun ReadingFieldDecoration(
     ) {
         if (leading != null) Box(Modifier.sizeIn(maxHeight = 24.dp)) { leading() }
         prefix?.invoke()
-        Box(Modifier.weight(1f)) {
+        Box(Modifier.weight(1f), propagateMinConstraints = style.textAlign == TextAlign.Center) {
             if (value.isEmpty() && placeholder != null) {
                 ProvideTextStyle(style.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)) { placeholder() }
             }

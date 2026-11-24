@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
@@ -48,13 +49,13 @@ class CommunityPolicyUiTest {
                     width.value = size
                     policy.value = MemberPolicy.OPEN
                 }
-                onNodeWithText("Open").assertIsDisplayed().performClick()
-                onNodeWithText("Invite Only").performClick()
-                runOnIdle { assertEquals(MemberPolicy.INVITE_ONLY, policy.value) }
+                onNodeWithText("Open").assertIsDisplayed().assertIsSelected()
                 onNodeWithText("Invite Only").assertIsDisplayed().performClick()
+                runOnIdle { assertEquals(MemberPolicy.INVITE_ONLY, policy.value) }
+                onNodeWithText("Invite Only").assertIsSelected()
                 onNodeWithText("Open").performClick()
                 runOnIdle { assertEquals(MemberPolicy.OPEN, policy.value) }
-                onNodeWithText("Open").assertIsDisplayed()
+                onNodeWithText("Open").assertIsSelected()
             }
         }
 }

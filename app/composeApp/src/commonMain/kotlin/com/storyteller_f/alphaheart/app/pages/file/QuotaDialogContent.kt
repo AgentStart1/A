@@ -22,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.DialogProperties
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.common.getQuotaViewModel
 import com.storyteller_f.alphaheart.app.quota_chunk_size
@@ -33,13 +32,14 @@ import com.storyteller_f.alphaheart.app.quota_used_space
 import com.storyteller_f.alphaheart.client.compose_core.components.CachedRefreshIndicator
 import com.storyteller_f.alphaheart.client.compose_core.components.ExceptionCell
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingActionMenuSurface
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingAdaptiveOverlay
+import com.storyteller_f.alphaheart.client.compose_core.utils.ReadingOverlaySize
 import com.storyteller_f.alphaheart.client.core.LoadingHandler
 import com.storyteller_f.alphaheart.client.core.LoadingState
 import com.storyteller_f.shared.model.QuotaDetail
 import com.storyteller_f.shared.obj.ObjectTuple
 import nl.jacobras.humanreadable.HumanReadable
 import org.jetbrains.compose.resources.stringResource
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingDialog as Dialog
 
 @Composable
 internal fun QuotaDialog(show: Boolean, dismiss: () -> Unit, mediaTarget: ObjectTuple) {
@@ -49,15 +49,13 @@ internal fun QuotaDialog(show: Boolean, dismiss: () -> Unit, mediaTarget: Object
     LaunchedEffect(quotaVm) {
         if (refreshCached) quotaVm.handler.refresh()
     }
-    Dialog(dismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Box(Modifier.padding(20.dp), contentAlignment = Alignment.Center) {
-            ReadingActionMenuSurface(
-                onDismiss = dismiss,
-                heading = { Text(stringResource(Res.string.quota_title), fontSize = 17.sp) },
-            ) {
-                Box(Modifier.padding(top = 22.dp)) {
-                    QuotaDialogState(quotaVm.handler)
-                }
+    ReadingAdaptiveOverlay(dismiss, ReadingOverlaySize.LIST) {
+        ReadingActionMenuSurface(
+            onDismiss = dismiss,
+            heading = { Text(stringResource(Res.string.quota_title), fontSize = 17.sp) },
+        ) {
+            Box(Modifier.padding(top = 22.dp)) {
+                QuotaDialogState(quotaVm.handler)
             }
         }
     }

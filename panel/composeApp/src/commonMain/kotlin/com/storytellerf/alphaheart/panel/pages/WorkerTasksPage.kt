@@ -5,7 +5,6 @@ package com.storytellerf.alphaheart.panel.pages
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,18 +12,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -45,7 +45,9 @@ import com.storyteller_f.alphaheart.client.compose_core.components.CenterBox
 import com.storyteller_f.alphaheart.client.compose_core.components.CustomAlertDialog
 import com.storyteller_f.alphaheart.client.compose_core.components.ExceptionCell
 import com.storyteller_f.alphaheart.client.compose_core.components.rememberAlertDialogController
-import com.storyteller_f.alphaheart.client.compose_core.components.safeArea
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.theme.safeArea
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.core.LoadingState
 import com.storyteller_f.alphaheart.panel.LocalPanelNav
@@ -130,20 +132,16 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkerTaskList(
             } else if (uiState.configs.isEmpty()) {
                 CenterBox { Text(stringResource(Res.string.no_worker_task_configurations)) }
             } else {
-                BoxWithConstraints(Modifier.fillMaxSize()) {
-                    val columns = if (maxWidth >= 900.dp) 2 else 1
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(columns),
-                        modifier = Modifier.fillMaxSize(),
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                    LazyColumn(
+                        modifier = Modifier.widthIn(max = 740.dp).fillMaxWidth(),
                         contentPadding = PaddingValues(20.dp),
-                        horizontalArrangement = Arrangement.spacedBy(24.dp),
                         verticalArrangement = Arrangement.spacedBy(20.dp),
                     ) {
                         itemsIndexed(uiState.configs, key = { _, config -> config.type }) { index, config ->
                             WorkerTaskEditor(
                                 config = config,
-                                showDivider = index / columns < uiState.configs.lastIndex / columns,
-                                wide = columns == 2,
+                                showDivider = index < uiState.configs.lastIndex,
                                 onEnabledChange = { viewModel.updateEnabled(config.type, it) },
                                 onFetchSizeChange = { viewModel.updateFetchSize(config.type, it) },
                                 onWaitDurationChange = { viewModel.updateWaitDuration(config.type, it) },
@@ -170,7 +168,6 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkerTaskList(
 private fun WorkerTaskEditor(
     config: WorkerTaskEditorState,
     showDivider: Boolean,
-    wide: Boolean,
     onEnabledChange: (Boolean) -> Unit,
     onFetchSizeChange: (String) -> Unit,
     onWaitDurationChange: (String) -> Unit,
@@ -182,7 +179,8 @@ private fun WorkerTaskEditor(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             WorkerTaskHeader(config, onEnabledChange)
-            WorkerTaskFields(config, wide, onFetchSizeChange, onWaitDurationChange)
+            WorkerNumericField(config, false, onFetchSizeChange)
+            WorkerNumericField(config, true, onWaitDurationChange)
             Button(
                 onClick = onSave,
                 enabled = !config.isSaving,
@@ -193,7 +191,14 @@ private fun WorkerTaskEditor(
                 ),
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text(stringResource(Res.string.save), Modifier.alpha(if (config.isSaving) 0f else 1f))
+                    Row(
+                        Modifier.alpha(if (config.isSaving) 0f else 1f),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(actionIcon(ActionGlyph.CHECK), null)
+                        Text(stringResource(Res.string.save))
+                    }
                     if (config.isSaving) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                 }
             }
@@ -203,59 +208,41 @@ private fun WorkerTaskEditor(
 }
 
 @Composable
-private fun WorkerTaskFields(
-    config: WorkerTaskEditorState,
-    wide: Boolean,
-    onFetchSizeChange: (String) -> Unit,
-    onWaitDurationChange: (String) -> Unit,
-) {
-    if (wide) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            WorkerNumericField(config, false, onFetchSizeChange, Modifier.weight(1f))
-            WorkerNumericField(config, true, onWaitDurationChange, Modifier.weight(1f))
-        }
-    } else {
-        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            WorkerNumericField(config, false, onFetchSizeChange, Modifier.fillMaxWidth())
-            WorkerNumericField(config, true, onWaitDurationChange, Modifier.fillMaxWidth())
-        }
-    }
-}
-
-@Composable
-private fun WorkerNumericField(
-    config: WorkerTaskEditorState,
-    waiting: Boolean,
-    onChange: (String) -> Unit,
-    modifier: Modifier,
-) {
+private fun WorkerNumericField(config: WorkerTaskEditorState, waiting: Boolean, onChange: (String) -> Unit) {
     val value = if (waiting) config.waitDurationMillis else config.fetchSize
     val label = if (waiting) Res.string.worker_task_wait_duration else Res.string.worker_task_fetch_size
     val description = if (waiting) "wait duration" else "fetch size"
-    OutlinedTextField(
-        value = value,
-        onValueChange = onChange,
-        enabled = !config.isSaving,
-        label = { Text(stringResource(label)) },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        singleLine = true,
-        modifier =
-        modifier.appiumSemantics(
-            description = "worker ${config.type.name} $description",
-            input = true,
-            inputValue = value,
-            onInputValueChange = onChange.takeUnless { config.isSaving },
-        ),
-    )
+    val fieldLabel = stringResource(label)
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(fieldLabel, modifier = Modifier.weight(1f))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onChange,
+            enabled = !config.isSaving,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            modifier =
+            Modifier.width(132.dp).appiumSemantics(
+                description = "worker ${config.type.name} $description",
+                input = true,
+                inputValue = value,
+                onInputValueChange = onChange.takeUnless { config.isSaving },
+            ),
+        )
+    }
 }
 
 @Composable
 private fun WorkerTaskHeader(config: WorkerTaskEditorState, onEnabledChange: (Boolean) -> Unit) {
     val toggle = { onEnabledChange(!config.isEnabled) }
+    Text(config.type.name, style = MaterialTheme.typography.titleMedium)
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(config.type.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-        Text(stringResource(Res.string.review_enabled), Modifier.padding(horizontal = 8.dp))
-        Checkbox(
+        Text(stringResource(Res.string.review_enabled), Modifier.weight(1f))
+        Switch(
             checked = config.isEnabled,
             enabled = !config.isSaving,
             onCheckedChange = onEnabledChange,

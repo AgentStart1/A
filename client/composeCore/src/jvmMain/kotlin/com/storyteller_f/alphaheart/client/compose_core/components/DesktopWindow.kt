@@ -9,16 +9,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEvent
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.TextStyle
-import androidx.navigationevent.NavigationEventDispatcher
-import androidx.navigationevent.NavigationEventInput
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
-import com.github.panpf.zoomimage.util.setMainThreadChecker
+import com.storyteller_f.alphaheart.client.compose_core.navigation.DesktopBackNavigationInput
+import com.storyteller_f.alphaheart.client.compose_core.navigation.bindDesktopImageThread
 import com.storyteller_f.alphaheart.client.compose_core.utils.LocalFileDialogSettings
 import dev.nucleusframework.application.DecoratedWindow
 import dev.nucleusframework.core.runtime.Platform
@@ -57,28 +51,4 @@ fun DesktopWindow(title: String, onCloseRequest: () -> Unit, content: @Composabl
             content()
         }
     }
-}
-
-/** Supplies the same Escape-to-navigation binding as Compose's AWT window mediator. */
-internal class DesktopBackNavigationInput : NavigationEventInput() {
-    private var attached = false
-
-    override fun onAdded(dispatcher: NavigationEventDispatcher) {
-        attached = true
-    }
-
-    override fun onRemoved() {
-        attached = false
-    }
-
-    fun onKeyEvent(event: KeyEvent): Boolean {
-        if (!attached || event.type != KeyEventType.KeyDown || event.key != Key.Escape) return false
-        dispatchOnBackCompleted()
-        return true
-    }
-}
-
-/** ZoomImage defaults to Swing; the native window owns its own UI event thread. */
-internal fun bindDesktopImageThread(owner: Thread) {
-    setMainThreadChecker { Thread.currentThread() === owner }
 }

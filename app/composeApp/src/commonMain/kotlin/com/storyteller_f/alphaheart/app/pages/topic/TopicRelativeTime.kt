@@ -16,21 +16,13 @@ import com.storyteller_f.alphaheart.app.topic_time_days
 import com.storyteller_f.alphaheart.app.topic_time_hours
 import com.storyteller_f.alphaheart.app.topic_time_minutes
 import com.storyteller_f.alphaheart.app.topic_time_now
-import com.storyteller_f.shared.model.TopicDetail
 import kotlinx.coroutines.delay
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Clock
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
-
-internal fun sameRoomMessageGroup(previous: TopicDetail?, current: TopicDetail): Boolean {
-    if (previous == null || previous.author != current.author) return false
-    val gap = current.createdTime.toInstant(TimeZone.UTC) - previous.createdTime.toInstant(TimeZone.UTC)
-    return gap >= Duration.ZERO && gap <= 1.minutes
-}
 
 @Composable
 internal fun TopicRelativeTime(createdTime: LocalDateTime, modifier: Modifier = Modifier) {

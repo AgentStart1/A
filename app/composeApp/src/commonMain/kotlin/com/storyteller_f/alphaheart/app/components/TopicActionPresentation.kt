@@ -9,37 +9,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.add_reaction
+import com.storyteller_f.alphaheart.app.topic.PillAppearance
+import com.storyteller_f.alphaheart.app.topic.TopicActionState
+import com.storyteller_f.alphaheart.app.topic.TopicActionsPresentation
 import com.storyteller_f.alphaheart.app.topic_action_comments
 import com.storyteller_f.alphaheart.app.topic_action_reply_count
 import com.storyteller_f.alphaheart.app.topic_action_view_replies_count
 import com.storyteller_f.alphaheart.app.topic_menu
-import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
-import com.storyteller_f.alphaheart.client.compose_core.components.Pill
-import com.storyteller_f.alphaheart.client.compose_core.components.PillAppearance
-import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
-import com.storyteller_f.shared.model.ReactionInfo
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import org.jetbrains.compose.resources.stringResource
-
-/** Page-local presentation, independent of Home or navigation ownership. */
-enum class TopicActionsPresentation(val horizontalGap: Dp, val topGap: Dp) {
-    FEED(18.dp, 16.dp),
-    CHAT_LIST(8.dp, 4.dp),
-    DETAIL_REPLY(12.dp, 12.dp),
-    DETAIL_MAIN(12.dp, 12.dp),
-}
-
-internal data class TopicActionState(
-    val reactions: List<ReactionInfo>,
-    val commentCount: Long,
-    val hasComment: Boolean,
-    val presentation: TopicActionsPresentation,
-    val alignEnd: Boolean = false,
-    val reactionCount: Long = 0,
-)
 
 /** Pure action/aggregate layout; callbacks retain their application-owned lifetime. */
 @Composable
@@ -102,6 +83,7 @@ private fun TopicCommentAction(state: TopicActionState, appearance: PillAppearan
         count,
         icon = actionIcon(ActionGlyph.MESSAGE_SQUARE),
         selected = state.hasComment,
+        highlightWithLine = true,
         description = description,
         appearance = appearance,
         onClick = onClick,

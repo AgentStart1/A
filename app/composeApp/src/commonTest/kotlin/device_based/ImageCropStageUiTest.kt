@@ -17,12 +17,12 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
-import com.storyteller_f.alphaheart.app.pages.user.runImageCropStages
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomGlobalDialogController
+import com.storyteller_f.alphaheart.app.media.runImageCropStages
 import com.storyteller_f.alphaheart.client.compose_core.components.DialogContainer
 import com.storyteller_f.alphaheart.client.compose_core.components.GlobalDialog
-import com.storyteller_f.alphaheart.client.compose_core.components.GlobalDialogState
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomGlobalDialogController
+import com.storyteller_f.alphaheart.client.compose_core.tasks.GlobalDialogState
 import com.storyteller_f.result.CustomResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch

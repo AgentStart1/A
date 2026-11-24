@@ -7,6 +7,7 @@ package com.storyteller_f.alphaheart.client.compose_core.components
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
 
 @Composable
 actual fun AudioViewEmbed(remoteMediaItem: RemoteMediaItem, loadOnPlay: Boolean) {
@@ -15,10 +16,5 @@ actual fun AudioViewEmbed(remoteMediaItem: RemoteMediaItem, loadOnPlay: Boolean)
 
 @Composable
 actual fun AudioViewFilled(remoteMediaItem: RemoteMediaItem) {
-    WasmMediaPlayer(remoteMediaItem, Modifier.fillMaxSize(), video = false)
-}
-
-@Composable
-actual fun AudioViewFullScreen(remoteMediaItem: RemoteMediaItem) {
     WasmMediaPlayer(remoteMediaItem, Modifier.fillMaxSize(), video = false)
 }

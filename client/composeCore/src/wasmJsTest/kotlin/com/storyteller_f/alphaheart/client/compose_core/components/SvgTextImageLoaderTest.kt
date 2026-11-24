@@ -20,6 +20,7 @@ import coil3.request.maxBitmapSize
 import coil3.size.Size
 import com.storyteller.alphaheart.client.composecore.markdown.MERMAID_SOURCE
 import com.storyteller.alphaheart.client.composecore.markdown.renderMermaidSvg
+import com.storyteller_f.alphaheart.client.compose_core.tasks.request
 import com.storyteller_f.alphaheart.client.compose_core.utils.addPlatformImageDecoders
 import com.storyteller_f.alphaheart.client.compose_core.utils.coilImageToImageBitmap
 import com.storyteller_f.result.getOrThrow

@@ -4,7 +4,7 @@
 
 package com.storyteller_f.alphaheart.app
 
-import com.storyteller_f.alphaheart.app.pages.room.canWriteRoomMessage
+import com.storyteller_f.alphaheart.app.topic.canWriteRoomMessage
 import com.storyteller_f.shared.type.UserStatus
 import kotlin.test.Test
 import kotlin.test.assertFalse

@@ -4,14 +4,16 @@
 
 package com.storyteller_f.alphaheart.app.pages.user
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
 import com.storyteller_f.alphaheart.app.Res
@@ -19,23 +21,24 @@ import com.storyteller_f.alphaheart.app.common.FavoritesViewModel
 import com.storyteller_f.alphaheart.app.common.OnAddFavorite
 import com.storyteller_f.alphaheart.app.common.OnRemoveFavorite
 import com.storyteller_f.alphaheart.app.common.getFavoriteViewModel
+import com.storyteller_f.alphaheart.app.favorited_at
 import com.storyteller_f.alphaheart.app.my_favorites
+import com.storyteller_f.alphaheart.app.navigation.recordListFooter
 import com.storyteller_f.alphaheart.app.pages.ReadingPageToolbar
 import com.storyteller_f.alphaheart.app.pages.ReadingRecordList
 import com.storyteller_f.alphaheart.app.pages.community.CommunityCell
 import com.storyteller_f.alphaheart.app.pages.file.FileCell
-import com.storyteller_f.alphaheart.app.pages.recordListFooter
 import com.storyteller_f.alphaheart.app.pages.room.PrimaryRoomCell
 import com.storyteller_f.alphaheart.app.pages.title.TitleItem
 import com.storyteller_f.alphaheart.app.pages.topic.TopicCell
+import com.storyteller_f.alphaheart.app.previews.UserFavoritePreviewProvider
 import com.storyteller_f.alphaheart.app.record_favorites_empty
 import com.storyteller_f.alphaheart.app.record_favorites_end
 import com.storyteller_f.alphaheart.app.record_favorites_failure
 import com.storyteller_f.alphaheart.app.record_favorites_loading
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
-import com.storyteller_f.shared.model.TopicContent
-import com.storyteller_f.shared.model.TopicDetail
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.shared.model.UserFavoriteItem
 import com.storyteller_f.shared.type.ObjectType
 import kotlinx.coroutines.flow.Flow
@@ -74,42 +77,37 @@ fun FavoritePageInternal(viewModel: FavoritesViewModel, refreshEvents: Flow<Any>
     }
 }
 
-class UserFavoritePreviewProvider : PreviewParameterProvider<UserFavoriteItem> {
-    override val values: Sequence<UserFavoriteItem>
-        get() =
-            sequenceOf(
-                UserFavoriteItem.EMPTY.copy(
-                    topicInfo =
-                    TopicDetail.EMPTY.copy(
-                        topicInfo = TopicDetail.EMPTY.topicInfo.copy(content = TopicContent.Plain("hello")),
-                    ),
-                ),
-            )
-}
-
 @Preview(widthDp = 300)
 @Composable
 fun UserFavoriteCell(@PreviewParameter(UserFavoritePreviewProvider::class) userFavoriteInfo: UserFavoriteItem?) {
+    val record = userFavoriteInfo ?: return
     val navigation = LocalAppNavFactory.current
-    when (userFavoriteInfo?.objectType) {
-        ObjectType.TOPIC -> userFavoriteInfo.topicInfo?.let { TopicCell(it) }
+    Column {
+        Text(
+            stringResource(Res.string.favorited_at, record.createdTime.formatDisplayTime()),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        when (record.objectType) {
+            ObjectType.TOPIC -> record.topicInfo?.let { TopicCell(it) }
 
-        ObjectType.COMMUNITY -> userFavoriteInfo.communityInfo?.let { CommunityCell(it) }
+            ObjectType.COMMUNITY -> record.communityInfo?.let { CommunityCell(it) }
 
-        ObjectType.ROOM -> userFavoriteInfo.roomInfo?.let { PrimaryRoomCell(it) }
+            ObjectType.ROOM -> record.roomInfo?.let { PrimaryRoomCell(it) }
 
-        ObjectType.USER ->
-            userFavoriteInfo.userInfo?.let { info ->
-                UserCell(info) { navigation.newAppNav().gotoUser(it.id) }
-            }
+            ObjectType.USER ->
+                record.userInfo?.let { info ->
+                    UserCell(info) { navigation.newAppNav().gotoUser(it.id) }
+                }
 
-        ObjectType.TITLE -> userFavoriteInfo.titleInfo?.let { TitleItem(it) }
+            ObjectType.TITLE -> record.titleInfo?.let { TitleItem(it) }
 
-        ObjectType.FILE ->
-            userFavoriteInfo.fileInfo?.let { info ->
-                FileCell(info) { navigation.newAppNav().gotoMedia(info) }
-            }
+            ObjectType.FILE ->
+                record.fileInfo?.let { info ->
+                    FileCell(info) { navigation.newAppNav().gotoMedia(info) }
+                }
 
-        else -> Unit
+            else -> Unit
+        }
     }
 }

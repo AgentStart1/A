@@ -33,6 +33,21 @@ import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
 import com.storyteller_f.alphaheart.client.compose_core.Res
 import com.storyteller_f.alphaheart.client.compose_core.copy
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaCopyEnabled
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaDownloadEnabled
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaHeadingVisible
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPreviewAction
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalResourceDownloadAction
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalResourceDownloadFile
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaControlActions
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaControlState
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaSurfaceLayout
+import com.storyteller_f.alphaheart.client.compose_core.media.formatMediaTime
+import com.storyteller_f.alphaheart.client.compose_core.media.mediaDownloadRequest
 import com.storyteller_f.alphaheart.client.compose_core.media_download
 import com.storyteller_f.alphaheart.client.compose_core.media_exit_fullscreen
 import com.storyteller_f.alphaheart.client.compose_core.media_fullscreen
@@ -47,8 +62,11 @@ import com.storyteller_f.alphaheart.client.compose_core.media_replay
 import com.storyteller_f.alphaheart.client.compose_core.media_retry
 import com.storyteller_f.alphaheart.client.compose_core.media_unmute
 import com.storyteller_f.alphaheart.client.compose_core.media_volume
+import com.storyteller_f.alphaheart.client.compose_core.notifications.LocalToaster
 import com.storyteller_f.alphaheart.client.compose_core.preview
+import com.storyteller_f.alphaheart.client.compose_core.utils.ReadingOverlaySize
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
+import com.storyteller_f.alphaheart.client.compose_core.utils.copyText
 import com.storyteller_f.alphaheart.client.compose_core.utils.readingColorScheme
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
@@ -56,57 +74,20 @@ import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingDialog as Dialog
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 
-internal val LocalMediaPreviewAction = staticCompositionLocalOf<(() -> Unit)?> { null }
-private val LocalMediaDownloadEnabled = staticCompositionLocalOf { true }
-private val LocalMediaHeadingVisible = staticCompositionLocalOf { true }
-
-/** Avoids a duplicate download entry when the surrounding file page already provides that action. */
+/** Configures controls supplied by the surrounding file page. */
 @Composable
-fun MediaMenuScope(showDownload: Boolean = true, showHeading: Boolean = true, content: @Composable () -> Unit) {
+fun MediaMenuScope(
+    showDownload: Boolean = true,
+    showHeading: Boolean = true,
+    showCopy: Boolean = true,
+    content: @Composable () -> Unit,
+) {
     CompositionLocalProvider(
         LocalMediaDownloadEnabled provides showDownload,
         LocalMediaHeadingVisible provides showHeading,
+        LocalMediaCopyEnabled provides showCopy,
         content = content,
     )
-}
-
-/** Times are seconds; volume is normalized to 0..1. Unknown duration disables seeking. */
-internal data class MediaControlState(
-    val playing: Boolean = false,
-    val loading: Boolean = false,
-    val failed: Boolean = false,
-    val enabled: Boolean = true,
-    val volumeEnabled: Boolean = true,
-    val expansionEnabled: Boolean = true,
-    val position: Double = 0.0,
-    val duration: Double = 0.0,
-    val volume: Float = 1f,
-    val muted: Boolean = false,
-    val title: String? = null,
-    val durationKnown: Boolean = true,
-    val showTime: Boolean = false,
-    val ended: Boolean = false,
-)
-
-internal data class MediaControlActions(
-    val togglePlayback: () -> Unit,
-    val seek: (Double) -> Unit,
-    val setVolume: (Float) -> Unit,
-    val toggleMute: () -> Unit,
-    val retry: (() -> Unit)? = null,
-)
-
-internal fun formatMediaTime(seconds: Double): String {
-    val total = if (seconds.isFinite()) seconds.toLong().coerceAtLeast(0) else 0
-    val minutes = (total / 60 % 60).toString().padStart(2, '0')
-    val remainder = (total % 60).toString().padStart(2, '0')
-    return if (total >= 3600) "${total / 3600}:$minutes:$remainder" else "${total / 60}:$remainder"
-}
-
-/** Embedded video reserves its picture ratio independently of the heading and transport controls. */
-sealed interface MediaSurfaceLayout {
-    data object Bounded : MediaSurfaceLayout
-    data class EmbeddedVideo(val aspectRatio: Float = 16f / 9f) : MediaSurfaceLayout
 }
 
 /** Owns presentation only; the caller retains the playback engine across expansion. */
@@ -121,10 +102,10 @@ internal fun MediaPlayerSurface(
     sourceUrl: String? = null,
     artwork: String? = null,
     layout: MediaSurfaceLayout = MediaSurfaceLayout.Bounded,
-    menuContent: @Composable (() -> Unit) -> Unit = {},
+    menuContent: (@Composable (() -> Unit) -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember(video) { mutableStateOf(false) }
     var embeddedSize by remember { mutableStateOf(IntSize.Zero) }
     var playbackRequested by remember(sourceUrl, title) { mutableStateOf(false) }
     fun recordPlayback(action: () -> Unit): () -> Unit =
@@ -140,7 +121,7 @@ internal fun MediaPlayerSurface(
     val showTime = state.showTime || playbackRequested || state.playing || state.ended || state.position > 0
     val surfaceState = state.copy(showTime = showTime)
     val density = LocalDensity.current
-    if (expanded) {
+    if (expanded && video) {
         Dialog(
             onDismissRequest = { expanded = false },
             properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -148,7 +129,7 @@ internal fun MediaPlayerSurface(
             Box(Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
                 MediaSurfaceContent(
                     state.title ?: title, surfaceState, surfaceActions,
-                    if (video) Modifier.widthIn(max = 900.dp).fillMaxWidth() else Modifier.fillMaxSize(),
+                    Modifier.widthIn(max = 900.dp).fillMaxWidth(),
                     video, controlsVisible, true,
                     { expanded = false }, sourceUrl, artwork, layout, menuContent, content,
                 )
@@ -186,11 +167,11 @@ private fun MediaSurfaceContent(
     sourceUrl: String?,
     artwork: String?,
     layout: MediaSurfaceLayout,
-    menuContent: @Composable (() -> Unit) -> Unit,
+    menuContent: (@Composable (() -> Unit) -> Unit)?,
     content: @Composable BoxScope.() -> Unit,
 ) {
     if (!video && !expanded && artwork == null) {
-        CompactAudioSurface(title, state, actions, modifier, controlsVisible, toggleExpanded, sourceUrl, menuContent)
+        CompactAudioSurface(title, state, actions, modifier, controlsVisible, sourceUrl, menuContent)
         return
     }
     val showEmbeddedHeading = controlsVisible && LocalMediaHeadingVisible.current
@@ -236,7 +217,7 @@ private fun MediaSurfaceContent(
             }
             if (controlsVisible) {
                 Column(Modifier.fillMaxWidth().padding(top = 12.dp)) {
-                    MediaTransport(state, actions, expanded, toggleExpanded) {
+                    MediaTransport(state, actions, toggleExpanded.takeUnless { expanded }) {
                         if (!showHeading && sourceUrl != null) MediaOptions(sourceUrl, menuContent)
                     }
                 }
@@ -251,7 +232,7 @@ private fun MediaSurfaceHeader(
     expanded: Boolean,
     collapse: () -> Unit,
     sourceUrl: String?,
-    menuContent: @Composable (() -> Unit) -> Unit,
+    menuContent: (@Composable (() -> Unit) -> Unit)?,
 ) {
     Row(
         Modifier.fillMaxWidth()
@@ -288,16 +269,15 @@ private fun CompactAudioSurface(
     actions: MediaControlActions,
     modifier: Modifier,
     controlsVisible: Boolean,
-    toggleExpanded: () -> Unit,
     sourceUrl: String?,
-    menuContent: @Composable (() -> Unit) -> Unit,
+    menuContent: (@Composable (() -> Unit) -> Unit)?,
 ) {
     Column(modifier.widthIn(max = 740.dp).fillMaxWidth()) {
         if (LocalMediaHeadingVisible.current) {
-            MediaSurfaceHeader(title, false, toggleExpanded, sourceUrl.takeIf { controlsVisible }, menuContent)
+            MediaSurfaceHeader(title, false, {}, sourceUrl.takeIf { controlsVisible }, menuContent)
         }
         if (controlsVisible) {
-            MediaTransport(state, actions, false, toggleExpanded) {
+            MediaTransport(state, actions, null) {
                 if (!LocalMediaHeadingVisible.current && sourceUrl != null) MediaOptions(sourceUrl, menuContent)
             }
         }
@@ -373,23 +353,22 @@ private fun MediaAudioArtwork(title: String, artwork: String?, showTitle: Boolea
 private fun MediaTransport(
     state: MediaControlState,
     actions: MediaControlActions,
-    expanded: Boolean,
-    toggleExpanded: () -> Unit,
+    expand: (() -> Unit)?,
     endActions: @Composable () -> Unit,
 ) {
     val enabled = state.enabled && !state.failed && !state.loading
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
             MediaPlaybackButton(state, actions, enabled)
         }
         MediaPosition(state, actions, Modifier.weight(1f), enabled)
         MediaVolume(state, actions, enabled && state.volumeEnabled)
-        if (!expanded) {
+        if (expand != null) {
             MediaIcon(
                 actionIcon(ActionGlyph.MAXIMIZE_2),
                 stringResource(Res.string.media_fullscreen),
                 state.expansionEnabled,
-                action = toggleExpanded,
+                action = expand,
             )
         }
         endActions()
@@ -426,7 +405,13 @@ private fun MediaPlaybackButton(state: MediaControlState, actions: MediaControlA
                     state.playing -> Res.string.media_pause
                     else -> Res.string.media_play
                 }
-            MediaIcon(actionIcon(glyph), stringResource(label), enabled, accent = true, action = actions.togglePlayback)
+            MediaIcon(
+                actionIcon(glyph),
+                stringResource(label),
+                enabled,
+                emphasized = true,
+                action = actions.togglePlayback,
+            )
         }
     }
 }
@@ -476,17 +461,15 @@ private fun MediaIcon(
     icon: ImageVector,
     label: String,
     enabled: Boolean,
-    accent: Boolean = false,
+    emphasized: Boolean = false,
     action: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val containerColor = if (accent) scheme.primary else Color.Transparent
-    val tint = if (accent && enabled) scheme.onPrimary else scheme.onSurface
-    IconButton(
+    val tint = if (emphasized) scheme.primary else scheme.onSurfaceVariant
+    ReadingIconButton(
         onClick = action,
         enabled = enabled,
         modifier = Modifier.appiumSemantics(text = label, onClick = if (enabled) action else null),
-        colors = IconButtonDefaults.iconButtonColors(containerColor = containerColor),
     ) {
         Icon(icon, label, Modifier.size(17.dp), tint = tint.copy(alpha = if (enabled) 1f else 0.38f))
     }
@@ -494,18 +477,21 @@ private fun MediaIcon(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MediaOptions(sourceUrl: String, content: @Composable (() -> Unit) -> Unit) {
+private fun MediaOptions(sourceUrl: String, content: (@Composable (() -> Unit) -> Unit)?) {
+    val openPreview = LocalMediaPreviewAction.current
+    val showDownload = LocalMediaDownloadEnabled.current
+    val showCopy = LocalMediaCopyEnabled.current && openPreview == null
+    if (openPreview == null && !showDownload && !showCopy && content == null) return
+
     var expanded by remember { mutableStateOf(false) }
     val downloadResource = LocalResourceDownloadAction.current
     val downloadFile = LocalResourceDownloadFile.current
     val clipboard = LocalClipboard.current
     val toast = LocalToaster.current
     val scope = rememberCoroutineScope()
-    val openPreview = LocalMediaPreviewAction.current
-    val showDownload = LocalMediaDownloadEnabled.current
     MediaIcon(actionIcon(ActionGlyph.ELLIPSIS), stringResource(Res.string.media_options), true) { expanded = true }
     if (expanded) {
-        BasicAlertDialog(onDismissRequest = { expanded = false }) {
+        ReadingAdaptiveOverlay({ expanded = false }, ReadingOverlaySize.COMPACT) {
             ReadingActionMenuSurface(
                 onDismiss = { expanded = false },
                 heading = { Text(stringResource(Res.string.media_options), fontSize = 17.sp) },
@@ -523,13 +509,15 @@ private fun MediaOptions(sourceUrl: String, content: @Composable (() -> Unit) ->
                             downloadResource(mediaDownloadRequest(sourceUrl, downloadFile))
                         }
                     }
-                    ButtonNav(actionIcon(ActionGlyph.COPY), stringResource(Res.string.copy)) {
-                        scope.launch(start = CoroutineStart.UNDISPATCHED) {
-                            clipboard.copyText(sourceUrl, toast)
-                            expanded = false
+                    if (showCopy) {
+                        ButtonNav(actionIcon(ActionGlyph.COPY), stringResource(Res.string.copy)) {
+                            scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                                clipboard.copyText(sourceUrl, toast)
+                                expanded = false
+                            }
                         }
                     }
-                    content { expanded = false }
+                    content?.invoke { expanded = false }
                 }
             }
         }

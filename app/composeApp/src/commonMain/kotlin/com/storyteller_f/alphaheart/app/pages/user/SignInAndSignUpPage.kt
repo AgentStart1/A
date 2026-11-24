@@ -7,7 +7,6 @@ package com.storyteller_f.alphaheart.app.pages.user
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -23,30 +22,23 @@ import androidx.savedstate.serialization.SavedStateConfiguration
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.back_to_pre_page
+import com.storyteller_f.alphaheart.app.navigation.SignIn
+import com.storyteller_f.alphaheart.app.navigation.SignInAndSignUpNav
+import com.storyteller_f.alphaheart.app.navigation.SignInInput
+import com.storyteller_f.alphaheart.app.navigation.SignUp
+import com.storyteller_f.alphaheart.app.navigation.SignUpInput
+import com.storyteller_f.alphaheart.app.navigation.buildSignInAndSignUpNav
 import com.storyteller_f.alphaheart.app.utils.appPlatform
-import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
-import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.utils.BindBrowserNavigation
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
-
-@Serializable
-data object SignIn : NavKey
-
-@Serializable
-data object SignUp : NavKey
-
-@Serializable
-data object SignUpInput : NavKey
-
-@Serializable
-data object SignInInput : NavKey
 
 @Composable
 fun SignInAndSignUpPage() {
@@ -69,31 +61,34 @@ fun SignInAndSignUpPage() {
             buildSignInAndSignUpNav(backStack)
         }
     val appNavFactory = LocalAppNavFactory.current
+    val goBack: () -> Unit = {
+        if (backStack.size > 1) {
+            backStack.removeLastOrNull()
+        } else {
+            appNavFactory.newAppNav().back()
+        }
+    }
     Surface {
-        Column {
-            if (!appPlatform.hasNativeBack) {
-                val backDescription = stringResource(Res.string.back_to_pre_page)
-                val goBack: () -> Unit = {
-                    if (backStack.size > 1) {
-                        backStack.removeLastOrNull()
-                    } else {
-                        appNavFactory.newAppNav().back()
-                    }
-                }
-                IconButton(
-                    onClick = goBack,
-                    modifier = Modifier.appiumSemantics(description = backDescription, onClick = goBack),
-                ) {
-                    Icon(actionIcon(ActionGlyph.ARROW_LEFT), backDescription)
-                }
-            }
-            SignInNavDisplay(backStack, nav)
+        SignInNavDisplay(backStack, nav) {
+            if (!appPlatform.hasNativeBack) AuthBackButton(goBack)
         }
     }
 }
 
 @Composable
-private fun SignInNavDisplay(backStack: NavBackStack<NavKey>, nav: SignInAndSignUpNav) {
+private fun AuthBackButton(onClick: () -> Unit) {
+    val description = stringResource(Res.string.back_to_pre_page)
+    IconButton(onClick, Modifier.appiumSemantics(description = description, onClick = onClick)) {
+        Icon(actionIcon(ActionGlyph.ARROW_LEFT), description)
+    }
+}
+
+@Composable
+private fun SignInNavDisplay(
+    backStack: NavBackStack<NavKey>,
+    nav: SignInAndSignUpNav,
+    navigation: @Composable () -> Unit,
+) {
     NavDisplay(
         backStack,
         entryDecorators =
@@ -116,65 +111,17 @@ private fun SignInNavDisplay(backStack: NavBackStack<NavKey>, nav: SignInAndSign
         entryProvider =
         entryProvider {
             entry<SignIn> {
-                SignInPage(nav)
+                SignInPage(nav, navigation)
             }
             entry<SignUp> {
-                SignUpPage(nav)
+                SignUpPage(nav, navigation)
             }
             entry<SignUpInput> {
-                PrivateKeyAuthSignUpPage()
+                SignUpPage(nav, navigation)
             }
             entry<SignInInput> {
-                PrivateKeyAuthSignInPage()
+                SignInPage(nav, navigation)
             }
         },
     )
-}
-
-private fun buildSignInAndSignUpNav(backStack: NavBackStack<NavKey>) =
-    object : SignInAndSignUpNav {
-        override fun gotoPrivateKey(isSignUp: Boolean) {
-            val target = if (isSignUp) SignUpInput else SignInInput
-            val i = backStack.indexOf(target)
-            if (i >= 0) {
-                repeat(backStack.size - i - 1) {
-                    backStack.removeLastOrNull()
-                }
-            }
-            if (backStack.last() != target) {
-                backStack.add(target)
-            }
-        }
-
-        override fun gotoSignUp() {
-            val i = backStack.indexOf(SignUp)
-            if (i >= 0) {
-                repeat(backStack.size - i - 1) {
-                    backStack.removeLastOrNull()
-                }
-            }
-            if (backStack.last() !is SignUp) {
-                backStack.add(SignUp)
-            }
-        }
-
-        override fun gotoSignIn() {
-            val i = backStack.indexOf(SignIn)
-            if (i >= 0) {
-                repeat(backStack.size - i - 1) {
-                    backStack.removeLastOrNull()
-                }
-            }
-            if (backStack.last() !is SignIn) {
-                backStack.add(SignIn)
-            }
-        }
-    }
-
-interface SignInAndSignUpNav {
-    fun gotoPrivateKey(isSignUp: Boolean)
-
-    fun gotoSignUp()
-
-    fun gotoSignIn()
 }

@@ -29,20 +29,21 @@ import com.storyteller_f.alphaheart.app.pages.title.CommunityTitleComposePage
 import com.storyteller_f.alphaheart.app.pages.title.RoomTitleComposePage
 import com.storyteller_f.alphaheart.app.pages.title.TitleComposePage
 import com.storyteller_f.alphaheart.app.pages.topic.ReactionListPage
-import com.storyteller_f.alphaheart.app.pages.topic.TopicComposeData
 import com.storyteller_f.alphaheart.app.pages.topic.TopicComposePage
 import com.storyteller_f.alphaheart.app.pages.topic.TopicPage
 import com.storyteller_f.alphaheart.app.pages.user.MemberPage
 import com.storyteller_f.alphaheart.app.pages.user.SignInAndSignUpPage
+import com.storyteller_f.alphaheart.app.pages.user.TwoFactorSettingsPage
 import com.storyteller_f.alphaheart.app.pages.user.UserCommentsPage
 import com.storyteller_f.alphaheart.app.pages.user.UserFavoritePage
 import com.storyteller_f.alphaheart.app.pages.user.UserPage
 import com.storyteller_f.alphaheart.app.pages.user.UserReactionRecordsPage
 import com.storyteller_f.alphaheart.app.pages.user.UserSettingPage
 import com.storyteller_f.alphaheart.app.pages.user.UserSubscriptionPage
+import com.storyteller_f.alphaheart.app.topic.TopicComposeData
 import com.storyteller_f.alphaheart.app.utils.getDeepLinkHost
 import com.storyteller_f.alphaheart.app.utils.getDeepLinkScheme
-import com.storyteller_f.alphaheart.client.compose_core.components.FileViewData
+import com.storyteller_f.alphaheart.client.compose_core.media.FileViewData
 import com.storyteller_f.shared.model.FileInfo
 import com.storyteller_f.shared.obj.ObjectTuple
 import com.storyteller_f.shared.obj.ob
@@ -55,7 +56,7 @@ import kotlinx.serialization.modules.subclass
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 
 @Serializable
-data class SearchScreen(val scope: com.storyteller_f.alphaheart.app.pages.search.SearchScope) : NavKey
+data class SearchScreen(val scope: com.storyteller_f.alphaheart.app.search.SearchScope) : NavKey
 
 @Serializable
 data object HomeScreen : NavKey
@@ -119,6 +120,9 @@ data class CommunityMemberScreen(val objectId: PrimaryKey) : NavKey
 data object UserSettingScreen : NavKey
 
 @Serializable
+data object TwoFactorSettingsScreen : NavKey
+
+@Serializable
 data object PreferenceScreen : NavKey
 
 @Serializable
@@ -141,6 +145,9 @@ data object CommunityComposeScreen : NavKey
 
 @Serializable
 data object RoomComposeScreen : NavKey
+
+@Serializable
+data class CommunityRoomComposeScreen(val communityId: PrimaryKey) : NavKey
 
 @Serializable
 data class CommunitySettingScreen(val communityId: PrimaryKey) : NavKey
@@ -207,6 +214,7 @@ val appNavSerializersModule =
             subclass(RoomMemberScreen::class)
             subclass(CommunityMemberScreen::class)
             subclass(UserSettingScreen::class)
+            subclass(TwoFactorSettingsScreen::class)
             subclass(PreferenceScreen::class)
             subclass(LocalImageScreen::class)
             subclass(FileInfoScreen::class)
@@ -215,6 +223,7 @@ val appNavSerializersModule =
             subclass(RoomTitleComposeScreen::class)
             subclass(CommunityComposeScreen::class)
             subclass(RoomComposeScreen::class)
+            subclass(CommunityRoomComposeScreen::class)
             subclass(CommunitySettingScreen::class)
             subclass(FontSettingsScreen::class)
             subclass(RoomSettingScreen::class)
@@ -265,6 +274,8 @@ interface AppNav {
 
     fun gotoUserSetting()
 
+    fun gotoTwoFactorSettings()
+
     fun gotoPreference()
 
     fun gotoMedia(info: FileInfo)
@@ -279,7 +290,7 @@ interface AppNav {
 
     fun gotoCommunityCompose()
 
-    fun gotoRoomCompose()
+    fun gotoRoomCompose(communityId: PrimaryKey? = null)
 
     fun gotoSettingPage(objectId: PrimaryKey, objectType: ObjectType)
 
@@ -421,6 +432,10 @@ private class DefaultAppNav(
         backStack.add(UserSettingScreen)
     }
 
+    override fun gotoTwoFactorSettings() {
+        backStack.add(TwoFactorSettingsScreen)
+    }
+
     override fun gotoPreference() {
         backStack.add(PreferenceScreen)
     }
@@ -453,8 +468,8 @@ private class DefaultAppNav(
         backStack.add(CommunityComposeScreen)
     }
 
-    override fun gotoRoomCompose() {
-        backStack.add(RoomComposeScreen)
+    override fun gotoRoomCompose(communityId: PrimaryKey?) {
+        backStack.add(if (communityId == null) RoomComposeScreen else CommunityRoomComposeScreen(communityId))
     }
 
     override fun gotoSettingPage(objectId: PrimaryKey, objectType: ObjectType) {
@@ -610,6 +625,9 @@ private fun EntryProviderScope<NavKey>.handleSettingsScreen() {
     entry<UserSettingScreen> {
         UserHost { UserSettingPage() }
     }
+    entry<TwoFactorSettingsScreen> {
+        UserHost { TwoFactorSettingsPage() }
+    }
     entry<PreferenceScreen> {
         PreferencePage()
     }
@@ -639,6 +657,9 @@ private fun EntryProviderScope<NavKey>.handleComposeScreen(nav: AppNav) {
     }
     entry<RoomComposeScreen> {
         RoomComposePage()
+    }
+    entry<CommunityRoomComposeScreen> {
+        RoomComposePage(it.communityId)
     }
     val backPrePage: () -> Unit = {
         nav.back()

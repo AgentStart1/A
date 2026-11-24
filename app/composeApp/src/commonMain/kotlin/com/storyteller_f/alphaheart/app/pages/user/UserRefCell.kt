@@ -18,7 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalRefCellHandlerProvider
-import com.storyteller_f.alphaheart.client.compose_core.components.RefCellStateView
+import com.storyteller_f.alphaheart.app.components.RefCellStateView
 import com.storyteller_f.alphaheart.client.core.LoadingHandler
 import com.storyteller_f.shared.model.UserInfo
 import com.storyteller_f.shared.type.PrimaryKey

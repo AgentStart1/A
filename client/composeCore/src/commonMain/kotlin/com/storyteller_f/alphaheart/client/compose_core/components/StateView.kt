@@ -4,14 +4,7 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyItemScope
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyGridItemScope
-import androidx.compose.foundation.lazy.grid.LazyGridItemSpanScope
-import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
@@ -26,23 +19,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.paging.CombinedLoadStates
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.paging.compose.itemContentType
-import androidx.paging.compose.itemKey
 import com.storyteller_f.alphaheart.client.compose_core.Res
 import com.storyteller_f.alphaheart.client.compose_core.common.PagingViewModel
 import com.storyteller_f.alphaheart.client.compose_core.load_more_failed_retry
 import com.storyteller_f.alphaheart.client.compose_core.loading_more
 import com.storyteller_f.alphaheart.client.compose_core.no_content_yet
+import com.storyteller_f.alphaheart.client.compose_core.paging.LoadingStatePreviewProvider
+import com.storyteller_f.alphaheart.client.compose_core.paging.REFRESH_AFTER
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.paging.toLoadingState
 import com.storyteller_f.alphaheart.client.compose_core.refresh
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.core.LoadingHandler
@@ -54,8 +47,6 @@ import kotlinx.coroutines.flow.Flow
 import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTextButton as TextButton
-
-const val REFRESH_AFTER = 300L
 
 @Composable
 private fun PagingRefreshAction(enabled: Boolean, refresh: () -> Unit) {
@@ -234,21 +225,11 @@ private fun <T : Any> BoxScope.StateViewTopIndicator(
 }
 
 @Composable
-private fun BoxScope.CachedRefreshOverlay(state: LoadingState?, refresh: () -> Unit) {
+fun BoxScope.CachedRefreshOverlay(state: LoadingState?, refresh: () -> Unit) {
     // A refresh status must not determine the size of cached, wrap-content data.
     Box(Modifier.matchParentSize().zIndex(1f), contentAlignment = Alignment.TopCenter) {
         CachedRefreshIndicator(state, refresh)
     }
-}
-
-class LoadingStatePreviewProvider : PreviewParameterProvider<LoadingState> {
-    override val values: Sequence<LoadingState>
-        get() =
-            sequenceOf(
-                LoadingState.Loading,
-                LoadingState.Done,
-                LoadingState.Error(Exception("Preview loading failure")),
-            )
 }
 
 @Preview
@@ -271,73 +252,7 @@ fun CachedRefreshIndicator(
 }
 
 @Composable
-fun <T : Any> RefCellStateView(
-    handler: LoadingHandler<T>,
-    modifier: Modifier = Modifier,
-    content: @Composable (T) -> Unit,
-) {
-    val data by handler.data.collectAsState()
-    val state by handler.state.collectAsState()
-    Box(modifier = modifier) {
-        data.let { value ->
-            if (value != null) {
-                content(value)
-                CachedRefreshOverlay(state, handler::refresh)
-            } else {
-                val localState = state
-                if (localState is LoadingState.Error) {
-                    Box(
-                        modifier =
-                        Modifier.fillMaxSize().clickable {
-                            handler.refresh()
-                        }.padding(vertical = 8.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        ExceptionView(localState.e)
-                    }
-                } else {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-            }
-        }
-    }
-}
-
-fun LazyListScope.topPrepend(combinedLoadStates: CombinedLoadStates, retry: (() -> Unit)? = null) {
-    val state = combinedLoadStates.prepend
-    if (state is LoadState.Loading || state is LoadState.Error) {
-        item("prepend") { PagingBoundaryState(state, retry) }
-    }
-}
-
-fun LazyGridScope.topPrepend(combinedLoadStates: CombinedLoadStates, retry: (() -> Unit)? = null) {
-    val state = combinedLoadStates.prepend
-    if (state is LoadState.Loading || state is LoadState.Error) {
-        item("prepend", span = { GridItemSpan(maxLineSpan) }) { PagingBoundaryState(state, retry) }
-    }
-}
-
-fun LazyListScope.bottomAppending(combinedLoadStates: CombinedLoadStates, retry: (() -> Unit)? = null) {
-    val state = combinedLoadStates.append
-    if (state is LoadState.Loading || state is LoadState.Error) {
-        item("append") { PagingBoundaryState(state, retry) }
-    }
-}
-
-fun LazyGridScope.bottomAppending(combinedLoadStates: CombinedLoadStates, retry: (() -> Unit)? = null) {
-    val state = combinedLoadStates.append
-    if (state is LoadState.Loading || state is LoadState.Error) {
-        item("append", span = { GridItemSpan(maxLineSpan) }) { PagingBoundaryState(state, retry) }
-    }
-}
-
-@Composable
-private fun PagingBoundaryState(state: LoadState, retry: (() -> Unit)?) {
+internal fun PagingBoundaryState(state: LoadState, retry: (() -> Unit)?) {
     Box(Modifier.fillMaxWidth().height(64.dp), contentAlignment = Alignment.Center) {
         when (state) {
             is LoadState.Loading ->
@@ -359,73 +274,6 @@ private fun PagingBoundaryState(state: LoadState, retry: (() -> Unit)?) {
         }
     }
 }
-
-fun <T : Any> LazyListScope.pagingItems(
-    lazyPagingItems: LazyPagingItems<T>,
-    key: ((it: T) -> Any)? = null,
-    contentType: (index: Int) -> Any? = { null },
-    listId: String? = null,
-    itemContent: @Composable LazyItemScope.(index: Int) -> Unit,
-) {
-    val k =
-        if (key != null) {
-            lazyPagingItems.itemKey {
-                key(it)
-            }
-        } else {
-            null
-        }
-    val spacerId = if (listId != null) "spacer_$listId" else "spacer_placeholder"
-    item(spacerId) {
-        Spacer(modifier = Modifier.height(1.dp))
-    }
-    items(lazyPagingItems.itemCount, k, contentType, itemContent)
-}
-
-fun <T : Any> LazyGridScope.pagingItems(
-    lazyPagingItems: LazyPagingItems<T>,
-    key: ((index: T) -> Any)? = null,
-    span: (LazyGridItemSpanScope.(index: T) -> GridItemSpan)? = null,
-    contentType: (index: T) -> Any? = { null },
-    listId: String? = null,
-    itemContent: @Composable LazyGridItemScope.(index: Int) -> Unit,
-) {
-    val k =
-        if (key != null) {
-            lazyPagingItems.itemKey {
-                key(it)
-            }
-        } else {
-            null
-        }
-    val c =
-        lazyPagingItems.itemContentType {
-            contentType(it)
-        }
-    val s: (LazyGridItemSpanScope.(Int) -> GridItemSpan)? =
-        if (span != null) {
-            {
-                span(checkNotNull(lazyPagingItems[it]) { "Paging item at index $it is unavailable" })
-            }
-        } else {
-            null
-        }
-    val spacerId = if (listId != null) "spacer_$listId" else "spacer_placeholder"
-    item(spacerId, span = {
-        GridItemSpan(maxLineSpan)
-    }) {
-        Spacer(modifier = Modifier.height(1.dp))
-    }
-    items(lazyPagingItems.itemCount, k, s, c, itemContent)
-}
-
-private fun LoadState?.toLoadingState() =
-    when (this) {
-        null -> null
-        is LoadState.Loading -> LoadingState.Loading
-        is LoadState.Error -> LoadingState.Error(error)
-        is LoadState.NotLoading -> LoadingState.Done
-    }
 
 @Composable
 fun debounce(v: LoadState): LoadingState? {

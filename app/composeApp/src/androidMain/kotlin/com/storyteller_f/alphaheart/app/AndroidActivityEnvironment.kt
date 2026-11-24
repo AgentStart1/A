@@ -10,7 +10,7 @@ import androidx.activity.ComponentActivity
 import com.mmk.kmpnotifier.KMPNotifier
 import com.mmk.kmpnotifier.extensions.onCreateOrOnNewIntent
 import com.storyteller_f.alphaheart.app.utils.initializeAppNotifications
-import com.storyteller_f.alphaheart.client.compose_core.components.bindActivity
+import com.storyteller_f.alphaheart.client.compose_core.permissions.bindActivity
 import io.github.aakira.napier.Napier
 import org.unifiedpush.android.connector.UnifiedPush
 

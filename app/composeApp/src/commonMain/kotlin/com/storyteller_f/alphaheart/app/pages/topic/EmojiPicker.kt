@@ -4,8 +4,6 @@
 
 package com.storyteller_f.alphaheart.app.pages.topic
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -17,32 +15,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.storyteller_f.alphaheart.app.LocalGlobalTask
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.add_reaction
 import com.storyteller_f.alphaheart.app.clear_input
-import com.storyteller_f.alphaheart.app.common.OnAddReaction
-import com.storyteller_f.alphaheart.app.common.OnRemoveReaction
-import com.storyteller_f.alphaheart.app.error.ReactionActionError
+import com.storyteller_f.alphaheart.app.components.ReadingSheet
 import com.storyteller_f.alphaheart.app.no_matching_emoji
 import com.storyteller_f.alphaheart.app.search_emoji
-import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
-import com.storyteller_f.alphaheart.client.compose_core.components.BaseSheet
-import com.storyteller_f.alphaheart.client.compose_core.components.GlobalTaskContext
-import com.storyteller_f.alphaheart.client.compose_core.components.NestedGlobalTask
-import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
-import com.storyteller_f.alphaheart.client.compose_core.components.request
-import com.storyteller_f.alphaheart.client.core.SimpleUserSessionManager
-import com.storyteller_f.alphaheart.client.core.addReaction
-import com.storyteller_f.alphaheart.client.core.deleteReaction
-import com.storyteller_f.result.CustomResult
-import com.storyteller_f.result.mapError
-import com.storyteller_f.result.onFailure
-import com.storyteller_f.result.onSuccess
-import com.storyteller_f.shared.model.ReactionInfo
+import com.storyteller_f.alphaheart.app.topic.addReaction
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.utils.ReadingOverlaySize
 import com.storyteller_f.shared.model.TopicDetail
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -55,11 +42,12 @@ import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlin
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EmojiPicker(sheetState: SheetState, showSheet: Boolean, topic: TopicDetail, hideSheet: () -> Unit) {
+fun EmojiPicker(showSheet: Boolean, topic: TopicDetail, hideSheet: () -> Unit) {
+    if (!showSheet) return
     var query by remember {
         mutableStateOf("")
     }
-    BaseSheet(showSheet, sheetState, hideSheet) {
+    ReadingSheet(stringResource(Res.string.add_reaction), hideSheet, ReadingOverlaySize.FORM) {
         EmojiPickerInternal(query, topic, hideSheet) {
             query = it
         }
@@ -74,16 +62,11 @@ private fun EmojiPickerInternal(
     hideSheet: () -> Unit,
     updateQuery: (String) -> Unit,
 ) {
-    Text(
-        stringResource(Res.string.add_reaction),
-        style = MaterialTheme.typography.titleLarge,
-        modifier = Modifier.padding(end = 40.dp, bottom = 24.dp),
-    )
+    val searchLabel = stringResource(Res.string.search_emoji)
     OutlinedTextField(
         query,
         updateQuery,
-        label = { Text(stringResource(Res.string.search_emoji)) },
-        placeholder = { Text(stringResource(Res.string.search_emoji)) },
+        placeholder = { Text(searchLabel) },
         singleLine = true,
         trailingIcon = {
             if (query.isNotEmpty()) {
@@ -92,7 +75,7 @@ private fun EmojiPickerInternal(
                 }
             }
         },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().semantics { contentDescription = searchLabel },
     )
     val emojiList by produceState<List<Emoji>?>(null, query) {
         value = null
@@ -140,8 +123,6 @@ private fun EmojiItem(topic: TopicDetail, emoji: Emoji, hideSheet: () -> Unit) {
         modifier =
         Modifier.fillMaxWidth().height(56.dp)
             .clip(RoundedCornerShape(9.dp))
-            .background(MaterialTheme.colorScheme.background)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(9.dp))
             .clickable {
                 hideSheet()
                 globalTask.launch("${topic.id} $emojiText") {
@@ -154,44 +135,4 @@ private fun EmojiItem(topic: TopicDetail, emoji: Emoji, hideSheet: () -> Unit) {
     ) {
         Text(emojiText, fontSize = 25.sp)
     }
-}
-
-internal suspend fun NestedGlobalTask<GlobalTaskContext<SimpleUserSessionManager>>.addReaction(
-    topic: TopicDetail,
-    emojiText: String,
-): CustomResult<ReactionInfo, ReactionActionError> {
-    val existing =
-        topic.reactions.firstOrNull {
-            it.emoji == emojiText
-        }
-    val fakeInfo =
-        existing?.copy(count = existing.count + 1) ?: ReactionInfo(
-            emojiText,
-            topic.id,
-            1,
-            true,
-            Long.MAX_VALUE,
-        )
-    emitEvent(OnAddReaction(fakeInfo, topic))
-    return request {
-        addReaction(topic.id, emojiText)
-    }.onSuccess {
-        emitEvent(OnAddReaction(it, topic))
-    }.onFailure {
-        emitEvent(OnRemoveReaction(fakeInfo.copy(count = fakeInfo.count - 1), topic))
-    }.mapError(ReactionActionError::fromError)
-}
-
-internal suspend fun NestedGlobalTask<GlobalTaskContext<SimpleUserSessionManager>>.deleteReaction(
-    topic: TopicDetail,
-    emojiText: String,
-    existing: ReactionInfo,
-): CustomResult<ReactionInfo, ReactionActionError> {
-    val fakeInfo = existing.copy(count = existing.count - 1)
-    emitEvent(OnRemoveReaction(fakeInfo, topic))
-    return request { deleteReaction(emojiText, topic.id) }.onSuccess {
-        emitEvent(OnRemoveReaction(it, topic))
-    }.onFailure {
-        emitEvent(OnRemoveReaction(existing, topic))
-    }.mapError(ReactionActionError::fromError)
 }

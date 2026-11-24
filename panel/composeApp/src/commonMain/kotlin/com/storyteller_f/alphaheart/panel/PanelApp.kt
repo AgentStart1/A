@@ -76,17 +76,18 @@ import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.common.LocalClient
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomGlobalDialogController
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomGlobalTask
 import com.storyteller_f.alphaheart.client.compose_core.components.GlobalDialog
-import com.storyteller_f.alphaheart.client.compose_core.components.GlobalDialogContext
-import com.storyteller_f.alphaheart.client.compose_core.components.GlobalTaskContext
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalResourceDownloadAction
-import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOverlayHost
 import com.storyteller_f.alphaheart.client.compose_core.components.rememberResourceDownloadAction
-import com.storyteller_f.alphaheart.client.compose_core.components.request
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalResourceDownloadAction
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomGlobalDialogController
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomGlobalTask
+import com.storyteller_f.alphaheart.client.compose_core.tasks.GlobalDialogContext
+import com.storyteller_f.alphaheart.client.compose_core.tasks.GlobalTaskContext
+import com.storyteller_f.alphaheart.client.compose_core.tasks.request
 import com.storyteller_f.alphaheart.client.compose_core.utils.BindBrowserNavigation
 import com.storyteller_f.alphaheart.client.compose_core.utils.CurrentWindowSizeClass
 import com.storyteller_f.alphaheart.client.compose_core.utils.SessionHistoryManager
@@ -115,6 +116,7 @@ import com.storyteller_f.alphaheart.panel.common.OnTitleStatusUpdated
 import com.storyteller_f.alphaheart.panel.common.OnTopicStatusUpdated
 import com.storyteller_f.alphaheart.panel.common.OnUserAdded
 import com.storyteller_f.alphaheart.panel.common.OnUserStatusUpdated
+import com.storyteller_f.alphaheart.panel.common.PanelLoginScreen
 import com.storyteller_f.alphaheart.panel.common.PanelNav
 import com.storyteller_f.alphaheart.panel.common.PanelNavFactory
 import com.storyteller_f.alphaheart.panel.common.PanelOverviewScreen
@@ -185,6 +187,7 @@ fun App() {
         }
     val backStack = rememberNavBackStack(config, PanelOverviewScreen)
     BindBrowserNavigation(backStack, config.serializersModule, "panel")
+    val loginStack = rememberNavBackStack(config, PanelLoginScreen)
 
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -208,14 +211,19 @@ fun App() {
         LocalPanelGlobalTask provides task,
     ) {
         PanelTheme {
-            val scope = rememberCoroutineScope()
-            PanelNavigationDrawer(
-                drawerState = drawerState,
-                drawerContent = { permanent ->
-                    PanelDrawer(scope, drawerState, nav.newPanelNav(), permanent)
-                },
-            ) {
-                mainPanelPage(backStack, nav.newPanelNav())
+            ReadingOverlayHost {
+                if (panelAccountInstance.isAlreadySign) {
+                    PanelNavigationDrawer(
+                        drawerState = drawerState,
+                        drawerContent = { permanent ->
+                            PanelDrawer(scope, drawerState, nav.newPanelNav(), permanent)
+                        },
+                    ) {
+                        mainPanelPage(backStack, nav.newPanelNav())
+                    }
+                } else {
+                    mainPanelPage(loginStack, nav.newPanelNav(), onBack = {})
+                }
             }
             GlobalDialog(controller)
         }
@@ -259,7 +267,7 @@ internal fun rememberPanelMainContent(content: @Composable () -> Unit): @Composa
 }
 
 @Composable
-private fun mainPanelPage(backStack: NavBackStack<NavKey>, nav: PanelNav) {
+private fun mainPanelPage(backStack: NavBackStack<NavKey>, nav: PanelNav, onBack: () -> Unit = nav::back) {
     val windowPosture = currentWindowAdaptiveInfoV2().windowPosture
     val account by LocalPanelUiViewModel.current.instance.collectAsState()
     BoxWithConstraints(
@@ -278,7 +286,7 @@ private fun mainPanelPage(backStack: NavBackStack<NavKey>, nav: PanelNav) {
             rememberListDetailSceneStrategy<NavKey>(directive = directive)
         NavDisplay(
             backStack = backStack,
-            onBack = { nav.back() },
+            onBack = onBack,
             entryDecorators =
             listOf(
                 rememberSaveableStateHolderNavEntryDecorator(),
@@ -294,7 +302,7 @@ private fun mainPanelPage(backStack: NavBackStack<NavKey>, nav: PanelNav) {
             predictivePopTransitionSpec = {
                 slideInVertically { -it } togetherWith slideOutVertically { it }
             },
-            entryProvider = rootEntryProvider(nav),
+            entryProvider = rootEntryProvider(),
         )
     }
 }

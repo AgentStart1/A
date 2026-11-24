@@ -50,12 +50,11 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.rememberNavigationEventDispatcherOwner
-import com.storyteller_f.alphaheart.client.compose_core.components.DetailNavigationScaffold
 import com.storyteller_f.alphaheart.client.compose_core.components.InfoTable
-import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingInteractions
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow
+import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
 import com.storyteller_f.alphaheart.panel.PanelNavigationDrawer
 import com.storyteller_f.alphaheart.panel.calculatePanelPaneDirective
 import com.storyteller_f.alphaheart.panel.common.PanelAllTitlesScreen

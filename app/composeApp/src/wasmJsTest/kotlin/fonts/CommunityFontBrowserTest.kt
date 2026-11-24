@@ -21,8 +21,8 @@ import com.storyteller_f.alphaheart.app.common.extractedFiles
 import com.storyteller_f.alphaheart.app.common.getDownloadRevision
 import com.storyteller_f.alphaheart.app.common.withLock
 import com.storyteller_f.alphaheart.app.common.write
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontDownload
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontStore
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontDownload
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontStore
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -515,7 +515,7 @@ class CommunityFontBrowserTest {
             }
         }
 
-    private fun measureFont(font: com.storyteller_f.alphaheart.app.pages.community.LoadedCommunityFont): Int =
+    private fun measureFont(font: com.storyteller_f.alphaheart.app.fonts.LoadedCommunityFont): Int =
         TextMeasurer(font.resolver ?: createFontFamilyResolver(), Density(1f), LayoutDirection.Ltr).measure(
             AnnotatedString("A"),
             TextStyle(fontFamily = font.family, fontSize = 100.sp),

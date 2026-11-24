@@ -16,6 +16,11 @@ import com.mikepenz.markdown.compose.components.MarkdownComponentModel
 import com.mikepenz.markdown.compose.elements.highlightedCodeFence
 import com.storyteller.alphaheart.client.composecore.markdown.MermaidBlock
 import com.storyteller_f.alphaheart.client.compose_core.Res
+import com.storyteller_f.alphaheart.client.compose_core.markdown.CodeFenceKind
+import com.storyteller_f.alphaheart.client.compose_core.markdown.codeFenceKind
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPreviewAction
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalResourceDownloadFile
+import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
 import com.storyteller_f.alphaheart.client.compose_core.preview
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.shared.commonJson
@@ -46,28 +51,6 @@ fun CustomCodeFence(
         CodeFenceKind.OBJECT -> ObjectBlock(modal, mediaList, onClick)
         CodeFenceKind.CODE -> HighlightCodeBlock(modal)
     }
-}
-
-internal enum class CodeFenceKind {
-    REF,
-    MATH,
-    MERMAID,
-    ASCIIDOC,
-    OBJECT,
-    CODE,
-}
-
-internal fun codeFenceKind(language: String): CodeFenceKind {
-    val kind =
-        when (language) {
-            "com.storyteller_f.alphaheart", "c.s.a", "csa" -> CodeFenceKind.REF
-            "math" -> CodeFenceKind.MATH
-            "mermaid" -> CodeFenceKind.MERMAID
-            "asciidoc" -> CodeFenceKind.ASCIIDOC
-            "object" -> CodeFenceKind.OBJECT
-            else -> CodeFenceKind.CODE
-        }
-    return kind
 }
 
 @Composable

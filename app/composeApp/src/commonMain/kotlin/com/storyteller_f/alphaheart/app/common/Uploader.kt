@@ -7,7 +7,7 @@ package com.storyteller_f.alphaheart.app.common
 import com.storyteller_f.alphaheart.api.CustomApi
 import com.storyteller_f.alphaheart.app.UIViewModel
 import com.storyteller_f.alphaheart.app.error.UploadError
-import com.storyteller_f.alphaheart.app.pages.file.getUploadDataFromClipFile
+import com.storyteller_f.alphaheart.app.file.getUploadDataFromClipFile
 import com.storyteller_f.alphaheart.app.utils.ClientFile
 import com.storyteller_f.alphaheart.app.utils.getClientFile
 import com.storyteller_f.alphaheart.client.core.SimpleUserSessionManager

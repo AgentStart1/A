@@ -27,17 +27,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import com.github.panpf.zoomimage.CoilZoomAsyncImage
-import com.storyteller_f.alphaheart.client.compose_core.components.DetailNavigationScaffold
-import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
-import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.PdfView
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
 import com.storyteller_f.alphaheart.client.compose_core.components.globalLoader
-import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.tasks.emitEvent
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
-import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.alphaheart.client.core.updateFileStatus
 import com.storyteller_f.alphaheart.panel.LocalPanelGlobalDialog
 import com.storyteller_f.alphaheart.panel.LocalPanelNav
@@ -46,11 +46,14 @@ import com.storyteller_f.alphaheart.panel.common.OnFileStatusUpdated
 import com.storyteller_f.alphaheart.panel.common.PanelLogsTab
 import com.storyteller_f.alphaheart.panel.common.createPanelFileRefsViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelFileViewModel
+import com.storyteller_f.alphaheart.panel.components.DetailNavigationScaffold
 import com.storyteller_f.alphaheart.panel.components.PanelInfoTable
 import com.storyteller_f.alphaheart.panel.components.panelValueText
+import com.storyteller_f.alphaheart.panel.file.fileBasicInfoItems
 import com.storyteller_f.alphaheart.panel.file_can_preview
 import com.storyteller_f.alphaheart.panel.file_detail_title
 import com.storyteller_f.alphaheart.panel.file_detail_title_with_info
+import com.storyteller_f.alphaheart.panel.file_preview_title
 import com.storyteller_f.alphaheart.panel.fullscreen_preview
 import com.storyteller_f.alphaheart.panel.menu
 import com.storyteller_f.alphaheart.panel.preview_image
@@ -170,13 +173,17 @@ private fun FileBasicInfoSection(id: PrimaryKey) {
                     }
                 }
             }
-            Button(
+            val audio = info.contentType.startsWith("audio/")
+            IconButton(
                 onClick = {
                     nav.gotoFilePreview(info.id, info.url, info.contentType, info.name)
                 },
                 modifier = Modifier.padding(top = 16.dp),
             ) {
-                Text(stringResource(Res.string.fullscreen_preview))
+                Icon(
+                    actionIcon(if (audio) ActionGlyph.EXTERNAL_LINK else ActionGlyph.MAXIMIZE_2),
+                    stringResource(if (audio) Res.string.file_preview_title else Res.string.fullscreen_preview),
+                )
             }
             PanelInfoTable(fileBasicInfoItems(info), Modifier.weight(1f))
             FileReadOnlyToggleButton(info.readOnly) { newValue ->
@@ -194,22 +201,6 @@ private fun FileBasicInfoSection(id: PrimaryKey) {
         }
     }
 }
-
-private fun fileBasicInfoItems(info: com.storyteller_f.shared.model.FileInfo): List<Pair<String, String>> =
-    buildList {
-        add("id" to info.id.toString())
-        add("name" to info.name)
-        add("fullName" to info.fullName)
-        add("url" to info.url)
-        add("contentType" to info.contentType)
-        add("size" to info.size.toString())
-        add("owner" to info.owner.toString())
-        add("ownerType" to info.ownerType.name)
-        add("lastModified" to info.lastModified.formatDisplayTime())
-        val dimension = info.dimension?.takeIf { it.width > 0 && it.height > 0 }
-        add("dimension" to (dimension?.let { "${it.width}x${it.height}" } ?: "null"))
-        add("readOnly" to info.readOnly.toString())
-    }
 
 @Composable
 private fun FileReadOnlyToggleButton(readOnly: Boolean, onToggle: (Boolean) -> Unit) {

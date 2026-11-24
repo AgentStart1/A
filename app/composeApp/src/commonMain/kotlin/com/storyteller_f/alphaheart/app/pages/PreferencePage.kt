@@ -5,15 +5,18 @@
 package com.storyteller_f.alphaheart.app.pages
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -21,28 +24,38 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
 import com.storyteller_f.alphaheart.app.Res
+import com.storyteller_f.alphaheart.app.components.ReadingSettingsLayout
 import com.storyteller_f.alphaheart.app.components.StringListPreference
-import com.storyteller_f.alphaheart.app.current_selected
 import com.storyteller_f.alphaheart.app.error.PreferenceError
-import com.storyteller_f.alphaheart.app.home_start_destination
+import com.storyteller_f.alphaheart.app.field_not_set
 import com.storyteller_f.alphaheart.app.home_start_destination_communities
 import com.storyteller_f.alphaheart.app.home_start_destination_rooms
 import com.storyteller_f.alphaheart.app.home_start_destination_world
-import com.storyteller_f.alphaheart.app.import_action
+import com.storyteller_f.alphaheart.app.navigation.HOME_START_DESTINATION_COMMUNITIES
+import com.storyteller_f.alphaheart.app.navigation.HOME_START_DESTINATION_PREFERENCE_KEY
+import com.storyteller_f.alphaheart.app.navigation.HOME_START_DESTINATION_ROOMS
+import com.storyteller_f.alphaheart.app.navigation.HOME_START_DESTINATION_WORLD
 import com.storyteller_f.alphaheart.app.pages.topic.TopicTranslateSheet
 import com.storyteller_f.alphaheart.app.pages.topic.TranslationPlatformUnavailable
 import com.storyteller_f.alphaheart.app.preference
+import com.storyteller_f.alphaheart.app.preference_import_config
+import com.storyteller_f.alphaheart.app.preference_try_translation
 import com.storyteller_f.alphaheart.app.service.GPT
 import com.storyteller_f.alphaheart.app.service.NoOpGPT
 import com.storyteller_f.alphaheart.app.service.buildGPT
 import com.storyteller_f.alphaheart.app.startup_section_label
 import com.storyteller_f.alphaheart.app.translate_model
-import com.storyteller_f.alphaheart.app.try_button
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalToaster
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTextButton
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.notifications.LocalToaster
 import com.storyteller_f.result.CustomResult
 import com.storyteller_f.result.getOrThrow
 import com.storyteller_f.shared.model.TopicContent
@@ -51,15 +64,14 @@ import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.openFilePicker
 import io.github.vinceglb.filekit.name
 import kotlinx.coroutines.launch
-import kotlinx.io.files.Path
 import org.jetbrains.compose.resources.stringResource
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
 
 @Composable
 fun PreferencePage() {
     Scaffold(topBar = { ReadingPageToolbar(stringResource(Res.string.preference)) }) { padding ->
-        AdaptiveFormLayout(Modifier.padding(padding)) {
+        ReadingSettingsLayout(Modifier.padding(padding), maxContentWidth = 440.dp) {
             HomeStartDestinationPreferenceItem()
+            HorizontalDivider()
             TranslateModelPreferenceItem()
         }
     }
@@ -74,18 +86,26 @@ internal fun HomeStartDestinationPreferenceItem() {
     )
     val scope = rememberCoroutineScope()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(Res.string.home_start_destination))
-        com.storyteller_f.alphaheart.client.compose_core.components.ReadingSelect(
-            stringResource(Res.string.startup_section_label),
-            current,
+        Text(stringResource(Res.string.startup_section_label), style = MaterialTheme.typography.titleMedium)
+        val destinations =
             listOf(
                 HOME_START_DESTINATION_WORLD to stringResource(Res.string.home_start_destination_world),
                 HOME_START_DESTINATION_COMMUNITIES to stringResource(Res.string.home_start_destination_communities),
                 HOME_START_DESTINATION_ROOMS to stringResource(Res.string.home_start_destination_rooms),
-            ),
-            { value -> scope.launch { preferences.setString(HOME_START_DESTINATION_PREFERENCE_KEY, value) } },
-            Modifier.fillMaxWidth(),
-        )
+            )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            destinations.forEach { (value, label) ->
+                ReadingTab(
+                    selected = current == value,
+                    onClick = { scope.launch { preferences.setString(HOME_START_DESTINATION_PREFERENCE_KEY, value) } },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Box(Modifier.heightIn(min = 40.dp), contentAlignment = Alignment.Center) {
+                        Text(label)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -94,24 +114,15 @@ internal fun HomeStartDestinationPreferenceItem() {
 @Composable
 internal fun TranslateModelPreferenceItem(gpt: GPT = remember { buildGPT() }) {
     if (gpt is NoOpGPT) {
-        ListItem(
-            headlineContent = { Text(stringResource(Res.string.translate_model)) },
-            supportingContent = { TranslationPlatformUnavailable() },
-            leadingContent = {
-                com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon(
-                    com.storyteller_f.alphaheart.client.compose_core.components.actionIcon(
-                        com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph.LANGUAGES,
-                    ),
-                    null,
-                )
-            },
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(Res.string.translate_model), style = MaterialTheme.typography.titleMedium)
+            TranslationPlatformUnavailable()
+        }
         return
     }
     var showSheet by remember {
         mutableStateOf(false)
     }
-    val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     val toast = LocalToaster.current
     val globalDialogController = LocalGlobalDialog.current
@@ -120,44 +131,26 @@ internal fun TranslateModelPreferenceItem(gpt: GPT = remember { buildGPT() }) {
         key = "gpt_model",
         defaultValue = "",
         title = stringResource(Res.string.translate_model),
-        items =
-        models.associate {
-            it.value to it.key
-        },
-        summary = {
-            if (it.isBlank()) {
-                Text("support ${gpt.supportList}")
-            } else {
-                Text(stringResource(Res.string.current_selected, Path(it).name))
-            }
-        },
-        leadingIcon = {
-            com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon(
-                com.storyteller_f.alphaheart.client.compose_core.components.actionIcon(
-                    com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph.LANGUAGES,
-                ),
-                null,
-            )
-        },
+        items = mapOf("" to stringResource(Res.string.field_not_set)) + models.associate { it.key to it.value },
         trailingContent = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button({
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ReadingTextButton({
                     globalDialogController.launch {
                         globalDialogController.useResult<Unit, PreferenceError> {
                             FileKit.openFilePicker()?.let { file ->
                                 gpt.importModel(file).getOrThrow()
-                                toast.showMessage("${file.name} imported")
+                                toast.showSuccess("${file.name} imported")
                                 CustomResult.success(Unit)
                             } ?: CustomResult.success(Unit)
                         }
                     }
                 }) {
-                    Text(stringResource(Res.string.import_action))
+                    PreferenceActionLabel(ActionGlyph.FOLDER_OPEN, stringResource(Res.string.preference_import_config))
                 }
-                Button({
+                ReadingTextButton({
                     showSheet = true
                 }) {
-                    Text(stringResource(Res.string.try_button))
+                    PreferenceActionLabel(ActionGlyph.LANGUAGES, stringResource(Res.string.preference_try_translation))
                 }
             }
         },
@@ -165,7 +158,6 @@ internal fun TranslateModelPreferenceItem(gpt: GPT = remember { buildGPT() }) {
 
     TopicTranslateSheet(
         showSheet,
-        sheetState,
         TopicDetail.EMPTY.copy(
             topicInfo =
             TopicDetail.EMPTY.topicInfo.copy(
@@ -187,5 +179,13 @@ internal fun TranslateModelPreferenceItem(gpt: GPT = remember { buildGPT() }) {
         ),
     ) {
         showSheet = false
+    }
+}
+
+@Composable
+private fun PreferenceActionLabel(glyph: ActionGlyph, label: String) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        ReadingIcon(actionIcon(glyph), null)
+        Text(label)
     }
 }

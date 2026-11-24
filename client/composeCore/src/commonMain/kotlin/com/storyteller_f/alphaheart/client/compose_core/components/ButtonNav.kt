@@ -18,8 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalContentColor
@@ -33,7 +31,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,9 +43,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.icons.IconRes
+import com.storyteller_f.alphaheart.client.compose_core.navigation.LocalIconActionMenu
+import com.storyteller_f.alphaheart.client.compose_core.navigation.menuActionIcon
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
-
-private val LocalIconActionMenu = staticCompositionLocalOf { false }
 
 @Composable
 fun IconActionMenu(twoActions: Boolean = false, topSpacing: Dp = 22.dp, content: @Composable () -> Unit) {
@@ -114,33 +112,12 @@ private fun IconMenuAction(
             contentAlignment = Alignment.Center,
         ) {
             CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.primary) {
-                CustomIcon(menuActionIcon(icon), iconSize = 21.dp)
+                val menuIcon = remember(icon) { menuActionIcon(icon) }
+                CustomIcon(menuIcon, iconSize = 16.dp)
             }
             Box(Modifier.align(Alignment.TopEnd).padding(top = 2.dp, end = 3.dp)) { suffix() }
         }
     }
-}
-
-private fun menuActionIcon(icon: IconRes): IconRes {
-    if (icon !is IconRes.Vector) return icon
-    val vector =
-        when (icon.vector.name.substringAfterLast('.')) {
-            "AccountBalanceWallet" -> Icons.Outlined.AccountBalanceWallet
-            "Favorite" -> Icons.Outlined.Favorite
-            "FavoriteBorder" -> Icons.Outlined.FavoriteBorder
-            "NotificationsOff" -> Icons.Outlined.NotificationsOff
-            "NotificationsActive" -> Icons.Outlined.NotificationsActive
-            "ThumbUp" -> Icons.Outlined.ThumbUp
-            "ChatBubble" -> Icons.Outlined.ChatBubbleOutline
-            "CardMembership" -> Icons.Outlined.Groups
-            "SwitchAccount" -> Icons.Outlined.SwitchAccount
-            "ContentCopy" -> Icons.Outlined.ContentCopy
-            "PictureAsPdf" -> Icons.Outlined.PictureAsPdf
-            "Phone" -> Icons.Outlined.Phone
-            "Logout" -> Icons.AutoMirrored.Outlined.Logout
-            else -> readingIcon(icon.vector)
-        }
-    return icon.copy(vector = vector)
 }
 
 @Composable

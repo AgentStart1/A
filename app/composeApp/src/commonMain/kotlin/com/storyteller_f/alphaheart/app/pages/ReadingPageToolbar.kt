@@ -22,13 +22,19 @@ import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalUserInfo
 import com.storyteller_f.alphaheart.app.common.getUserOverviewViewModel
 import com.storyteller_f.alphaheart.app.pages.user.SelfUserIconWithDialog
-import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
-import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
 @Composable
-internal fun ReadingPageToolbar(title: String, actions: @Composable RowScope.() -> Unit = {}) {
+internal fun ReadingPageToolbar(
+    title: String,
+    subtitle: String? = null,
+    leading: @Composable () -> Unit = {},
+    showAccount: Boolean = true,
+    actions: @Composable RowScope.() -> Unit = {},
+) {
     val nav = LocalAppNavFactory.current
     Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
         Column {
@@ -38,9 +44,17 @@ internal fun ReadingPageToolbar(title: String, actions: @Composable RowScope.() 
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 IconButton({ nav.newAppNav().back() }) { Icon(actionIcon(ActionGlyph.ARROW_LEFT), "back") }
-                Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                leading()
+                Column(Modifier.weight(1f)) {
+                    Text(title, style = MaterialTheme.typography.titleMedium)
+                    if (!subtitle.isNullOrBlank() && subtitle != title) {
+                        Text(subtitle, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                    }
+                }
                 actions()
-                SelfUserIconWithDialog(LocalUserInfo.current, overviewHandler = getUserOverviewViewModel().handler)
+                if (showAccount) {
+                    SelfUserIconWithDialog(LocalUserInfo.current, overviewHandler = getUserOverviewViewModel().handler)
+                }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }

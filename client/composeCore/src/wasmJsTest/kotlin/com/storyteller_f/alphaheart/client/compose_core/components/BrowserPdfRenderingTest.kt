@@ -6,6 +6,7 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
+import com.storyteller_f.alphaheart.client.compose_core.media.createPdfPreview
 import kotlinx.coroutines.await
 import kotlinx.coroutines.test.runTest
 import org.w3c.dom.HTMLElement
@@ -24,21 +25,33 @@ internal class BrowserPdfRenderingTest {
             val container = createPdfTestContainer(390)
             val url = createPdfTestDocument(false)
             val failures = mutableListOf<String>()
-            val renderer = createPdfPreview(container, url) { failures.add(it) }
+            var displayedPage: Pair<Int, Int>? = null
+            val renderer =
+                createPdfPreview(container, url, { failures.add(it) }) { index, count ->
+                    displayedPage = index to count
+                }
             try {
                 renderer.ready.await()
+                awaitPdfPageWidth(container, 1, 1.0).await()
                 assertTrue(pdfPageHasBlackInkAndWhitePaper(container, 1))
                 assertEquals("First page text", pdfSelectedText(container, 1))
                 assertEquals(2, pdfPageCount(container))
+                assertEquals(0 to 2, displayedPage)
                 assertEquals(1, activePdfWorkers())
+                assertTrue(pdfPageMatchesScrollViewport(container, 1))
                 val narrowWidth = pdfCanvasWidth(container, 1)
                 resizePdfTestContainer(container, 800)
-                awaitPdfPageWidth(container, 1).await()
+                awaitPdfPageWidth(container, 1, 1.0).await()
                 assertTrue(pdfCanvasWidth(container, 1) > narrowWidth)
+                assertTrue(pdfPageMatchesScrollViewport(container, 1))
                 assertTrue(pdfPageHasBlackInkAndWhitePaper(container, 1))
-                scrollPdfTestContainer(container)
-                awaitPdfPageWidth(container, 2).await()
+                renderer.goToPage(1)
+                awaitPdfPageWidth(container, 2, 1.0).await()
                 assertEquals("Second page text", pdfSelectedText(container, 2))
+                assertEquals(1 to 2, displayedPage)
+                assertTrue(pdfPageHasBlackInkAndWhitePaper(container, 2))
+                renderer.setZoom(1.25)
+                awaitPdfPageWidth(container, 2, 1.25).await()
                 assertTrue(pdfPageHasBlackInkAndWhitePaper(container, 2))
                 assertEquals(emptyList(), failures)
             } finally {
@@ -56,7 +69,7 @@ internal class BrowserPdfRenderingTest {
             val container = createPdfTestContainer(390)
             val url = createPdfTestDocument(true)
             val failures = mutableListOf<String>()
-            val renderer = createPdfPreview(container, url) { failures.add(it) }
+            val renderer = createPdfPreview(container, url, { failures.add(it) }, null)
             try {
                 val result = runCatching { renderer.ready.await() }
                 assertTrue(result.isFailure)
@@ -77,7 +90,7 @@ internal class BrowserPdfRenderingTest {
             val container = createPdfTestContainer(390)
             val url = createPdfTestDocument(false)
             val failures = mutableListOf<String>()
-            val renderer = createPdfPreview(container, url) { failures.add(it) }
+            val renderer = createPdfPreview(container, url, { failures.add(it) }, null)
             try {
                 renderer.close().await()
                 assertTrue(runCatching { renderer.ready.await() }.isFailure)
@@ -159,17 +172,14 @@ private external fun createPdfTestDocument(malformed: Boolean): String
 @JsFun("(container, width) => { container.style.width = width+'px'; }")
 private external fun resizePdfTestContainer(container: HTMLElement, width: Int)
 
-@JsFun("(container) => { container.querySelector('.alpha-pdf-document').scrollTop = 1500; }")
-private external fun scrollPdfTestContainer(container: HTMLElement)
-
 @JsFun(
     """
-    (container, page) => new Promise(resolve => {
+    (container, page, zoom) => new Promise(resolve => {
         const check = () => {
             const sheet = container.querySelector('[data-pdf-page="'+page+'"]');
             const canvas = sheet?.querySelector(':scope > canvas');
             const root = container.querySelector('.alpha-pdf-document');
-            const target = Math.ceil((root.clientWidth-32)*Math.max(1,devicePixelRatio));
+            const target = Math.ceil(Math.floor(root.clientWidth*zoom)*Math.max(1,devicePixelRatio));
             if (sheet?.dataset.pdfRendered==='true' && canvas?.width===target) {
                 observer.disconnect(); resolve(null);
             }
@@ -179,7 +189,19 @@ private external fun scrollPdfTestContainer(container: HTMLElement)
     })
     """,
 )
-private external fun awaitPdfPageWidth(container: HTMLElement, page: Int): Promise<JsAny?>
+private external fun awaitPdfPageWidth(container: HTMLElement, page: Int, zoom: Double): Promise<JsAny?>
+
+@JsFun(
+    """
+    (container, page) => {
+        const root = container.querySelector('.alpha-pdf-document');
+        const paper = root.querySelector('[data-pdf-page="' + page + '"]').getBoundingClientRect();
+        const left = root.getBoundingClientRect().left;
+        return Math.abs(paper.left - left) < 1 && Math.abs(paper.right - left - root.clientWidth) < 1;
+    }
+    """,
+)
+private external fun pdfPageMatchesScrollViewport(container: HTMLElement, page: Int): Boolean
 
 @JsFun("(container, page) => container.querySelector('[data-pdf-page=\"'+page+'\"] > canvas').width")
 private external fun pdfCanvasWidth(container: HTMLElement, page: Int): Int

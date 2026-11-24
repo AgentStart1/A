@@ -21,13 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.android.tools.screenshot.PreviewTest
+import com.storyteller_f.alphaheart.app.components.Pill
 import com.storyteller_f.alphaheart.app.pages.topic.TopicReplyPreviews
+import com.storyteller_f.alphaheart.app.topic.PillAppearance
 import com.storyteller_f.alphaheart.app.ui.theme.AppTheme
-import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
-import com.storyteller_f.alphaheart.client.compose_core.components.Pill
-import com.storyteller_f.alphaheart.client.compose_core.components.PillAppearance
 import com.storyteller_f.alphaheart.client.compose_core.components.UserIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.shared.model.TopicContent
 import com.storyteller_f.shared.model.TopicInfo
 import com.storyteller_f.shared.model.TopicReplyPreview

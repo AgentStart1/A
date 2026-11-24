@@ -1,0 +1,20 @@
+<resources>
+    <string name="wizard_add">Add to your authenticator</string>
+    <string name="wizard_add_hint">Add an account in your authenticator and scan this QR code.</string>
+    <string name="wizard_continue">Continue</string>
+    <string name="wizard_disable">Turn off</string>
+    <string name="wizard_done">Done</string>
+    <string name="wizard_off_hint">Once enabled, signing in requires a verification code.</string>
+    <string name="wizard_on_hint">Sign in with a code from your authenticator.</string>
+    <string name="wizard_previous">Previous step</string>
+    <string name="wizard_recovery">Save recovery codes</string>
+    <string name="wizard_recovery_error">Download incomplete. Try again.</string>
+    <string name="wizard_recovery_hint">Use a recovery code to sign in when your authenticator is unavailable.</string>
+    <string name="wizard_recovery_saved">Keep your downloaded recovery codes somewhere safe.</string>
+    <string name="wizard_scan">Scan QR code</string>
+    <string name="wizard_start">Start setup</string>
+    <string name="wizard_verify">Verify setup</string>
+    <string name="wizard_verify_error">Verification failed. Check the code and try again.</string>
+    <string name="wizard_verify_hint">Enter the six-digit code shown in your authenticator.</string>
+    <string name="wizard_verify_submit">Verify and enable</string>
+</resources>

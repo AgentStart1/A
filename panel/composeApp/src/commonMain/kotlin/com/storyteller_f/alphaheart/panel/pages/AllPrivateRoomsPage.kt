@@ -20,10 +20,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.components.RoomIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
-import com.storyteller_f.alphaheart.client.compose_core.components.safeArea
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.theme.safeArea
 import com.storyteller_f.alphaheart.panel.LocalPanelNav
 import com.storyteller_f.alphaheart.panel.Res
 import com.storyteller_f.alphaheart.panel.all_private_rooms
@@ -31,9 +32,8 @@ import com.storyteller_f.alphaheart.panel.common.AllPrivateRoomsViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelAllPrivateRoomsViewModel
 import com.storyteller_f.alphaheart.panel.components.panelDirectoryRowColors
 import com.storyteller_f.alphaheart.panel.components.panelDirectorySelection
-import com.storyteller_f.alphaheart.panel.components.selectedPanelEntityId
 import com.storyteller_f.alphaheart.panel.menu
-import com.storyteller_f.alphaheart.panel.room_private
+import com.storyteller_f.alphaheart.panel.navigation.selectedPanelEntityId
 import com.storyteller_f.shared.type.ObjectType
 import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
@@ -69,8 +69,6 @@ fun AllPrivateRoomsPageInternal(viewModel: AllPrivateRoomsViewModel) {
                     pagingItems(items, key = { it.id }) { index ->
                         val info = items[index]
                         if (info != null) {
-                            val members = info.memberCount.toString()
-                            val aid = info.aid
                             ListItem(
                                 colors = panelDirectoryRowColors(info.id == selectedId),
                                 modifier =
@@ -80,15 +78,7 @@ fun AllPrivateRoomsPageInternal(viewModel: AllPrivateRoomsViewModel) {
                                     RoomIcon(info, 40.dp, false) {}
                                 },
                                 headlineContent = { Text(info.name) },
-                                overlineContent = { Text(aid) },
-                                supportingContent = {
-                                    Text(
-                                        listOf(
-                                            members,
-                                            stringResource(Res.string.room_private),
-                                        ).filter { it.isNotEmpty() }.joinToString(" • "),
-                                    )
-                                },
+                                supportingContent = { Text(CoreStrings.aid(info.aid)) },
                             )
                             if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                         } else {

@@ -1,0 +1,22 @@
+<resources>
+    <string name="settings_profile">Personal profile</string>
+    <string name="settings_security">Account security</string>
+    <string name="settings_basic">Basic information</string>
+    <string name="settings_community_images">Community images</string>
+    <string name="settings_community">Community settings</string>
+    <string name="settings_room">Room settings</string>
+    <string name="settings_nickname">Nickname</string>
+    <string name="settings_community_icon">Community icon</string>
+    <string name="settings_room_icon">Room icon</string>
+    <string name="settings_community_poster">Community poster</string>
+    <string name="settings_font_summary">Content font · Code font</string>
+    <string name="settings_edit_value">Edit %1$s</string>
+    <string name="settings_reset_value">Reset %1$s</string>
+    <string name="settings_personal">Personal settings</string>
+    <string name="read_sign_in_prompt">Sign in to continue reading.</string>
+    <string name="select_content_font">Select content font</string>
+    <string name="select_code_font">Select code font</string>
+    <string name="settings_aid">Aid</string>
+    <string name="preference_import_config">Import configuration</string>
+    <string name="preference_try_translation">Try translation</string>
+</resources>

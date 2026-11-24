@@ -4,7 +4,6 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LocalContentColor
@@ -14,27 +13,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.icons.IconRes
+import com.storyteller_f.alphaheart.client.compose_core.icons.clickableIfNotNull
+import com.storyteller_f.alphaheart.client.compose_core.icons.readingIcon
 import dev.tclement.fonticons.FontIcon
 import dev.tclement.fonticons.LocalIconFont
 import dev.tclement.fonticons.LocalIconSize
 import dev.tclement.fonticons.LocalIconTintProvider
 import dev.tclement.fonticons.LocalIconWeight
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
-
-sealed interface IconRes {
-    data class Vector(val vector: ImageVector, val description: String = "") : IconRes
-    data class Font(val char: Char, val description: String = "") : IconRes
-    data object Loading : IconRes
-}
-
-fun Modifier.clickableIfNotNull(onClick: (() -> Unit)?): Modifier {
-    if (onClick != null) {
-        return clickable {
-            onClick.invoke()
-        }
-    }
-    return this
-}
 
 @Composable
 fun CustomIcon(icon: IconRes, onClick: (() -> Unit)? = null) {

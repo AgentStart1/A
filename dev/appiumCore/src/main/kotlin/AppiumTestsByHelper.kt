@@ -342,9 +342,8 @@ fun AppiumTestBase<PanelAppiumHelper, PlatformAppiumHelper>.testPanelSignoutPers
 
 internal suspend fun scenarioPanelSignin(driver: AppTestDriver, privateKey: String) {
     driver.clickByText("Sign in")
-    driver.clickByText("Input")
     driver.clickByDescription("Edit Private Key")
     driver.inputText(privateKey)
     driver.clickByText("Confirm")
-    driver.clickByText("Start")
+    driver.clickByText("Sign in")
 }

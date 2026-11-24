@@ -16,7 +16,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontPresentation
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontPresentation
 import fonts.CommunityFontFixture
 import fonts.CommunityFontTestData
 import fonts.buildTestCommunityFonts
@@ -49,7 +49,7 @@ class CommunityFontRenderingUiTest {
             val root = rootResolver()
             val application =
                 CommunityFontPresentation(
-                    com.storyteller_f.alphaheart.client.compose_core.components.TopicContentFonts(FontFamily.Default),
+                    com.storyteller_f.alphaheart.client.compose_core.theme.TopicContentFonts(FontFamily.Default),
                     root,
                 )
             val before = width(application, "A", root)

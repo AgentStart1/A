@@ -34,6 +34,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPreviewAction
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaControlActions
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaControlState
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaSurfaceLayout
 import com.storyteller_f.alphaheart.client.compose_core.utils.readingColorScheme
 import java.util.Locale
 import kotlin.math.abs

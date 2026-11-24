@@ -33,7 +33,7 @@ fun UserCell(userInfo: UserInfo?, iconSize: Dp = 40.dp, onClickCell: (UserInfo) 
             .clickable(userInfo != null) { openUser?.invoke() }
             .padding(8.dp)
             .appiumSemantics(
-                text = userInfo?.let { "${it.nickname} ${it.address}" },
+                text = userInfo?.let { listOfNotNull(it.nickname, it.aid).joinToString(" ") },
                 onClick = openUser,
             )
     UserCellInternal(modifier, userInfo, iconSize)
@@ -57,8 +57,6 @@ fun UserCellInternal(modifier: Modifier, userInfo: UserInfo?, iconSize: Dp) {
                 val aid = userInfo.aid
                 if (aid != null) {
                     Text(CoreStrings.aid(aid), style = MaterialTheme.typography.labelSmall)
-                } else {
-                    Text(CoreStrings.ad(userInfo.address), style = MaterialTheme.typography.labelSmall)
                 }
             }
         }

@@ -24,27 +24,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mohamedrejeb.richeditor.annotation.ExperimentalRichTextApi
-import com.mohamedrejeb.richeditor.model.RichTextState
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalRefCellHandlerProvider
 import com.storyteller_f.alphaheart.app.Res
+import com.storyteller_f.alphaheart.app.components.RefCellStateView
 import com.storyteller_f.alphaheart.app.parent_topic_author
 import com.storyteller_f.alphaheart.app.parent_topic_view
+import com.storyteller_f.alphaheart.app.topic.parentReferenceArrow
+import com.storyteller_f.alphaheart.app.topic.parentReferenceSummary
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.RefCellStateView
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.shared.model.TopicContent
 import com.storyteller_f.shared.type.PrimaryKey
-import com.storyteller_f.shared.utils.normalizeMarkdownLineEndings
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -65,10 +61,6 @@ internal fun ParentTopicReference(topicId: PrimaryKey) {
     }
 }
 
-@OptIn(ExperimentalRichTextApi::class)
-internal fun parentReferenceSummary(markdown: String): String =
-    RichTextState().setMarkdown(normalizeMarkdownLineEndings(markdown)).annotatedString.text.trim()
-
 @Composable
 internal fun ParentTopicReferenceContent(author: String, summary: String, onClick: () -> Unit) {
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
@@ -84,7 +76,9 @@ internal fun ParentTopicReferenceContent(author: String, summary: String, onClic
             Modifier.fillMaxWidth().clip(RoundedCornerShape(5.dp)).background(soft).drawBehind {
                 val stroke = 3.dp.toPx()
                 drawLine(accent, Offset(stroke / 2, 0f), Offset(stroke / 2, size.height), strokeWidth = stroke)
-            }.appiumSemantics(description = action, onClick = onClick).clickable(onClick = onClick)
+            }.semantics { contentDescription = action }
+                .appiumSemantics(description = action, onClick = onClick)
+                .clickable(onClick = onClick)
                 .padding(start = horizontal + 3.dp, end = horizontal, top = vertical, bottom = vertical),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -101,18 +95,4 @@ internal fun ParentTopicReferenceContent(author: String, summary: String, onClic
             }
         }
     }
-}
-
-// Lucide 1.17.0 ArrowUpLeft, the exact icon version used by the approved preview (bundled ISC license).
-private val parentReferenceArrow by lazy {
-    ImageVector.Builder("ParentReferenceArrow", 24.dp, 24.dp, 24f, 24f).apply {
-        addPath(
-            pathData = PathParser().parsePathString("M7 17V7h10 M17 17 7 7").toNodes(),
-            fill = null,
-            stroke = SolidColor(Color.Black),
-            strokeLineWidth = 2f,
-            strokeLineCap = StrokeCap.Round,
-            strokeLineJoin = StrokeJoin.Round,
-        )
-    }.build()
 }

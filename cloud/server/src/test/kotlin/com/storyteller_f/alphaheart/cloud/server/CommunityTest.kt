@@ -25,6 +25,7 @@ import com.storyteller_f.alphaheart.client.core.getUserJoinedCommunities
 import com.storyteller_f.alphaheart.client.core.joinCommunity
 import com.storyteller_f.alphaheart.client.core.searchCommunityTopics
 import com.storyteller_f.alphaheart.client.core.updateCommunityInfo
+import com.storyteller_f.alphaheart.client.core.updateUserInfo
 import com.storyteller_f.alphaheart.client.core.upload
 import com.storyteller_f.result.getOrThrow
 import com.storyteller_f.shared.model.CommunityInfo
@@ -32,6 +33,7 @@ import com.storyteller_f.shared.model.FontSettings
 import com.storyteller_f.shared.model.MemberPolicy
 import com.storyteller_f.shared.model.TitleType
 import com.storyteller_f.shared.obj.UpdateCommunityBody
+import com.storyteller_f.shared.obj.UpdateUserBody
 import com.storyteller_f.shared.obj.ob
 import com.storyteller_f.shared.type.ObjectType
 import io.ktor.client.call.body
@@ -55,6 +57,32 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CommunityTest {
+    @Test
+    fun `community displays assigned fonts from the owner and FontProvider`() =
+        test(mapOf("DISABLE_TEST_WS" to "true")) {
+            val provider =
+                attachSession { session ->
+                    updateUserInfo(UpdateUserBody(aid = "FontProvider")).getOrThrow()
+                    val font =
+                        getUploadDataFromBytes("OTTO\u0000".encodeToByteArray())
+                            .copy(name = "provider-code.otf", contentType = ContentType.parse("font/otf"))
+                    upload(session.uid ob ObjectType.USER, font).getOrThrow().data.single()
+                }
+            attachSession { session ->
+                val community = createCommunityForTest()
+                val font =
+                    getUploadDataFromBytes(byteArrayOf(0, 1, 0, 0))
+                        .copy(name = "owner-content.ttf", contentType = ContentType.parse("font/ttf"))
+                val localFont = upload(session.uid ob ObjectType.USER, font).getOrThrow().data.single()
+                val settings = FontSettings(contentFontId = localFont.id, codeFontId = provider.custom.id)
+                updateCommunityInfo(community.id, UpdateCommunityBody(fontSettings = settings)).getOrThrow()
+                val stored = assertNotNull(getCommunityInfo(community.id).getOrThrow().fontSettings)
+                assertEquals(settings, stored.settings)
+                assertEquals(session.uid, stored.contentFont?.owner)
+                assertEquals(provider.uid, stored.codeFont?.owner)
+            }
+        }
+
     @Test
     fun `anonymous joined community detail requires login`() =
         test(mapOf("DISABLE_TEST_WS" to "true")) {

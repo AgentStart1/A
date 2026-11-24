@@ -4,7 +4,7 @@
 
 package com.storyteller_f.alphaheart.app
 
-import com.storyteller_f.alphaheart.app.pages.topic.TopicRoute
+import com.storyteller_f.alphaheart.app.navigation.TopicRoute
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull

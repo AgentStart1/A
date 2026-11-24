@@ -7,29 +7,36 @@ package com.storyteller_f.alphaheart.app.pages.topic
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import com.storyteller_f.alphaheart.app.common.TopicsViewModel
+import com.storyteller_f.alphaheart.app.room.sameRoomMessageGroup
+import com.storyteller_f.alphaheart.app.topic.addLatestRoomAnchor
+import com.storyteller_f.alphaheart.app.utils.TopicReadingAnchor
 import com.storyteller_f.alphaheart.client.compose_core.common.PagingViewModel
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.bottomAppending
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
-import com.storyteller_f.alphaheart.client.compose_core.components.topPrepend
+import com.storyteller_f.alphaheart.client.compose_core.paging.bottomAppending
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.paging.topPrepend
 import com.storyteller_f.shared.model.TopicDetail
+import com.storyteller_f.shared.type.PrimaryKey
+import kotlinx.coroutines.flow.filterNotNull
 
 @Composable
 fun TopicList(topicsViewModel: PagingViewModel<TopicDetail>) {
@@ -57,8 +64,32 @@ fun CommonTopicList(
     block: @Composable (index: Int, info: TopicDetail?, Int) -> Unit,
 ) {
     val listState = rememberSaveable(topicsViewModel, saver = LazyListState.Saver) { LazyListState() }
+    val readingAnchor = remember(topicsViewModel) { mutableStateOf<TopicReadingAnchor?>(null) }
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         StateView(topicsViewModel, Modifier.fillMaxSize().testTag("topic-list-data-region")) { items ->
+            LaunchedEffect(listState, items) {
+                readingAnchor.value?.let { anchor ->
+                    val row = items.itemSnapshotList.indexOfFirst { it?.id == anchor.topicId }
+                    val listIndex =
+                        if (row >= 0) {
+                            val prependItems = if (items.loadState.prepend is LoadState.NotLoading) 0 else 1
+                            row + prependItems + 1
+                        } else {
+                            anchor.index
+                        }
+                    listState.requestScrollToItem(listIndex, anchor.offset)
+                }
+                snapshotFlow {
+                    val first = listState.firstVisibleItemIndex
+                    val visible = listState.layoutInfo.visibleItemsInfo
+                    if (visible.any { it.key is PrimaryKey }) {
+                        val key = visible.firstOrNull { it.index == first }?.key as? PrimaryKey
+                        TopicReadingAnchor(key, first, listState.firstVisibleItemScrollOffset)
+                    } else {
+                        null
+                    }
+                }.filterNotNull().collect { readingAnchor.value = it }
+            }
             LazyColumn(
                 state = listState,
                 modifier = Modifier.widthIn(max = 740.dp).fillMaxSize().testTag("topic-list-reading-content"),
@@ -103,9 +134,4 @@ fun RoomTopicList(items: LazyPagingItems<TopicDetail>, topicsViewModel: TopicsVi
             topPrepend(items.loadState, items::retry)
         }
     }
-}
-
-/** Keeps the latest edge anchored during inserts while history retains its visible message key. */
-internal fun LazyListScope.addLatestRoomAnchor() {
-    item("latest-room-anchor") { Spacer(Modifier.height(1.dp)) }
 }

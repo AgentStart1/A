@@ -42,7 +42,6 @@ fun AppiumTestBase<AppAppiumHelper, PlatformAppiumHelper>.testUnknownKeyByHelper
 internal suspend fun AppTestDriver.enterClientPrivateKey(key: String) {
     clickByDescription("avatar")
     clickByText("Sign in")
-    clickByText("Private Key")
     clickByDescription("Edit Private Key")
     inputText(key)
     clickByText("Confirm")

@@ -23,13 +23,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.storyteller_f.alphaheart.client.compose_core.components.DetailNavigationScaffold
-import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
-import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
-import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.tasks.emitEvent
 import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.alphaheart.client.core.updateCommunityStatus
 import com.storyteller_f.alphaheart.panel.LocalPanelGlobalDialog
@@ -39,8 +38,10 @@ import com.storyteller_f.alphaheart.panel.common.OnCommunityStatusUpdated
 import com.storyteller_f.alphaheart.panel.common.PanelLogsTab
 import com.storyteller_f.alphaheart.panel.common.createPanelCommunityMembersViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelCommunityViewModel
+import com.storyteller_f.alphaheart.panel.community.compactJson
 import com.storyteller_f.alphaheart.panel.community_detail_title
-import com.storyteller_f.alphaheart.panel.community_detail_title_with_info
+import com.storyteller_f.alphaheart.panel.components.DetailNavigationScaffold
+import com.storyteller_f.alphaheart.panel.components.PanelDetailHeading
 import com.storyteller_f.alphaheart.panel.components.PanelInfoTable
 import com.storyteller_f.alphaheart.panel.components.panelValueText
 import com.storyteller_f.alphaheart.panel.menu
@@ -56,7 +57,6 @@ import com.storyteller_f.shared.type.ObjectStatus
 import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingHorizontalPager as HorizontalPager
@@ -64,8 +64,6 @@ import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon a
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab as Tab
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow as PrimaryScrollableTabRow
-
-private val compactJson = Json { prettyPrint = false }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,18 +88,10 @@ private fun CommunityTopBar(id: PrimaryKey) {
     val vm = createPanelCommunityViewModel(id)
     val info by vm.handler.data.collectAsState(null)
     val name = info?.name
-    val aid = info?.aid
-    val title =
-        if (name != null && aid != null) {
-            stringResource(Res.string.community_detail_title_with_info, name, aid)
-        } else {
-            stringResource(Res.string.community_detail_title)
-        }
+    val title = stringResource(Res.string.community_detail_title)
     val nav = LocalPanelNav.current
     TopAppBar(
-        title = {
-            Text(title)
-        },
+        title = { PanelDetailHeading(title, name) },
         navigationIcon = {
             IconButton(onClick = { nav.open() }) {
                 Icon(Icons.Default.Menu, stringResource(Res.string.menu))

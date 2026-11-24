@@ -14,18 +14,17 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
 import com.storyteller_f.alphaheart.app.LocalSessionManager
+import com.storyteller_f.alphaheart.app.activity.refreshAfterLoading
 import com.storyteller_f.alphaheart.app.common.ActivityPreviewHost
 import com.storyteller_f.alphaheart.app.common.OnRoomActivityRefreshRequested
 import com.storyteller_f.alphaheart.app.common.changesRoomActivity
 import com.storyteller_f.alphaheart.app.common.previewCoordination
 import com.storyteller_f.alphaheart.client.core.LoadingHandler
-import com.storyteller_f.alphaheart.client.core.LoadingState
 import com.storyteller_f.alphaheart.client.core.getJoinedPinnedTopics
 import com.storyteller_f.alphaheart.client.core.getUnreadRoomActivities
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @Composable
@@ -83,12 +82,6 @@ internal fun <T> ObserveUnreadMessageCountEvents(
             }
         }
     }
-}
-
-private suspend fun <T> LoadingHandler<T>.refreshAfterLoading() {
-    // SimpleLoadingHandler drops refreshes while loading; preserve the latest read/membership update.
-    state.first { it !is LoadingState.Loading }
-    refresh()
 }
 
 /** Explicit source refresh also updates navigation without restarting the row preview request. */

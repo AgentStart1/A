@@ -5,6 +5,7 @@
 package com.storyteller_f.alphaheart.app.pages.title
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -24,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.itemKey
+import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.common.TitlesViewModel
 import com.storyteller_f.alphaheart.app.pages.community.CommunityIconWithDialog
@@ -35,11 +37,11 @@ import com.storyteller_f.alphaheart.app.title_permanent
 import com.storyteller_f.alphaheart.app.title_received_by
 import com.storyteller_f.alphaheart.app.title_scope
 import com.storyteller_f.alphaheart.app.title_valid
-import com.storyteller_f.alphaheart.client.compose_core.components.LayoutDefaults
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.bottomAppending
 import com.storyteller_f.alphaheart.client.compose_core.components.rememberCommonDialogController
-import com.storyteller_f.alphaheart.client.compose_core.components.topPrepend
+import com.storyteller_f.alphaheart.client.compose_core.paging.bottomAppending
+import com.storyteller_f.alphaheart.client.compose_core.paging.topPrepend
+import com.storyteller_f.alphaheart.client.compose_core.theme.LayoutDefaults
 import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.shared.model.TitleDetail
 import com.storyteller_f.shared.model.TitleWorkStatus
@@ -119,6 +121,7 @@ fun TitleItem(titleInfo: TitleDetail) {
 
 @Composable
 private fun TitleParticipants(titleInfo: TitleDetail) {
+    val nav = LocalAppNavFactory.current
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -130,7 +133,12 @@ private fun TitleParticipants(titleInfo: TitleDetail) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 UserIconWithDialog(titleInfo.creatorInfo)
-                Text(titleInfo.creatorInfo.nickname)
+                Text(
+                    titleInfo.creatorInfo.nickname,
+                    Modifier.clickable {
+                        nav.newAppNav().gotoUser(titleInfo.creatorInfo.id)
+                    },
+                )
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -140,7 +148,12 @@ private fun TitleParticipants(titleInfo: TitleDetail) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 UserIconWithDialog(titleInfo.receiverInfo)
-                Text(titleInfo.receiverInfo.nickname)
+                Text(
+                    titleInfo.receiverInfo.nickname,
+                    Modifier.clickable {
+                        nav.newAppNav().gotoUser(titleInfo.receiverInfo.id)
+                    },
+                )
             }
         }
     }

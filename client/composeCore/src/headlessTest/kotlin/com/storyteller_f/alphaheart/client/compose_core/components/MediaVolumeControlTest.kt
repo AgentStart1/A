@@ -4,6 +4,7 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaVolumeControl
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

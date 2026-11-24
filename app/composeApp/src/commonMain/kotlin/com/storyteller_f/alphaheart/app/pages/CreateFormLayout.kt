@@ -29,7 +29,7 @@ internal fun CreateFormLayout(content: @Composable ColumnScope.() -> Unit) {
             }
         val top = if (maxWidth <= 600.dp) 20.dp else side
         Column(
-            Modifier.padding(horizontal = side).widthIn(max = 900.dp).fillMaxWidth()
+            Modifier.padding(horizontal = side).widthIn(max = 520.dp).fillMaxWidth()
                 .verticalScroll(rememberScrollState()).padding(top = top, bottom = 30.dp),
             content = content,
         )

@@ -18,9 +18,15 @@
     <string name="menu">菜单</string>
     <string name="add">添加</string>
     <string name="add_user">添加用户</string>
-    <string name="random">随机</string>
+    <string name="generate_private_key">生成私钥</string>
     <string name="edit_private_key">编辑私钥</string>
     <string name="encryption_private_key">加密私钥</string>
+    <string name="signing_private_key">认证私钥</string>
+    <string name="select_private_key">选择私钥</string>
+    <string name="import_private_key">导入私钥</string>
+    <string name="import_signing_key">导入认证私钥</string>
+    <string name="import_encryption_key">导入加密私钥</string>
+    <string name="copy_private_key">复制私钥</string>
     <string name="private_key_required">必须指定私钥</string>
     <string name="room_public">公开</string>
     <string name="room_private">私有</string>
@@ -52,7 +58,7 @@
     <string name="tab_user_reactions">用户回应</string>
     <string name="tab_user_comments">用户评论</string>
     <string name="tab_file_refs">文件引用</string>
-    <string name="file_can_preview">该文件可全屏预览播放</string>
+    <string name="file_can_preview">此文件可预览</string>
     <string name="fullscreen_preview">全屏预览</string>
     <string name="save_failed">保存失败</string>
     <string name="file_preview_title">文件预览</string>
@@ -86,4 +92,5 @@
     <string name="worker_task_save_failed_detail">配置未能保存，已保留编辑内容。</string>
     <string name="set_read_only">设为只读</string>
     <string name="set_normal">恢复正常</string>
+    <string name="private_room_detail_title">私密房间详情</string>
 </resources>

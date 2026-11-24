@@ -6,16 +6,16 @@ package fonts
 
 import com.storyteller_f.alphaheart.app.common.createFileEngine
 import com.storyteller_f.alphaheart.app.common.write
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontBundle
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontDownload
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontPresentation
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontState
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontStore
-import com.storyteller_f.alphaheart.app.pages.community.LoadedCommunityFont
-import com.storyteller_f.alphaheart.app.pages.community.buildCommunityFont
-import com.storyteller_f.alphaheart.app.pages.community.combineCommunityFonts
-import com.storyteller_f.alphaheart.app.pages.community.createFontFace
-import com.storyteller_f.alphaheart.app.pages.community.fontFileKey
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontBundle
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontDownload
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontPresentation
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontState
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontStore
+import com.storyteller_f.alphaheart.app.fonts.LoadedCommunityFont
+import com.storyteller_f.alphaheart.app.fonts.buildCommunityFont
+import com.storyteller_f.alphaheart.app.fonts.combineCommunityFonts
+import com.storyteller_f.alphaheart.app.fonts.createFontFace
+import com.storyteller_f.alphaheart.app.fonts.fontFileKey
 import com.storyteller_f.shared.model.FileInfo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope

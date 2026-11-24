@@ -23,6 +23,9 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpRect
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.IconRes
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -46,7 +49,7 @@ internal class ActionMenuGeometryTest {
                                             IconActionMenu(twoActions = count == 2) {
                                                 repeat(count) { index ->
                                                     ButtonNav(
-                                                        IconRes.Vector(Icons.Default.Add, "glyph$index"),
+                                                        IconRes.Vector(actionIcon(ActionGlyph.PLUS), "glyph$index"),
                                                         "Action$index",
                                                         suffix = { Text("$index") },
                                                     ) { clicked += index }
@@ -64,7 +67,7 @@ internal class ActionMenuGeometryTest {
                             val action = onNodeWithContentDescription("Action$index")
                             action.assertHeightIsEqualTo(52.dp)
                             onNodeWithContentDescription("glyph$index", useUnmergedTree = true)
-                                .assertWidthIsEqualTo(21.dp).assertHeightIsEqualTo(21.dp)
+                                .assertWidthIsEqualTo(16.dp).assertHeightIsEqualTo(16.dp)
                             val pixels = action.captureToImage().toPixelMap()
                             assertEquals(background, pixels[pixels.width / 2, pixels.height - 5])
                             onNodeWithText("$index", useUnmergedTree = true).assertExists()

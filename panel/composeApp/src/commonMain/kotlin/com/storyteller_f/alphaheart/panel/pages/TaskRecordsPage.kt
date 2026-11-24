@@ -35,8 +35,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
-import com.storyteller_f.alphaheart.client.compose_core.components.safeArea
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.theme.safeArea
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.alphaheart.panel.LocalPanelGlobalDialog
@@ -60,12 +62,12 @@ import com.storyteller_f.alphaheart.panel.review_task_detail_title
 import com.storyteller_f.alphaheart.panel.review_task_failure_type
 import com.storyteller_f.alphaheart.panel.review_task_record_meta
 import com.storyteller_f.alphaheart.panel.review_task_summary
+import com.storyteller_f.alphaheart.panel.tasks.failureTypeForStatus
 import com.storyteller_f.alphaheart.panel.worker_records
 import com.storyteller_f.shared.model.TaskRecordInfo
 import com.storyteller_f.shared.model.TaskRecordSummary
 import com.storyteller_f.shared.model.TaskRecordType
 import org.jetbrains.compose.resources.stringResource
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab as Tab
@@ -165,9 +167,6 @@ private fun TaskRecordDetailContent(type: TaskRecordType) {
         }
     }
 }
-
-internal fun failureTypeForStatus(status: Boolean?, failureType: String?): String? =
-    failureType.takeIf { status == false }
 
 @Composable
 private fun TaskRecordSummaryItem(summary: TaskRecordSummary, onClick: () -> Unit) {
@@ -284,7 +283,7 @@ private fun TaskRecordHistoryItem(record: TaskRecordInfo, retryRequested: Boolea
                 val retry = { onMarkForRetry(record.id) }
                 val retryLabel =
                     stringResource(if (retryRequested) Res.string.review_retry_requested else Res.string.review_retry)
-                Button(
+                IconButton(
                     enabled = !retryRequested,
                     onClick = retry,
                     modifier =
@@ -293,7 +292,7 @@ private fun TaskRecordHistoryItem(record: TaskRecordInfo, retryRequested: Boolea
                         onClick = retry.takeUnless { retryRequested },
                     ),
                 ) {
-                    Text(retryLabel)
+                    Icon(actionIcon(ActionGlyph.REFRESH_CW), retryLabel)
                 }
             }
         },

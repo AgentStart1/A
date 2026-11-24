@@ -26,7 +26,7 @@ fun AdaptiveFormLayout(modifier: Modifier = Modifier, maxColumns: Int = 2, conte
         Layout(
             content = content,
             modifier =
-            Modifier.widthIn(max = 1200.dp).fillMaxWidth()
+            Modifier.widthIn(max = if (maxColumns == 1) 740.dp else 1200.dp).fillMaxWidth()
                 .verticalScroll(rememberScrollState()).padding(20.dp),
         ) { measurables, constraints ->
             val columns = if (maxColumns > 1 && constraints.maxWidth >= 800.dp.roundToPx()) 2 else 1

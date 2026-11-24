@@ -26,6 +26,7 @@ import com.mikepenz.aboutlibraries.ui.compose.style.LibraryActionBadges
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.common.AboutLibrariesHost
 import com.storyteller_f.alphaheart.app.common.LibrariesState
+import com.storyteller_f.alphaheart.app.libraries.libraryCoordination
 import com.storyteller_f.alphaheart.app.library_count
 import com.storyteller_f.alphaheart.app.library_sponsor
 import com.storyteller_f.alphaheart.app.library_view_license
@@ -39,8 +40,6 @@ import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
-
-private val libraryCoordination = Dispatchers.Default.limitedParallelism(1)
 
 @OptIn(ExperimentalResourceApi::class)
 @Composable

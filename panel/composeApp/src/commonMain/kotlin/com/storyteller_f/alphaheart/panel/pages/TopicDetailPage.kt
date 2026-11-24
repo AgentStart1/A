@@ -21,13 +21,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.storyteller_f.alphaheart.client.compose_core.components.DetailNavigationScaffold
-import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
-import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
-import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.tasks.emitEvent
 import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.alphaheart.client.core.updateTopicStatus
 import com.storyteller_f.alphaheart.panel.LocalPanelGlobalDialog
@@ -39,6 +38,7 @@ import com.storyteller_f.alphaheart.panel.common.PanelNav
 import com.storyteller_f.alphaheart.panel.common.createPanelTopicTopicsViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelTopicViewModel
 import com.storyteller_f.alphaheart.panel.common.gotoChildTopicDetail
+import com.storyteller_f.alphaheart.panel.components.DetailNavigationScaffold
 import com.storyteller_f.alphaheart.panel.components.PanelInfoTable
 import com.storyteller_f.alphaheart.panel.components.panelOptionalValueText
 import com.storyteller_f.alphaheart.panel.encrypted

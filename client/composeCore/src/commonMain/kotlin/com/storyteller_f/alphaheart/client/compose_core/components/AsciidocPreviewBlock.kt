@@ -36,7 +36,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mikepenz.markdown.compose.components.MarkdownComponentModel
 import com.storyteller_f.alphaheart.client.asciidoc_parser.buildAsciidocPreviewHtml
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.notifications.LocalToaster
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
+import com.storyteller_f.alphaheart.client.compose_core.utils.copyText
 import com.storyteller_f.shared.utils.readCodeFence
 import dev.nucleusframework.webview.web.WebView
 import dev.nucleusframework.webview.web.rememberWebViewStateWithHTMLData

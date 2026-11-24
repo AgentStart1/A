@@ -13,7 +13,7 @@ import androidx.lifecycle.Lifecycle
 import com.storyteller_f.alphaheart.app.AppConfig
 import com.storyteller_f.alphaheart.app.getClipFile
 import com.storyteller_f.alphaheart.app.initFromContext
-import com.storyteller_f.alphaheart.client.compose_core.components.mainActivityRef
+import com.storyteller_f.alphaheart.client.compose_core.permissions.mainActivityRef
 import com.storyteller_f.shared.getAppContextRefValue
 import dev.jordond.connectivity.Connectivity
 import okio.Path.Companion.toOkioPath

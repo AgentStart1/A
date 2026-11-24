@@ -6,6 +6,7 @@ package com.storyteller_f.alphaheart.app.pages.room
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -34,7 +35,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,20 +48,22 @@ import com.storyteller_f.alphaheart.app.common.createCommunityViewModel
 import com.storyteller_f.alphaheart.app.common.createJoinedRoomsViewModel
 import com.storyteller_f.alphaheart.app.pages.ActivityMessageContent
 import com.storyteller_f.alphaheart.app.pages.RememberUnreadBadgeRefresh
+import com.storyteller_f.alphaheart.app.pages.community.CommunityIconWithDialog
 import com.storyteller_f.alphaheart.app.pages.roomActivityDescription
-import com.storyteller_f.alphaheart.app.room_community
+import com.storyteller_f.alphaheart.app.previews.RoomCellPreviewProvider
 import com.storyteller_f.alphaheart.app.room_members
-import com.storyteller_f.alphaheart.app.room_no_community
 import com.storyteller_f.alphaheart.app.room_read_only
 import com.storyteller_f.alphaheart.app.room_status
 import com.storyteller_f.alphaheart.app.room_unread
 import com.storyteller_f.alphaheart.app.rooms
+import com.storyteller_f.alphaheart.app.semantics.roomCellSemantics
+import com.storyteller_f.alphaheart.client.compose_core.components.CommunityIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.RoomIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.bottomAppending
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
 import com.storyteller_f.alphaheart.client.compose_core.components.rememberCommonDialogController
-import com.storyteller_f.alphaheart.client.compose_core.components.topPrepend
+import com.storyteller_f.alphaheart.client.compose_core.paging.bottomAppending
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.paging.topPrepend
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.shared.model.CommunityInfo
 import com.storyteller_f.shared.model.RoomInfo
@@ -154,14 +156,6 @@ fun UnboundedRoomCell(@PreviewParameter(RoomCellPreviewProvider::class) roomInfo
     RoomCellInternal(roomInfo, modifier)
 }
 
-class RoomCellPreviewProvider : PreviewParameterProvider<RoomInfo> {
-    override val values: Sequence<RoomInfo>
-        get() =
-            sequenceOf(
-                RoomInfo.EMPTY.copy(name = "Room Name", latestTopic = 1, lastRead = 0),
-            )
-}
-
 @Composable
 private fun RoomCellInternal(
     roomInfo: RoomInfo?,
@@ -177,12 +171,20 @@ private fun RoomCellInternal(
         }
     val roomDialog = rememberCommonDialogController()
     val roomShown by roomDialog.shown
+    val communityDialog = rememberCommonDialogController()
+    val communityShown by communityDialog.shown
     BadgedBox(badge = {
         if (!wide && activity == null && roomInfo?.hasUnread == true) Badge(containerColor = Color.Red)
     }) {
         RoomRowContent(roomInfo, communityInfo, wide, modifier, {
-            RoomIconWithDialog(roomInfo, showDialog = roomShown, updateDialog = roomDialog::update)
-        }, activity)
+            RoomIconWithDialog(
+                roomInfo,
+                showDialog = roomShown,
+                updateDialog = roomDialog::update,
+            )
+        }, activity, communityIcon = {
+            CommunityIconWithDialog(communityInfo, communityShown, 22.dp, onClickIcon = communityDialog::update)
+        })
     }
 }
 
@@ -195,6 +197,7 @@ fun RoomRowContent(
     modifier: Modifier = Modifier,
     roomIcon: @Composable () -> Unit,
     activity: RoomActivityPreview? = null,
+    communityIcon: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier.appiumSemantics(text = roomActivityDescription(roomInfo?.name.orEmpty(), activity)),
@@ -202,47 +205,38 @@ fun RoomRowContent(
     ) {
         roomIcon()
         Column(Modifier.weight(1f).padding(start = 8.dp, end = 12.dp)) {
-            Text(
-                roomInfo?.name.orEmpty(),
-                Modifier.appiumSemantics(text = roomInfo?.name),
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (!wide && communityInfo != null) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
-                    communityInfo.name,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    roomInfo?.name.orEmpty(),
+                    Modifier.weight(1f, fill = false).appiumSemantics(text = roomInfo?.name),
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (communityInfo != null) {
+                    if (communityIcon != null) {
+                        communityIcon()
+                    } else {
+                        CommunityIcon(communityInfo, 22.dp, false) {}
+                    }
+                }
             }
             if (activity?.message != null) ActivityMessageContent(activity.message)
         }
-        RoomRowMetadata(roomInfo, communityInfo, wide, activity)
+        RoomRowMetadata(roomInfo, wide, activity)
     }
 }
 
 @Composable
 private fun androidx.compose.foundation.layout.RowScope.RoomRowMetadata(
     roomInfo: RoomInfo?,
-    communityInfo: CommunityInfo?,
     wide: Boolean,
     activity: RoomActivityPreview?,
 ) {
     if (wide) {
-        Text(
-            communityInfo?.name ?: if (roomInfo?.communityId == null) {
-                stringResource(Res.string.room_no_community)
-            } else {
-                "—"
-            },
-            Modifier.weight(0.8f).padding(end = 12.dp),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyMedium,
-        )
         Text(roomInfo?.memberCount?.toString().orEmpty(), Modifier.width(88.dp))
         Text(
             if (roomInfo?.readOnly == true) stringResource(Res.string.room_read_only) else "—",
@@ -276,11 +270,6 @@ private fun RoomTableHeader() {
         Spacer(Modifier.width(68.dp))
         Text(stringResource(Res.string.rooms), Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
         Text(
-            stringResource(Res.string.room_community),
-            Modifier.weight(0.8f),
-            style = MaterialTheme.typography.labelMedium,
-        )
-        Text(
             stringResource(Res.string.room_members),
             Modifier.width(88.dp).appiumSemantics(text = stringResource(Res.string.room_members)),
             style = MaterialTheme.typography.labelMedium,
@@ -303,7 +292,7 @@ fun RoomIconWithDialog(
     roomInfo: RoomInfo?,
     showDialog: Boolean,
     width: Dp = 60.dp,
-    setClickEvent: Boolean = false,
+    setClickEvent: Boolean = true,
     updateDialog: (Boolean) -> Unit,
 ) {
     RoomIcon(roomInfo, width, setClickEvent, updateDialog)

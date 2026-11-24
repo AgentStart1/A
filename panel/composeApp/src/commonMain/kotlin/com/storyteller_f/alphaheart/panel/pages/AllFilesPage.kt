@@ -24,8 +24,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.client.compose_core.components.FileIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
-import com.storyteller_f.alphaheart.client.compose_core.components.safeArea
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.theme.safeArea
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.panel.LocalPanelNav
 import com.storyteller_f.alphaheart.panel.Res
@@ -34,8 +34,8 @@ import com.storyteller_f.alphaheart.panel.common.AllFilesViewModel
 import com.storyteller_f.alphaheart.panel.common.createPanelAllFilesViewModel
 import com.storyteller_f.alphaheart.panel.components.panelDirectoryRowColors
 import com.storyteller_f.alphaheart.panel.components.panelDirectorySelection
-import com.storyteller_f.alphaheart.panel.components.selectedPanelEntityId
 import com.storyteller_f.alphaheart.panel.menu
+import com.storyteller_f.alphaheart.panel.navigation.selectedPanelEntityId
 import com.storyteller_f.shared.type.ObjectType
 import nl.jacobras.humanreadable.HumanReadable
 import org.jetbrains.compose.resources.stringResource

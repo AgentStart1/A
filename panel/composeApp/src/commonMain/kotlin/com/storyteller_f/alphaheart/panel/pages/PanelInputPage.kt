@@ -6,53 +6,41 @@ package com.storyteller_f.alphaheart.panel.pages
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.components.PrivateKeyInput
-import com.storyteller_f.alphaheart.client.compose_core.components.request
+import com.storyteller_f.alphaheart.client.compose_core.tasks.request
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.core.CredentialError
 import com.storyteller_f.alphaheart.client.core.RawUserPassInfo
 import com.storyteller_f.alphaheart.client.core.getPanelUserSignInPass
 import com.storyteller_f.alphaheart.panel.LocalPanelGlobalDialog
 import com.storyteller_f.alphaheart.panel.LocalPanelUiViewModel
-import com.storyteller_f.alphaheart.panel.sign_in
+import com.storyteller_f.alphaheart.panel.Res
+import com.storyteller_f.alphaheart.panel.admin_auth_submit
+import com.storyteller_f.alphaheart.panel.admin_auth_title
+import com.storyteller_f.alphaheart.panel.input.PanelInputViewModel
 import com.storyteller_f.result.captureFailure
 import com.storyteller_f.result.onSuccess
-import kotlinx.coroutines.Dispatchers
+import com.storyteller_f.shared.model.AlgoType
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
 
-private val panelInputCoordination = Dispatchers.Default.limitedParallelism(1)
-
-class PanelInputViewModel : ViewModel() {
-    internal val host = PanelInputHost(viewModelScope, panelInputCoordination, Dispatchers.Default)
-
-    override fun onCleared() {
-        host.close()
-    }
-}
-
 @Composable
-fun PanelInputPage(back: () -> Unit) {
+fun PanelInputPage() {
     val viewModel: PanelInputViewModel = viewModel { PanelInputViewModel() }
     val dialogController = LocalPanelGlobalDialog.current
     val panelUiViewModel = LocalPanelUiViewModel.current
     com.storyteller_f.alphaheart.client.compose_core.components.ReadingAuthLayout(
-        stringResource(com.storyteller_f.alphaheart.panel.Res.string.sign_in),
+        stringResource(Res.string.admin_auth_title),
     ) {
         val scope = rememberCoroutineScope()
         val host = viewModel.host
@@ -81,7 +69,6 @@ fun PanelInputPage(back: () -> Unit) {
                     }
                 }.onSuccess { (it, pass) ->
                     panelUiViewModel.login(it, pass)
-                    back()
                 }
             }
         }
@@ -101,23 +88,22 @@ fun PanelInputPage(back: () -> Unit) {
                     host.updatePrivateKey(it)
                 },
             )
-            PanelSigninButton(startSign)
+            PanelSigninButton(
+                startSign,
+                enabled = !address.isNullOrBlank() && (algo != AlgoType.DILITHIUM || encryptionPrivateKey.isNotBlank()),
+            )
         }
     }
 }
 
 @Composable
-private fun PanelSigninButton(startSign: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.End,
-        verticalAlignment = Alignment.CenterVertically,
+private fun PanelSigninButton(startSign: () -> Unit, enabled: Boolean) {
+    val label = stringResource(Res.string.admin_auth_submit)
+    Button(
+        startSign,
+        modifier = Modifier.fillMaxWidth().appiumSemantics(text = label),
+        enabled = enabled,
     ) {
-        Button(
-            startSign,
-            modifier = Modifier.appiumSemantics(text = CoreStrings.start(), onClick = startSign),
-        ) {
-            Text(CoreStrings.start())
-        }
+        Text(label)
     }
 }

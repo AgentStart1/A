@@ -14,12 +14,12 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
-import com.storyteller_f.alphaheart.client.compose_core.components.ConstPlayItem
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomGlobalDialogController
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalMediaPlaySession
-import com.storyteller_f.alphaheart.client.compose_core.components.MediaPlayerService
-import com.storyteller_f.alphaheart.client.compose_core.components.RemoteMediaItem
-import com.storyteller_f.alphaheart.client.compose_core.components.startPlay
+import com.storyteller_f.alphaheart.client.compose_core.media.ConstPlayItem
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlaySession
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaPlayerService
+import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
+import com.storyteller_f.alphaheart.client.compose_core.media.startPlay
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomGlobalDialogController
 import com.storyteller_f.result.CustomResult
 import io.github.aakira.napier.Napier
 

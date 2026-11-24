@@ -25,6 +25,7 @@ import androidx.navigation3.runtime.NavKey
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingInteractions
 import com.storyteller_f.alphaheart.panel.common.PanelAllUsersScreen
 import com.storyteller_f.alphaheart.panel.common.PanelUserDetailScreen
+import com.storyteller_f.alphaheart.panel.navigation.selectedPanelEntityId
 import com.storyteller_f.shared.model.UserInfo
 import com.storyteller_f.shared.type.ObjectType
 import kotlin.test.Test

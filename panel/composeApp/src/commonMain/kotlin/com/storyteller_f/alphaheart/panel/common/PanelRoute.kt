@@ -6,39 +6,26 @@
 
 package com.storyteller_f.alphaheart.panel.common
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.ui.NavDisplay
-import androidx.savedstate.serialization.SavedStateConfiguration
 import com.storyteller_f.alphaheart.client.compose_core.components.CenterBox
-import com.storyteller_f.alphaheart.client.compose_core.components.SignInButton
-import com.storyteller_f.alphaheart.client.compose_core.components.safeArea
-import com.storyteller_f.alphaheart.client.compose_core.utils.BindBrowserNavigation
-import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
-import com.storyteller_f.alphaheart.panel.LocalPanelNav
 import com.storyteller_f.alphaheart.panel.LocalPanelUiViewModel
 import com.storyteller_f.alphaheart.panel.PanelListDetailPane
 import com.storyteller_f.alphaheart.panel.Res
 import com.storyteller_f.alphaheart.panel.addPanelDetail
-import com.storyteller_f.alphaheart.panel.input
 import com.storyteller_f.alphaheart.panel.pages.AllCommunitiesPage
 import com.storyteller_f.alphaheart.panel.pages.AllFilesPage
 import com.storyteller_f.alphaheart.panel.pages.AllPrivateRoomsPage
@@ -58,7 +45,6 @@ import com.storyteller_f.alphaheart.panel.pages.TopicDetailPage
 import com.storyteller_f.alphaheart.panel.pages.UserDetailPage
 import com.storyteller_f.alphaheart.panel.panelListDetailDestination
 import com.storyteller_f.alphaheart.panel.select_an_item
-import com.storyteller_f.alphaheart.panel.sign_in
 import com.storyteller_f.shared.model.TaskRecordType
 import com.storytellerf.alphaheart.panel.pages.WorkerTasksPage
 import kotlinx.coroutines.CoroutineScope
@@ -68,13 +54,6 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import org.jetbrains.compose.resources.stringResource
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton as OutlinedButton
-
-@Serializable
-data object LoginSelectScreen : NavKey
-
-@Serializable
-data object LoginInputScreen : NavKey
 
 @Serializable
 data class PanelUserDetailScreen(val uid: Long) : NavKey
@@ -319,27 +298,21 @@ private fun panelListDetailMetadata(key: NavKey): Map<String, Any> {
     }
 }
 
-internal fun rootEntryProvider(nav: PanelNav): (NavKey) -> NavEntry<NavKey> {
+internal fun rootEntryProvider(): (NavKey) -> NavEntry<NavKey> {
     val provider =
         entryProvider {
-            addStandaloneEntries(nav)
+            addStandaloneEntries()
             addListDetailEntries()
         }
     return provider
 }
 
-private fun EntryProviderScope<NavKey>.addStandaloneEntries(nav: PanelNav) {
+private fun EntryProviderScope<NavKey>.addStandaloneEntries() {
     entry<PanelLoginScreen> {
-        PanelLoginPage {
-            nav.back()
-            nav.gotoOverview()
-        }
+        val account by LocalPanelUiViewModel.current.instance.collectAsState()
+        if (account.isAlreadySign) OverviewPage() else PanelInputPage()
     }
-    entry<PanelOverviewScreen> {
-        PanelHost {
-            OverviewPage()
-        }
-    }
+    entry<PanelOverviewScreen> { OverviewPage() }
     entry<PanelTaskRecordsScreen> {
         TaskRecordsPage()
     }
@@ -404,73 +377,6 @@ private fun PanelDetailPlaceholder() {
                 text = stringResource(Res.string.select_an_item),
                 style = MaterialTheme.typography.bodyLarge,
             )
-        }
-    }
-}
-
-@Suppress("UnusedMaterial3ScaffoldPaddingParameter")
-@Composable
-private fun PanelHost(content: @Composable () -> Unit) {
-    val panelNav = LocalPanelNav.current
-    val instance by LocalPanelUiViewModel.current.instance.collectAsState()
-    val isAlreadySign = instance.isAlreadySign
-    Scaffold {
-        if (isAlreadySign) {
-            content()
-        } else {
-            CenterBox {
-                SignInButton {
-                    panelNav.gotoLogin()
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun PanelLoginPage(back: () -> Unit) {
-    val module =
-        SerializersModule {
-            polymorphic(NavKey::class) {
-                subclass(LoginSelectScreen::class)
-                subclass(LoginInputScreen::class)
-            }
-        }
-    val config =
-        remember {
-            SavedStateConfiguration {
-                serializersModule = module
-            }
-        }
-    val backStack = rememberNavBackStack(config, LoginSelectScreen)
-    BindBrowserNavigation(backStack, config.serializersModule, "panel/login")
-    Scaffold { paddingValues ->
-        val direction = LocalLayoutDirection.current
-        Box(Modifier.safeArea(paddingValues, direction)) {
-            NavDisplay(
-                backStack,
-                entryProvider =
-                entryProvider {
-                    entry<LoginSelectScreen> {
-                        PanelSelectLoginPage { backStack.add(LoginInputScreen) }
-                    }
-                    entry<LoginInputScreen> {
-                        PanelInputPage(back)
-                    }
-                },
-            )
-        }
-    }
-}
-
-@Composable
-private fun PanelSelectLoginPage(gotoInput: () -> Unit) {
-    com.storyteller_f.alphaheart.client.compose_core.components.ReadingAuthLayout(stringResource(Res.string.sign_in)) {
-        OutlinedButton(
-            gotoInput,
-            modifier = Modifier.appiumSemantics(text = stringResource(Res.string.input), onClick = gotoInput),
-        ) {
-            Text(stringResource(Res.string.input))
         }
     }
 }

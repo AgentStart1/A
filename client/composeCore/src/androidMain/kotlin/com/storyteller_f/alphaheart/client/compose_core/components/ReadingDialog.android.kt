@@ -21,13 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 
-internal actual fun readingDialogProperties(properties: DialogProperties, scrim: Color): DialogProperties =
-    DialogProperties(
-        dismissOnBackPress = properties.dismissOnBackPress,
-        dismissOnClickOutside = properties.dismissOnClickOutside,
-        usePlatformDefaultWidth = false,
-    )
-
 @Composable
 internal actual fun ReadingDialogBody(
     properties: DialogProperties,

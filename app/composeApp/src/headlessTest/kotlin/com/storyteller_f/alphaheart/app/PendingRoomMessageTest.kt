@@ -4,9 +4,9 @@
 
 package com.storyteller_f.alphaheart.app
 
-import com.storyteller_f.alphaheart.app.pages.room.PendingRoomMessage
-import com.storyteller_f.alphaheart.app.pages.room.RoomMessagePhase
-import com.storyteller_f.alphaheart.app.pages.room.prepareRoomMessage
+import com.storyteller_f.alphaheart.app.room.PendingRoomMessage
+import com.storyteller_f.alphaheart.app.room.RoomMessagePhase
+import com.storyteller_f.alphaheart.app.room.prepareRoomMessage
 import com.storyteller_f.shared.model.TopicContent
 import com.storyteller_f.shared.model.TopicCreated
 import com.storyteller_f.shared.model.TopicInfo

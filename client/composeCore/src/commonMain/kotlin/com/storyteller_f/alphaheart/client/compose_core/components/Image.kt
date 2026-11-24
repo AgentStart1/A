@@ -28,6 +28,7 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.mikepenz.markdown.model.ImageData
 import com.storyteller_f.alphaheart.client.compose_core.common.LocalClient
+import com.storyteller_f.alphaheart.client.compose_core.icons.IconRes
 import io.github.aakira.napier.Napier
 
 @Composable

@@ -7,7 +7,7 @@ package device_based
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +31,7 @@ import com.storyteller_f.alphaheart.app.common.OnRoomRead
 import com.storyteller_f.alphaheart.client.compose_core.common.PagingViewModel
 import com.storyteller_f.alphaheart.client.compose_core.common.buildPager
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
 import com.storyteller_f.alphaheart.client.room.RemoteKeyRoomStorage
 import com.storyteller_f.alphaheart.client.room.RoomRoomInfoStorage
 import com.storyteller_f.alphaheart.client.room.getRoomDatabase
@@ -106,7 +106,7 @@ internal class RoomPagingUiTest {
 @Composable
 private fun RoomPagingContent(fixture: RoomPagingFixture, list: LazyListState) {
     MaterialTheme {
-        Box(Modifier.requiredSize(800.dp, 400.dp)) {
+        Box(Modifier.size(800.dp, 400.dp)) {
             StateView(fixture.model, refreshEvents = fixture.events) { items ->
                 SideEffect { fixture.presentedItems = items }
                 LazyColumn(state = list, modifier = Modifier.fillMaxSize().testTag("paged-rooms")) {

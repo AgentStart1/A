@@ -22,11 +22,11 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
 import com.storyteller_f.alphaheart.app.components.FontView
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontStore
 import com.storyteller_f.alphaheart.app.pages.community.CommunityFontContent
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontStore
 import com.storyteller_f.alphaheart.app.pages.community.CommunityTopicContent
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalTopicContentFonts
-import com.storyteller_f.alphaheart.client.compose_core.components.TopicContentFonts
+import com.storyteller_f.alphaheart.client.compose_core.theme.LocalTopicContentFonts
+import com.storyteller_f.alphaheart.client.compose_core.theme.TopicContentFonts
 import com.storyteller_f.shared.model.FileInfo
 import com.storyteller_f.shared.model.FontSettings
 import com.storyteller_f.shared.model.FontSettingsWithInfo

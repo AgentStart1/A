@@ -30,6 +30,25 @@ Panel 改动使用对应的 `:panel:composeApp` 任务，JVM 后端模块使用 
 
 Windows 上，如果编译或构建、Detekt、截图及宿主 UI 运行共用 Android 运行时 JAR，就必须顺序执行。始终显式传入所需 server flavor 和 build type。
 
+## 从容阅读交互设计稿
+
+产品的交互和视觉约定见 [DESIGN.md](DESIGN.md)。
+
+设计稿的唯一源文件是 [dev/design/reading-unified-combinations.html](dev/design/reading-unified-combinations.html)。从项目根目录运行：
+
+```sh
+python -m http.server 8087 --bind 127.0.0.1 --directory dev/design
+```
+
+打开 `http://127.0.0.1:8087/reading-unified-combinations.html`，用「自由查看」切换页面、状态和屏幕宽度。修改设计时编辑源文件，浏览器刷新即可。预览使用仓库内的 Lucide 1.17.0 图标脚本与许可证，可以离线打开。
+
+## Compose 源码归属
+
+- `pages/` 与 `components/` 只存放 `@Composable` 函数。把状态模型、导航定义、请求、数据转换和测试夹具放到各自负责的目录。
+- Composable 负责渲染状态、连接生命周期和转发交互。将可以独立验证的状态转换、数据处理和异步流程提取到现有的 ViewModel、Host 或业务模块，保留简短的界面表达在渲染现场。
+- 用户端与管理端共同使用的 UI 放在 `client/composeCore`。只在单端使用的组件归该端 `components/`，并将该组件专用的测试和资源一同迁移。确认两个应用、平台源码集、预览、测试和其他运行入口均无引用后，移除无调用的组件。
+- 导航键、状态、平台实现和可独立验证的处理逻辑按职责归档。迁移可序列化的导航类型时保留其序列标识，确保既有浏览器历史仍可读取。
+
 ## 按场景划分的 API 投影
 
 基础模型（`TopicInfo`、`TitleInfo`、`CommunityInfo`、收藏／订阅／日志记录及 `QuotaInfo`）只包含自身数据。关联对象与基础对象直接并列，放入可序列化的场景投影；不得添加 `extension`/`extensions` 集合，也不得将基础对象属性展开到 JSON 包装层。

@@ -7,10 +7,10 @@ package fonts
 import com.storyteller_f.alphaheart.app.common.createDownloadRecord
 import com.storyteller_f.alphaheart.app.common.createFileEngine
 import com.storyteller_f.alphaheart.app.common.write
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontDownload
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontState
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontStore
-import com.storyteller_f.alphaheart.app.pages.community.observeCommunityFont
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontDownload
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontState
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontStore
+import com.storyteller_f.alphaheart.app.fonts.observeCommunityFont
 import com.storyteller_f.shared.commonJson
 import com.storyteller_f.shared.model.FileInfo
 import com.storyteller_f.storage.DownloadInfo

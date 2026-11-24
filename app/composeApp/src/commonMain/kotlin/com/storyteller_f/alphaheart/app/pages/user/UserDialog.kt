@@ -36,25 +36,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.storyteller_f.alphaheart.app.AppGlobalDialogController
 import com.storyteller_f.alphaheart.app.LocalAccountSwitcher
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
 import com.storyteller_f.alphaheart.app.LocalSessionManager
 import com.storyteller_f.alphaheart.app.LocalUiViewModel
 import com.storyteller_f.alphaheart.app.Res
-import com.storyteller_f.alphaheart.app.UIViewModel
-import com.storyteller_f.alphaheart.app.common.AppNav
 import com.storyteller_f.alphaheart.app.common.UserScreen
-import com.storyteller_f.alphaheart.app.common.finishSignOut
 import com.storyteller_f.alphaheart.app.common.hasRouteFlow
+import com.storyteller_f.alphaheart.app.components.SignInButton
 import com.storyteller_f.alphaheart.app.connected
 import com.storyteller_f.alphaheart.app.create
 import com.storyteller_f.alphaheart.app.disconnected
@@ -66,56 +65,49 @@ import com.storyteller_f.alphaheart.app.my_favorites
 import com.storyteller_f.alphaheart.app.my_reactions
 import com.storyteller_f.alphaheart.app.my_subscriptions
 import com.storyteller_f.alphaheart.app.pages.title.ComposeMenu
-import com.storyteller_f.alphaheart.app.pages.topic.TopicComposeData
 import com.storyteller_f.alphaheart.app.preference
 import com.storyteller_f.alphaheart.app.room_read_only
 import com.storyteller_f.alphaheart.app.settings
 import com.storyteller_f.alphaheart.app.sign_out
 import com.storyteller_f.alphaheart.app.sign_out_prompt
 import com.storyteller_f.alphaheart.app.switch_account
+import com.storyteller_f.alphaheart.app.topic.TopicComposeData
+import com.storyteller_f.alphaheart.app.user.UserInfoPreviewProvider
+import com.storyteller_f.alphaheart.app.user.refreshMyInfo
+import com.storyteller_f.alphaheart.app.user.signOut
 import com.storyteller_f.alphaheart.app.utils.createConnectivity
 import com.storyteller_f.alphaheart.app.utils.rememberAppNotificationPermission
 import com.storyteller_f.alphaheart.app.utils.requestAppNotificationPermission
-import com.storyteller_f.alphaheart.app.utils.unregisterPushService
 import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
-import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.ButtonNav
 import com.storyteller_f.alphaheart.client.compose_core.components.CustomAlertDialog
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomAlertDialogController
 import com.storyteller_f.alphaheart.client.compose_core.components.FavoriteButton
 import com.storyteller_f.alphaheart.client.compose_core.components.IconActionMenu
-import com.storyteller_f.alphaheart.client.compose_core.components.IconRes
-import com.storyteller_f.alphaheart.client.compose_core.components.NavigationGlyph
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingActionMenuSurface
-import com.storyteller_f.alphaheart.client.compose_core.components.SignInButton
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingAdaptiveOverlay
 import com.storyteller_f.alphaheart.client.compose_core.components.SubscriptionButton
+import com.storyteller_f.alphaheart.client.compose_core.components.UserAddressLine
 import com.storyteller_f.alphaheart.client.compose_core.components.UserIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.navigationIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.request
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.IconRes
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomAlertDialogController
+import com.storyteller_f.alphaheart.client.compose_core.utils.ReadingOverlaySize
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.compose_core.utils.supportsChildAccountSwitching
 import com.storyteller_f.alphaheart.client.core.LoadingHandler
 import com.storyteller_f.alphaheart.client.core.LoadingState
-import com.storyteller_f.alphaheart.client.core.UserSessionManager
-import com.storyteller_f.alphaheart.client.core.getUserInfo
-import com.storyteller_f.alphaheart.client.core.getUserInfoByAid
-import com.storyteller_f.alphaheart.client.core.restoreSession
-import com.storyteller_f.alphaheart.client.core.signOut
-import com.storyteller_f.result.getOrThrow
-import com.storyteller_f.result.onSuccess
 import com.storyteller_f.shared.model.UserInfo
 import com.storyteller_f.shared.model.UserOverview
 import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.UserStatus
 import dev.jordond.connectivity.Connectivity
 import dev.jordond.connectivity.compose.rememberConnectivityState
-import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBadge as Badge
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBasicAlertDialog as BasicAlertDialog
 
 @Composable
 private fun SelfDialogInternal(
@@ -138,6 +130,7 @@ private fun SelfDialogInternal(
         },
     ) {
         if (isAlreadySignIn) {
+            userInfo?.let { UserAddressLine(it.address) }
             IconActionMenu {
                 if (userInfo?.status == UserStatus.NORMAL) CreateButton(dismiss, clickCreate)
                 UserOverviewActions(overviewHandler, dismiss)
@@ -194,11 +187,6 @@ fun CreateButton(dismiss: () -> Unit, clickCreate: () -> Unit) {
     }
 }
 
-class UserInfoPreviewProvider : PreviewParameterProvider<UserInfo> {
-    override val values: Sequence<UserInfo>
-        get() = sequenceOf(UserInfo.EMPTY.copy(nickname = "hello"))
-}
-
 @Preview
 @Composable
 fun UserCard(@PreviewParameter(UserInfoPreviewProvider::class) userInfo: UserInfo?, dismiss: () -> Unit = {}) {
@@ -223,11 +211,12 @@ fun UserCardContainer(userInfo: UserInfo?, dismiss: () -> Unit, content: @Compos
     val userLabel =
         userInfo?.let { info ->
             val aid = info.aid
-            val identity = if (aid != null) CoreStrings.aid(aid) else CoreStrings.ad(info.address)
-            "${info.nickname}, $identity"
+            if (aid != null) "${info.nickname}, ${CoreStrings.aid(aid)}" else info.nickname
         }
     val modifier =
         Modifier.fillMaxWidth()
+            .testTag("user-dialog-cell")
+            .semantics { userLabel?.let { contentDescription = it } }
             .appiumSemantics(
                 testTag = "user-dialog-cell",
                 description = userLabel,
@@ -361,11 +350,6 @@ private fun UnboundSimpleUserCell(userInfo: UserInfo?) {
                 val aid = userInfo.aid
                 if (aid != null) {
                     Text(CoreStrings.aid(aid), style = MaterialTheme.typography.labelSmall)
-                } else {
-                    Text(
-                        CoreStrings.ad(userInfo.address),
-                        style = MaterialTheme.typography.labelSmall,
-                    )
                 }
             }
         }
@@ -484,53 +468,14 @@ fun FileExplorerButton(dismiss: () -> Unit) {
     }
 }
 
-suspend fun AppGlobalDialogController.signOut(uiViewModel: UIViewModel, appNav: AppNav) {
-    val address = uiViewModel.instance.value.address
-    useResult {
-        request {
-            signOut()
-        }
-    }.onSuccess {
-        uiViewModel.historyManager.exitSession(address)
-        unregisterPushService()
-        uiViewModel.logout()
-        appNav.finishSignOut()
-    }
-}
-
-private suspend fun refreshMyInfo(my: UserInfo?, sessionManager: UserSessionManager) {
-    try {
-        val sessionModel = sessionManager.model
-        if (my == null) {
-            sessionManager.restoreSession().onSuccess { sessionModel.updateUser(it) }
-        } else {
-            val aid = my.aid
-            val userInfo =
-                if (aid.isNullOrBlank()) {
-                    sessionManager.getUserInfo(my.id)
-                } else {
-                    sessionManager.getUserInfoByAid(aid)
-                }.getOrThrow()
-            sessionModel.updateUser(userInfo)
-        }
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Napier.e(e) {
-            "refresh user info"
-        }
-    }
-}
-
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 fun UserDialog(userInfo: UserInfo?, showDialog: Boolean, dismiss: () -> Unit) {
     if (showDialog) {
-        BasicAlertDialog({
-            dismiss()
-        }) {
+        ReadingAdaptiveOverlay(dismiss, ReadingOverlaySize.MENU) {
             ReadingActionMenuSurface(onDismiss = dismiss, heading = { UserCard(userInfo, dismiss) }) {
                 if (userInfo != null) {
+                    UserAddressLine(userInfo.address)
                     IconActionMenu(twoActions = true) {
                         FavoriteButton(userInfo.favoriteId, userInfo.tuple())
                         SubscriptionButton(userInfo.subscriptionId, userInfo.tuple())
@@ -558,7 +503,7 @@ fun SelfDialog(
     if (showDialog) {
         // Replace the account modal instead of opening a second modal inside it.
         if (signOutState == null) {
-            BasicAlertDialog(dismiss) {
+            ReadingAdaptiveOverlay(dismiss, ReadingOverlaySize.MENU) {
                 val sessionManager = LocalSessionManager.current
                 val refreshCached =
                     remember(overviewHandler, userInfo?.id) {

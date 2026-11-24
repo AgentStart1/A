@@ -11,9 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
+import com.storyteller_f.alphaheart.app.navigation.settleIdleAttachmentPage
 
 @Composable
 internal fun FilePickerPager(
@@ -31,12 +29,4 @@ internal fun FilePickerPager(
             }
     }
     HorizontalPager(state, modifier = modifier, pageContent = content)
-}
-
-private suspend fun PagerState.settleIdleAttachmentPage(page: Int) {
-    try {
-        scroll { updateCurrentPage(page) }
-    } catch (e: Exception) {
-        if (e is CancellationException) currentCoroutineContext().ensureActive() else throw e
-    }
 }

@@ -6,9 +6,9 @@ package fonts
 
 import com.storyteller_f.alphaheart.app.common.createFileEngine
 import com.storyteller_f.alphaheart.app.common.write
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontDownload
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontState
-import com.storyteller_f.alphaheart.app.pages.community.CommunityFontStore
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontDownload
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontState
+import com.storyteller_f.alphaheart.app.fonts.CommunityFontStore
 import com.storyteller_f.storage.DownloadStatus
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine

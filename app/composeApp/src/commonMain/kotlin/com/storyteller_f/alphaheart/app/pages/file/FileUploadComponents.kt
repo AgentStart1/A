@@ -9,26 +9,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayCircle
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.SheetState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,10 +28,9 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.LocalClientFileProvider
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
@@ -53,6 +39,11 @@ import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.abort_upload
 import com.storyteller_f.alphaheart.app.common.UploadDetailViewModel
 import com.storyteller_f.alphaheart.app.common.getUploadViewModel
+import com.storyteller_f.alphaheart.app.components.ReadingSheet
+import com.storyteller_f.alphaheart.app.file.ProgressPreviewProvider
+import com.storyteller_f.alphaheart.app.file.UploadItemPreviewProvider
+import com.storyteller_f.alphaheart.app.file.getPercent
+import com.storyteller_f.alphaheart.app.file.getUploadProgress
 import com.storyteller_f.alphaheart.app.transfer_field_content_type
 import com.storyteller_f.alphaheart.app.transfer_field_hash
 import com.storyteller_f.alphaheart.app.transfer_field_message
@@ -64,16 +55,20 @@ import com.storyteller_f.alphaheart.app.transfer_pause
 import com.storyteller_f.alphaheart.app.transfer_resume
 import com.storyteller_f.alphaheart.app.transfer_retry
 import com.storyteller_f.alphaheart.app.transfer_upload_action
+import com.storyteller_f.alphaheart.app.transfer_upload_details
 import com.storyteller_f.alphaheart.app.transfer_upload_progress
 import com.storyteller_f.alphaheart.app.ui.theme.AppTheme
-import com.storyteller_f.alphaheart.app.utils.ClientFile
-import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
-import com.storyteller_f.alphaheart.client.compose_core.components.BaseSheet
+import com.storyteller_f.alphaheart.app.upload_actions
+import com.storyteller_f.alphaheart.client.compose_core.components.ButtonNav
+import com.storyteller_f.alphaheart.client.compose_core.components.IconActionMenu
 import com.storyteller_f.alphaheart.client.compose_core.components.InfoTable
-import com.storyteller_f.alphaheart.client.compose_core.components.SheetContainer
-import com.storyteller_f.alphaheart.client.compose_core.components.request
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingActionMenuSurface
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingAdaptiveOverlay
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.tasks.request
+import com.storyteller_f.alphaheart.client.compose_core.utils.ReadingOverlaySize
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
-import com.storyteller_f.alphaheart.client.core.UploadData
 import com.storyteller_f.alphaheart.client.core.abortChunkUpload
 import com.storyteller_f.result.CustomResult
 import com.storyteller_f.result.getOrThrow
@@ -86,88 +81,33 @@ import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
-class UploadItemPreviewProvider : PreviewParameterProvider<UploadInfo> {
-    override val values: Sequence<UploadInfo>
-        get() =
-            sequenceOf(
-                UploadInfo.EMPTY.copy(
-                    id = 1,
-                    pathHash = "test",
-                    path = "text/plain",
-                    progress = 100,
-                    status = UploadStatus.SUCCESS,
-                    message = "message",
-                    name = "name",
-                    contentType = "image/png",
-                ),
-                UploadInfo.EMPTY.copy(
-                    id = 2,
-                    pathHash = "test",
-                    path = "text/plain",
-                    progress = 100,
-                    chunkProgress = 50,
-                    status = UploadStatus.FAILED,
-                    message = "message",
-                    name = "name",
-                    contentType = "image/png",
-                ),
-                UploadInfo.EMPTY.copy(
-                    id = 3,
-                    pathHash = "test",
-                    path = "text/plain",
-                    progress = 100,
-                    chunkProgress = 100,
-                    status = UploadStatus.NOT_UPLOADING,
-                    message = "message",
-                    name = "name",
-                    contentType = "image/png",
-                ),
-                UploadInfo.EMPTY.copy(
-                    id = 4,
-                    pathHash = "test",
-                    path = "text/plain",
-                    progress = 100,
-                    status = UploadStatus.PAUSED,
-                    message = "message",
-                    name = "name",
-                    contentType = "image/png",
-                ),
-                UploadInfo.EMPTY.copy(
-                    id = 5,
-                    pathHash = "test",
-                    path = "text/plain",
-                    progress = 100,
-                    status = UploadStatus.UPLOADING,
-                    message = "message",
-                    name = "name",
-                    contentType = "image/png",
-                ),
-            )
-}
-
 @Preview
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 fun UploadItem(@PreviewParameter(UploadItemPreviewProvider::class) uploadInfo: UploadInfo?) {
     uploadInfo ?: return
     var showSheet by remember { mutableStateOf(false) }
-    var showDropdown by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
+    var showActions by remember { mutableStateOf(false) }
     val statusLabel = uploadStatusLabel(uploadInfo.status)
-    UploadItemRow(uploadInfo, statusLabel, { showSheet = true }, { showDropdown = true }) {
+    val openActions = uploadInfo.recordId?.let { { showActions = true } }
+    UploadItemRow(uploadInfo, statusLabel, { showSheet = true }, openActions) {
         UploadStatusButton(uploadInfo)
     }
 
-    DropdownMenu(
-        expanded = showDropdown,
-        onDismissRequest = { showDropdown = false },
-    ) {
-        if (uploadInfo.recordId != null) {
-            CancelUploadButton(uploadInfo) { showDropdown = false }
+    if (showActions && uploadInfo.recordId != null) {
+        val dismiss = { showActions = false }
+        ReadingAdaptiveOverlay(dismiss, ReadingOverlaySize.COMPACT) {
+            ReadingActionMenuSurface(
+                onDismiss = dismiss,
+                heading = {
+                    Text(stringResource(Res.string.upload_actions), style = MaterialTheme.typography.titleMedium)
+                },
+            ) {
+                IconActionMenu { CancelUploadButton(uploadInfo, dismiss) }
+            }
         }
     }
 
-    UploadInfoPage(showSheet, sheetState, uploadInfo.pathHash, uploadInfo.owner) {
+    UploadInfoPage(showSheet, uploadInfo.pathHash, uploadInfo.owner) {
         showSheet = false
     }
 }
@@ -177,7 +117,7 @@ internal fun UploadItemRow(
     uploadInfo: UploadInfo,
     statusLabel: String,
     onClick: () -> Unit,
-    onLongClick: () -> Unit,
+    onLongClick: (() -> Unit)?,
     statusAction: @Composable () -> Unit,
 ) {
     val rowDescription =
@@ -187,9 +127,15 @@ internal fun UploadItemRow(
             HumanReadable.fileSize(uploadInfo.total),
             statusLabel,
         ).joinToString(", ")
-    Row(
+    val progressDescription =
+        stringResource(Res.string.transfer_upload_progress, uploadInfo.name, uploadInfo.progress, uploadInfo.total)
+    TransferRecordContent(
+        name = uploadInfo.name,
+        status = statusLabel,
+        progress = { getUploadProgress(uploadInfo) },
+        percent = uploadInfo.getPercent(),
         modifier =
-        Modifier
+        Modifier.fillMaxWidth()
             .semantics(mergeDescendants = true) { contentDescription = rowDescription }
             .combinedClickable(role = Role.Button, onClick = onClick, onLongClick = onLongClick)
             .appiumSemantics(
@@ -198,57 +144,47 @@ internal fun UploadItemRow(
                 onClick = onClick,
                 onLongClick = onLongClick,
             )
-            .padding(20.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        UploadItemContent(uploadInfo, statusLabel, statusAction)
-    }
+            .padding(vertical = 20.dp),
+        progressModifier = Modifier.appiumSemantics(description = progressDescription),
+        statusAction = statusAction,
+    )
 }
 
 @Composable
-private fun RowScope.UploadItemContent(
-    uploadInfo: UploadInfo,
-    statusLabel: String,
+internal fun TransferRecordContent(
+    name: String,
+    status: String,
+    progress: () -> Float,
+    percent: String,
+    modifier: Modifier,
+    progressModifier: Modifier = Modifier,
     statusAction: @Composable () -> Unit,
 ) {
-    val progressDescription =
-        stringResource(Res.string.transfer_upload_progress, uploadInfo.name, uploadInfo.progress, uploadInfo.total)
-    UploadIcon(contentType = uploadInfo.contentType)
-
-    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(uploadInfo.name)
-        Row {
-            Text(HumanReadable.fileSize(uploadInfo.total))
-            Spacer(modifier = Modifier.weight(1f))
-            Text(statusLabel, maxLines = 1)
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    status,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) { statusAction() }
         }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            LinearProgressIndicator(
-                progress = { getUploadProgress(uploadInfo) },
-                modifier =
-                Modifier.weight(1f).appiumSemantics(
-                    description = progressDescription,
-                ),
-            )
-            TransferProgressLabel(uploadInfo.getPercent())
-        }
+        TransferProgress(progress, percent, progressModifier)
     }
-
-    Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) { statusAction() }
 }
 
 @Composable
-fun CancelUploadButton(uploadInfo: UploadInfo, updateDropdown: (Boolean) -> Unit) {
+private fun CancelUploadButton(uploadInfo: UploadInfo, onDismiss: () -> Unit) {
     val fileProvider = LocalClientFileProvider.current
     val globalDialogController = LocalGlobalDialog.current
     val current = LocalUiViewModel.current
     val state by current.instance.collectAsState()
     val modelStorage = state.database
     val abort: () -> Unit = {
-        updateDropdown(false)
+        onDismiss()
         globalDialogController.launch {
             globalDialogController.useResult {
                 uploadInfo.recordId?.let {
@@ -262,14 +198,7 @@ fun CancelUploadButton(uploadInfo: UploadInfo, updateDropdown: (Boolean) -> Unit
             }
         }
     }
-    DropdownMenuItem(
-        text = { Text(stringResource(Res.string.abort_upload)) },
-        onClick = abort,
-        modifier = Modifier.appiumSemantics(text = "Abort Upload", onClick = abort),
-        leadingIcon = {
-            Icon(Icons.Default.Stop, contentDescription = CoreStrings.cancel())
-        },
-    )
+    ButtonNav(actionIcon(ActionGlyph.SQUARE), stringResource(Res.string.abort_upload), onClick = abort)
 }
 
 @Composable
@@ -278,14 +207,14 @@ private fun UploadStatusButton(file: UploadInfo?) {
     val provider = LocalClientFileProvider.current
     val globalDialogController = LocalGlobalDialog.current
     if (file.status == UploadStatus.SUCCESS) {
-        Icon(Icons.Default.Done, uploadStatusLabel(file.status))
+        Icon(actionIcon(ActionGlyph.CHECK), uploadStatusLabel(file.status))
         return
     }
     val (label, icon) =
         when (file.status) {
-            UploadStatus.UPLOADING -> stringResource(Res.string.transfer_pause) to Icons.Default.Pause
-            UploadStatus.FAILED -> stringResource(Res.string.transfer_retry) to Icons.Default.Refresh
-            else -> stringResource(Res.string.transfer_resume) to Icons.Default.PlayCircle
+            UploadStatus.UPLOADING -> stringResource(Res.string.transfer_pause) to actionIcon(ActionGlyph.PAUSE)
+            UploadStatus.FAILED -> stringResource(Res.string.transfer_retry) to actionIcon(ActionGlyph.REFRESH_CW)
+            else -> stringResource(Res.string.transfer_resume) to actionIcon(ActionGlyph.PLAY)
         }
     val action: () -> Unit = {
         globalDialogController.launch {
@@ -305,36 +234,12 @@ private fun UploadStatusButton(file: UploadInfo?) {
     }
 }
 
-fun ClientFile.getUploadDataFromClipFile(sha256: String) =
-    UploadData(
-        size,
-        name,
-        contentType,
-        sha256,
-    ) {
-        source()
-    }
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UploadInfoPage(
-    showSheet: Boolean,
-    sheetState: SheetState,
-    pathHash: String,
-    owner: ObjectTuple,
-    hideSheet: () -> Unit,
-) {
-    if (LocalInspectionMode.current) return
+fun UploadInfoPage(showSheet: Boolean, pathHash: String, owner: ObjectTuple, hideSheet: () -> Unit) {
+    if (!showSheet || LocalInspectionMode.current) return
     val uploadViewModel = getUploadViewModel(pathHash, owner)
-    BaseSheet(showSheet, sheetState, hideSheet) {
-        SheetContainer {
-            Column(
-                modifier = Modifier.heightIn(200.dp, 600.dp).padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                UploadInfoPageInternal(uploadViewModel)
-            }
-        }
+    ReadingSheet(stringResource(Res.string.transfer_upload_details), hideSheet) {
+        UploadInfoPageInternal(uploadViewModel)
     }
 }
 
@@ -342,25 +247,8 @@ fun UploadInfoPage(
 private fun UploadInfoPageInternal(uploadViewModel: UploadDetailViewModel) {
     val data by uploadViewModel.data.collectAsState(null)
     UploadInfoTitle(data)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        LinearProgressIndicator(progress = {
-            getUploadProgress(data)
-        }, modifier = Modifier.weight(1f))
-        TransferProgressLabel(data.getPercent())
-    }
+    TransferProgress({ getUploadProgress(data) }, data.getPercent())
     UploadInfoTable(data)
-}
-
-private fun getUploadProgress(info: UploadInfo?): Float {
-    info ?: return 0f
-    return (info.progress.toFloat() / if (info.total == 0L) 1 else info.total).coerceIn(
-        0f,
-        1f,
-    )
 }
 
 @Composable
@@ -393,26 +281,13 @@ private fun UploadInfoTable(uploadInfo: UploadInfo?) {
                 stringResource(Res.string.transfer_field_content_type) to uploadInfo.contentType,
             )
         }
-    InfoTable(tableData)
+    InfoTable(tableData, singleColumn = true)
 }
 
 @Composable
-internal fun TransferProgressLabel(percent: String) {
-    Text(percent, Modifier.width(72.dp), maxLines = 1, textAlign = TextAlign.End)
-}
-
-fun UploadInfo?.getPercent(): String {
-    this ?: return "-"
-    return "${
-        (progress.toFloat() * 100 / if (total == 0L) 1 else total).roundToDecimalPlaces(
-            2,
-        )
-    } %"
-}
-
-class ProgressPreviewProvider : PreviewParameterProvider<String> {
-    override val values: Sequence<String>
-        get() = sequenceOf("0 %", "50 %", "89.99 %", "100.0 %")
+internal fun TransferProgress(progress: () -> Float, percent: String, modifier: Modifier = Modifier) {
+    LinearProgressIndicator(progress = progress, modifier = modifier.fillMaxWidth(), drawStopIndicator = {})
+    Text(percent, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Preview

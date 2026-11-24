@@ -5,12 +5,10 @@
 package com.storyteller_f.alphaheart.client.compose_core.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -50,18 +48,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.node.DelegatableNode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-
-private object NoClickIndication : IndicationNodeFactory {
-    override fun create(interactionSource: InteractionSource): DelegatableNode = object : Modifier.Node() {}
-    override fun equals(other: Any?): Boolean = other === this
-    override fun hashCode(): Int = 0
-}
+import com.storyteller_f.alphaheart.client.compose_core.theme.NoClickIndication
 
 /** Disable transient Material state layers without removing focus, selection, or click semantics. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,8 +80,9 @@ fun ReadingButton(
     interactionSource: MutableInteractionSource? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
+    val (anchor, action) = rememberOverlayAnchor(onClick)
     androidx.compose.material3.Button(
-        onClick, modifier.heightIn(min = 40.dp), enabled, shape, colors, elevation, border, contentPadding,
+        action, modifier.heightIn(min = 40.dp).then(anchor), enabled, shape, colors, elevation, border, contentPadding,
         interactionSource, content,
     )
 }
@@ -160,9 +153,10 @@ fun ReadingIconButton(
     interactionSource: MutableInteractionSource? = null,
     content: @Composable () -> Unit,
 ) {
+    val (anchor, action) = rememberOverlayAnchor(onClick)
     androidx.compose.material3.IconButton(
-        onClick,
-        modifier.size(44.dp),
+        action,
+        modifier.size(44.dp).then(anchor),
         enabled,
         colors,
         interactionSource,

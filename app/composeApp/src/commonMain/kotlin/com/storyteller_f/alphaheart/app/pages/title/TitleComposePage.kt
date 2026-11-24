@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,11 +17,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -33,8 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.storyteller_f.alphaheart.api.NewTitle
-import com.storyteller_f.alphaheart.app.AppGlobalDialogController
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
 import com.storyteller_f.alphaheart.app.LocalRefCellHandlerProvider
@@ -42,14 +40,15 @@ import com.storyteller_f.alphaheart.app.LocalUserInfo
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.cancel_action
 import com.storyteller_f.alphaheart.app.clear_selection
-import com.storyteller_f.alphaheart.app.common.OnTitleCreated
 import com.storyteller_f.alphaheart.app.common.TitleComposeSheetType
 import com.storyteller_f.alphaheart.app.common.TitleComposeViewModel
 import com.storyteller_f.alphaheart.app.common.createMemberSearchViewModel
 import com.storyteller_f.alphaheart.app.common.createRoomSearchViewModel
 import com.storyteller_f.alphaheart.app.common.createSearchCommunitiesViewModel
 import com.storyteller_f.alphaheart.app.common.createTitleComposeViewModel
+import com.storyteller_f.alphaheart.app.components.ReadingSheet
 import com.storyteller_f.alphaheart.app.confirm_action
+import com.storyteller_f.alphaheart.app.create
 import com.storyteller_f.alphaheart.app.create_title_action
 import com.storyteller_f.alphaheart.app.creation_title_name
 import com.storyteller_f.alphaheart.app.description_label
@@ -78,7 +77,8 @@ import com.storyteller_f.alphaheart.app.search_users
 import com.storyteller_f.alphaheart.app.select_expiry_time
 import com.storyteller_f.alphaheart.app.select_title_receiver
 import com.storyteller_f.alphaheart.app.select_title_scope
-import com.storyteller_f.alphaheart.app.submit
+import com.storyteller_f.alphaheart.app.title.ExpiryDraft
+import com.storyteller_f.alphaheart.app.title.titleComposePageCreateTitle
 import com.storyteller_f.alphaheart.app.title_form_choose_scope
 import com.storyteller_f.alphaheart.app.title_form_description
 import com.storyteller_f.alphaheart.app.title_form_description_empty
@@ -88,20 +88,18 @@ import com.storyteller_f.alphaheart.app.title_permanent
 import com.storyteller_f.alphaheart.app.title_regular
 import com.storyteller_f.alphaheart.app.title_type_label
 import com.storyteller_f.alphaheart.app.unselected_reference
-import com.storyteller_f.alphaheart.client.compose_core.components.BaseSheet
-import com.storyteller_f.alphaheart.client.compose_core.components.emitEvent
-import com.storyteller_f.alphaheart.client.compose_core.components.request
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTextButton
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.utils.ReadingOverlaySize
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
-import com.storyteller_f.alphaheart.client.core.createTitle
-import com.storyteller_f.result.CustomResult
 import com.storyteller_f.result.captureFailure
 import com.storyteller_f.result.getOrThrow
-import com.storyteller_f.result.mapError
 import com.storyteller_f.result.onFailure
 import com.storyteller_f.result.onSuccess
 import com.storyteller_f.shared.model.CommunityInfo
 import com.storyteller_f.shared.model.RoomInfo
-import com.storyteller_f.shared.model.TitleDetail
 import com.storyteller_f.shared.model.TitleType
 import com.storyteller_f.shared.model.UserInfo
 import com.storyteller_f.shared.obj.ObjectTuple
@@ -134,7 +132,7 @@ fun TitleComposeInternal() {
     CommonComposePage({
         scope.launch {
             globalDialogController.useResult {
-                createTitle(vm.buildNewTitle().getOrThrow())
+                titleComposePageCreateTitle(vm.buildNewTitle().getOrThrow())
             }.onSuccess {
                 appNavFactory.newAppNav().back()
             }
@@ -148,13 +146,10 @@ fun TitleComposeInternal() {
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 internal fun TitleComposeSheet(vm: TitleComposeViewModel) {
-    val sheetState = rememberModalBottomSheetState()
-
     val isSheetVisible by vm.isSheetVisibleFlow.collectAsState()
     val supportedObjectTypes by vm.supportedObjectTypesFlow.collectAsState()
     ObjectPicker(
         isSheetVisible,
-        sheetState,
         supportedObjectTypes,
         vm::clearShowSheetType,
         title =
@@ -180,32 +175,37 @@ internal fun TitleComposeSheet(vm: TitleComposeViewModel) {
 fun CommonComposePage(
     onCheck: () -> Unit,
     title: String? = null,
+    subtitle: String? = null,
+    leading: @Composable () -> Unit = {},
     content: @Composable (@Composable () -> Unit) -> Unit,
 ) {
     val nav = LocalAppNavFactory.current
-    Scaffold(topBar = { ReadingPageToolbar(title ?: stringResource(Res.string.create_title_action)) }) { padding ->
+    Scaffold(topBar = {
+        ReadingPageToolbar(title ?: stringResource(Res.string.create_title_action), subtitle, leading)
+    }) { padding ->
         Box(Modifier.padding(padding).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
             content {
-                Row(
-                    Modifier.fillMaxWidth().padding(top = 22.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
-                ) {
-                    com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton(
-                        { nav.newAppNav().back() },
+                Column(Modifier.fillMaxWidth().padding(top = 18.dp)) {
+                    HorizontalDivider()
+                    Row(
+                        Modifier.fillMaxWidth().padding(top = 14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
                     ) {
-                        Text(com.storyteller_f.alphaheart.client.compose_core.CoreStrings.cancel())
-                    }
-                    com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton(
-                        onCheck,
-                        Modifier.appiumSemantics(description = "submit", onClick = onCheck),
-                    ) {
-                        Icon(
-                            com.storyteller_f.alphaheart.client.compose_core.components.actionIcon(
-                                com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph.CHECK,
-                            ),
-                            null,
-                        )
-                        Text(stringResource(Res.string.submit), Modifier.padding(start = 7.dp))
+                        ReadingTextButton({ nav.newAppNav().back() }) {
+                            Text(com.storyteller_f.alphaheart.client.compose_core.CoreStrings.cancel())
+                        }
+                        com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton(
+                            onCheck,
+                            Modifier.appiumSemantics(description = "submit", onClick = onCheck),
+                        ) {
+                            Icon(
+                                com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon(
+                                    com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph.CHECK,
+                                ),
+                                null,
+                            )
+                            Text(stringResource(Res.string.create), Modifier.padding(start = 7.dp))
+                        }
                     }
                 }
             }
@@ -263,15 +263,9 @@ private fun ExpireTimeEditor(vm: TitleComposeViewModel) {
         } else {
             expiresAtText.replace('T', ' ')
         }
-    TitleFormRow("${stringResource(Res.string.expiry_label)}：$value") {
-        com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton({ showExpireDialog = true }) {
-            Icon(
-                com.storyteller_f.alphaheart.client.compose_core.components.actionIcon(
-                    com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph.CALENDAR,
-                ),
-                null,
-            )
-            Text(stringResource(Res.string.select_expiry_time), Modifier.padding(start = 7.dp))
+    TitleFormRow(stringResource(Res.string.expiry_label), value) {
+        ReadingIconButton({ showExpireDialog = true }) {
+            Icon(actionIcon(ActionGlyph.CALENDAR), stringResource(Res.string.select_expiry_time))
         }
     }
     ExpireTimePickerDialog(
@@ -318,8 +312,8 @@ internal fun ExpireTimePickerDialog(
                 }
             }) {
                 Icon(
-                    com.storyteller_f.alphaheart.client.compose_core.components.actionIcon(
-                        com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph.CHECK,
+                    com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon(
+                        com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph.CHECK,
                     ),
                     null,
                 )
@@ -334,8 +328,6 @@ internal fun ExpireTimePickerDialog(
         text = { ExpiryInputFields(draft) { draft = it } },
     )
 }
-
-private data class ExpiryDraft(val date: String, val time: String, val permanent: Boolean, val error: String? = null)
 
 @Composable
 private fun ExpiryInputFields(draft: ExpiryDraft, update: (ExpiryDraft) -> Unit) {
@@ -375,23 +367,19 @@ private fun DescriptionEditor(vm: TitleComposeViewModel) {
     val content by vm.content.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     val summary = content.ifBlank { stringResource(Res.string.title_form_description_empty) }
-    TitleFormRow("${stringResource(Res.string.title_form_description)}：$summary") {
-        com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton({ showDialog = true }) {
-            Icon(
-                com.storyteller_f.alphaheart.client.compose_core.components.actionIcon(
-                    com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph.PEN_LINE,
-                ),
-                null,
-            )
-            Text(stringResource(Res.string.edit_title_description), Modifier.padding(start = 7.dp))
+    TitleFormRow(stringResource(Res.string.title_form_description), summary) {
+        ReadingIconButton({ showDialog = true }) {
+            Icon(actionIcon(ActionGlyph.PEN_LINE), stringResource(Res.string.edit_title_description))
         }
     }
     InputDialog(
         showDialog,
         content,
-        stringResource(Res.string.description_label),
+        stringResource(Res.string.edit_title_description),
         { showDialog = false },
         minLines = 4,
+        showCancel = false,
+        inputLabel = stringResource(Res.string.description_label),
     ) {
         vm.setContent(it)
         showDialog = false
@@ -407,15 +395,9 @@ private fun ReceiverEditor(showReceiverSheet: () -> Unit, receiver: PrimaryKey?)
             val user by LocalRefCellHandlerProvider.current.userHandler(receiver).data.collectAsState()
             user?.nickname.orEmpty()
         }
-    TitleFormRow("${stringResource(Res.string.receiver_label)}：$name") {
-        com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton(showReceiverSheet) {
-            Icon(
-                com.storyteller_f.alphaheart.client.compose_core.components.actionIcon(
-                    com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph.USER_ROUND,
-                ),
-                null,
-            )
-            Text(stringResource(Res.string.select_title_receiver), Modifier.padding(start = 7.dp))
+    TitleFormRow(stringResource(Res.string.receiver_label), name) {
+        ReadingIconButton(showReceiverSheet) {
+            Icon(actionIcon(ActionGlyph.USER_ROUND), stringResource(Res.string.select_title_receiver))
         }
     }
 }
@@ -428,26 +410,14 @@ private fun TitleScopeEditor(
     readOnly: Boolean = false,
 ) {
     val name = TitleScopeName(titleScope)
-    TitleFormRow("${stringResource(Res.string.scope_label)}：$name") {
+    TitleFormRow(stringResource(Res.string.scope_label), name) {
         if (!readOnly) {
-            com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton(showScopeSheet) {
-                Icon(
-                    com.storyteller_f.alphaheart.client.compose_core.components.actionIcon(
-                        com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph.SCAN,
-                    ),
-                    null,
-                )
-                Text(stringResource(Res.string.title_form_choose_scope), Modifier.padding(start = 7.dp))
+            ReadingIconButton(showScopeSheet) {
+                Icon(actionIcon(ActionGlyph.SCAN), stringResource(Res.string.title_form_choose_scope))
             }
             if (titleScope != null) {
-                com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton(clearScope) {
-                    Icon(
-                        com.storyteller_f.alphaheart.client.compose_core.components.actionIcon(
-                            com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph.X,
-                        ),
-                        null,
-                    )
-                    Text(stringResource(Res.string.clear_selection), Modifier.padding(start = 7.dp))
+                ReadingIconButton(clearScope) {
+                    Icon(actionIcon(ActionGlyph.X), stringResource(Res.string.clear_selection))
                 }
             }
         }
@@ -489,28 +459,25 @@ private fun TitleLockedField(label: String, value: String) {
 }
 
 @Composable
-private fun TitleFormRow(
-    label: String,
-    showDivider: Boolean = true,
-    actions: @Composable androidx.compose.foundation.layout.FlowRowScope.() -> Unit,
-) {
-    Column {
-        androidx.compose.foundation.layout.FlowRow(
-            Modifier.fillMaxWidth().padding(vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(label)
-            actions()
+private fun TitleFormRow(label: String, value: String, actions: @Composable RowScope.() -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value)
         }
-        if (showDivider) androidx.compose.material3.HorizontalDivider()
+        actions()
     }
+    HorizontalDivider()
 }
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun TitleTypeSelector(titleType: TitleType, updateTitleType: (TitleType) -> Unit, readOnly: Boolean = false) {
-    com.storyteller_f.alphaheart.client.compose_core.components.ReadingSelect(
+    com.storyteller_f.alphaheart.app.components.ReadingSelect(
         stringResource(Res.string.title_type_label),
         titleType,
         listOf(
@@ -523,37 +490,23 @@ private fun TitleTypeSelector(titleType: TitleType, updateTitleType: (TitleType)
     )
 }
 
-private suspend fun AppGlobalDialogController.createTitle(
-    newTitle: NewTitle,
-): CustomResult<TitleDetail, TitleActionError> =
-    request {
-        createTitle(newTitle)
-    }.onSuccess { title ->
-        emitEvent(OnTitleCreated(title))
-    }.mapError(TitleActionError::fromError)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ObjectPicker(
     showSheet: Boolean,
-    sheetState: SheetState,
     supportObjectType: List<ObjectType>,
     hideSheet: () -> Unit,
     title: String,
     onCheck: (ObjectTuple) -> Unit,
 ) {
-    BaseSheet(showSheet, sheetState, hideSheet) {
-        Text(
-            title,
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(end = 40.dp, bottom = 24.dp),
-        )
+    if (!showSheet || supportObjectType.isEmpty()) return
+    ReadingSheet(title, hideSheet, ReadingOverlaySize.FORM) {
         var input by remember {
             mutableStateOf("")
         }
         Column(modifier = Modifier.height(360.dp)) {
-            var currentType by remember {
-                mutableStateOf(supportObjectType[0])
+            var currentType by remember(supportObjectType) {
+                mutableStateOf(supportObjectType.first())
             }
             TypeSelector(supportObjectType, currentType, {
                 currentType = it
@@ -590,10 +543,12 @@ private fun TypeSelector(
     setInput: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        TabRow(contentPadding = PaddingValues(top = 8.dp)) {
-            supportObjectType.forEach { type ->
-                Tab(selected = currentType == type, onClick = { setType(type) }) {
-                    Text(objectTypeLabel(type), Modifier.padding(vertical = 12.dp))
+        if (supportObjectType.size > 1) {
+            TabRow(contentPadding = PaddingValues(top = 8.dp)) {
+                supportObjectType.forEach { type ->
+                    Tab(selected = currentType == type, onClick = { setType(type) }) {
+                        Text(objectTypeLabel(type), Modifier.padding(vertical = 12.dp))
+                    }
                 }
             }
         }
@@ -603,7 +558,6 @@ private fun TypeSelector(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             label = { Text(stringResource(Res.string.search)) },
-            placeholder = { Text(stringResource(Res.string.search)) },
         )
     }
 }

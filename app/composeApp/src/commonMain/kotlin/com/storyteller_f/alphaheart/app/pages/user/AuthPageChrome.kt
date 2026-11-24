@@ -7,8 +7,13 @@ package com.storyteller_f.alphaheart.app.pages.user
 import androidx.compose.runtime.Composable
 
 @Composable
-internal fun AuthPageChrome(title: String, footer: @Composable () -> Unit, content: @Composable () -> Unit) {
-    com.storyteller_f.alphaheart.client.compose_core.components.ReadingAuthLayout(title) {
+internal fun AuthPageChrome(
+    title: String,
+    navigation: (@Composable () -> Unit)?,
+    footer: @Composable () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    com.storyteller_f.alphaheart.client.compose_core.components.ReadingAuthLayout(title, navigation) {
         content()
         footer()
     }

@@ -22,14 +22,15 @@ import androidx.compose.ui.unit.dp
  * 通用信息表格组件，用于以表格形式展示对象的所有属性.
  * @param items 键值对列表，每个 Pair 代表一行：key 为字段名，value 为字段值
  * @param modifier 应用于表格容器的修饰符
+ * @param singleColumn 单列显示，适用于宽屏中的窄面板
  */
 @Composable
-fun InfoTable(items: List<Pair<String, String>>, modifier: Modifier = Modifier) {
+fun InfoTable(items: List<Pair<String, String>>, modifier: Modifier = Modifier, singleColumn: Boolean = false) {
     val windowWidth =
         with(androidx.compose.ui.platform.LocalDensity.current) {
             androidx.compose.ui.platform.LocalWindowInfo.current.containerSize.width.toDp()
         }
-    val columns = if (windowWidth >= 1400.dp) 2 else 1
+    val columns = if (!singleColumn && windowWidth >= 1400.dp) 2 else 1
     val state = rememberLazyGridState()
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),

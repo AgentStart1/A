@@ -21,7 +21,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -39,15 +38,15 @@ import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.add_attachment
 import com.storyteller_f.alphaheart.app.clear_input
 import com.storyteller_f.alphaheart.app.composer_readonly
+import com.storyteller_f.alphaheart.app.media.insertContent
 import com.storyteller_f.alphaheart.app.message_placeholder
 import com.storyteller_f.alphaheart.app.open_in_full
 import com.storyteller_f.alphaheart.app.pages.topic.FilePicker
-import com.storyteller_f.alphaheart.app.pages.topic.insertContent
 import com.storyteller_f.alphaheart.app.reply_placeholder
-import com.storyteller_f.alphaheart.client.compose_core.components.ActionGlyph
-import com.storyteller_f.alphaheart.client.compose_core.components.actionIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.imeAnimation
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
+import com.storyteller_f.alphaheart.client.compose_core.utils.imeAnimation
 import com.storyteller_f.shared.obj.ObjectTuple
 import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
@@ -147,12 +146,11 @@ private fun InputGroupSuffix(input: String, updateInput: (String) -> Unit, media
     ) {
         Icon(actionIcon(ActionGlyph.PAPERCLIP), contentDescription = attachmentDescription)
     }
-    val sheetState = rememberModalBottomSheetState()
     FilePicker(
         showSheet,
-        sheetState,
         mediaTarget,
         onClickItems = { info ->
+            showSheet = false
             insertContent(info.first(), input, updateInput)
         },
     ) {

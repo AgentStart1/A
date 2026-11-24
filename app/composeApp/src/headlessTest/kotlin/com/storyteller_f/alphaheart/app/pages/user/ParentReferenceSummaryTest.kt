@@ -4,7 +4,7 @@
 
 package com.storyteller_f.alphaheart.app.pages.user
 
-import com.storyteller_f.alphaheart.app.pages.topic.parentReferenceSummary
+import com.storyteller_f.alphaheart.app.topic.parentReferenceSummary
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

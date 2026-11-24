@@ -4,22 +4,20 @@
 
 package com.storyteller_f.alphaheart.app.pages.user
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,23 +29,20 @@ import com.storyteller_f.alphaheart.app.common.UserSearchViewModel
 import com.storyteller_f.alphaheart.app.common.createMemberViewModel
 import com.storyteller_f.alphaheart.app.community_member_page_title
 import com.storyteller_f.alphaheart.app.create_title_action
-import com.storyteller_f.alphaheart.app.pages.AdaptiveItemGrid
-import com.storyteller_f.alphaheart.app.pages.adaptiveColumnCount
 import com.storyteller_f.alphaheart.app.pages.search.CustomSearchBar
-import com.storyteller_f.alphaheart.app.pages.search.SearchScope
 import com.storyteller_f.alphaheart.app.pages.search.SearchScopeIdentity
 import com.storyteller_f.alphaheart.app.pages.search.searchScopeName
 import com.storyteller_f.alphaheart.app.room_member_page_title
+import com.storyteller_f.alphaheart.app.search.SearchScope
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.bottomAppending
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
-import com.storyteller_f.alphaheart.client.compose_core.components.topPrepend
+import com.storyteller_f.alphaheart.client.compose_core.paging.bottomAppending
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.paging.topPrepend
 import com.storyteller_f.shared.model.UserInfo
 import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
 import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
 @Composable
 fun MemberPage(objectId: PrimaryKey, objectType: ObjectType) {
@@ -63,43 +58,36 @@ fun MemberPage(objectId: PrimaryKey, objectType: ObjectType) {
             else -> Res.string.room_member_page_title
         }
     val title = stringResource(titleResource)
-    Scaffold(topBar = {
-        CustomSearchBar(scope, title = title) { SearchScopeIdentity(scope) }
-    }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            MemberPageHeading(searchScopeName(scope).orEmpty(), objectId, objectType)
-            MemberList(viewModel)
-        }
-    }
-}
-
-@Composable
-private fun MemberPageHeading(name: String, objectId: PrimaryKey, objectType: ObjectType) {
-    val appNav = LocalAppNavFactory.current
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(name, Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
-        IconButton({
-            when (objectType) {
-                ObjectType.COMMUNITY -> appNav.newAppNav().gotoCommunityTitleCompose(objectId)
-                ObjectType.ROOM -> appNav.newAppNav().gotoRoomTitleCompose(objectId)
-                else -> appNav.newAppNav().gotoTitleCompose()
+    Scaffold(
+        topBar = {
+            CustomSearchBar(scope, title = title, subtitle = searchScopeName(scope)) {
+                SearchScopeIdentity(scope, interactive = true)
             }
-        }) {
-            Icon(Icons.Default.Add, stringResource(Res.string.create_title_action))
-        }
+        },
+        floatingActionButton = { CreateMemberTitleFab(objectId, objectType) },
+    ) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding)) { MemberList(viewModel) }
     }
 }
 
-/** Uses the same available width and breakpoint as the grid that actually lays out the members. */
 @Composable
-private fun MemberGrid(content: LazyGridScope.(Int) -> Unit) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val columns = adaptiveColumnCount(maxWidth.value)
-        AdaptiveItemGrid { content(columns) }
+private fun CreateMemberTitleFab(objectId: PrimaryKey, objectType: ObjectType) {
+    val appNav = LocalAppNavFactory.current
+    FloatingActionButton(onClick = {
+        when (objectType) {
+            ObjectType.COMMUNITY -> appNav.newAppNav().gotoCommunityTitleCompose(objectId)
+            ObjectType.ROOM -> appNav.newAppNav().gotoRoomTitleCompose(objectId)
+            else -> appNav.newAppNav().gotoTitleCompose()
+        }
+    }) {
+        Icon(Icons.Default.Add, stringResource(Res.string.create_title_action))
+    }
+}
+
+@Composable
+private fun MemberRows(content: LazyListScope.() -> Unit) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        LazyColumn(Modifier.widthIn(max = 740.dp).fillMaxSize(), content = content)
     }
 }
 
@@ -107,7 +95,7 @@ private fun MemberGrid(content: LazyGridScope.(Int) -> Unit) {
 fun MemberList(memberViewModel: ContainerMemberViewModel, onClick: ((UserInfo) -> Unit)? = null) {
     val appNavFactory = LocalAppNavFactory.current
     StateView(memberViewModel, Modifier.fillMaxSize()) { items ->
-        MemberGrid { columns ->
+        MemberRows {
             topPrepend(items.loadState, items::retry)
             pagingItems(items, { it.id }) { index ->
                 Column {
@@ -115,7 +103,7 @@ fun MemberList(memberViewModel: ContainerMemberViewModel, onClick: ((UserInfo) -
                         onClick?.invoke(it) ?: appNavFactory.newAppNav().gotoUser(it.id)
                     })
                     Spacer(modifier = Modifier.height(20.dp))
-                    if (index + columns < items.itemCount) HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider()
                 }
             }
             bottomAppending(items.loadState, items::retry)
@@ -127,7 +115,7 @@ fun MemberList(memberViewModel: ContainerMemberViewModel, onClick: ((UserInfo) -
 fun MemberList(memberViewModel: UserSearchViewModel, onClick: ((UserInfo) -> Unit)? = null) {
     val appNavFactory = LocalAppNavFactory.current
     StateView(memberViewModel, Modifier.fillMaxSize()) { items ->
-        MemberGrid { columns ->
+        MemberRows {
             topPrepend(items.loadState, items::retry)
             pagingItems(items, { it.id }) { index ->
                 Column {
@@ -135,7 +123,7 @@ fun MemberList(memberViewModel: UserSearchViewModel, onClick: ((UserInfo) -> Uni
                         onClick?.invoke(it) ?: appNavFactory.newAppNav().gotoUser(it.id)
                     })
                     Spacer(modifier = Modifier.height(20.dp))
-                    if (index + columns < items.itemCount) HorizontalDivider()
+                    if (index < items.itemCount - 1) HorizontalDivider()
                 }
             }
             bottomAppending(items.loadState, items::retry)

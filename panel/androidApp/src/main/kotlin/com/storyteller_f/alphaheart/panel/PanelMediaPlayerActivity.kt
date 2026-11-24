@@ -11,9 +11,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import com.storyteller_f.alphaheart.client.compose_core.commonForActivity
 import com.storyteller_f.alphaheart.client.compose_core.components.CenterBox
-import com.storyteller_f.alphaheart.client.compose_core.components.DefaultMediaPlayListHandlerProvider
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalMediaPlayListHandlerProvider
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalMediaPlayerService
+import com.storyteller_f.alphaheart.client.compose_core.media.DefaultMediaPlayListHandlerProvider
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlayListHandlerProvider
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlayerService
 import com.storyteller_f.alphaheart.panel.pages.PanelFilePreviewPage
 
 class PanelMediaPlayerActivity : ComponentActivity() {

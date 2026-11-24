@@ -12,12 +12,12 @@ import com.storyteller_f.alphaheart.app.common.RoomScreen
 import com.storyteller_f.alphaheart.app.common.TopicScreen
 import com.storyteller_f.alphaheart.app.common.UserScreen
 import com.storyteller_f.alphaheart.app.common.newAppNav
-import com.storyteller_f.alphaheart.app.pages.HOME_START_DESTINATION_COMMUNITIES
-import com.storyteller_f.alphaheart.app.pages.HOME_START_DESTINATION_ROOMS
-import com.storyteller_f.alphaheart.app.pages.HOME_START_DESTINATION_WORLD
-import com.storyteller_f.alphaheart.app.pages.HomeRoute
-import com.storyteller_f.alphaheart.app.pages.homePageFromPreference
-import com.storyteller_f.alphaheart.app.pages.homeRouteFromPreference
+import com.storyteller_f.alphaheart.app.navigation.HOME_START_DESTINATION_COMMUNITIES
+import com.storyteller_f.alphaheart.app.navigation.HOME_START_DESTINATION_ROOMS
+import com.storyteller_f.alphaheart.app.navigation.HOME_START_DESTINATION_WORLD
+import com.storyteller_f.alphaheart.app.navigation.HomeRoute
+import com.storyteller_f.alphaheart.app.navigation.homePageFromPreference
+import com.storyteller_f.alphaheart.app.navigation.homeRouteFromPreference
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

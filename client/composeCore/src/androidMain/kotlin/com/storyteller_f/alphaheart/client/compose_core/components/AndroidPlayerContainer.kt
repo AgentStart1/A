@@ -7,12 +7,10 @@ package com.storyteller_f.alphaheart.client.compose_core.components
 import android.app.PictureInPictureParams
 import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.util.Rational
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -25,6 +23,13 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.toRect
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
+import com.storyteller_f.alphaheart.client.compose_core.media.ACTION_BROADCAST_CONTROL
+import com.storyteller_f.alphaheart.client.compose_core.media.EXTRA_CONTROL_PAUSE
+import com.storyteller_f.alphaheart.client.compose_core.media.EXTRA_CONTROL_PLAY
+import com.storyteller_f.alphaheart.client.compose_core.media.EXTRA_CONTROL_TYPE
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlaySession
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlayerService
+import com.storyteller_f.alphaheart.client.compose_core.media.findActivity
 import io.github.aakira.napier.Napier
 import kotlin.uuid.ExperimentalUuidApi
 
@@ -82,15 +87,6 @@ fun Modifier.androidPipMode(enable: Boolean, ratio: Rational): Modifier {
         builder.setAspectRatio(ratio)
         context.findActivity().setPictureInPictureParams(builder.build())
     }
-}
-
-internal fun Context.findActivity(): ComponentActivity {
-    var context = this
-    while (context is ContextWrapper) {
-        if (context is ComponentActivity) return context
-        context = context.baseContext
-    }
-    error("Picture in picture should be called in the context of an Activity")
 }
 
 @Composable

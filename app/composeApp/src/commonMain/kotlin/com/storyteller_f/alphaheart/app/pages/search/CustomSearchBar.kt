@@ -58,80 +58,31 @@ import com.storyteller_f.alphaheart.app.pages.file.FileCell
 import com.storyteller_f.alphaheart.app.pages.room.RoomList
 import com.storyteller_f.alphaheart.app.pages.title.ComposeMenu
 import com.storyteller_f.alphaheart.app.pages.title.TitleList
-import com.storyteller_f.alphaheart.app.pages.topic.TopicComposeData
 import com.storyteller_f.alphaheart.app.pages.topic.TopicList
 import com.storyteller_f.alphaheart.app.pages.user.MemberList
 import com.storyteller_f.alphaheart.app.pages.user.SelfUserIconWithDialog
+import com.storyteller_f.alphaheart.app.search.SearchScope
 import com.storyteller_f.alphaheart.app.search_all
 import com.storyteller_f.alphaheart.app.search_joined
 import com.storyteller_f.alphaheart.app.search_topics
 import com.storyteller_f.alphaheart.app.search_users
+import com.storyteller_f.alphaheart.app.topic.TopicComposeData
 import com.storyteller_f.alphaheart.app.topic_search_unsupported
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.bottomAppending
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
-import com.storyteller_f.alphaheart.client.compose_core.components.topPrepend
+import com.storyteller_f.alphaheart.client.compose_core.paging.bottomAppending
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.paging.topPrepend
 import com.storyteller_f.shared.model.FileInfo
 import com.storyteller_f.shared.model.TitleSearchType
 import com.storyteller_f.shared.obj.ob
 import com.storyteller_f.shared.type.JoinStatusSearch
 import com.storyteller_f.shared.type.ObjectType
-import com.storyteller_f.shared.type.PrimaryKey
 import com.storyteller_f.shared.type.UserStatus
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab as SegmentedButton
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab as Tab
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow as PrimaryTabRow
-
-@Serializable
-sealed interface SearchScope {
-    @Serializable
-    data object World : SearchScope
-
-    @Serializable
-    data object MyCommunity : SearchScope
-
-    @Serializable
-    data object MyRoom : SearchScope
-
-    @Serializable
-    data class CommunityTopic(val communityId: PrimaryKey) : SearchScope
-
-    @Serializable
-    data class CommunityRoom(val communityId: PrimaryKey) : SearchScope
-
-    @Serializable
-    data class RoomTopic(val roomId: PrimaryKey) : SearchScope
-
-    @Serializable
-    data class TopicTopic(val topicId: PrimaryKey) : SearchScope
-
-    @Serializable
-    data class CommunityMember(val communityId: PrimaryKey) : SearchScope
-
-    @Serializable
-    data class RoomMember(val roomId: PrimaryKey) : SearchScope
-
-    @Serializable
-    data object Users : SearchScope
-
-    @Serializable
-    data class UserTopic(val userId: PrimaryKey) : SearchScope
-
-    @Serializable
-    data class UserCommunities(val userId: PrimaryKey) : SearchScope
-
-    @Serializable
-    data class UserReceivedTitle(val userId: PrimaryKey) : SearchScope
-
-    @Serializable
-    data class UserCreatedTitle(val userId: PrimaryKey) : SearchScope
-
-    @Serializable
-    data class UploadedFiles(val objectId: PrimaryKey, val objectType: ObjectType) : SearchScope
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -139,6 +90,7 @@ fun CustomSearchBar(
     scope: SearchScope,
     showSelfIcon: Boolean = true,
     title: String? = null,
+    subtitle: String? = null,
     leadingIcon: @Composable () -> Unit,
 ) {
     val appNavFactory = LocalAppNavFactory.current
@@ -151,6 +103,7 @@ fun CustomSearchBar(
         title,
         leadingIcon,
         selfIcon = { if (showSelfIcon) SelfIcon { showSheet = true } },
+        subtitle = subtitle,
     )
     ComposeMenu(showSheet, {
         showSheet = false

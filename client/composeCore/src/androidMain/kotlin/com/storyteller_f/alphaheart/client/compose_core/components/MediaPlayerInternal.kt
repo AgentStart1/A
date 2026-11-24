@@ -26,13 +26,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
-import androidx.media3.common.Player
-import androidx.media3.common.VideoSize
 import androidx.media3.session.MediaController
 import coil3.compose.AsyncImage
+import com.storyteller_f.alphaheart.client.compose_core.media.CustomVideoSize
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlayListHandlerProvider
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlaySession
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlayerService
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaControlActions
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaControlState
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaPlaySession
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaPlayerState
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaSurfaceLayout
+import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
+import com.storyteller_f.alphaheart.client.compose_core.media.VideoListener
+import com.storyteller_f.alphaheart.client.compose_core.media.buildListener
+import com.storyteller_f.alphaheart.client.compose_core.media.findActivity
 import com.storyteller_f.alphaheart.client.core.LoadingState
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.launch
@@ -167,12 +176,6 @@ fun BoxScope.PlayerWaiting(
     }
 }
 
-data class MediaPlayerState(
-    val currentLoading: Boolean,
-    val currentIsPlaying: Boolean,
-    val currentPlayingItem: MediaItem?,
-)
-
 @OptIn(ExperimentalUuidApi::class)
 @Composable
 fun rememberPlayerState(
@@ -240,44 +243,3 @@ fun rememberPlayerState(
         }
     }
 }
-
-fun MediaController.playNewMedia(playList: List<ConstPlayItem>) {
-    clearMediaItems()
-
-    addMediaItems(
-        playList.map { playItem ->
-            val uri = playItem.url
-            MediaItem.Builder().setUri(uri)
-                .setMediaMetadata(
-                    MediaMetadata.Builder()
-                        .setArtworkUri(playItem.icon?.toUri())
-                        .setTitle(playItem.title)
-                        .build(),
-                ).build()
-        },
-    )
-    play()
-}
-
-private fun buildListener(player: Player, listener: VideoListener): Player.Listener =
-    object : Player.Listener {
-        override fun onVideoSizeChanged(videoSize: VideoSize) {
-            super.onVideoSizeChanged(videoSize)
-            listener.onUpdateSize(CustomVideoSize(videoSize.width, videoSize.height))
-        }
-
-        override fun onIsLoadingChanged(isLoading: Boolean) {
-            super.onIsLoadingChanged(isLoading)
-            listener.onUpdateLoading(isLoading)
-        }
-
-        override fun onIsPlayingChanged(isPlaying: Boolean) {
-            super.onIsPlayingChanged(isPlaying)
-            listener.onPlayStateChange(isPlaying)
-        }
-
-        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-            super.onMediaItemTransition(mediaItem, reason)
-            listener.onMediaItemChanged(mediaItem?.mediaId, player.currentMediaItemIndex)
-        }
-    }

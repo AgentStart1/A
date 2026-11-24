@@ -19,7 +19,7 @@ import com.storyteller_f.alphaheart.panel.common.PanelRoomDetailScreen
 import com.storyteller_f.alphaheart.panel.common.PanelTitleDetailScreen
 import com.storyteller_f.alphaheart.panel.common.PanelTopicDetailScreen
 import com.storyteller_f.alphaheart.panel.common.PanelUserDetailScreen
-import com.storyteller_f.alphaheart.panel.components.selectedPanelEntityId
+import com.storyteller_f.alphaheart.panel.navigation.selectedPanelEntityId
 import com.storyteller_f.shared.type.ObjectType
 import kotlin.test.Test
 import kotlin.test.assertEquals

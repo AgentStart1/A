@@ -45,8 +45,7 @@
     <string name="cancel">取消</string>
     <string name="aid_label">aid: %1$s</string>
     <string name="ad_label">ad: %1$s</string>
-    <string name="unread_rooms">未读房间</string>
-    <string name="unread_messages">未读消息</string>
+    <string name="public_address_label">公开地址</string>
     <string name="media_play">播放</string>
     <string name="media_pause">暂停</string>
     <string name="media_mute">静音</string>
@@ -61,6 +60,7 @@
     <string name="media_options">媒体选项</string>
     <string name="media_playlist">播放列表</string>
     <string name="media_pip">画中画</string>
+    <string name="file_copy_address">复制资源地址</string>
     <string name="media_download">下载</string>
     <string name="media_replay">重播</string>
     <string name="media_retry">重试</string>
@@ -71,12 +71,13 @@
     <string name="generate">生成</string>
     <string name="loading_more">正在加载更多…</string>
     <string name="load_more_failed_retry">加载更多失败 · 重试</string>
+    <string name="pdf_previous_page">上一页</string>
+    <string name="pdf_next_page">下一页</string>
+    <string name="pdf_zoom_out">缩小</string>
+    <string name="pdf_zoom_in">放大</string>
     <string name="pdf_preview_failed">PDF 预览加载失败</string>
-    <string name="crop_title">裁剪头像／图标</string>
-    <string name="crop_confirm">确认裁剪</string>
-    <string name="crop_rotate_left">向左旋转</string>
-    <string name="crop_rotate_right">向右旋转</string>
-    <string name="crop_flip_horizontal">水平翻转</string>
-    <string name="crop_flip_vertical">垂直翻转</string>
-    <string name="crop_reset">重置裁剪</string>
+    <string name="account_address_label">账号地址</string>
+    <string name="address_not_set">未设置</string>
+    <string name="image_fit_window">适合窗口</string>
+    <string name="image_original_size">原始尺寸</string>
 </resources>

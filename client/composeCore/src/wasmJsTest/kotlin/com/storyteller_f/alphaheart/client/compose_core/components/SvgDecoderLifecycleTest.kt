@@ -15,6 +15,7 @@ import coil3.compose.LocalPlatformContext
 import coil3.request.ErrorResult
 import coil3.request.ImageRequest
 import coil3.size.Size
+import com.storyteller_f.alphaheart.client.compose_core.tasks.request
 import com.storyteller_f.alphaheart.client.compose_core.utils.addPlatformImageDecoders
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async

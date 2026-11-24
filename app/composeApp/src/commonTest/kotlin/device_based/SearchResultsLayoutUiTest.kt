@@ -21,7 +21,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.pages.search.SearchContent
 import com.storyteller_f.alphaheart.app.pages.search.SearchResultsLayout
-import com.storyteller_f.alphaheart.app.pages.search.SearchScope
+import com.storyteller_f.alphaheart.app.search.SearchScope
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow
 import kotlin.test.Test

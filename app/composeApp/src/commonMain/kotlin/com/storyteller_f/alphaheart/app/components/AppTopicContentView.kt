@@ -15,23 +15,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mikepenz.markdown.compose.components.MarkdownComponentModel
+import com.mikepenz.markdown.model.State
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
+import com.storyteller_f.alphaheart.app.navigation.TopicRoute
 import com.storyteller_f.alphaheart.app.pages.community.CommunityTopicContent
-import com.storyteller_f.alphaheart.app.pages.topic.TopicRoute
-import com.storyteller_f.alphaheart.client.compose_core.components.TopicContentView
 import com.storyteller_f.shared.model.TopicDetail
 import com.storyteller_f.shared.type.PrimaryKey
 import com.storyteller_f.shared.utils.readCodeFence
 
 @Composable
-fun AppTopicContentView(topicInfo: TopicDetail, isEmbed: Boolean = false, communityId: PrimaryKey? = null) {
+fun AppTopicContentView(
+    topicInfo: TopicDetail,
+    isEmbed: Boolean = false,
+    communityId: PrimaryKey? = null,
+    parsed: State? = null,
+    blockIndex: Int? = null,
+) {
     val appNavFactory = LocalAppNavFactory.current
     CommunityTopicContent(communityId, topicInfo) {
-        TopicContentView(topicInfo.topicInfo, {
-            appNavFactory.newAppNav().gotoMedia(it)
-        }, isEmbed, {
-            RefBlock(it)
-        })
+        TopicContentView(
+            topicInfo = topicInfo.topicInfo,
+            onClick = { appNavFactory.newAppNav().gotoMedia(it) },
+            isEmbed = isEmbed,
+            refBlock = { RefBlock(it) },
+            parsed = parsed,
+            blockIndex = blockIndex,
+        )
     }
 }
 

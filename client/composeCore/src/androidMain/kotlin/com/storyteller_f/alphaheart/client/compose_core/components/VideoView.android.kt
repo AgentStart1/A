@@ -25,16 +25,14 @@ import androidx.core.util.Consumer
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.ui.PlayerView
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlaySession
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlayerService
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaPlaySession
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaSurfaceLayout
+import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
+import com.storyteller_f.alphaheart.client.compose_core.media.findActivity
 import io.github.aakira.napier.Napier
 import kotlin.uuid.ExperimentalUuidApi
-
-// Constant for broadcast receiver
-const val ACTION_BROADCAST_CONTROL = "broadcast_control"
-
-// Intent extras for broadcast controls from Picture-in-Picture mode.
-const val EXTRA_CONTROL_TYPE = "control_type"
-const val EXTRA_CONTROL_PLAY = 1
-const val EXTRA_CONTROL_PAUSE = 2
 
 @Composable
 actual fun VideoViewEmbed(remoteMediaItem: RemoteMediaItem) {

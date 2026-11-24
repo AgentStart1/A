@@ -6,6 +6,7 @@ package com.storyteller_f.alphaheart.client.compose_core.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,6 +15,8 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.unit.dp
 import com.mikepenz.markdown.model.ImageData
 import com.mikepenz.markdown.model.ImageTransformer
+import com.mikepenz.markdown.model.State
+import com.mikepenz.markdown.model.parseMarkdown
 import com.storyteller_f.shared.utils.getLang
 import com.storyteller_f.shared.utils.readCodeFence
 import kotlinx.collections.immutable.persistentMapOf
@@ -22,6 +25,43 @@ import kotlin.test.assertEquals
 
 @OptIn(ExperimentalTestApi::class)
 internal class MarkdownLineEndingRenderTest {
+    @Test
+    fun lazyMarkdownBlocksUseTheFullDocumentSource() =
+        runComposeUiTest {
+            val source =
+                """
+                # Title
+
+                A paragraph.
+
+                ```csa
+                /community/7
+                ```
+                """.trimIndent()
+            val parsed = parseMarkdown(source) as State.Success
+            setContent {
+                MaterialTheme {
+                    LazyColumn(Modifier.width(390.dp)) {
+                        items(parsed.node.children.size) { index ->
+                            CustomMarkdown(
+                                plain = source,
+                                isEmbed = false,
+                                imageTransformer = noImages,
+                                dimensionMap = persistentMapOf(),
+                                parsed = parsed,
+                                blockIndex = index,
+                            ) { model ->
+                                Text(readCodeFence(model.node, model.content).trim())
+                            }
+                        }
+                    }
+                }
+            }
+            onNodeWithText("Title").assertExists()
+            onNodeWithText("A paragraph.").assertExists()
+            onNodeWithText("/community/7").assertExists()
+        }
+
     @Test
     fun actualMarkdownComponentsReceiveTheSameSourceAndThreeSeparateFencesForEveryLineEnding() {
         val source =

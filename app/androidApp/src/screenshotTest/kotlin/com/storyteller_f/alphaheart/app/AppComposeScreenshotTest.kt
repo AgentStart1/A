@@ -33,8 +33,10 @@ import com.storyteller_f.alphaheart.app.common.MessagePreview
 import com.storyteller_f.alphaheart.app.common.MessageSummary
 import com.storyteller_f.alphaheart.app.common.PreviewState
 import com.storyteller_f.alphaheart.app.common.RoomActivityPreview
+import com.storyteller_f.alphaheart.app.components.Pill
 import com.storyteller_f.alphaheart.app.components.SettingOptionResettableView
 import com.storyteller_f.alphaheart.app.components.SettingOptionView
+import com.storyteller_f.alphaheart.app.components.SignInButton
 import com.storyteller_f.alphaheart.app.pages.ActivityPreviewSection
 import com.storyteller_f.alphaheart.app.pages.AdaptiveEditorLayout
 import com.storyteller_f.alphaheart.app.pages.AdaptiveFormLayout
@@ -52,16 +54,13 @@ import com.storyteller_f.alphaheart.app.ui.theme.AppTheme
 import com.storyteller_f.alphaheart.client.compose_core.components.ButtonNav
 import com.storyteller_f.alphaheart.client.compose_core.components.InfoTable
 import com.storyteller_f.alphaheart.client.compose_core.components.MediaObjectBlock
-import com.storyteller_f.alphaheart.client.compose_core.components.NavRoute
-import com.storyteller_f.alphaheart.client.compose_core.components.Pill
 import com.storyteller_f.alphaheart.client.compose_core.components.PrivateKeyEditor
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedTextField
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow
-import com.storyteller_f.alphaheart.client.compose_core.components.SheetContainer
-import com.storyteller_f.alphaheart.client.compose_core.components.SignInButton
+import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
 import com.storyteller_f.shared.model.CommunityInfo
 import com.storyteller_f.shared.model.RoomInfo
 import com.storyteller_f.shared.type.ObjectStatus
@@ -141,7 +140,7 @@ fun InfoTableScreenshot() {
 fun SheetContainerScreenshot() {
     ScreenshotAppTheme {
         PaddedPreview {
-            SheetContainer {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 ButtonNav(Icons.Default.Edit, "Edit profile")
                 ButtonNav(Icons.Default.Lock, "Security")
             }
@@ -571,7 +570,7 @@ fun ReadingLabeledFormScreenshot() {
     ScreenshotAppTheme {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
             ReadingOutlinedTextField("Retained draft", {}, Modifier.fillMaxWidth(), label = { Text("Name") })
-            com.storyteller_f.alphaheart.client.compose_core.components.ReadingSelect(
+            com.storyteller_f.alphaheart.app.components.ReadingSelect(
                 "Member policy",
                 "open",
                 listOf("open" to "Open", "invite" to "Invite Only"),

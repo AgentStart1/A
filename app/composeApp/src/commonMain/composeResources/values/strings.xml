@@ -66,9 +66,9 @@
     <string name="try_button">Try</string>
     <string name="import_llm">Import</string>
     <string name="home_start_destination">Startup page</string>
-    <string name="home_start_destination_world">Home</string>
-    <string name="home_start_destination_communities">Communities (joined)</string>
-    <string name="home_start_destination_rooms">Rooms (joined)</string>
+    <string name="home_start_destination_world">World</string>
+    <string name="home_start_destination_communities">Communities</string>
+    <string name="home_start_destination_rooms">Rooms</string>
     
     <!-- TopicComposePage strings -->
     <string name="toggle_bold">toggle bold</string>
@@ -195,6 +195,12 @@
     <string name="search_scope">Search scope</string>
     <string name="scope_community">Community</string>
     <string name="scope_room">Room</string>
+    <string name="topic_detail_community">Community topic</string>
+    <string name="topic_detail_community_reply">Community reply</string>
+    <string name="topic_detail_room">Room topic</string>
+    <string name="topic_detail_room_reply">Room reply</string>
+    <string name="topic_detail_user">User topic</string>
+    <string name="topic_detail_user_reply">User reply</string>
     <string name="scope_user_topics">Search this user’s topics</string>
     <string name="scope_world">World</string>
     <string name="scope_files">Files</string>
@@ -210,6 +216,8 @@
     <string name="files_uploaded">Uploaded</string>
     <string name="files_upload_records">Upload records</string>
     <string name="files_download_records">Download records</string>
+    <string name="transfer_upload_details">Upload details</string>
+    <string name="transfer_download_details">Download details</string>
     <string name="file_preview_title">File preview</string>
     <string name="add_attachment">Add attachment</string>
     <string name="select_image">Select image</string>
@@ -314,4 +322,18 @@
     <string name="topic_time_minutes">%1$s min ago</string>
     <string name="topic_time_hours">%1$s hr ago</string>
     <string name="topic_time_days">%1$s d ago</string>
+    <string name="favorited_at">Saved at %1$s</string>
+    <string name="session_history_title">Session history</string>
+    <string name="image_actions">Image actions</string>
+    <string name="file_actions">File actions</string>
+    <string name="upload_actions">Upload actions</string>
+    <string name="crop_title">Crop avatar / icon</string>
+    <string name="crop_confirm">Confirm crop</string>
+    <string name="crop_rotate_left">Rotate left</string>
+    <string name="crop_rotate_right">Rotate right</string>
+    <string name="crop_flip_horizontal">Flip horizontally</string>
+    <string name="crop_flip_vertical">Flip vertically</string>
+    <string name="crop_reset">Reset crop</string>
+    <string name="unread_rooms">Unread rooms</string>
+    <string name="unread_messages">Unread messages</string>
 </resources>

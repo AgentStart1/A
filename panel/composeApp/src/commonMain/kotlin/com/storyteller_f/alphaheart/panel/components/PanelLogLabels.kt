@@ -6,6 +6,7 @@ package com.storyteller_f.alphaheart.panel.components
 
 import androidx.compose.runtime.Composable
 import com.storyteller_f.alphaheart.panel.Res
+import com.storyteller_f.alphaheart.panel.logs.parsePanelStatusLog
 import com.storyteller_f.alphaheart.panel.review_log_add_child
 import com.storyteller_f.alphaheart.panel.review_log_add_favorite
 import com.storyteller_f.alphaheart.panel.review_log_add_subscription
@@ -42,12 +43,6 @@ internal fun panelUserLogText(type: UserLogType): String =
             UserLogType.REMOVE_SUBSCRIPTION -> Res.string.review_log_remove_subscription
         },
     )
-
-private val panelStatusLogPattern =
-    Regex("^Update (user|community|room|topic|title|file) status to (NORMAL|READ_ONLY|DELETED)$")
-
-internal fun parsePanelStatusLog(action: String): Pair<String, String>? =
-    panelStatusLogPattern.matchEntire(action)?.let { it.groupValues[1].uppercase() to it.groupValues[2] }
 
 /** Translate only the server's known structured action; leave free-form diagnostic text intact. */
 @Composable

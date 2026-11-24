@@ -14,6 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.storyteller_f.alphaheart.client.compose_core.media.PlayItem
+import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
@@ -28,13 +30,6 @@ expect fun VideoViewFullScreen(remoteMediaItem: RemoteMediaItem)
 
 @Composable
 expect fun rememberIsInPipMode(): Boolean
-
-interface VideoListener {
-    fun onPlayStateChange(isPlaying: Boolean)
-    fun onUpdateSize(size: CustomVideoSize)
-    fun onUpdateLoading(isLoading: Boolean)
-    fun onMediaItemChanged(mediaId: String?, currentMediaItemIndex: Int)
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

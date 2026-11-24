@@ -23,7 +23,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,8 +38,8 @@ import coil3.PlatformContext
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.request.crossfade
 import coil3.util.DebugLogger
-import com.dokar.sonner.Toaster
 import com.dokar.sonner.rememberToasterState
+import com.storyteller_f.alphaheart.app.auth.AccountSwitcher
 import com.storyteller_f.alphaheart.app.common.AppNav
 import com.storyteller_f.alphaheart.app.common.AppNavFactory
 import com.storyteller_f.alphaheart.app.common.DownloadContext
@@ -48,6 +47,7 @@ import com.storyteller_f.alphaheart.app.common.Downloader
 import com.storyteller_f.alphaheart.app.common.DownloaderImpl
 import com.storyteller_f.alphaheart.app.common.ExternalUriHandler
 import com.storyteller_f.alphaheart.app.common.HomeScreen
+import com.storyteller_f.alphaheart.app.common.IncomingMessageToast
 import com.storyteller_f.alphaheart.app.common.OnTopicCreated
 import com.storyteller_f.alphaheart.app.common.RoomScreen
 import com.storyteller_f.alphaheart.app.common.SimpleTaskRegister
@@ -60,15 +60,15 @@ import com.storyteller_f.alphaheart.app.common.newAppNav
 import com.storyteller_f.alphaheart.app.common.processEvent
 import com.storyteller_f.alphaheart.app.common.rootEntryProvider
 import com.storyteller_f.alphaheart.app.common.toRoute
+import com.storyteller_f.alphaheart.app.components.ReadingToasts
 import com.storyteller_f.alphaheart.app.components.SignInPrompt
-import com.storyteller_f.alphaheart.app.pages.community.LocalCommunityFontStore
-import com.storyteller_f.alphaheart.app.pages.community.createCommunityFontStore
+import com.storyteller_f.alphaheart.app.fonts.LocalCommunityFontStore
+import com.storyteller_f.alphaheart.app.fonts.createCommunityFontStore
 import com.storyteller_f.alphaheart.app.pages.file.FileExplorerPage
 import com.storyteller_f.alphaheart.app.pages.file.FileViewPage
 import com.storyteller_f.alphaheart.app.pages.room.RoomPage
-import com.storyteller_f.alphaheart.app.pages.topic.TopicComposeData
 import com.storyteller_f.alphaheart.app.pages.user.AccountSwitch
-import com.storyteller_f.alphaheart.app.pages.user.AccountSwitcher
+import com.storyteller_f.alphaheart.app.topic.TopicComposeData
 import com.storyteller_f.alphaheart.app.ui.MaterialSymbolsOutlined
 import com.storyteller_f.alphaheart.app.ui.theme.AppTheme
 import com.storyteller_f.alphaheart.app.utils.ObserveAppNotificationClicks
@@ -80,21 +80,22 @@ import com.storyteller_f.alphaheart.app.utils.rememberAppNotificationPermission
 import com.storyteller_f.alphaheart.app.utils.showAppNotification
 import com.storyteller_f.alphaheart.client.compose_core.common.LocalClient
 import com.storyteller_f.alphaheart.client.compose_core.components.AudioViewFilled
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomGlobalDialogController
-import com.storyteller_f.alphaheart.client.compose_core.components.CustomGlobalTask
-import com.storyteller_f.alphaheart.client.compose_core.components.FileViewData
 import com.storyteller_f.alphaheart.client.compose_core.components.GlobalDialog
-import com.storyteller_f.alphaheart.client.compose_core.components.GlobalDialogContext
-import com.storyteller_f.alphaheart.client.compose_core.components.GlobalTaskContext
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalMediaPlayerService
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalResourceDownloadAction
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalToaster
-import com.storyteller_f.alphaheart.client.compose_core.components.MediaPlaySession
-import com.storyteller_f.alphaheart.client.compose_core.components.RemoteMediaItem
-import com.storyteller_f.alphaheart.client.compose_core.components.Sonner
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOverlayHost
 import com.storyteller_f.alphaheart.client.compose_core.components.VideoViewFilled
 import com.storyteller_f.alphaheart.client.compose_core.components.rememberIsInPipMode
 import com.storyteller_f.alphaheart.client.compose_core.components.rememberResourceDownloadAction
+import com.storyteller_f.alphaheart.client.compose_core.media.FileViewData
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlayerService
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalResourceDownloadAction
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaPlaySession
+import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
+import com.storyteller_f.alphaheart.client.compose_core.notifications.LocalToaster
+import com.storyteller_f.alphaheart.client.compose_core.notifications.Sonner
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomGlobalDialogController
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomGlobalTask
+import com.storyteller_f.alphaheart.client.compose_core.tasks.GlobalDialogContext
+import com.storyteller_f.alphaheart.client.compose_core.tasks.GlobalTaskContext
 import com.storyteller_f.alphaheart.client.compose_core.utils.BindBrowserNavigation
 import com.storyteller_f.alphaheart.client.compose_core.utils.addPlatformImageDecoders
 import com.storyteller_f.alphaheart.client.compose_core.utils.buildSessionHistoryFactory
@@ -146,7 +147,9 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.seconds
 
 internal fun getAsyncImageLoader(context: PlatformContext): ImageLoader {
     val builder = ImageLoader.Builder(context)
@@ -322,7 +325,7 @@ fun CommonEntry(content: @Composable () -> Unit) {
         val user by currentUserSessionManager.model.userHandler.data.collectAsState()
 
         val toasterState = rememberToasterState()
-        Toaster(toasterState, alignment = Alignment.TopCenter)
+        ReadingToasts(toasterState)
         GlobalDialog(instance.controller)
         CompositionLocalProvider(
             LocalSessionManager provides currentUserSessionManager,
@@ -339,7 +342,7 @@ fun CommonEntry(content: @Composable () -> Unit) {
             ProvideFontIcon {
                 val dataStore = createAppPreferencesDataStore()
                 ProvideAppPreferences(dataStore) {
-                    Box(Modifier.fillMaxSize()) {
+                    ReadingOverlayHost {
                         content()
                         AccountSwitch()
                     }
@@ -689,7 +692,9 @@ private fun ObserveMessage() {
     val appNavFactory = LocalAppNavFactory.current
     val sessionManager = LocalSessionManager.current
     val messageToasterState = rememberToasterState()
-    Toaster(messageToasterState, alignment = Alignment.TopCenter)
+    ReadingToasts(messageToasterState, incoming = true)
+    val account by LocalUiViewModel.current.instance.collectAsState()
+    val database = account.database
     val hasPermission = rememberAppNotificationPermission()
     ObserveAppNotificationClicks { payload ->
         payload[TOPIC_NOTIFICATION_ID_KEY]
@@ -720,8 +725,14 @@ private fun ObserveMessage() {
                         if (roomId != topicInfo.parentId &&
                             topicId != topicInfo.parentId
                         ) {
-                            val nickname = topicInfo.authorInfo?.nickname
-                            messageToasterState.show("${nickname ?: "<none>"}: ${message.plain}")
+                            val roomName =
+                                topicInfo.rootId.takeIf { topicInfo.rootType == ObjectType.ROOM }
+                                    ?.let { database.room.observeDatum(it).first()?.name }
+                            val sender = topicInfo.authorInfo
+                            messageToasterState.show(
+                                IncomingMessageToast(sender?.nickname, sender?.avatar?.url, roomName, message.plain),
+                                duration = 4.seconds,
+                            )
                         }
                     } else if (hasPermission) {
                         sendTopicNotification(message, topicInfo)
@@ -796,6 +807,8 @@ private fun createAppNavFactoryForBubble(): AppNavFactory =
 
                 override fun gotoUserSetting() = Unit
 
+                override fun gotoTwoFactorSettings() = Unit
+
                 override fun gotoPreference() = Unit
 
                 override fun gotoMedia(info: FileInfo) = Unit
@@ -810,7 +823,7 @@ private fun createAppNavFactoryForBubble(): AppNavFactory =
 
                 override fun gotoCommunityCompose() = Unit
 
-                override fun gotoRoomCompose() = Unit
+                override fun gotoRoomCompose(communityId: PrimaryKey?) = Unit
 
                 override fun gotoSettingPage(objectId: PrimaryKey, objectType: ObjectType) = Unit
 

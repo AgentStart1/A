@@ -12,6 +12,13 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalResourceDownloadAction
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalResourceDownloadFile
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaControlActions
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaControlState
+import com.storyteller_f.alphaheart.client.compose_core.media.ResourceDownloadRequest
+import com.storyteller_f.alphaheart.client.compose_core.media.mediaDownloadRequest
+import com.storyteller_f.alphaheart.client.compose_core.tasks.request
 import com.storyteller_f.shared.model.FileInfo
 import java.util.Locale
 import kotlin.test.Test

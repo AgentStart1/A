@@ -4,26 +4,26 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.ui.unit.dp
 import coil3.compose.LocalPlatformContext
-import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import com.hrm.latex.renderer.measure.rememberLatexMeasurer
 import com.mikepenz.markdown.compose.Markdown
+import com.mikepenz.markdown.compose.MarkdownElement
+import com.mikepenz.markdown.compose.MarkdownSuccess
 import com.mikepenz.markdown.compose.components.MarkdownComponent
 import com.mikepenz.markdown.compose.components.MarkdownComponentModel
+import com.mikepenz.markdown.compose.components.MarkdownComponents
 import com.mikepenz.markdown.compose.components.markdownComponents
 import com.mikepenz.markdown.compose.elements.MarkdownTable
 import com.mikepenz.markdown.compose.elements.MarkdownTableHeader
@@ -34,16 +34,17 @@ import com.mikepenz.markdown.compose.extendedspans.RoundedCornerSpanPainter
 import com.mikepenz.markdown.compose.extendedspans.SquigglyUnderlineSpanPainter
 import com.mikepenz.markdown.compose.extendedspans.rememberSquigglyUnderlineAnimator
 import com.mikepenz.markdown.m3.markdownColor
-import com.mikepenz.markdown.model.ImageData
 import com.mikepenz.markdown.model.ImageTransformer
+import com.mikepenz.markdown.model.State
 import com.mikepenz.markdown.model.markdownAnimations
 import com.mikepenz.markdown.model.markdownAnnotator
 import com.mikepenz.markdown.model.markdownExtendedSpans
 import com.mikepenz.markdown.model.markdownInlineContent
 import com.mikepenz.markdown.model.rememberMarkdownState
-import com.mohamedrejeb.richeditor.annotation.ExperimentalRichTextApi
 import com.storyteller_f.alphaheart.client.compose_core.common.LocalClient
-import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
+import com.storyteller_f.alphaheart.client.compose_core.markdown.MarkdownInlineMath
+import com.storyteller_f.alphaheart.client.compose_core.markdown.MarkdownInlineOptions
+import com.storyteller_f.alphaheart.client.compose_core.markdown.imageAnnotator
 import com.storyteller_f.alphaheart.client.compose_core.utils.imageRequest
 import com.storyteller_f.shared.model.Dimension
 import com.storyteller_f.shared.model.FileInfo
@@ -56,11 +57,12 @@ fun CustomMarkdown(
     isEmbed: Boolean,
     imageTransformer: ImageTransformer,
     dimensionMap: ImmutableMap<String, Dimension?>,
+    parsed: State? = null,
+    blockIndex: Int? = null,
     codeFence: MarkdownComponent,
 ) {
-    val source = remember(plain) { normalizeMarkdownLineEndings(plain) }
     // Parsed nodes own embedded controls; a width-only remeasurement must not replace them.
-    val markdownState = rememberMarkdownState(content = source, immediate = true)
+    val state = parsed ?: RememberParsedMarkdown(plain)
     val inlineContentMap = remember { mutableMapOf<String, InlineTextContent>() }
     val density = LocalDensity.current
     val latexMeasurer = rememberLatexMeasurer()
@@ -69,24 +71,21 @@ fun CustomMarkdown(
         CompositionLocalProvider(LocalInspectionMode provides true) {
             val colors = markdownColor()
             val typography = customMarkdownTypography(colors)
+            val inlineOptions =
+                MarkdownInlineOptions(
+                    dimensionMap = dimensionMap,
+                    imageTransformer = imageTransformer,
+                    maxWidth = maxWidth,
+                    density = density,
+                    isEmbed = isEmbed,
+                    math = MarkdownInlineMath(typography, colors, latexMeasurer),
+                )
             val annotator =
                 markdownAnnotator { content, child ->
-                    imageAnnotator(
-                        child = child,
-                        content = content,
-                        inlineContentMap = inlineContentMap,
-                        dimensionMap = dimensionMap,
-                        maxWidth = maxWidth,
-                        density = density,
-                        isEmbed = isEmbed,
-                        imageTransformer = imageTransformer,
-                        typography = typography,
-                        colors = colors,
-                        latexMeasurer = latexMeasurer,
-                    )
+                    imageAnnotator(child, content, inlineContentMap, inlineOptions)
                 }
             Markdown(
-                markdownState = markdownState,
+                state = state,
                 modifier = Modifier.fillMaxWidth(),
                 colors = colors,
                 typography = typography,
@@ -98,6 +97,9 @@ fun CustomMarkdown(
                     codeBlock = highlightedCodeBlock,
                     table = { ReadingMarkdownTable(it) },
                 ),
+                success = { result, components, modifier ->
+                    MarkdownDocumentContent(result, components, modifier, blockIndex)
+                },
                 annotator = annotator,
                 inlineContent = markdownInlineContent(inlineContentMap),
                 extendedSpans =
@@ -112,30 +114,26 @@ fun CustomMarkdown(
     }
 }
 
-class CustomCoil3ImageTransformerImpl(private val mediaMap: Map<String, FileInfo>, val onClick: (FileInfo) -> Unit) :
-    ImageTransformer {
-    @OptIn(ExperimentalRichTextApi::class)
-    @Composable
-    override fun transform(link: String): ImageData =
-        if (link.startsWith("file:///")) {
-            val model = link.substring(7)
-            val painter = rememberAsyncImagePainter(model = model)
-            ImageData(painter)
-        } else {
-            val info = mediaMap[link]
-            val model = imageRequestInMarkdown(info)
-            val painter = rememberAsyncImagePainter(model = model)
-            ImageData(
-                painter,
-                modifier =
-                Modifier.appiumSemantics(
-                    description = info?.let { "open file ${it.name}" },
-                    onClick = info?.let { { onClick(it) } },
-                ).clip(RoundedCornerShape(10.dp)).clickable(info != null) {
-                    info?.let { it1 -> onClick(it1) }
-                },
-            )
+@Composable
+private fun RememberParsedMarkdown(plain: String): State {
+    val source = remember(plain) { normalizeMarkdownLineEndings(plain) }
+    return rememberMarkdownState(content = source, immediate = true).state.collectAsState().value
+}
+
+@Composable
+private fun MarkdownDocumentContent(
+    result: State.Success,
+    components: MarkdownComponents,
+    modifier: Modifier,
+    blockIndex: Int?,
+) {
+    if (blockIndex == null) {
+        MarkdownSuccess(result, components, modifier)
+    } else {
+        Column(modifier) {
+            MarkdownElement(result.node.children[blockIndex], components, result.content)
         }
+    }
 }
 
 @Composable

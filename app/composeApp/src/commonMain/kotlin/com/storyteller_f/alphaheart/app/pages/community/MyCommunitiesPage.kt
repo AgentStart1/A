@@ -40,16 +40,15 @@ import com.storyteller_f.alphaheart.app.common.createJoinedCommunitiesWithPoster
 import com.storyteller_f.alphaheart.app.common.hasRouteFlow
 import com.storyteller_f.alphaheart.app.community_view_all
 import com.storyteller_f.alphaheart.app.community_view_poster
+import com.storyteller_f.alphaheart.app.components.CommunityPoster
 import com.storyteller_f.alphaheart.app.pages.AdaptiveItemGrid
 import com.storyteller_f.alphaheart.client.compose_core.common.PagingViewModel
-import com.storyteller_f.alphaheart.client.compose_core.components.CommunityIcon
-import com.storyteller_f.alphaheart.client.compose_core.components.CommunityPoster
-import com.storyteller_f.alphaheart.client.compose_core.components.LayoutDefaults
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.bottomAppending
-import com.storyteller_f.alphaheart.client.compose_core.components.pagingItems
 import com.storyteller_f.alphaheart.client.compose_core.components.rememberCommonDialogController
-import com.storyteller_f.alphaheart.client.compose_core.components.topPrepend
+import com.storyteller_f.alphaheart.client.compose_core.paging.bottomAppending
+import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
+import com.storyteller_f.alphaheart.client.compose_core.paging.topPrepend
+import com.storyteller_f.alphaheart.client.compose_core.theme.LayoutDefaults
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.shared.model.CommunityInfo
 import dev.chrisbanes.haze.hazeEffect
@@ -106,6 +105,7 @@ fun CommunityCellList(onClick: ((CommunityInfo) -> Unit)? = null) {
         ) {
             pagingItems(items, { it.id }) { index ->
                 val info = items[index]
+                val dialog = rememberCommonDialogController()
                 Column(
                     Modifier.fillMaxWidth().clickable(enabled = info != null) {
                         info?.let { onClick?.invoke(it) ?: nav.newAppNav().gotoCommunity(it.id, false) }
@@ -113,9 +113,7 @@ fun CommunityCellList(onClick: ((CommunityInfo) -> Unit)? = null) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    CommunityIcon(info, 52.dp, setClickEvent = info != null) {
-                        info?.let { onClick?.invoke(it) ?: nav.newAppNav().gotoCommunity(it.id, false) }
-                    }
+                    CommunityIconWithDialog(info, dialog.shown.value, 52.dp, onClickIcon = dialog::update)
                     Text(info?.name.orEmpty(), maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
@@ -169,6 +167,7 @@ fun CommunityList(communitiesViewModel: PagingViewModel<CommunityInfo>, onClick:
 fun CommunityGrid(communityInfo: CommunityInfo?, padding: Dp, onClick: ((CommunityInfo) -> Unit)? = null) {
     val appNavFactory = LocalAppNavFactory.current
     val hazeState = rememberHazeState()
+    val dialog = rememberCommonDialogController()
     Box(modifier = Modifier.fillMaxWidth().padding(end = padding)) {
         val shape = RoundedCornerShape(14.dp)
         Box(
@@ -196,10 +195,7 @@ fun CommunityGrid(communityInfo: CommunityInfo?, padding: Dp, onClick: ((Communi
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (communityInfo != null) {
-                    CommunityIcon(communityInfo, 30.dp, setClickEvent = true) {
-                        onClick?.invoke(communityInfo)
-                            ?: appNavFactory.newAppNav().gotoCommunity(communityInfo.id, false)
-                    }
+                    CommunityIconWithDialog(communityInfo, dialog.shown.value, 30.dp, onClickIcon = dialog::update)
                     Text(
                         communityInfo.name,
                         Modifier.fillMaxWidth(),

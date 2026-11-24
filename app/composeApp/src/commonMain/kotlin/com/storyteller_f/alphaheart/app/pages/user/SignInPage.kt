@@ -17,12 +17,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.VpnKey
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,62 +35,46 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalGlobalDialog
 import com.storyteller_f.alphaheart.app.LocalUiViewModel
 import com.storyteller_f.alphaheart.app.Res
+import com.storyteller_f.alphaheart.app.auth.completePendingTotpSignIn
+import com.storyteller_f.alphaheart.app.auth.performKeySignInAuth
 import com.storyteller_f.alphaheart.app.common.SessionHistoryViewModel
 import com.storyteller_f.alphaheart.app.common.getLoginHistoryViewModel
+import com.storyteller_f.alphaheart.app.components.ReadingSheet
 import com.storyteller_f.alphaheart.app.delete
 import com.storyteller_f.alphaheart.app.go_to_sign_up
 import com.storyteller_f.alphaheart.app.last_used
-import com.storyteller_f.alphaheart.app.private_key
-import com.storyteller_f.alphaheart.app.sign_in
-import com.storyteller_f.alphaheart.client.compose_core.components.BaseSheet
+import com.storyteller_f.alphaheart.app.navigation.SignInAndSignUpNav
+import com.storyteller_f.alphaheart.app.previews.PrivateParameterProvider
+import com.storyteller_f.alphaheart.app.session_history_title
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.core.PendingTotpSignIn
 import com.storyteller_f.alphaheart.client.core.RawUserPass
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton as Button
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton as FilledTonalButton
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedButton as OutlinedButton
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTextButton as TextButton
 
 @Composable
-fun SignInPage(signInAndSignUpNav: SignInAndSignUpNav) {
-    AuthPageChrome(
-        title = stringResource(Res.string.sign_in),
-        footer = {
-            TextButton(
-                onClick = { signInAndSignUpNav.gotoSignUp() },
-                modifier =
-                Modifier.appiumSemantics(
-                    testTag = "goto_sign_up",
-                    text = stringResource(Res.string.go_to_sign_up),
-                ),
-            ) {
-                Text(stringResource(Res.string.go_to_sign_up))
-            }
-        },
-    ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            FilledTonalButton(
-                onClick = { signInAndSignUpNav.gotoPrivateKey(false) },
-                modifier =
-                Modifier.appiumSemantics(
-                    testTag = "private_key",
-                    text = stringResource(Res.string.private_key),
-                ),
-            ) {
-                Icon(Icons.Default.VpnKey, contentDescription = null)
-                Text(stringResource(Res.string.private_key), modifier = Modifier.padding(start = 8.dp))
-            }
-            SelectFromHistory()
+fun SignInPage(signInAndSignUpNav: SignInAndSignUpNav, navigation: (@Composable () -> Unit)? = null) {
+    PrivateKeyAuthSignInPage(navigation) {
+        SelectFromHistory()
+        TextButton(
+            onClick = signInAndSignUpNav::gotoSignUp,
+            modifier =
+            Modifier.fillMaxWidth().appiumSemantics(
+                testTag = "goto_sign_up",
+                text = stringResource(Res.string.go_to_sign_up),
+            ),
+        ) {
+            Text(stringResource(Res.string.go_to_sign_up))
         }
     }
 }
@@ -109,42 +92,46 @@ private fun SelectFromHistoryInternal(viewModel: SessionHistoryViewModel) {
     var showSheet by remember {
         mutableStateOf(false)
     }
-    val sheetState = rememberModalBottomSheetState()
-    OutlinedButton(
+    Button(
         onClick = { showSheet = true },
-        modifier = Modifier,
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+        ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        ),
     ) {
         Icon(Icons.Default.History, contentDescription = null)
-        Text(stringResource(Res.string.last_used), modifier = Modifier.padding(start = 8.dp))
+        Text(stringResource(Res.string.session_history_title), modifier = Modifier.padding(start = 8.dp))
     }
     val uIViewModel = LocalUiViewModel.current
     val scope = rememberCoroutineScope()
     val appNavFactory = LocalAppNavFactory.current
     val globalDialogController = LocalGlobalDialog.current
     var pendingTotp by remember { mutableStateOf<PendingTotpSignIn?>(null) }
-    BaseSheet(showSheet, sheetState, {
-        showSheet = false
-    }) {
-        val data by viewModel.handler.data.collectAsState()
-        val last = data?.history?.last
-        StateView(viewModel.handler, modifier = Modifier.height(260.dp)) {
-            LazyColumn {
-                items(it.alias) { alias ->
-                    LoginHistoryCell(alias, last, {
-                        scope.launch {
-                            pendingTotp =
-                                globalDialogController.performKeySignInAuth(appNavFactory, uIViewModel) {
-                                    val pass =
-                                        checkNotNull(
-                                            uIViewModel.historyManager.buildSession(alias),
-                                        ) as RawUserPass
-                                    pass.rawUSerPass.authKey
-                                }
-                            showSheet = false
-                        }
-                    }, {
-                        viewModel.deleteSession(alias)
-                    })
+    if (showSheet) {
+        ReadingSheet(stringResource(Res.string.session_history_title), { showSheet = false }) {
+            val data by viewModel.handler.data.collectAsState()
+            val last = data?.history?.last
+            StateView(viewModel.handler, modifier = Modifier.height(260.dp)) {
+                LazyColumn {
+                    items(it.alias) { alias ->
+                        LoginHistoryCell(alias, last, {
+                            scope.launch {
+                                pendingTotp =
+                                    globalDialogController.performKeySignInAuth(appNavFactory, uIViewModel) {
+                                        val pass =
+                                            checkNotNull(
+                                                uIViewModel.historyManager.buildSession(alias),
+                                            ) as RawUserPass
+                                        pass.rawUSerPass.authKey
+                                    }
+                                showSheet = false
+                            }
+                        }, {
+                            viewModel.deleteSession(alias)
+                        })
+                    }
                 }
             }
         }
@@ -154,20 +141,6 @@ private fun SelectFromHistoryInternal(viewModel: SessionHistoryViewModel) {
             pendingTotp = null
         }
     }
-}
-
-class PrivateParameterProvider : PreviewParameterProvider<String> {
-    override val values: Sequence<String>
-        get() =
-            sequence {
-                yield(
-                    buildString {
-                        repeat(50) {
-                            append("a")
-                        }
-                    },
-                )
-            }
 }
 
 @Preview

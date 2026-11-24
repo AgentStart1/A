@@ -11,7 +11,7 @@ import com.mmk.kmpnotifier.notification.configuration.NotificationPlatformConfig
 import com.mmk.kmpnotifier.permission.AndroidPermissionUtil
 import com.mmk.kmpnotifier.permission.permissionUtil
 import com.storyteller_f.alphaheart.app.android_library.R
-import com.storyteller_f.alphaheart.client.compose_core.components.mainActivityRef
+import com.storyteller_f.alphaheart.client.compose_core.permissions.mainActivityRef
 
 private var androidNotificationPermissionUtil: AndroidPermissionUtil? = null
 

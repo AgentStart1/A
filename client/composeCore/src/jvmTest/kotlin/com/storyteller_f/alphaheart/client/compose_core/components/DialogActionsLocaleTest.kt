@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
+import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomAlertDialogState
 import java.util.Locale
 import kotlin.test.Test
 import kotlin.test.assertEquals

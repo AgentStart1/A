@@ -52,8 +52,13 @@ private suspend fun runNavigationBrowser(
                 openLoginInput(browser, driver, panel)
                 when (scenario) {
                     BrowserNavigationCase.ROUND_TRIP -> verifyNavigationRoundTrip(browser, driver, server, panel)
+
                     BrowserNavigationCase.RELOAD -> verifyNavigationReload(browser, driver, panel)
-                    BrowserNavigationCase.MODAL_DISMISSAL -> verifyModalDismissal(browser, driver, panel)
+
+                    BrowserNavigationCase.MODAL_DISMISSAL -> {
+                        driver.resizeViewport(504, 720)
+                        verifyModalDismissal(browser, driver, panel)
+                    }
                 }
             }
         }
@@ -62,15 +67,14 @@ private suspend fun runNavigationBrowser(
 
 private suspend fun openLoginInput(browser: WebDriver, driver: WasmAppTestDriver, panel: Boolean) {
     val scope = if (panel) "panel" else "app"
-    val select = if (panel) "Input" else "Private Key"
     waitNavigationDepth(browser, scope, 1)
     if (!panel) driver.clickByDescription("avatar")
     driver.clickByText("Sign in")
-    driver.assertVisibleByText(select)
     waitNavigationDepth(browser, scope, 2)
-    driver.clickByText(select)
+    driver.assertVisibleByText("Account address")
+    driver.assertVisibleByText("Not set")
     driver.assertVisibleByDescription("Edit Private Key")
-    waitNavigationDepth(browser, "$scope/${if (panel) "login" else "signin"}", 2)
+    if (!panel) waitNavigationDepth(browser, "app/signin", 1)
 }
 
 private suspend fun verifyNavigationRoundTrip(
@@ -82,21 +86,14 @@ private suspend fun verifyNavigationRoundTrip(
     val length = historyLength(browser)
     verifyBrowserRoundTrip(browser, driver, panel)
     // The app toolbar must traverse existing history, preserving browser Forward.
-    if (panel) driver.pressEscape() else driver.clickByDescription("back to pre page")
     val scope = if (panel) "panel" else "app"
-    val child = "$scope/${if (panel) "login" else "signin"}"
-    waitNavigationDepth(browser, child, 1)
-    assertEquals(length, historyLength(browser))
     if (panel) driver.pressEscape() else driver.clickByDescription("back to pre page")
     waitNavigationDepth(browser, scope, 1)
     assertEquals(length, historyLength(browser))
     browser.navigate().forward()
-    driver.assertVisibleByText(if (panel) "Input" else "Private Key")
-    browser.navigate().forward()
     driver.assertVisibleByDescription("Edit Private Key")
-    waitNavigationDepth(browser, child, 2)
-    browser.navigate().back()
-    waitNavigationDepth(browser, child, 1)
+    waitNavigationDepth(browser, scope, 2)
+    if (!panel) waitNavigationDepth(browser, "app/signin", 1)
     browser.navigate().back()
     waitNavigationDepth(browser, scope, 1)
     browser.navigate().back()
@@ -111,26 +108,21 @@ private suspend fun verifyNavigationReload(browser: WebDriver, driver: WasmAppTe
     browser.navigate().refresh()
     driver.assertVisibleByDescription("Edit Private Key")
     val scope = if (panel) "panel" else "app"
-    waitNavigationDepth(browser, "$scope/${if (panel) "login" else "signin"}", 2)
+    if (!panel) waitNavigationDepth(browser, "app/signin", 1)
+    waitNavigationDepth(browser, scope, 2)
     assertEquals(length, historyLength(browser))
     verifyBrowserRoundTrip(browser, driver, panel)
 }
 
 private suspend fun verifyBrowserRoundTrip(browser: WebDriver, driver: WasmAppTestDriver, panel: Boolean) {
     val scope = if (panel) "panel" else "app"
-    val child = "$scope/${if (panel) "login" else "signin"}"
-    val select = if (panel) "Input" else "Private Key"
-    browser.navigate().back()
-    driver.assertVisibleByText(select)
-    waitNavigationDepth(browser, child, 1)
     browser.navigate().back()
     waitNavigationDepth(browser, scope, 1)
     if (panel) driver.assertVisibleByText("Sign in") else driver.assertVisibleByDescription("avatar")
     browser.navigate().forward()
-    driver.assertVisibleByText(select)
-    browser.navigate().forward()
     driver.assertVisibleByDescription("Edit Private Key")
-    waitNavigationDepth(browser, child, 2)
+    waitNavigationDepth(browser, scope, 2)
+    if (!panel) waitNavigationDepth(browser, "app/signin", 1)
 }
 
 private suspend fun verifyModalDismissal(browser: WebDriver, driver: WasmAppTestDriver, panel: Boolean) {

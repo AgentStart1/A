@@ -5,7 +5,7 @@
 package com.storyteller_f.alphaheart.app.common
 
 import androidx.navigation3.runtime.NavKey
-import com.storyteller_f.alphaheart.app.pages.search.SearchScope
+import com.storyteller_f.alphaheart.app.search.SearchScope
 import kotlinx.serialization.PolymorphicSerializer
 import kotlinx.serialization.json.Json
 import kotlin.test.Test

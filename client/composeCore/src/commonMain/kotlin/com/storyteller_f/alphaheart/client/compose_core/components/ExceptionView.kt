@@ -22,12 +22,11 @@ import com.storyteller_f.alphaheart.client.compose_core.Res
 import com.storyteller_f.alphaheart.client.compose_core.content_load_failed
 import com.storyteller_f.alphaheart.client.compose_core.retry_action
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
+import com.storyteller_f.alphaheart.client.compose_core.utils.isHtmlContent
 import com.storyteller_f.alphaheart.client.core.ServerErrorException
 import com.storyteller_f.shared.utils.safeMessage
 import io.ktor.client.network.sockets.*
 import org.jetbrains.compose.resources.stringResource
-
-fun ServerErrorException.isHtmlContent(): Boolean = text.startsWith("<html") || text.startsWith("<!DOCTYPE html")
 
 @OptIn(ExperimentalRichTextApi::class)
 @Composable

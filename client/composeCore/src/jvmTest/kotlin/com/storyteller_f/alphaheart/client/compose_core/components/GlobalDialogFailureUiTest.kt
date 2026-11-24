@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.*
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.tasks.GlobalDialogState
 import java.util.Locale
 import kotlin.test.Test
 import kotlin.test.assertEquals

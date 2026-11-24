@@ -32,8 +32,8 @@ import com.storyteller_f.alphaheart.app.common.createReactionsViewModel
 import com.storyteller_f.alphaheart.app.pages.ReadingPageToolbar
 import com.storyteller_f.alphaheart.app.reactions_title
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
-import com.storyteller_f.alphaheart.client.compose_core.components.bottomAppending
-import com.storyteller_f.alphaheart.client.compose_core.components.topPrepend
+import com.storyteller_f.alphaheart.client.compose_core.paging.bottomAppending
+import com.storyteller_f.alphaheart.client.compose_core.paging.topPrepend
 import com.storyteller_f.shared.model.ReactionInfo
 import com.storyteller_f.shared.type.PrimaryKey
 import org.jetbrains.compose.resources.stringResource
