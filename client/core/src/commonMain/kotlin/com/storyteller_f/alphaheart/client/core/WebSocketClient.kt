@@ -165,9 +165,12 @@ class WebSocketClientImpl(
         } catch (e: ServerErrorException) {
             failConnection(e)
             if (e.status == io.ktor.http.HttpStatusCode.Unauthorized) expireConnection()
-        } catch (failure: Throwable) {
+        } catch (failure: Exception) {
+            if (failure is CancellationException) currentCoroutineContext().ensureActive()
+            failConnection(failure)
+        } catch (failure: Error) {
             // Ktor's browser engine wraps a rejected Fetch in a Kotlin Error.
-            if (failure !is Exception && !(failure is Error && failure.message == "Fail to fetch")) throw failure
+            if (failure.message != "Fail to fetch") throw failure
             currentCoroutineContext().ensureActive()
             failConnection(failure)
         }
