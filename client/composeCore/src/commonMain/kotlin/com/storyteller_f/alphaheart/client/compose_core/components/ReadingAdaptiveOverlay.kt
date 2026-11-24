@@ -4,7 +4,6 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -91,7 +90,6 @@ fun ReadingAdaptiveOverlay(onDismiss: () -> Unit, size: ReadingOverlaySize, cont
                     Modifier.width(size.width).heightIn(max = maximumHeight),
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.surfaceContainer,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     shadowElevation = 8.dp,
                 ) {
                     OverlayContent(trigger, body)
@@ -144,7 +142,6 @@ fun ReadingBottomOverlay(onDismiss: () -> Unit, modifier: Modifier = Modifier, c
             Modifier.align(Alignment.BottomCenter).fillMaxWidth().heightIn(max = maxHeight * 0.84f),
             shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
             color = MaterialTheme.colorScheme.surfaceContainer,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         ) {
             Column {
                 ReadingSheetHandle(dismiss)

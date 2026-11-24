@@ -73,7 +73,7 @@
 #ah-unified-combinations .community-dialog-identity h2{font-size:18px;overflow-wrap:anywhere}
 #ah-unified-combinations .community-dialog-identity .community-icon{width:40px;height:40px}
 #ah-unified-combinations .community-overlay{position:absolute;inset:0;z-index:15;background:light-dark(#17312155,#0008);display:grid;place-items:center;padding:20px}
-#ah-unified-combinations .community-dialog{background:var(--ah-paper);border:1px solid var(--ah-line);border-radius:16px;width:320px;max-width:100%;padding:20px}
+#ah-unified-combinations .community-dialog{background:var(--ah-paper);border:0;border-radius:16px;width:320px;max-width:100%;padding:20px}
 #ah-unified-combinations .community-menu-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:22px}
 #ah-unified-combinations .community-menu-actions button{justify-content:center;width:100%;height:52px;min-width:44px;padding:0;border:0;border-radius:10px;color:var(--ah-accent);background:var(--ah-bg)}
 #ah-unified-combinations .community-menu-actions button:hover{background:var(--ah-soft)}
@@ -358,7 +358,7 @@
 #ah-unified-combinations :is(.confirmed-reaction-row button,.confirmed-reactions-list li)[aria-busy="true"]::after{background:repeating-linear-gradient(90deg,currentColor 0 3px,transparent 3px 6px);background-size:12px 100%;animation:confirmed-reaction-pending .65s linear infinite}
 @keyframes confirmed-reaction-pending{to{background-position-x:12px}}
 @media(prefers-reduced-motion:reduce){#ah-unified-combinations :is(.confirmed-reaction-row button,.confirmed-reactions-list li)[aria-busy="true"]::after{animation:none}}
-#ah-unified-combinations .confirmed-reactions-dialog{box-sizing:border-box;width:min(360px,calc(100% - 32px));max-height:calc(100% - 32px);border:1px solid var(--ah-line);border-radius:14px;padding:16px;background:var(--ah-paper);color:var(--ah-text)}
+#ah-unified-combinations .confirmed-reactions-dialog{box-sizing:border-box;width:min(360px,calc(100% - 32px));max-height:calc(100% - 32px);border:0;border-radius:14px;padding:16px;background:var(--ah-paper);color:var(--ah-text)}
 #ah-unified-combinations .confirmed-reactions-dialog::backdrop{background:#15302466}
 #ah-unified-combinations .confirmed-reactions-dialog h2{margin:0;font-size:18px}
 #ah-unified-combinations .confirmed-reactions-list{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:12px 0 0;padding:0;list-style:none;color:var(--ah-muted)}
