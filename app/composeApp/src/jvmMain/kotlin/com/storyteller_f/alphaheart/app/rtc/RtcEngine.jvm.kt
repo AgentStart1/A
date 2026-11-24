@@ -6,6 +6,7 @@
 
 package com.storyteller_f.alphaheart.app.rtc
 
+import dev.onvoid.webrtc.media.MediaDevices
 import dev.onvoid.webrtc.media.video.VideoTrack
 import dev.onvoid.webrtc.media.video.VideoTrackSink
 import io.ktor.client.webrtc.JvmWebRtc
@@ -48,18 +49,32 @@ internal actual fun createRtcEngine(): RtcEngine =
     KtorRtcEngine(Dispatchers.IO.limitedParallelism(1)) {
         val devices = JvmMediaDevices()
         try {
-            devices.audioModule.initPlayout()
-            devices.audioModule.startPlayout()
+            val audioModule = devices.audioModule
+            MediaDevices.getDefaultAudioRenderDevice()?.let(audioModule::setPlayoutDevice)
+            audioModule.initPlayout()
+            audioModule.startPlayout()
             KtorRtcRuntime(
                 WebRtcClient(JvmWebRtc) { mediaTrackFactory = devices },
                 closeAudio = { it.getNative().dispose() },
-                closeResources = devices::close,
+                closeResources = { closeDesktopDevices(devices) },
             )
-        } catch (failure: Exception) {
-            devices.close()
+        } catch (failure: Throwable) {
+            runCatching { closeDesktopDevices(devices) }.exceptionOrNull()?.let(failure::addSuppressed)
+            // WebRTC JNI reports device failures as plain Error instances.
+            if (failure.javaClass == Error::class.java) {
+                throw IllegalStateException("Failed to initialize desktop audio devices", failure)
+            }
             throw failure
         }
     }
+
+private fun closeDesktopDevices(devices: JvmMediaDevices) {
+    try {
+        devices.audioModule.stopPlayout()
+    } finally {
+        devices.close()
+    }
+}
 
 internal actual fun wrapRtcVideo(track: WebRtcMedia.VideoTrack): RtcVideo = DesktopRtcVideo(track.getNative())
 
