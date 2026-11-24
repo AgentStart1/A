@@ -21,11 +21,11 @@ import com.storyteller_f.alphaheart.app.common.SimpleTaskRegister
 import com.storyteller_f.alphaheart.app.common.UploaderImpl
 import com.storyteller_f.alphaheart.app.getWasmServerUrl
 import com.storyteller_f.alphaheart.app.getWasmWsServerUrl
-import com.storyteller_f.alphaheart.client.compose_core.components.ConstPlayItem
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalMediaPlaySession
-import com.storyteller_f.alphaheart.client.compose_core.components.LocalMediaPlayerService
-import com.storyteller_f.alphaheart.client.compose_core.components.MediaPlayerService
-import com.storyteller_f.alphaheart.client.compose_core.components.RemoteMediaItem
+import com.storyteller_f.alphaheart.client.compose_core.media.ConstPlayItem
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlaySession
+import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlayerService
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaPlayerService
+import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
 import com.storyteller_f.alphaheart.client.compose_core.utils.WasmFontGate
 import kotlinx.browser.document
 import kotlinx.browser.localStorage
