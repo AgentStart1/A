@@ -161,7 +161,7 @@
 - 外部 Dockerfile 基础镜像和构建 frontend 按已验证 manifest digest 固定。临时 Docker Hub 故障先有限重试，再考虑改构建配置。
 - RTC ICE candidate 在对应 peer remote description 就绪前必须排队。各 peer 队列独立，完成清理时防止替换同用户较新的连接。
 - Ktor RTC JVM 关闭时先分离 sender track，再关闭连接、释放本地媒体。远程 JVM track 是借用资源，视频 renderer 在 track 释放前移除 sink。原生协商测试使用真实调度器，含取消清理。
-- JVM WebRTC 播放初始化前选择系统默认音频输出，释放媒体工厂前先停止播放。原生绑定用普通 Java Error 报告设备初始化失败时，在平台边界转换为可报告异常；实际设备回归需打开语音、收到摄像头帧，并关闭后重新打开。
+- JVM WebRTC 先选择系统默认音频输出，再由 peer 启动采集和播放。创建 track 时提前启动设备会导致原生层拒绝注册音频传输。释放媒体工厂前先停止播放。原生绑定用普通 Java Error 报告设备初始化失败时，在平台边界转换为可报告异常；实际设备回归需打开语音、收到摄像头帧，并关闭后重新打开。
 - Android Ktor remote track 归原生 receiver 管理。PeerConnection 释放前移除 renderer sink，不单独释放 receiver 所管理的 track。
 - 浏览器 RTC capture 的 `JsException` 在平台边界规范化，它不是 `Exception`。DOM 失败可能没有 JavaScript 栈，保留消息，不保留不安全 JS cause。验证缺设备错误能退出 joining 状态，取消仍为取消。
 - 将空白页面诊断为 RTC 故障前，验证冷加载 Wasm 客户端的压缩。浏览器会话夹具先在同源静态 bootstrap 文档中填充存储，再打开应用，避免准备阶段通过重载中止首次 Wasm 下载。
