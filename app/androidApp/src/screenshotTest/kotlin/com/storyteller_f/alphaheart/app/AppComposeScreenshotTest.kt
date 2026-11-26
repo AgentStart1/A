@@ -173,7 +173,7 @@ fun PrivateKeyEditorScreenshot() {
 fun PrimaryRoomCellScreenshot() {
     ScreenshotAppTheme {
         PaddedPreview {
-            PrimaryRoomCell(sampleRoom().copy(latestTopic = 12, lastRead = 3))
+            PrimaryRoomCell(sampleRoom().copy(joinedTime = fixedTime(), latestTopic = 12, lastRead = 3))
         }
     }
 }
@@ -260,6 +260,7 @@ fun WideRoomRowScreenshot() {
         RoomRowContent(
             sampleRoom().copy(
                 name = "A room with a long name that should wrap cleanly",
+                joinedTime = fixedTime(),
                 latestTopic = 12,
                 lastRead = 3,
             ),

@@ -262,7 +262,7 @@ private fun RoomUnreadBadge(roomInfo: RoomInfo?, activity: RoomActivityPreview?)
     if (count != null && count > 0) {
         val label = count.toString()
         Badge { Text(label, Modifier.appiumSemantics(text = label)) }
-    } else if (count == null && roomInfo?.hasUnread == true) {
+    } else if (count == null && roomInfo?.isJoined == true && roomInfo.hasUnread) {
         val label = stringResource(Res.string.room_unread)
         Badge { Text(label, Modifier.appiumSemantics(text = label)) }
     }
