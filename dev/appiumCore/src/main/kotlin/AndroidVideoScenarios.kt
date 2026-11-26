@@ -4,6 +4,11 @@
 
 package com.storyteller_f.alphaheart.dev.appium
 
+import com.storyteller_f.alphaheart.client.core.getUserInfo
+import com.storyteller_f.result.getOrThrow
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
 fun AppiumTestBase<AppAppiumHelper, AndroidAppiumHelper>.testAndroidPip(paused: Boolean) =
     withUploadedFile(PreviewFile.VIDEO, topic = false) { scope, data ->
         val driver = scope.driver as AndroidAppTestDriver
@@ -127,7 +132,7 @@ fun AppiumTestBase<AppAppiumHelper, AndroidAppiumHelper>.testAndroidMediaRetry(k
         val driver = scope.driver as AndroidAppTestDriver
         openUploadedPreview(driver, data)
         driver.withAnimatedMediaControls {
-            driver.withFailedMediaResponse(data.bytes) { restore ->
+            driver.withFailedMediaResponse(data.bytes, data.file.name) { restore, _ ->
                 driver.clickByDescription("Play")
                 driver.assertVisibleByText("Retry")
                 driver.saveSnapshot("native-media-network-error")
@@ -138,5 +143,24 @@ fun AppiumTestBase<AppAppiumHelper, AndroidAppiumHelper>.testAndroidMediaRetry(k
                 driver.assertVisibleByDescription("Pause")
                 driver.saveSnapshot("native-media-network-recovered")
             }
+        }
+    }
+
+fun AppiumTestBase<AppAppiumHelper, AndroidAppiumHelper>.testAndroidEmbeddedMediaRequest(kind: PreviewFile) =
+    withUploadedFile(kind, topic = true) { scope, data ->
+        val driver = scope.driver as AndroidAppTestDriver
+        val session = data.user.sessionManager
+        val user = session.getUserInfo(requireNotNull(session.model.uid)).getOrThrow()
+        driver.withFailedMediaResponse(data.bytes, data.file.name) { restore, requests ->
+            driver.clickByDescription("avatar")
+            driver.clickByDescription(user.nickname)
+            driver.clickByText(requireNotNull(data.topicMarker))
+            driver.assertVisibleByDescription("Play")
+            assertEquals(0, requests())
+            restore()
+            driver.clickByDescription("Play")
+            driver.assertVisibleByDescription("Pause")
+            if (kind == PreviewFile.VIDEO) driver.assertVideoPlaying(data.file.name)
+            assertTrue(requests() > 0)
         }
     }

@@ -272,7 +272,7 @@ fun RoomTopicCellInternal(
                 }
             },
         ) {
-            AppTopicContentView(topicInfo, true)
+            AppTopicContentView(topicInfo, true, fillWidth = false)
         }
         RoomTopicDropdownMenu(expanded, startAddReaction) {
             expanded = false

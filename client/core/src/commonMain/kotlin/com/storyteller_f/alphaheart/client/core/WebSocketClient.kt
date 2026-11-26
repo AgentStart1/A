@@ -213,7 +213,7 @@ class WebSocketClientImpl(
                     connectionHandler.state.value =
                         receiveFailure?.takeIf { isActive && canConnectWebSocket(userInfo) }?.let(LoadingState::Error)
                 }
-                if (session.closeReason.await()?.code == io.ktor.websocket.CloseReason.Codes.VIOLATED_POLICY.code &&
+                if (session.closedByPolicy() &&
                     sessionModel.userHandler.data.value == userInfo
                 ) {
                     expireConnection()
@@ -221,6 +221,15 @@ class WebSocketClientImpl(
             }
         }
     }
+
+    private suspend fun DefaultClientWebSocketSession.closedByPolicy(): Boolean =
+        try {
+            closeReason.await()?.code == io.ktor.websocket.CloseReason.Codes.VIOLATED_POLICY.code
+        } catch (failure: WebSocketException) {
+            // Ktor can complete closeReason exceptionally on a browser transport error.
+            Napier.d(tag = "ClientWebSocket") { "No close code: ${failure.message.orEmpty()}" }
+            false
+        }
 }
 
 suspend fun DefaultClientWebSocketSession.sendFrame(roomFrame: RoomFrame) {

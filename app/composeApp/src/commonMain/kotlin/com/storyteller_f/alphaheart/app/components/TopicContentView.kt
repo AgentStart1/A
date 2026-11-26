@@ -35,6 +35,7 @@ fun TopicContentView(
     refBlock: MarkdownComponent,
     parsed: State? = null,
     blockIndex: Int? = null,
+    fillWidth: Boolean = true,
 ) {
     val content = topicInfo.content
     if (content is TopicContent.DecryptFailed) {
@@ -79,7 +80,7 @@ fun TopicContentView(
             text = topicContentLabel(plain, parsed, blockIndex),
         ),
     ) {
-        CustomMarkdown(plain, isEmbed, imageTransformer, dimensionMap, parsed, blockIndex) {
+        CustomMarkdown(plain, isEmbed, imageTransformer, dimensionMap, parsed, blockIndex, fillWidth) {
             CustomCodeFence(it, mediaMap, refBlock, onClick)
         }
     }

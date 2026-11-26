@@ -20,7 +20,7 @@ import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon a
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
 @Composable
-expect fun VideoViewEmbed(remoteMediaItem: RemoteMediaItem)
+expect fun VideoViewEmbed(remoteMediaItem: RemoteMediaItem, loadOnPlay: Boolean = true)
 
 @Composable
 expect fun VideoViewFilled(remoteMediaItem: RemoteMediaItem)

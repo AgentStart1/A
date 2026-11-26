@@ -16,6 +16,7 @@ import org.openqa.selenium.StaleElementReferenceException
 import org.openqa.selenium.support.ui.ExpectedConditions
 import org.openqa.selenium.support.ui.WebDriverWait
 import java.time.Duration
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -217,12 +218,17 @@ class AndroidAppTestDriver internal constructor(
     private fun playbackVolume(): Float? =
         driver.findElements(By.className("android.widget.SeekBar")).lastOrNull()?.text?.toFloatOrNull()
 
-    internal suspend fun withFailedMediaResponse(bytes: ByteArray, block: suspend (() -> Unit) -> Unit) {
+    internal suspend fun withFailedMediaResponse(
+        bytes: ByteArray,
+        fileName: String,
+        block: suspend (restore: () -> Unit, requests: () -> Int) -> Unit,
+    ) {
         val previous =
             runAdbCommand(listOf("reverse", "--list")).lineSequence()
                 .map { it.trim().split(Regex("\\s+")) }
                 .single { it.size == 3 && it[1] == "tcp:8822" }[2]
         val ready = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val mediaRequests = AtomicInteger()
         val server = com.sun.net.httpserver.HttpServer.create(java.net.InetSocketAddress("127.0.0.1", 0), 0)
         val restore =
             AutoCloseable {
@@ -235,6 +241,7 @@ class AndroidAppTestDriver internal constructor(
         restore.use {
             server.createContext("/") { exchange ->
                 exchange.use {
+                    if (it.requestURI.path.substringAfterLast('/') == fileName) mediaRequests.incrementAndGet()
                     if (ready.isCompleted) {
                         it.sendResponseHeaders(200, bytes.size.toLong())
                         it.responseBody.buffered().use { output -> output.write(bytes) }
@@ -245,7 +252,7 @@ class AndroidAppTestDriver internal constructor(
             }
             server.start()
             runAdbCommand(listOf("reverse", "tcp:8822", "tcp:${server.address.port}"))
-            block { ready.complete(Unit) }
+            block({ ready.complete(Unit) }, mediaRequests::get)
         }
     }
 

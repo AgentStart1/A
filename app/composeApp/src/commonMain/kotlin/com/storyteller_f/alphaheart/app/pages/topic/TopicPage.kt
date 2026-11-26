@@ -274,7 +274,7 @@ private fun CurrentRoomTopicContent(topicInfo: TopicDetail, parsed: State?, star
             )
         },
     ) {
-        AppTopicContentView(topicInfo, parsed = parsed)
+        AppTopicContentView(topicInfo, parsed = parsed, fillWidth = false)
     }
 }
 

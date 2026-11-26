@@ -35,7 +35,7 @@ import io.github.aakira.napier.Napier
 import kotlin.uuid.ExperimentalUuidApi
 
 @Composable
-actual fun VideoViewEmbed(remoteMediaItem: RemoteMediaItem) {
+actual fun VideoViewEmbed(remoteMediaItem: RemoteMediaItem, loadOnPlay: Boolean) {
     MediaPlayerEmbed(remoteMediaItem) { playingSession, localMediaPlaySession ->
         VideoPlayer(playingSession, localMediaPlaySession, remoteMediaItem)
     }

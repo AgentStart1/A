@@ -19,8 +19,10 @@ import java.net.InetSocketAddress
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.abs
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 @OptIn(ExperimentalTestApi::class)
 class NativeMediaPlaybackTest {
@@ -59,6 +61,48 @@ class NativeMediaPlaybackTest {
 
     @Test
     fun `real VLC audio network error resumes after user retry`() = checkNetworkRetry(false)
+
+    @Test
+    fun `embedded audio waits for play before requesting bytes`() = checkLoadOnPlay(false)
+
+    @Test
+    fun `embedded video waits for play before requesting bytes`() = checkLoadOnPlay(true)
+
+    private fun checkLoadOnPlay(video: Boolean) =
+        withEnglish {
+            val source = if (video) fixture else fixture.resolveSibling("sample.wav")
+            val requests = AtomicInteger()
+            val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+            server.createContext("/") { exchange ->
+                exchange.use {
+                    requests.incrementAndGet()
+                    it.responseHeaders.add("Content-Type", if (video) "video/mp4" else "audio/wav")
+                    it.sendResponseHeaders(200, Files.size(source))
+                    Files.newInputStream(source).buffered().use { input ->
+                        it.responseBody.buffered().use { output -> input.copyTo(output) }
+                    }
+                }
+            }
+            server.start()
+            try {
+                runComposeUiTest {
+                    val media = item("http://127.0.0.1:${server.address.port}/${source.fileName}", video)
+                    setContent {
+                        if (video) VideoViewEmbed(media) else AudioViewEmbed(media, loadOnPlay = true)
+                    }
+                    waitForNode(isEnabled() and hasContentDescription("Play"))
+                    onNodeWithContentDescription("Playback position").assertIsDisplayed()
+                    onNode(hasText(" / ", substring = true)).assertDoesNotExist()
+                    waitForIdle()
+                    assertEquals(0, requests.get())
+                    onNodeWithContentDescription("Play").performClick()
+                    waitUntil(timeoutMillis = 15_000) { requests.get() > 0 }
+                    waitForNode(hasContentDescription("Pause"))
+                }
+            } finally {
+                server.stop(0)
+            }
+        }
 
     private fun checkNetworkRetry(video: Boolean) =
         withEnglish {

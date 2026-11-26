@@ -59,6 +59,7 @@ fun CustomMarkdown(
     dimensionMap: ImmutableMap<String, Dimension?>,
     parsed: State? = null,
     blockIndex: Int? = null,
+    fillWidth: Boolean = true,
     codeFence: MarkdownComponent,
 ) {
     // Parsed nodes own embedded controls; a width-only remeasurement must not replace them.
@@ -86,7 +87,7 @@ fun CustomMarkdown(
                 }
             Markdown(
                 state = state,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier,
                 colors = colors,
                 typography = typography,
                 imageTransformer = imageTransformer,

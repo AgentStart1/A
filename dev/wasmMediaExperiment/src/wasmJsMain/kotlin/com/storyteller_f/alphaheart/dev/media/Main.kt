@@ -61,7 +61,11 @@ fun main() {
                 }
                 if (mounted) {
                     Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(32.dp))) {
-                        if (audio) AudioViewEmbed(item) else VideoViewEmbed(item)
+                        if (audio) {
+                            AudioViewEmbed(item)
+                        } else {
+                            VideoViewEmbed(item, loadOnPlay = window.location.search.contains("onDemandVideo=true"))
+                        }
                         if (!audio) {
                             Box(Modifier.align(Alignment.TopEnd)) {
                                 Button(onClick = { overlay = OverlayMode.MENU }) { Text("Compose overlay") }

@@ -168,6 +168,7 @@
 - 同时检查 Wasm 运行时依赖解析和编译 classpath。Ktor 3.6.0 浏览器适配器保留 Wrappers 2026.1.9 ABI，较新传递 wrappers 可能移除内联符号而编译仍成功。解决 primitive ABI 兼容时，保留 recorder 较新的 URL API。修改 RTC 依赖时，验证真实浏览器 constraint 转换、合成 track capture、SDP 创建和清理。
 - 浏览器 ICE 事件可能在最终 null 事件前包含空 candidate 字符串。RTC 边界将其作为 end-of-candidates 标记，原生 Ktor adapter 会拒绝它。非空无效 candidate 仍须失败，并验证标记后媒体继续传输。
 - 共享 RTC 分发必须区分接收 channel 取消与调用方取消。传播前检查调用方上下文；单个 WebSocket 关闭不能取消全局信令或协商 job。
+- 浏览器 WebSocket 异常断线时，Ktor 的 closeReason 可能以 WebSocketException 结束。清理时将其视为没有关闭码，继续重连，保留真实策略关闭码的会话处理。
 - 通过 requestVideoFrameCallback 的 presentedFrames 验证浏览器 WebRTC 呈现。Firefox 对 MediaStream 可能报告 VideoPlaybackQuality totalVideoFrames 为零，但实际仍在显示帧；不能仅据该计数判断视频冻结。
 - 自适应表单每个 item 只产生一个布局根节点，包含分隔线。编辑器草稿与模式状态放在响应式宽度分支外；扣除面板 padding 后测量断点。
 - 直接提供方 Koog 模型名只通过 modelsById() 按精确目录 ID 解析；拒绝未列出 ID，不添加手动别名、模型替换或元数据回退。OpenRouter 是路由例外：通过 LLModel 接受非空白 ID，不查目录、不猜 token 上限，让远端 API 验证模型支持。

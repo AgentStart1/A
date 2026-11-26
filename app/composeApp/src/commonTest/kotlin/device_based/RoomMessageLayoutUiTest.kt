@@ -22,14 +22,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.app.components.TopicContentView
 import com.storyteller_f.alphaheart.app.pages.topic.RoomMessageLayout
+import com.storyteller_f.shared.model.FileInfo
+import com.storyteller_f.shared.model.TopicContent
+import com.storyteller_f.shared.model.TopicInfo
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -97,6 +106,85 @@ class RoomMessageLayoutUiTest {
             }
             runOnIdle { assertEquals(2 to 4, avatarClicks to actionClicks) }
         }
+
+    @Test
+    fun realMarkdownAndMediaStayWithinTheMessageWidth() =
+        runAppComposeUiTest {
+            val viewport = mutableStateOf(1000.dp)
+            val own = mutableStateOf(false)
+            val body = mutableStateOf(TopicContent.Plain("Hi"))
+            val longText = "A longer message should wrap at the edge of the bubble. ".repeat(12)
+            val code = "```kotlin\n" + "val a = 42\n".repeat(3) + "```"
+            setContent {
+                MaterialTheme {
+                    Box(Modifier.requiredSize(viewport.value, 760.dp).testTag("pane")) {
+                        RoomMessageLayout(
+                            ownMessage = own.value,
+                            avatar = { Box(Modifier.size(34.dp).testTag("avatar")) },
+                            actions = { Box(Modifier.width(180.dp).height(30.dp).testTag("actions")) },
+                        ) {
+                            TopicContentView(
+                                TopicInfo.EMPTY.copy(content = body.value),
+                                onClick = {},
+                                isEmbed = true,
+                                refBlock = {},
+                                fillWidth = false,
+                            )
+                        }
+                    }
+                }
+            }
+            for (width in listOf(1000.dp, 390.dp)) {
+                for (outgoing in listOf(false, true)) {
+                    runOnIdle {
+                        viewport.value = width
+                        own.value = outgoing
+                        body.value = TopicContent.Plain("Hi")
+                    }
+                    onAllNodesWithText("Hi").onLast().assertIsDisplayed()
+                    val short = onNodeWithTag("room-message-bubble").getUnclippedBoundsInRoot()
+                    val actions = onNodeWithTag("actions").getUnclippedBoundsInRoot()
+                    assertTrue(short.right - short.left < actions.right - actions.left, "Short bubble must wrap")
+                    runOnIdle { body.value = TopicContent.Plain(longText) }
+                    onAllNodesWithText(longText.trim(), substring = true).onLast().assertIsDisplayed()
+                    val long = onNodeWithTag("room-message-bubble").getUnclippedBoundsInRoot()
+                    assertTrue(long.right - long.left > short.right - short.left)
+                    assertTrue(long.bottom - long.top > short.bottom - short.top)
+                    assertBubbleGeometry(width, outgoing)
+                    runOnIdle { body.value = TopicContent.Plain(code) }
+                    val codeNodes = onAllNodesWithText("val a = 42", substring = true, useUnmergedTree = true)
+                    waitUntil(timeoutMillis = 5_000) { codeNodes.fetchSemanticsNodes().isNotEmpty() }
+                    codeNodes.onLast().assertIsDisplayed()
+                    assertBubbleGeometry(width, outgoing)
+                    for ((name, mime) in listOf("sample.wav" to "audio/wav", "sample.mp4" to "video/mp4")) {
+                        val file = FileInfo.EMPTY.copy(name = name, contentType = mime, url = "http://127.0.0.1/$name")
+                        runOnIdle {
+                            val source = "```object\n" + """{"name":"$name"}""" + "\n```"
+                            body.value = TopicContent.Plain(source, listOf(file))
+                        }
+                        onNodeWithContentDescription("Playback position").assertIsDisplayed()
+                        assertBubbleGeometry(width, outgoing)
+                    }
+                }
+            }
+        }
+
+    private fun ComposeUiTest.assertBubbleGeometry(width: Dp, outgoing: Boolean) {
+        val pane = onNodeWithTag("pane").getUnclippedBoundsInRoot()
+        val bubble = onNodeWithTag("room-message-bubble").getUnclippedBoundsInRoot()
+        val actions = onNodeWithTag("actions").getUnclippedBoundsInRoot()
+        val maxWidth = width * if (width < 600.dp) 0.95f else 0.88f
+        assertTrue(bubble.right - bubble.left <= maxWidth + 1.dp)
+        if (outgoing) {
+            assertEquals(pane.right, bubble.right)
+            assertEquals(bubble.right, actions.right)
+        } else {
+            val avatar = onNodeWithTag("avatar").getUnclippedBoundsInRoot()
+            assertTrue(avatar.right < bubble.left)
+            assertEquals(bubble.left, actions.left)
+            assertTrue(bubble.right - pane.left <= maxWidth + 1.dp)
+        }
+    }
 
     @Test
     fun mediaStateAndIdentityAnchorSurviveResizeAndRepeatedExpansion() =

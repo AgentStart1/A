@@ -17,6 +17,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -31,6 +32,7 @@ import com.storyteller_f.alphaheart.client.compose_core.media.DesktopVideoFrame
 import com.storyteller_f.alphaheart.client.compose_core.media.DesktopVideoHost
 import com.storyteller_f.alphaheart.client.compose_core.media.DesktopVideoState
 import com.storyteller_f.alphaheart.client.compose_core.media.MediaControlActions
+import com.storyteller_f.alphaheart.client.compose_core.media.MediaControlState
 import com.storyteller_f.alphaheart.client.compose_core.media.MediaSurfaceLayout
 import com.storyteller_f.alphaheart.client.compose_core.media.MediaVolumeControl
 import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
@@ -44,12 +46,13 @@ import org.jetbrains.skia.ColorType
 import org.jetbrains.skia.ImageInfo
 
 @Composable
-actual fun VideoViewEmbed(remoteMediaItem: RemoteMediaItem) {
+actual fun VideoViewEmbed(remoteMediaItem: RemoteMediaItem, loadOnPlay: Boolean) {
     DesktopMedia(
         remoteMediaItem,
         Modifier.fillMaxWidth(),
         video = true,
         layout = MediaSurfaceLayout.EmbeddedVideo(),
+        loadOnPlay = loadOnPlay,
     )
 }
 
@@ -69,30 +72,40 @@ internal fun DesktopMedia(
     modifier: Modifier,
     video: Boolean,
     layout: MediaSurfaceLayout = MediaSurfaceLayout.Bounded,
-    startPlaying: Boolean = video,
+    loadOnPlay: Boolean = false,
 ) {
     val scope = rememberCoroutineScope()
+    var requested by remember(item.url, video, loadOnPlay) { mutableStateOf(!loadOnPlay) }
     var retryGeneration by remember(item.url, video) { mutableIntStateOf(0) }
-    val autoPlay = startPlaying || retryGeneration > 0
     val host =
-        remember(item.url, video, scope, retryGeneration, autoPlay) {
-            DesktopVideoHost(item.url, scope, desktopVideoCoordination, Dispatchers.IO) {
-                VlcMediaPlayer(autoPlay = autoPlay)
+        if (requested) {
+            remember(item.url, video, scope, retryGeneration, loadOnPlay) {
+                DesktopVideoHost(item.url, scope, desktopVideoCoordination, Dispatchers.IO) {
+                    VlcMediaPlayer(autoPlay = video || loadOnPlay || retryGeneration > 0)
+                }
             }
+        } else {
+            null
         }
-    DisposableEffect(host) { onDispose { host.close() } }
-    val state by host.state.collectAsState()
+    if (host != null) DisposableEffect(host) { onDispose { host.close() } }
+    val state = host?.state?.collectAsState()?.value
     val ready = state as? DesktopVideoState.Ready
     val bitmap by rememberDesktopBitmap(ready?.frame)
     val volume =
         remember(host) {
-            MediaVolumeControl { level, muted -> host.setVolume(if (muted) 0f else level) }
+            MediaVolumeControl { level, muted -> host?.setVolume(if (muted) 0f else level) }
         }
-    val controls = state.toControlState()
+    val controls = state?.toControlState() ?: MediaControlState(volumeEnabled = false, durationKnown = false)
     val actions =
         MediaControlActions(
-            { if (ready?.playing == true) host.pause() else host.play() },
-            host::seek,
+            {
+                when {
+                    host == null -> requested = true
+                    ready?.playing == true -> host.pause()
+                    else -> host.play()
+                }
+            },
+            { host?.seek(it) },
             volume::setVolume,
             { volume.toggleMute(controls.volume, controls.muted) },
             retry = { retryGeneration++ },
@@ -116,18 +129,16 @@ internal fun DesktopMedia(
             artwork = item.cover?.url,
             layout = layout,
         ) {
-            bitmap?.let { image ->
-                val ratio = ready?.aspectRatio ?: image.width.toFloat() / image.height
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Image(
-                        image,
-                        "video frame ${item.name}",
-                        Modifier.aspectRatio(ratio),
-                        contentScale = ContentScale.FillBounds,
-                    )
-                }
-            }
+            bitmap?.let { DesktopVideoPicture(item.name, it, ready?.aspectRatio) }
         }
+    }
+}
+
+@Composable
+private fun DesktopVideoPicture(name: String, image: ImageBitmap, aspectRatio: Float?) {
+    val ratio = aspectRatio ?: image.width.toFloat() / image.height
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Image(image, "video frame $name", Modifier.aspectRatio(ratio), contentScale = ContentScale.FillBounds)
     }
 }
 

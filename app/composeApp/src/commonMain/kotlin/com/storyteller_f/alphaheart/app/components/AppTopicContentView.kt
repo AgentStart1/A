@@ -30,6 +30,7 @@ fun AppTopicContentView(
     communityId: PrimaryKey? = null,
     parsed: State? = null,
     blockIndex: Int? = null,
+    fillWidth: Boolean = true,
 ) {
     val appNavFactory = LocalAppNavFactory.current
     CommunityTopicContent(communityId, topicInfo) {
@@ -40,6 +41,7 @@ fun AppTopicContentView(
             refBlock = { RefBlock(it) },
             parsed = parsed,
             blockIndex = blockIndex,
+            fillWidth = fillWidth,
         )
     }
 }

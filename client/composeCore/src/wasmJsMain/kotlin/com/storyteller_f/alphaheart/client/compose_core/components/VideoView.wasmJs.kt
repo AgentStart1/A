@@ -12,12 +12,13 @@ import com.storyteller_f.alphaheart.client.compose_core.media.MediaSurfaceLayout
 import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
 
 @Composable
-actual fun VideoViewEmbed(remoteMediaItem: RemoteMediaItem) {
+actual fun VideoViewEmbed(remoteMediaItem: RemoteMediaItem, loadOnPlay: Boolean) {
     WasmMediaPlayer(
         remoteMediaItem,
         Modifier.fillMaxWidth(),
         video = true,
         layout = MediaSurfaceLayout.EmbeddedVideo(),
+        loadOnPlay = loadOnPlay,
     )
 }
 

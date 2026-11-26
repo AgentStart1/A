@@ -12,6 +12,12 @@ class AppAndroidAppiumTest :
         AndroidAppiumHelper(),
     ) {
     @Test
+    fun `test embedded audio requests media only after play`() = testAndroidEmbeddedMediaRequest(PreviewFile.AUDIO)
+
+    @Test
+    fun `test embedded video requests media only after play`() = testAndroidEmbeddedMediaRequest(PreviewFile.VIDEO)
+
+    @Test
     fun `test video network error recovers after user retry`() = testAndroidMediaRetry(PreviewFile.VIDEO)
 
     @Test

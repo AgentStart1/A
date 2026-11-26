@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -73,10 +74,7 @@ internal fun RoomMessageLayout(
                     }
                 }
                 RoomMessageBubble(ownMessage, compact, content)
-                Box(
-                    Modifier.fillMaxWidth().padding(top = actionsTopPadding),
-                    contentAlignment = if (ownMessage) Alignment.TopEnd else Alignment.TopStart,
-                ) {
+                Box(Modifier.padding(top = actionsTopPadding)) {
                     actions()
                 }
             }
@@ -87,6 +85,7 @@ internal fun RoomMessageLayout(
 @Composable
 private fun RoomMessageBubble(ownMessage: Boolean, compact: Boolean, content: @Composable () -> Unit) {
     Surface(
+        modifier = Modifier.testTag("room-message-bubble"),
         shape =
         RoundedCornerShape(
             topStart = if (ownMessage) 15.dp else 3.dp,

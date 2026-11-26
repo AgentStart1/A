@@ -26,7 +26,6 @@ import androidx.compose.ui.graphics.asComposeImageBitmap
 import androidx.compose.ui.graphics.skiaCanvas
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import com.storyteller_f.alphaheart.client.compose_core.media.BrowserMediaHost
 import com.storyteller_f.alphaheart.client.compose_core.media.MediaControlActions
 import com.storyteller_f.alphaheart.client.compose_core.media.MediaSnapshot
@@ -105,7 +104,7 @@ internal fun WasmMediaPlayer(
             artwork = item.cover?.url,
             layout = layout,
         ) {
-            WasmMediaFrame(item, bitmap, textureRenderer, host)
+            WasmMediaFrame(bitmap, textureRenderer, host)
         }
     }
 }
@@ -136,12 +135,7 @@ private fun rememberBrowserMediaActions(
 }
 
 @Composable
-private fun WasmMediaFrame(
-    item: RemoteMediaItem,
-    frame: Bitmap?,
-    textureRenderer: WasmTextureRenderer?,
-    host: BrowserMediaHost,
-) {
+private fun WasmMediaFrame(frame: Bitmap?, textureRenderer: WasmTextureRenderer?, host: BrowserMediaHost) {
     if (textureRenderer != null) {
         Canvas(Modifier.fillMaxSize()) {
             textureRenderer.draw(drawContext.canvas.skiaCanvas, size) { host.failRendering() }
@@ -149,7 +143,5 @@ private fun WasmMediaFrame(
     } else if (frame != null) {
         val composeImage = remember(frame) { frame.asComposeImageBitmap() }
         Image(composeImage, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-    } else {
-        AsyncImage(item.cover?.url, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
     }
 }

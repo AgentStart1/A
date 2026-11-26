@@ -17,6 +17,7 @@ import io.ktor.client.call.HttpClientCall
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
+import io.ktor.client.plugins.websocket.WebSocketException
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.HttpResponseData
@@ -43,6 +44,7 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -92,6 +94,45 @@ internal class WebSocketDisconnectRecoveryTest {
                 val result = socket.useWebSocket { send(Frame.Text("retry-probe")) }
                 assertTrue(result.isSuccess, "The retried connection should accept a WebSocket operation")
                 assertIs<Frame.Text>(sessions.last().outgoingFrames.tryReceive().getOrNull())
+                assertFalse(model.sessionExpired.value)
+            } finally {
+                connectionJob.cancelAndJoin()
+                sessions.forEach(ControlledWebSocketSession::close)
+                client.close()
+            }
+        }
+
+    @Test
+    fun failedCloseReasonDoesNotStopAutomaticReconnect() =
+        runTest {
+            val model = UserSessionModel().apply { updateUser(UserInfo.EMPTY) }
+            val client = createClient()
+            val closeReason = CompletableDeferred<CloseReason?>()
+            val sessions = mutableListOf<ControlledWebSocketSession>()
+            val socket =
+                WebSocketClientImpl(model, pass(), { _, _ ->
+                    val session =
+                        if (sessions.isEmpty()) controlledSession(client, closeReason) else controlledSession(client)
+                    sessions.add(session)
+                    session.clientSession
+                }, { _, _ -> })
+            val connectionJob = backgroundScope.launch { socket.connectWebSocket() }
+
+            try {
+                runCurrent()
+                assertIs<LoadingState.Done>(socket.connectionHandler.state.value)
+                val failure = WebSocketException("Transport failed")
+                closeReason.completeExceptionally(failure)
+                sessions.first().incomingFrames.close(failure)
+                runCurrent()
+
+                assertTrue(connectionJob.isActive)
+                assertIs<LoadingState.Error>(socket.connectionHandler.state.value)
+                advanceTimeBy(5_000)
+                runCurrent()
+
+                assertEquals(2, sessions.size)
+                assertIs<LoadingState.Done>(socket.connectionHandler.state.value)
                 assertFalse(model.sessionExpired.value)
             } finally {
                 connectionJob.cancelAndJoin()
@@ -248,10 +289,13 @@ internal class WebSocketDisconnectRecoveryTest {
             }
         }
 
-    private suspend fun controlledSession(client: HttpClient): ControlledWebSocketSession {
+    private suspend fun controlledSession(
+        client: HttpClient,
+        closeReason: CompletableDeferred<CloseReason?> = CompletableDeferred(null),
+    ): ControlledWebSocketSession {
         val parentContext = currentCoroutineContext()
         val sessionContext = parentContext + Job(parentContext[Job])
-        val rawSession = ControlledDefaultWebSocketSession(sessionContext)
+        val rawSession = ControlledDefaultWebSocketSession(sessionContext, closeReason)
         return ControlledWebSocketSession(
             incomingFrames = rawSession.incomingFrames,
             outgoingFrames = rawSession.outgoingFrames,
@@ -308,15 +352,16 @@ private data class ControlledWebSocketSession(
     }
 }
 
-private class ControlledDefaultWebSocketSession(override val coroutineContext: CoroutineContext) :
-    DefaultWebSocketSession {
+private class ControlledDefaultWebSocketSession(
+    override val coroutineContext: CoroutineContext,
+    override val closeReason: CompletableDeferred<CloseReason?>,
+) : DefaultWebSocketSession {
     val incomingFrames = Channel<Frame>(Channel.UNLIMITED)
     val outgoingFrames = Channel<Frame>(Channel.UNLIMITED)
 
     override val incoming: ReceiveChannel<Frame> = incomingFrames
     override val outgoing: SendChannel<Frame> = outgoingFrames
     override val extensions: List<WebSocketExtension<*>> = emptyList()
-    override val closeReason = CompletableDeferred<CloseReason?>().apply { complete(null) }
     override var pingIntervalMillis: Long = 0
     override var timeoutMillis: Long = 0
     override var masking: Boolean = false

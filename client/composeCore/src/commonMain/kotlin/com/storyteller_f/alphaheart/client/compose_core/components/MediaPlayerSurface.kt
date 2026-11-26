@@ -212,7 +212,7 @@ private fun MediaSurfaceContent(
                         RoundedCornerShape(10.dp),
                     ).background(Color(0xFF14241A)).testTag("media-player-stage"),
                 ) {
-                    if (video) content() else MediaAudioArtwork(title, artwork, !expanded && !controlsVisible)
+                    MediaStageContent(video, title, artwork, !expanded && !controlsVisible, content)
                 }
             }
             if (controlsVisible) {
@@ -320,6 +320,22 @@ private fun MediaPosition(
                 maxLines = 1,
             )
         }
+    }
+}
+
+@Composable
+private fun BoxScope.MediaStageContent(
+    video: Boolean,
+    title: String,
+    artwork: String?,
+    showAudioTitle: Boolean,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    if (video) {
+        if (artwork != null) AsyncImage(artwork, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+        content()
+    } else {
+        MediaAudioArtwork(title, artwork, showAudioTitle)
     }
 }
 
