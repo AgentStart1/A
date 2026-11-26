@@ -11,7 +11,6 @@ import androidx.paging.cachedIn
 import com.storyteller_f.alphaheart.api.CustomApi
 import com.storyteller_f.alphaheart.api.PaginationQuery
 import com.storyteller_f.alphaheart.api.RoomInfoListResponse
-import com.storyteller_f.alphaheart.api.UnreadMessageCountResponse
 import com.storyteller_f.alphaheart.client.compose_core.common.PagingViewModel
 import com.storyteller_f.alphaheart.client.compose_core.common.SimpleViewModel
 import com.storyteller_f.alphaheart.client.compose_core.common.buildPager
@@ -21,9 +20,11 @@ import com.storyteller_f.alphaheart.client.core.UserSessionManager
 import com.storyteller_f.alphaheart.client.core.getCommunityRooms
 import com.storyteller_f.alphaheart.client.core.getUnreadMessageCount
 import com.storyteller_f.alphaheart.client.core.getUserRooms
+import com.storyteller_f.alphaheart.client.core.hasUnreadRooms
 import com.storyteller_f.alphaheart.client.core.searchCommunityRooms
 import com.storyteller_f.alphaheart.client.core.searchCurrentUserRooms
 import com.storyteller_f.result.CustomResult
+import com.storyteller_f.result.map
 import com.storyteller_f.result.onSuccess
 import com.storyteller_f.shared.model.RoomInfo
 import com.storyteller_f.shared.type.JoinStatusSearch
@@ -112,13 +113,22 @@ class UserJoinedRoomsViewModel(sessionManager: UserSessionManager, modelStorage:
         }.flow.cachedIn(viewModelScope)
 }
 
-class UnreadMessageCountViewModel(sessionManager: UserSessionManager) : SimpleViewModel<UnreadMessageCountResponse>() {
-    override val handler: LoadingHandler<UnreadMessageCountResponse> =
+internal data class HomeUnreadBadge(val hasUnread: Boolean, val messageCount: Long = 0)
+
+internal class UnreadMessageCountViewModel(sessionManager: UserSessionManager) : SimpleViewModel<HomeUnreadBadge>() {
+    override val handler: LoadingHandler<HomeUnreadBadge> =
         SimpleLoadingHandler(viewModelScope) {
             if (sessionManager.currentIsAlreadySignUp) {
-                sessionManager.getUnreadMessageCount()
+                when (val count = sessionManager.getUnreadMessageCount()) {
+                    is CustomResult.Success ->
+                        CustomResult.success(
+                            HomeUnreadBadge(count.value.unreadMessageCount > 0, count.value.unreadMessageCount),
+                        )
+
+                    is CustomResult.Failure -> sessionManager.hasUnreadRooms().map { HomeUnreadBadge(it.hasUnread) }
+                }
             } else {
-                CustomResult.success(UnreadMessageCountResponse(0))
+                CustomResult.success(HomeUnreadBadge(false))
             }
         }
 }

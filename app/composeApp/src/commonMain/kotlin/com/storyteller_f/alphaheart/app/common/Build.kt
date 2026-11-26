@@ -443,7 +443,7 @@ fun getUserOverviewViewModel() =
     }
 
 @Composable
-fun getUnreadMessageCountViewModel(): UnreadMessageCountViewModel =
+internal fun getUnreadMessageCountViewModel(): UnreadMessageCountViewModel =
     customViewModel(listOf("unread-message-count")) { sessionManager, _ ->
         UnreadMessageCountViewModel(sessionManager)
     }

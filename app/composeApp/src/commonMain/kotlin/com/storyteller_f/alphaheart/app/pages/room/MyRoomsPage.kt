@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,7 +30,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -178,19 +176,15 @@ private fun RoomCellInternal(
     val roomShown by roomDialog.shown
     val communityDialog = rememberCommonDialogController()
     val communityShown by communityDialog.shown
-    BadgedBox(badge = {
-        if (!wide && activity == null && roomInfo?.hasUnread == true) Badge(containerColor = Color.Red)
-    }) {
-        RoomRowContent(roomInfo, communityInfo, wide, modifier, {
-            RoomIconWithDialog(
-                roomInfo,
-                showDialog = roomShown,
-                updateDialog = roomDialog::update,
-            )
-        }, activity, showAid, communityIcon = {
-            CommunityIconWithDialog(communityInfo, communityShown, 22.dp, onClickIcon = communityDialog::update)
-        })
-    }
+    RoomRowContent(roomInfo, communityInfo, wide, modifier, {
+        RoomIconWithDialog(
+            roomInfo,
+            showDialog = roomShown,
+            updateDialog = roomDialog::update,
+        )
+    }, activity, showAid, communityIcon = {
+        CommunityIconWithDialog(communityInfo, communityShown, 22.dp, onClickIcon = communityDialog::update)
+    })
 }
 
 /** Pure room presentation; callers provide navigation-aware icons outside screenshot fixtures. */
@@ -255,22 +249,22 @@ private fun androidx.compose.foundation.layout.RowScope.RoomRowMetadata(
             style = MaterialTheme.typography.labelMedium,
         )
         Box(Modifier.width(64.dp), contentAlignment = Alignment.Center) {
-            if (activity?.unreadCount?.let { it > 0 } ?: (roomInfo?.hasUnread == true)) {
-                Badge {
-                    val label = activity?.unreadCount?.toString() ?: stringResource(Res.string.room_unread)
-                    Text(label, Modifier.appiumSemantics(text = label))
-                }
-            }
+            RoomUnreadBadge(roomInfo, activity)
         }
     } else {
-        if (activity != null && activity.unreadCount > 0) {
-            Badge {
-                Text(
-                    activity.unreadCount.toString(),
-                    Modifier.appiumSemantics(text = activity.unreadCount.toString()),
-                )
-            }
-        }
+        RoomUnreadBadge(roomInfo, activity)
+    }
+}
+
+@Composable
+private fun RoomUnreadBadge(roomInfo: RoomInfo?, activity: RoomActivityPreview?) {
+    val count = activity?.unreadCount
+    if (count != null && count > 0) {
+        val label = count.toString()
+        Badge { Text(label, Modifier.appiumSemantics(text = label)) }
+    } else if (count == null && roomInfo?.hasUnread == true) {
+        val label = stringResource(Res.string.room_unread)
+        Badge { Text(label, Modifier.appiumSemantics(text = label)) }
     }
 }
 

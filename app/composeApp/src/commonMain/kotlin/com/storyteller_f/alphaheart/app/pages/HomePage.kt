@@ -105,11 +105,11 @@ fun HomePage() {
     val unreadMessages by key(
         unreadMessagesViewModel,
     ) { unreadMessagesViewModel.handler.data.collectAsStateWithLifecycle() }
-    val unreadMessageCount = unreadMessages?.unreadMessageCount ?: 0
+    val unreadMessageCount = unreadMessages?.messageCount ?: 0
     AdaptiveSectionScaffold(
         pagerState,
         homeNavRoutes,
-        unreadMessageCount > 0,
+        unreadMessages?.hasUnread == true,
         unreadMessageCount,
         Modifier.testTag("home"),
         { page, compact ->

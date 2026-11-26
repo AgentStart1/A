@@ -547,6 +547,8 @@
 #ah-unified-combinations .product :is(.rail,.bottom-nav,.profile-navigation,.object-navigation) button{flex-shrink:0;white-space:nowrap;word-break:normal;overflow-wrap:normal} /* fixed-nav-width */
 #ah-unified-combinations .product :is(.rail,.bottom-nav,.profile-navigation,.object-navigation) button>span,#ah-unified-combinations .product :is(.rail,.bottom-nav,.profile-navigation,.object-navigation) button>svg{flex-shrink:0;white-space:nowrap;overflow-wrap:normal;word-break:normal} /* fixed-nav-width */
 #ah-unified-combinations .product .rail button .badge{margin-left:auto;flex:none} /* fixed-nav-width */
+#ah-unified-combinations .bottom-nav button:has(.badge){position:relative}
+#ah-unified-combinations .bottom-nav button .badge{position:absolute;top:3px;left:calc(50% + 6px)}
 #ah-unified-combinations .product .room-community-group>.room-community-ref{margin-top:0} /* origin-group */
 #ah-unified-combinations .review-topic-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 #ah-unified-combinations .topic-review-toolbar{gap:10px}
@@ -1166,7 +1168,8 @@ function render(){
   for(const id of ['reading']){
     const product=root.querySelector('#ah-design-'+id);const auth=authPages.has(state.page)&&!(state.page==='admin-login'&&reviewMode()==='submit-success');const panel=state.app==='panel'&&!auth;const home=!panel&&(['world','communities','rooms'].includes(state.page)||thirdPage()?.home===true);const nav=panel?thirdPanelNav:navUser;
     const content=reviewBody();
-    const navItems=nav.map(([page,label,ic],index)=>`${panel&&(index===1||index===5||index===8)?`<span class="nav-label">${index===1?'用户与空间':index===5?'内容与文件':'运行管理'}</span>`:''}<button type="button" data-action="${page}" ${state.page===page||(state.page==='community-posters'&&page==='communities')||(page==='users'&&state.page==='detail')?'aria-current="page"':''}>${icons(ic)}<span>${label}</span>${page==='rooms'&&!panel?'<span class="badge">3</span>':''}</button>`).join('');
+    const roomUnreadBadge=reviewMode()==='room-list-read'?'':'<span class="badge" aria-label="3 条未读消息">3</span>';
+    const navItems=nav.map(([page,label,ic],index)=>`${panel&&(index===1||index===5||index===8)?`<span class="nav-label">${index===1?'用户与空间':index===5?'内容与文件':'运行管理'}</span>`:''}<button type="button" data-action="${page}" ${state.page===page||(state.page==='community-posters'&&page==='communities')||(page==='users'&&state.page==='detail')?'aria-current="page"':''}>${icons(ic)}<span>${label}</span>${page==='rooms'&&!panel?roomUnreadBadge:''}</button>`).join('');
     const searchEntry=btn(icons('search')+'搜索','search','search-entry');
     updateMenuPicker();
     const modalPage=isThirdModalPage(thirdPage());
@@ -1176,7 +1179,7 @@ function render(){
     product.classList.toggle('auth-preview-mode',auth);
     product.classList.toggle('panel-mode',panel);product.classList.toggle('video-mode',state.page==='video');
     root.querySelector('.stage').classList.toggle('narrow-stage',state.screen==='narrow');
-    product.innerHTML=`${chrome}<div class="workspace ${showRail?'':'no-rail'}">${showRail?`<nav class="rail" aria-label="${panel?'管理导航':'首页导航'}">${panel?'<h2 class="nav-title">导航菜单</h2>':''}${navItems}${panel?`<div class="nav-footer">${btn(icons('log-out')+'退出登录','logout','quiet')}</div>`:''}</nav>`:''}<main class="main">${panel&&showRail?`<div class="compact-panel-trigger">${btn(icons('menu')+'菜单','panel-menu')}</div>`:''}${content}<p class="notice" aria-live="polite"></p></main></div>${home&&!modalPage?`<nav class="bottom-nav" aria-label="首页导航">${navUser.map(([page,label,ic])=>btn(icons(ic)+label,page)).join('')}</nav>`:''}${state.activeMenu&&state.app==='user'?identityMenu():state.communityMenu&&state.page==='community'?communityMenu():''}${secondState.settingEdit?settingDialog():''}${state.drawer&&panel?`<nav class="panel-drawer" aria-label="管理导航菜单">${btn(icons('x')+'关闭','panel-menu')}${navItems}${btn('退出登录','logout')}</nav>`:''}`;
+    product.innerHTML=`${chrome}<div class="workspace ${showRail?'':'no-rail'}">${showRail?`<nav class="rail" aria-label="${panel?'管理导航':'首页导航'}">${panel?'<h2 class="nav-title">导航菜单</h2>':''}${navItems}${panel?`<div class="nav-footer">${btn(icons('log-out')+'退出登录','logout','quiet')}</div>`:''}</nav>`:''}<main class="main">${panel&&showRail?`<div class="compact-panel-trigger">${btn(icons('menu')+'菜单','panel-menu')}</div>`:''}${content}<p class="notice" aria-live="polite"></p></main></div>${home&&!modalPage?`<nav class="bottom-nav" aria-label="首页导航">${navUser.map(([page,label,ic])=>btn(icons(ic)+label+(page==='rooms'?roomUnreadBadge:''),page)).join('')}</nav>`:''}${state.activeMenu&&state.app==='user'?identityMenu():state.communityMenu&&state.page==='community'?communityMenu():''}${secondState.settingEdit?settingDialog():''}${state.drawer&&panel?`<nav class="panel-drawer" aria-label="管理导航菜单">${btn(icons('x')+'关闭','panel-menu')}${navItems}${btn('退出登录','logout')}</nav>`:''}`;
     normalizeReadingPresentation(product);
     normalizeReviewIdentities(product);
     product.style.setProperty('--ah-radius',state.radius+'px');product.querySelectorAll('.feed').forEach(x=>{if(id==='reading')x.style.maxWidth=state.bodyWidth+'px'});
