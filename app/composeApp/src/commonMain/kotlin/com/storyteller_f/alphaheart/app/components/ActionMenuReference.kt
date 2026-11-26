@@ -6,8 +6,6 @@ package com.storyteller_f.alphaheart.app.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,6 +15,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 
 @Composable
@@ -32,7 +32,7 @@ internal fun ActionMenuReference(name: String, aid: String, onClick: () -> Unit,
             Text(name, style = MaterialTheme.typography.bodyMedium)
             if (aid.isNotBlank()) Text(CoreStrings.aid(aid), style = MaterialTheme.typography.bodySmall)
         }
-        ReadingIcon(Icons.Default.ChevronRight, null, Modifier.align(Alignment.CenterVertically).size(17.dp))
+        ReadingIcon(actionIcon(ActionGlyph.CHEVRON_RIGHT), null, Modifier.align(Alignment.CenterVertically).size(17.dp))
     }
 }
 

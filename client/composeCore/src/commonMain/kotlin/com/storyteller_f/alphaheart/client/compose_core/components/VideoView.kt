@@ -6,14 +6,14 @@ package com.storyteller_f.alphaheart.client.compose_core.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.media.PlayItem
 import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
@@ -68,7 +68,7 @@ fun VideoPlaylistPicker(
                     IconButton({
                         onClick(playList[index], index)
                     }) {
-                        Icon(Icons.AutoMirrored.Default.PlaylistPlay, "play")
+                        Icon(actionIcon(ActionGlyph.LIST_VIDEO_RTL), "play")
                     }
                 }
             }

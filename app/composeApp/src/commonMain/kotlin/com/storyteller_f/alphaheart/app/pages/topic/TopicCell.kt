@@ -50,9 +50,9 @@ import com.storyteller_f.alphaheart.app.topic.TopicActionsPresentation
 import com.storyteller_f.alphaheart.app.topic.asFeedPreview
 import com.storyteller_f.alphaheart.app.topic.pinOrUnpinTopic
 import com.storyteller_f.alphaheart.app.topic_menu
-import com.storyteller_f.alphaheart.app.ui.MaterialSymbolsOutlined
 import com.storyteller_f.alphaheart.app.unpin
 import com.storyteller_f.alphaheart.client.compose_core.components.CustomIcon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon
 import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.icons.IconRes
 import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
@@ -60,7 +60,6 @@ import com.storyteller_f.result.onSuccess
 import com.storyteller_f.shared.model.TopicContent
 import com.storyteller_f.shared.model.TopicDetail
 import com.storyteller_f.shared.type.PrimaryKey
-import dev.tclement.fonticons.FontIcon
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
@@ -216,10 +215,10 @@ fun CommonTopicCellInternal(
         }
 
         if (topicInfo.isPin) {
-            FontIcon(
-                MaterialSymbolsOutlined.Keep,
+            ReadingIcon(
+                actionIcon(ActionGlyph.PIN),
                 stringResource(Res.string.is_pinned),
-                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(20.dp),
             )
         }
         TopicDropdownMenu(expanded, topicInfo) {
@@ -336,14 +335,8 @@ fun TopicDropdownMenu(expanded: Boolean, topicInfo: TopicDetail, onDismissReques
         val title = if (topicInfo.isPin) stringResource(Res.string.unpin) else stringResource(Res.string.pin)
         DropdownMenuItem(
             leadingIcon = {
-                val char =
-                    when {
-                        topicInfo.isPin -> MaterialSymbolsOutlined.KeepOff
-                        else -> MaterialSymbolsOutlined.Keep
-                    }
-                Box(modifier = Modifier.size(20.dp)) {
-                    CustomIcon(IconRes.Font(char))
-                }
+                val glyph = if (topicInfo.isPin) ActionGlyph.PIN_OFF else ActionGlyph.PIN
+                CustomIcon(actionIcon(glyph))
             },
             text = { Text(title) },
             onClick = {

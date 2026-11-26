@@ -14,9 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -52,6 +49,8 @@ import com.storyteller_f.alphaheart.app.navigation.SignInAndSignUpNav
 import com.storyteller_f.alphaheart.app.previews.PrivateParameterProvider
 import com.storyteller_f.alphaheart.app.session_history_title
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.core.PendingTotpSignIn
 import com.storyteller_f.alphaheart.client.core.RawUserPass
@@ -101,7 +100,7 @@ private fun SelectFromHistoryInternal(viewModel: SessionHistoryViewModel) {
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         ),
     ) {
-        Icon(Icons.Default.History, contentDescription = null)
+        Icon(actionIcon(ActionGlyph.HISTORY), contentDescription = null)
         Text(stringResource(Res.string.session_history_title), modifier = Modifier.padding(start = 8.dp))
     }
     val uIViewModel = LocalUiViewModel.current
@@ -180,7 +179,7 @@ private fun LoginHistoryCell(
                 )
             }
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, stringResource(Res.string.delete))
+                Icon(actionIcon(ActionGlyph.TRASH_2), stringResource(Res.string.delete))
             }
         }
     }

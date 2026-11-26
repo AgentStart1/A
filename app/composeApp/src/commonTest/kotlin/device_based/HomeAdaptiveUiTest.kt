@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Public
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
@@ -85,6 +83,8 @@ import com.storyteller_f.alphaheart.client.compose_core.common.RegularPagingSour
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingButton
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingInteractions
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
 import com.storyteller_f.alphaheart.client.compose_core.paging.bottomAppending
 import com.storyteller_f.alphaheart.client.core.LoadingHandler
@@ -211,7 +211,7 @@ class HomeAdaptiveUiTest {
                     "World",
                     "Communities",
                     "Rooms",
-                ).map { NavRoute("/${it.lowercase()}", Icons.Default.Public, it) }
+                ).map { NavRoute("/${it.lowercase()}", navigationIcon(NavigationGlyph.EARTH), it) }
             setContent {
                 MaterialTheme {
                     Box(Modifier.requiredSize(width.value, 600.dp)) {
@@ -639,7 +639,7 @@ class HomeAdaptiveUiTest {
                     Box(Modifier.requiredSize(width.value, 600.dp)) {
                         AdaptiveSectionScaffold(
                             pager,
-                            listOf(NavRoute("/rooms", Icons.Default.Public, "Rooms")),
+                            listOf(NavRoute("/rooms", navigationIcon(NavigationGlyph.EARTH), "Rooms")),
                             unread.value,
                             unreadMessageCount = total.value,
                             search = { _, _ -> },

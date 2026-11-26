@@ -1007,7 +1007,7 @@ Android 视频通过 AndroidView 使用页面管理的 Media3 PlayerView。导�
 
 ### Wasm 启动字体选择
 
-App 与 panel 共用 client/composeCore/local-font-access 的 native HTML font gate。它使用浏览器系统 CSS 字体，让选择和权限说明在 Compose fallback 下载前可读。只移除 Noto SC 应用字体，保留 Material Symbols 图标字体。Compose 1.12.2 按需从 Google Fonts 下载缺字 Noto subset。
+App 与 panel 共用 client/composeCore/local-font-access 的 native HTML font gate。它使用浏览器系统 CSS 字体，让选择和权限说明在 Compose fallback 下载前可读。应用图标由共享的 Lucide 图标映射提供。Compose 1.12.2 按需从 Google Fonts 下载缺字 Noto subset。
 
 Origin 本地 `a.preferSystemFonts` 偏好为缺失、`false` 或 `true`。支持此 API 的浏览器必须首次明确选择。`false` 挂载使用 Compose 默认字体的正常内容；`true` 只表示意图，必须有 local-fonts 权限、匹配的已安装 CJK face、字体字节及成功 Compose resolver 预加载，才能挂载业务内容。显式检查 Skia 解码，因为 Compose blocking-font preload 在解码失败时可能静默回退默认 typeface。权限重置也使等待 Compose 确认的字体失效。拒绝、缺字体或解码错误保持 gate 可见，并提供明确 downloaded-font 出口。撤销权限卸载业务内容。不支持 API 的浏览器走默认路径，不覆盖保存意图。重载后仍要求用户激活的浏览器显示显式字体加载按钮。App 与 panel origin 的偏好和权限独立，不持久化本地字体字节。偏好存储被阻止时，明确选择在本次页面访问仍有效。
 

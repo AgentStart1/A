@@ -12,10 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.AudioFile
-import androidx.compose.material.icons.filled.VideoFile
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -165,19 +161,19 @@ fun UploadIcon(contentType: String) {
     when {
         contentType.startsWith("audio") ->
             Icon(
-                Icons.Default.AudioFile,
+                actionIcon(ActionGlyph.FILE_AUDIO),
                 contentDescription = null,
             )
 
         contentType.startsWith("video") ->
             Icon(
-                Icons.Default.VideoFile,
+                actionIcon(ActionGlyph.FILE_VIDEO),
                 contentDescription = null,
             )
 
         else ->
             Icon(
-                Icons.Default.AttachFile,
+                actionIcon(ActionGlyph.PAPERCLIP),
                 contentDescription = null,
                 modifier = modifier,
             )

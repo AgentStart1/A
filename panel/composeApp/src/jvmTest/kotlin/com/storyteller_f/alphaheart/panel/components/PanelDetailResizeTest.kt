@@ -13,9 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
@@ -53,6 +50,8 @@ import com.storyteller_f.alphaheart.client.compose_core.components.InfoTable
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingInteractions
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
 import com.storyteller_f.alphaheart.client.compose_core.utils.readingTypography
 import com.storyteller_f.alphaheart.panel.PanelNavigationDrawer
@@ -266,7 +265,10 @@ private fun DetailNavigationScene(stack: NavBackStack<NavKey>, onInfoMount: () -
 private fun DetailPagerFixture(onInfoMount: () -> Unit) {
     val state = rememberPagerState { 2 }
     val routes =
-        listOf(NavRoute("/info", Icons.Default.Info, "Information"), NavRoute("/logs", Icons.Default.List, "Logs"))
+        listOf(
+            NavRoute("/info", actionIcon(ActionGlyph.INFO), "Information"),
+            NavRoute("/logs", actionIcon(ActionGlyph.LIST), "Logs"),
+        )
     DetailNavigationScaffold(state, routes, topBar = { Text("Title detail") }) { page ->
         if (page == 0) NestedInfoFixture(onInfoMount) else Text("Log content")
     }

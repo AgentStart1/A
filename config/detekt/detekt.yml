@@ -849,7 +849,6 @@ ktlint:
   autoCorrect: true
   BackingPropertyNaming:
     active: true
-    excludes: ['**/MaterialSymbolsOutlined.kt']
   AnnotationOnSeparateLine:
     active: true
     autoCorrect: true
@@ -1037,7 +1036,6 @@ ktlint:
     maxLineLength: 120
   PropertyName:
     active: true
-    excludes: ['**/MaterialSymbolsOutlined.kt']
   PropertyWrapping:
     active: true
     autoCorrect: true

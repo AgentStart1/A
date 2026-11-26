@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -105,7 +103,7 @@ internal fun WorkerTasksPage() {
                 title = { Text(stringResource(Res.string.worker_task_configurations)) },
                 navigationIcon = {
                     IconButton({ panelNav.open() }) {
-                        Icon(Icons.Default.Menu, stringResource(Res.string.menu))
+                        Icon(actionIcon(ActionGlyph.MENU), stringResource(Res.string.menu))
                     }
                 },
             )

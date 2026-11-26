@@ -17,12 +17,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Flip
-import androidx.compose.material.icons.filled.Restore
-import androidx.compose.material.icons.filled.RotateLeft
-import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -47,7 +41,6 @@ import com.attafitamim.krop.core.crop.CropperStyle
 import com.attafitamim.krop.core.crop.LocalCropperStyle
 import com.attafitamim.krop.core.crop.flipHorizontal
 import com.attafitamim.krop.core.crop.flipVertical
-import com.attafitamim.krop.ui.CropperPreview
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.close
 import com.storyteller_f.alphaheart.app.crop_confirm
@@ -68,7 +61,7 @@ import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import org.jetbrains.compose.resources.stringResource
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingDialog as Dialog
 
-/** Uses Krop's real preview, transform controller and completion pipeline with reading chrome. */
+/** Uses Krop Core for crop state, transforms and image output. */
 @Composable
 fun ReadingImageCropperDialog(state: CropState, style: CropperStyle) {
     val background = MaterialTheme.colorScheme.background
@@ -116,7 +109,7 @@ fun ReadingImageCropperDialog(state: CropState, style: CropperStyle) {
             tools = { ReadingCropTools(state) },
         ) {
             CompositionLocalProvider(LocalCropperStyle provides readingStyle) {
-                CropperPreview(state, Modifier.size(width, height).testTag("reading-crop-preview"))
+                ReadingCropPreview(state, Modifier.size(width, height).testTag("reading-crop-preview"))
             }
         }
     }
@@ -164,7 +157,7 @@ internal fun ReadingCropSurface(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End)) {
                 ReadingOutlinedButton(cancel) { Text(CoreStrings.cancel()) }
                 ReadingButton(confirm, enabled = !accepted) {
-                    ReadingIcon(Icons.Default.Check, null)
+                    ReadingIcon(actionIcon(ActionGlyph.CHECK), null)
                     Text(stringResource(Res.string.crop_confirm))
                 }
             }
@@ -176,22 +169,26 @@ internal fun ReadingCropSurface(
 internal fun ReadingCropTools(state: CropState) {
     CropTool(
         stringResource(Res.string.crop_rotate_left),
-        Icons.Default.RotateLeft,
+        actionIcon(ActionGlyph.ROTATE_CCW),
         { state.rotateReadingCrop(clockwise = false) },
     )
     CropTool(
         stringResource(Res.string.crop_rotate_right),
-        Icons.Default.RotateRight,
+        actionIcon(ActionGlyph.ROTATE_CW),
         { state.rotateReadingCrop(clockwise = true) },
     )
-    CropTool(stringResource(Res.string.crop_flip_horizontal), Icons.Default.Flip, state::flipHorizontal)
+    CropTool(
+        stringResource(Res.string.crop_flip_horizontal),
+        actionIcon(ActionGlyph.FLIP_HORIZONTAL_2),
+        state::flipHorizontal,
+    )
     CropTool(
         stringResource(Res.string.crop_flip_vertical),
-        Icons.Default.Flip,
+        actionIcon(ActionGlyph.FLIP_HORIZONTAL_2),
         state::flipVertical,
         Modifier.rotate(90f),
     )
-    CropTool(stringResource(Res.string.crop_reset), Icons.Default.Restore, state::reset)
+    CropTool(stringResource(Res.string.crop_reset), actionIcon(ActionGlyph.HISTORY), state::reset)
 }
 
 @Composable

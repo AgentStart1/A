@@ -6,11 +6,6 @@ package com.storyteller_f.alphaheart.client.compose_core.components
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.AudioFile
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.VideoFile
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,6 +13,8 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.shared.model.FileInfo
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 
@@ -27,7 +24,7 @@ fun FileIcon(it: FileInfo) {
     val modifier = Modifier.size(40.dp)
     when {
         contentType.startsWith("image/") -> {
-            val fallback = rememberVectorPainter(Icons.Default.Image)
+            val fallback = rememberVectorPainter(actionIcon(ActionGlyph.IMAGE))
             AsyncImage(
                 it.url,
                 null,
@@ -40,11 +37,11 @@ fun FileIcon(it: FileInfo) {
         }
 
         contentType.startsWith("video/") ->
-            Icon(Icons.Default.VideoFile, null, modifier)
+            Icon(actionIcon(ActionGlyph.FILE_VIDEO), null, modifier)
 
         contentType.startsWith("audio/") ->
-            Icon(Icons.Default.AudioFile, null, modifier)
+            Icon(actionIcon(ActionGlyph.FILE_AUDIO), null, modifier)
 
-        else -> Icon(Icons.Default.AttachFile, null, modifier)
+        else -> Icon(actionIcon(ActionGlyph.PAPERCLIP), null, modifier)
     }
 }

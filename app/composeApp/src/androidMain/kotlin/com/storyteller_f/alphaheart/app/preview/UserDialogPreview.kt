@@ -8,7 +8,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
-import com.storyteller_f.alphaheart.app.ProvideFontIcon
 import com.storyteller_f.alphaheart.app.pages.user.SelfDialog
 import com.storyteller_f.alphaheart.app.pages.user.UserDialog
 import com.storyteller_f.alphaheart.client.core.FixedLoadingHandler
@@ -21,21 +20,17 @@ import org.jetbrains.compose.resources.PreviewContextConfigurationEffect
 @Composable
 fun UserDialogPreview() {
     PreviewContextConfigurationEffect()
-    ProvideFontIcon {
-        UserDialog(UserInfo.EMPTY, true) { }
-    }
+    UserDialog(UserInfo.EMPTY, true) { }
 }
 
 @Preview
 @Composable
 fun SelfDialogPreview() {
     PreviewContextConfigurationEffect()
-    ProvideFontIcon {
-        SelfDialog(
-            UserInfo.EMPTY.copy(nickname = "Nickname", aid = "aid"),
-            true,
-            FixedLoadingHandler(),
-            {},
-        ) { }
-    }
+    SelfDialog(
+        UserInfo.EMPTY.copy(nickname = "Nickname", aid = "aid"),
+        true,
+        FixedLoadingHandler(),
+        {},
+    ) { }
 }

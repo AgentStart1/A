@@ -8,8 +8,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
@@ -23,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.components.CommunityIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
 import com.storyteller_f.alphaheart.client.compose_core.theme.safeArea
 import com.storyteller_f.alphaheart.panel.LocalPanelNav
@@ -55,7 +55,9 @@ fun AllCommunitiesPageInternal(viewModel: AllCommunitiesViewModel) {
             TopAppBar(
                 title = { Text(stringResource(Res.string.all_communities)) },
                 navigationIcon = {
-                    IconButton({ panelNav.open() }) { Icon(Icons.Default.Menu, stringResource(Res.string.menu)) }
+                    IconButton({ panelNav.open() }) {
+                        Icon(actionIcon(ActionGlyph.MENU), stringResource(Res.string.menu))
+                    }
                 },
             )
         },

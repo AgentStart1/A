@@ -12,11 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Article
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -36,6 +31,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mikepenz.markdown.compose.components.MarkdownComponentModel
 import com.storyteller_f.alphaheart.client.asciidoc_parser.buildAsciidocPreviewHtml
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.notifications.LocalToaster
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
@@ -96,7 +93,7 @@ private fun AsciidocPreviewCard(source: String, openPreview: () -> Unit) {
             .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.AutoMirrored.Filled.Article, "asciidoc")
+            Icon(actionIcon(ActionGlyph.FILE_TEXT_RTL), "asciidoc")
             Text(
                 text = "AsciiDoc preview",
                 maxLines = 1,
@@ -111,7 +108,7 @@ private fun AsciidocPreviewCard(source: String, openPreview: () -> Unit) {
                     onClick = openPreview,
                 ),
             ) {
-                Icon(Icons.Default.Visibility, "open")
+                Icon(actionIcon(ActionGlyph.EYE), "open")
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -121,7 +118,7 @@ private fun AsciidocPreviewCard(source: String, openPreview: () -> Unit) {
                     clipboardManager.copyText(source, toasterState)
                 }
             }) {
-                Icon(Icons.Default.ContentCopy, "copy source")
+                Icon(actionIcon(ActionGlyph.COPY), "copy source")
             }
             Text(
                 source.lineSequence().firstOrNull().orEmpty(),
@@ -154,7 +151,7 @@ private fun AsciidocPreviewDialog(html: String, previewTitle: String, onDismissR
                         title = { Text("AsciiDoc preview") },
                         navigationIcon = {
                             IconButton(onClick = onDismissRequest) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, "close preview")
+                                Icon(actionIcon(ActionGlyph.ARROW_LEFT_RTL), "close preview")
                             }
                         },
                     )

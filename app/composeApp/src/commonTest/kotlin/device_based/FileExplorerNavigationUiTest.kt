@@ -9,9 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -66,6 +63,10 @@ import com.storyteller_f.alphaheart.app.pages.file.rememberFileExplorerBackStack
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingFilePreview
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingFilePreviewHeading
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.media.ResourceDownloadRequest
 import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
 import com.storyteller_f.shared.model.FileInfo
@@ -354,12 +355,12 @@ private fun FileNavigationFixture(
                 backStack = backStack,
                 routes =
                 listOf(
-                    NavRoute("/uploaded", Icons.Default.Folder, "Uploaded"),
-                    NavRoute("/upload-record", Icons.Default.Folder, "Upload"),
+                    NavRoute("/uploaded", navigationIcon(NavigationGlyph.FOLDER), "Uploaded"),
+                    NavRoute("/upload-record", navigationIcon(NavigationGlyph.FOLDER), "Upload"),
                 ) +
                     if (allowDownloads) {
                         listOf(
-                            NavRoute("/download-record", Icons.Default.Folder, "Download"),
+                            NavRoute("/download-record", navigationIcon(NavigationGlyph.FOLDER), "Download"),
                         )
                     } else {
                         emptyList()
@@ -409,7 +410,7 @@ private fun UploadStatusFixtureRow(uploadStatus: MutableState<UploadStatus>) {
             },
             modifier = Modifier.testTag("upload-status-action"),
         ) {
-            Icon(Icons.Default.PlayCircle, contentDescription = "Resume upload")
+            Icon(actionIcon(ActionGlyph.CIRCLE_PLAY), contentDescription = "Resume upload")
         }
     }
 }

@@ -16,10 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowCircleDown
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -234,7 +230,7 @@ private fun BoxScope.NewTopicView(lazyListState: LazyListState, roomInfo: RoomIn
                 lazyListState.animateScrollToItem(0, 0)
             }
         }, modifier = Modifier.align(Alignment.BottomStart)) {
-            Icon(Icons.Default.ArrowCircleDown, "move to newer topic")
+            Icon(actionIcon(ActionGlyph.CIRCLE_ARROW_DOWN), "move to newer topic")
         }
     }
 }
@@ -495,9 +491,9 @@ fun CommonInputButton(
                     if (retry != null) retry() else alertDialogController.showErrorMessage(state.e)
                 }) {
                     if (retry != null) {
-                        Icon(Icons.Default.Refresh, stringResource(Res.string.refresh))
+                        Icon(actionIcon(ActionGlyph.REFRESH_CW), stringResource(Res.string.refresh))
                     } else {
-                        Icon(Icons.Default.Error, stringResource(Res.string.error))
+                        Icon(actionIcon(ActionGlyph.CIRCLE_ALERT), stringResource(Res.string.error))
                     }
                 }
             }

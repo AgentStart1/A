@@ -15,9 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -182,7 +179,7 @@ private fun FileExplorerFab(mediaTarget: ObjectTuple, current: NavKey, showQuota
 @Composable
 private fun FileQuotaActionButton(onClick: () -> Unit) {
     FloatingActionButton(onClick) {
-        Icon(Icons.Filled.Info, "quota info")
+        Icon(actionIcon(ActionGlyph.INFO), "quota info")
     }
 }
 
@@ -210,7 +207,7 @@ private fun UploadFileActionButton(mediaTarget: ObjectTuple) {
             onClick = openPicker,
         ),
     ) {
-        Icon(Icons.Filled.CloudUpload, "upload file")
+        Icon(navigationIcon(NavigationGlyph.CLOUD_UPLOAD), "upload file")
     }
 }
 

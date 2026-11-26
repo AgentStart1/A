@@ -122,7 +122,6 @@ kotlin {
             implementation(libs.runtime)
             implementation(libs.foundation)
             implementation(libs.material)
-            implementation(libs.material.icons.extended)
             implementation(libs.material3)
             implementation(libs.ui)
             implementation(libs.components.resources)
@@ -160,7 +159,6 @@ kotlin {
             implementation(libs.aboutlibraries.core)
             implementation(libs.aboutlibraries.compose.m3)
             implementation(libs.zoomimage.compose.coil3)
-            implementation(libs.krop.ui)
 
             implementation(libs.haze)
             implementation(libs.haze.materials)

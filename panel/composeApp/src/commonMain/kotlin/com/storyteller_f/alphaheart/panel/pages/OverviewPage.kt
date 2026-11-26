@@ -16,9 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -32,6 +29,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.panel.LocalPanelNav
 import com.storyteller_f.alphaheart.panel.Res
@@ -68,7 +67,7 @@ fun OverviewPageInternal(viewModel: OverviewViewModel) {
             title = { Text(title, Modifier.appiumSemantics(text = title)) },
             navigationIcon = {
                 IconButton(nav::open, Modifier.appiumSemantics(description = menu, onClick = nav::open)) {
-                    Icon(Icons.Default.Menu, menu)
+                    Icon(actionIcon(ActionGlyph.MENU), menu)
                 }
             },
         )
@@ -121,7 +120,7 @@ private fun OverviewMetric(label: String, value: String, onClick: () -> Unit) {
                         fontWeight = FontWeight.Medium,
                     )
                 }
-                Icon(Icons.Default.OpenInNew, null, Modifier.align(Alignment.BottomEnd))
+                Icon(actionIcon(ActionGlyph.EXTERNAL_LINK), null, Modifier.align(Alignment.BottomEnd))
             }
         }
     }

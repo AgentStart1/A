@@ -11,7 +11,6 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -24,8 +23,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -69,7 +66,6 @@ import com.storyteller_f.alphaheart.app.pages.file.FileViewPage
 import com.storyteller_f.alphaheart.app.pages.room.RoomPage
 import com.storyteller_f.alphaheart.app.pages.user.AccountSwitch
 import com.storyteller_f.alphaheart.app.topic.TopicComposeData
-import com.storyteller_f.alphaheart.app.ui.MaterialSymbolsOutlined
 import com.storyteller_f.alphaheart.app.ui.theme.AppTheme
 import com.storyteller_f.alphaheart.app.utils.ObserveAppNotificationClicks
 import com.storyteller_f.alphaheart.app.utils.ProvideAppPreferences
@@ -130,10 +126,6 @@ import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
 import com.storyteller_f.shared.utils.md5
 import com.storyteller_f.storage.ModelStorage
-import dev.tclement.fonticons.LocalIconFont
-import dev.tclement.fonticons.LocalIconSize
-import dev.tclement.fonticons.LocalIconTintProvider
-import dev.tclement.fonticons.LocalIconWeight
 import io.github.aakira.napier.Napier
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.cookies.AcceptAllCookiesStorage
@@ -339,13 +331,11 @@ fun CommonEntry(content: @Composable () -> Unit) {
             LocalUserInfo provides user,
             LocalRefCellHandlerProvider provides DefaultRefCellHandlerProvider,
         ) {
-            ProvideFontIcon {
-                val dataStore = createAppPreferencesDataStore()
-                ProvideAppPreferences(dataStore) {
-                    ReadingOverlayHost {
-                        content()
-                        AccountSwitch()
-                    }
+            val dataStore = createAppPreferencesDataStore()
+            ProvideAppPreferences(dataStore) {
+                ReadingOverlayHost {
+                    content()
+                    AccountSwitch()
                 }
             }
         }
@@ -663,19 +653,6 @@ class UIViewModel(val viewModelScope: CoroutineScope, val wsServerUrl: String, v
         old.close()
         instance.value = old.main
     }
-}
-
-@Composable
-fun ProvideFontIcon(block: @Composable () -> Unit) {
-    CompositionLocalProvider(
-        LocalIconFont provides MaterialSymbolsOutlined.rememberIconFont(),
-        LocalIconSize provides 20.dp,
-        LocalIconTintProvider provides LocalContentColor,
-        LocalIconWeight provides FontWeight.Normal,
-        content = {
-            block()
-        },
-    )
 }
 
 fun buildHttpClient(httpUrl: String, cookieManager: CookiesStorage, model: UserSessionModel): HttpClient =

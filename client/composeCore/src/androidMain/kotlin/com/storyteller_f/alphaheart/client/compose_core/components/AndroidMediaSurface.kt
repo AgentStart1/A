@@ -6,9 +6,6 @@ package com.storyteller_f.alphaheart.client.compose_core.components
 
 import android.app.PictureInPictureParams
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.PictureInPicture
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -17,6 +14,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.media3.session.MediaController
 import com.storyteller_f.alphaheart.client.compose_core.Res
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlaySession
 import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlayerService
 import com.storyteller_f.alphaheart.client.compose_core.media.MediaPlaySession
@@ -55,12 +54,12 @@ internal fun AndroidMediaSurface(
             },
             video, controlsVisible, sourceUrl = item.url, artwork = item.cover?.url, layout = layout,
             menuContent = { dismiss ->
-                ButtonNav(Icons.AutoMirrored.Filled.List, stringResource(Res.string.media_playlist)) {
+                ButtonNav(actionIcon(ActionGlyph.LIST_RTL), stringResource(Res.string.media_playlist)) {
                     dismiss()
                     showPlaylist = true
                 }
                 if (service.enablePip) {
-                    ButtonNav(Icons.Default.PictureInPicture, stringResource(Res.string.media_pip)) {
+                    ButtonNav(actionIcon(ActionGlyph.PICTURE_IN_PICTURE), stringResource(Res.string.media_pip)) {
                         dismiss()
                         context.findActivity().enterPictureInPictureMode(PictureInPictureParams.Builder().build())
                     }

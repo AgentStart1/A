@@ -6,8 +6,6 @@ package com.storyteller_f.alphaheart.client.compose_core.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -30,6 +28,8 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.storyteller_f.alphaheart.client.compose_core.Res
 import com.storyteller_f.alphaheart.client.compose_core.common.PagingViewModel
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.load_more_failed_retry
 import com.storyteller_f.alphaheart.client.compose_core.loading_more
 import com.storyteller_f.alphaheart.client.compose_core.no_content_yet
@@ -61,7 +61,7 @@ private fun PagingRefreshAction(enabled: Boolean, refresh: () -> Unit) {
             ),
             enabled = enabled,
         ) {
-            Icon(Icons.Default.Refresh, contentDescription = null)
+            Icon(actionIcon(ActionGlyph.REFRESH_CW), contentDescription = null)
             Text(stringResource(Res.string.refresh), Modifier.padding(start = 4.dp))
         }
     }
@@ -274,7 +274,7 @@ internal fun PagingBoundaryState(state: LoadState, retry: (() -> Unit)?) {
 
             is LoadState.Error ->
                 TextButton({ retry?.invoke() }, enabled = retry != null) {
-                    Icon(Icons.Default.Refresh, null, Modifier.size(16.dp))
+                    Icon(actionIcon(ActionGlyph.REFRESH_CW), null, Modifier.size(16.dp))
                     Text(stringResource(Res.string.load_more_failed_retry), Modifier.padding(start = 6.dp))
                 }
 

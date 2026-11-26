@@ -9,15 +9,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
-import androidx.compose.material.icons.automirrored.filled.Note
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.FormatListNumbered
-import androidx.compose.material.icons.filled.FormatQuote
-import androidx.compose.material.icons.filled.HorizontalRule
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Title
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
@@ -39,6 +30,8 @@ import com.storyteller_f.alphaheart.app.block_editor_math
 import com.storyteller_f.alphaheart.app.block_editor_numbered_list
 import com.storyteller_f.alphaheart.app.block_editor_quote
 import com.storyteller_f.alphaheart.app.block_editor_reference_csa
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.markdown.ContentBlock
 import com.storyteller_f.alphaheart.client.compose_core.markdown.generateBlockId
 import org.jetbrains.compose.resources.stringResource
@@ -75,7 +68,7 @@ fun BlockToolbar(onInsertBlock: (ContentBlock) -> Unit, modifier: Modifier = Mod
         // 媒体插入菜单
         IconButton(onClick = { showAddMenu = true }) {
             Icon(
-                Icons.Default.Image,
+                actionIcon(ActionGlyph.IMAGE),
                 stringResource(Res.string.block_editor_insert_media),
                 modifier = Modifier.size(20.dp),
             )
@@ -95,7 +88,7 @@ private fun DividerAddButton(onInsertBlock: (ContentBlock) -> Unit) {
         )
     }) {
         Icon(
-            Icons.Default.HorizontalRule,
+            actionIcon(ActionGlyph.MINUS),
             stringResource(Res.string.block_editor_divider),
             modifier = Modifier.size(20.dp),
         )
@@ -114,7 +107,7 @@ private fun MathAddButton(onInsertBlock: (ContentBlock) -> Unit) {
         )
     }) {
         Icon(
-            Icons.AutoMirrored.Filled.Note,
+            actionIcon(ActionGlyph.STICKY_NOTE_RTL),
             stringResource(Res.string.block_editor_math),
             modifier = Modifier.size(20.dp),
         )
@@ -132,7 +125,11 @@ private fun CodeBlockAddButton(onInsertBlock: (ContentBlock) -> Unit) {
             ),
         )
     }) {
-        Icon(Icons.Default.Code, stringResource(Res.string.block_editor_code), modifier = Modifier.size(20.dp))
+        Icon(
+            actionIcon(ActionGlyph.CODE),
+            stringResource(Res.string.block_editor_code),
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
@@ -146,7 +143,11 @@ private fun QuotaAddButton(onInsertBlock: (ContentBlock) -> Unit) {
             ),
         )
     }) {
-        Icon(Icons.Default.FormatQuote, stringResource(Res.string.block_editor_quote), modifier = Modifier.size(20.dp))
+        Icon(
+            actionIcon(ActionGlyph.QUOTE),
+            stringResource(Res.string.block_editor_quote),
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
@@ -162,7 +163,7 @@ private fun NumberListAddButton(onInsertBlock: (ContentBlock) -> Unit) {
         )
     }) {
         Icon(
-            Icons.Default.FormatListNumbered,
+            actionIcon(ActionGlyph.LIST_ORDERED),
             stringResource(Res.string.block_editor_numbered_list),
             modifier = Modifier.size(20.dp),
         )
@@ -181,7 +182,7 @@ private fun ListAddButton(onInsertBlock: (ContentBlock) -> Unit) {
         )
     }) {
         Icon(
-            Icons.AutoMirrored.Filled.FormatListBulleted,
+            actionIcon(ActionGlyph.LIST_RTL),
             stringResource(Res.string.block_editor_bullet_list),
             modifier = Modifier.size(20.dp),
         )
@@ -199,7 +200,11 @@ private fun TextAddButton(onInsertBlock: (ContentBlock) -> Unit) {
             ),
         )
     }) {
-        Icon(Icons.Default.Title, stringResource(Res.string.block_editor_heading), modifier = Modifier.size(20.dp))
+        Icon(
+            actionIcon(ActionGlyph.HEADING),
+            stringResource(Res.string.block_editor_heading),
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 

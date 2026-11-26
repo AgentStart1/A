@@ -4,9 +4,6 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.navigation
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.VectorPath
@@ -17,24 +14,7 @@ internal val LocalIconActionMenu = staticCompositionLocalOf { false }
 
 internal fun menuActionIcon(icon: IconRes): IconRes {
     if (icon !is IconRes.Vector) return icon
-    val vector =
-        when (icon.vector.name.substringAfterLast('.')) {
-            "AccountBalanceWallet" -> Icons.Outlined.AccountBalanceWallet
-            "Favorite" -> Icons.Outlined.Favorite
-            "FavoriteBorder" -> Icons.Outlined.FavoriteBorder
-            "NotificationsOff" -> Icons.Outlined.NotificationsOff
-            "NotificationsActive" -> Icons.Outlined.NotificationsActive
-            "ThumbUp" -> Icons.Outlined.ThumbUp
-            "ChatBubble" -> Icons.Outlined.ChatBubbleOutline
-            "CardMembership" -> Icons.Outlined.Groups
-            "SwitchAccount" -> Icons.Outlined.SwitchAccount
-            "ContentCopy" -> Icons.Outlined.ContentCopy
-            "PictureAsPdf" -> Icons.Outlined.PictureAsPdf
-            "Phone" -> Icons.Outlined.Phone
-            "Logout" -> Icons.AutoMirrored.Outlined.Logout
-            else -> readingIcon(icon.vector)
-        }
-    return icon.copy(vector = thinMenuStroke(vector))
+    return icon.copy(vector = thinMenuStroke(readingIcon(icon.vector)))
 }
 
 private fun thinMenuStroke(vector: ImageVector): ImageVector {

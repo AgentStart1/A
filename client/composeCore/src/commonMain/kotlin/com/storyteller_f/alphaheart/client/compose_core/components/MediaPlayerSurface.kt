@@ -8,8 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -354,7 +352,7 @@ private fun MediaAudioArtwork(title: String, artwork: String?, showTitle: Boolea
                 if (artwork != null) {
                     AsyncImage(artwork, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                 } else {
-                    Icon(Icons.Default.MusicNote, null, Modifier.size(32.dp), tint = Color(0xFF8FC4A5))
+                    Icon(actionIcon(ActionGlyph.MUSIC), null, Modifier.size(32.dp), tint = Color(0xFF8FC4A5))
                 }
             }
             if (showTitle) {

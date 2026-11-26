@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
@@ -35,6 +33,8 @@ import com.storyteller_f.alphaheart.app.pages.search.searchScopeName
 import com.storyteller_f.alphaheart.app.room_member_page_title
 import com.storyteller_f.alphaheart.app.search.SearchScope
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.paging.bottomAppending
 import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
 import com.storyteller_f.alphaheart.client.compose_core.paging.topPrepend
@@ -80,7 +80,7 @@ private fun CreateMemberTitleFab(objectId: PrimaryKey, objectType: ObjectType) {
             else -> appNav.newAppNav().gotoTitleCompose()
         }
     }) {
-        Icon(Icons.Default.Add, stringResource(Res.string.create_title_action))
+        Icon(actionIcon(ActionGlyph.PLUS), stringResource(Res.string.create_title_action))
     }
 }
 

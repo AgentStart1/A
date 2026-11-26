@@ -6,14 +6,14 @@ package com.storyteller_f.alphaheart.panel.pages
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
 import com.storyteller_f.alphaheart.client.compose_core.theme.safeArea
 import com.storyteller_f.alphaheart.panel.LocalPanelNav
@@ -44,7 +44,7 @@ fun AllTopicsPageInternal(viewModel: AllTopicsViewModel) {
                 title = { Text(stringResource(Res.string.all_topics)) },
                 navigationIcon = {
                     IconButton({ panelNav.open() }) {
-                        Icon(Icons.Default.Menu, stringResource(Res.string.menu))
+                        Icon(actionIcon(ActionGlyph.MENU), stringResource(Res.string.menu))
                     }
                 },
             )

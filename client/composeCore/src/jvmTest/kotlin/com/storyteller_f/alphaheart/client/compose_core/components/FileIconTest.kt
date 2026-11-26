@@ -8,10 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.AudioFile
-import androidx.compose.material.icons.filled.VideoFile
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
@@ -26,6 +22,8 @@ import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.shared.model.FileInfo
 import java.util.Locale
 import kotlin.test.Test
@@ -41,7 +39,7 @@ internal class FileIconTest {
             Locale.setDefault(Locale.ENGLISH)
             runComposeUiTest {
                 val file = mutableStateOf(FileInfo.EMPTY.copy(name = "Synthetic", contentType = "video/quicktime"))
-                val reference = mutableStateOf(Icons.Default.VideoFile)
+                val reference = mutableStateOf(actionIcon(ActionGlyph.FILE_VIDEO))
                 setContent {
                     MaterialTheme {
                         Row {
@@ -54,10 +52,10 @@ internal class FileIconTest {
                 }
                 val variants =
                     listOf(
-                        "video/quicktime" to Icons.Default.VideoFile,
-                        "video/mp4" to Icons.Default.VideoFile,
-                        "audio/flac" to Icons.Default.AudioFile,
-                        "application/octet-stream" to Icons.Default.AttachFile,
+                        "video/quicktime" to actionIcon(ActionGlyph.FILE_VIDEO),
+                        "video/mp4" to actionIcon(ActionGlyph.FILE_VIDEO),
+                        "audio/flac" to actionIcon(ActionGlyph.FILE_AUDIO),
+                        "application/octet-stream" to actionIcon(ActionGlyph.PAPERCLIP),
                     )
                 variants.forEach { (mime, expectedIcon) ->
                     runOnIdle {

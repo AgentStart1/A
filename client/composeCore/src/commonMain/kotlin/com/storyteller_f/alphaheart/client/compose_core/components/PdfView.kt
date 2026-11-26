@@ -12,11 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,7 +30,9 @@ import com.composables.icons.lucide.ZoomIn
 import com.composables.icons.lucide.ZoomOut
 import com.storyteller_f.alphaheart.client.compose_core.Res
 import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
 import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.notifications.LocalToaster
 import com.storyteller_f.alphaheart.client.compose_core.pdf_next_page
 import com.storyteller_f.alphaheart.client.compose_core.pdf_previous_page
@@ -64,7 +61,7 @@ fun PdfViewBlock(fileInfo: FileInfo, onClick: (FileInfo) -> Unit) {
             .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.PictureAsPdf, "pdf")
+            Icon(navigationIcon(NavigationGlyph.FILE_TEXT), "pdf")
             Text(
                 fileInfo.name,
                 maxLines = 1,
@@ -79,7 +76,7 @@ fun PdfViewBlock(fileInfo: FileInfo, onClick: (FileInfo) -> Unit) {
                     onClick = { onClick(fileInfo) },
                 ),
             ) {
-                Icon(Icons.Default.Fullscreen, "fullscreen")
+                Icon(actionIcon(ActionGlyph.MAXIMIZE), "fullscreen")
             }
         }
         val toasterState = LocalToaster.current
@@ -91,13 +88,13 @@ fun PdfViewBlock(fileInfo: FileInfo, onClick: (FileInfo) -> Unit) {
                     clipboardManager.copyText(url, toasterState)
                 }
             }) {
-                Icon(Icons.Default.ContentCopy, "copy list")
+                Icon(actionIcon(ActionGlyph.COPY), "copy list")
             }
             val uriHandler = LocalUriHandler.current
             IconButton({
                 uriHandler.openUri(url)
             }) {
-                Icon(Icons.Default.Download, "download")
+                Icon(navigationIcon(NavigationGlyph.DOWNLOAD), "download")
             }
         }
     }

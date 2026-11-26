@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -123,11 +122,6 @@ private fun IconMenuAction(
 @Composable
 fun ButtonNav(icon: ImageVector, title: String, semanticDescription: String? = null, onClick: () -> Unit = {}) {
     ButtonNav(IconRes.Vector(icon), title, semanticDescription = semanticDescription, onClick = onClick)
-}
-
-@Composable
-fun ButtonNav(icon: Char, title: String, semanticDescription: String? = null, onClick: () -> Unit = {}) {
-    ButtonNav(IconRes.Font(icon), title, semanticDescription = semanticDescription, onClick = onClick)
 }
 
 @Composable

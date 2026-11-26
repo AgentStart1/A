@@ -11,10 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Casino
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -258,7 +254,7 @@ fun PrivateKeyTools(currentKey: String, enableRandom: Boolean, algo: AlgoType, o
                 }
             }
         }) {
-            Icon(Icons.Default.FileOpen, CoreStrings.selectFile())
+            Icon(actionIcon(ActionGlyph.FOLDER_OPEN), CoreStrings.selectFile())
         }
         if (enableRandom) {
             IconButton(onClick = {
@@ -268,7 +264,7 @@ fun PrivateKeyTools(currentKey: String, enableRandom: Boolean, algo: AlgoType, o
                     }
                 }
             }) {
-                Icon(Icons.Default.Casino, stringResource(Res.string.generate))
+                Icon(actionIcon(ActionGlyph.DICES), stringResource(Res.string.generate))
             }
         }
 
@@ -277,7 +273,7 @@ fun PrivateKeyTools(currentKey: String, enableRandom: Boolean, algo: AlgoType, o
                 clipboard.copyText(currentKey, toast)
             }
         }) {
-            Icon(Icons.Default.ContentCopy, stringResource(Res.string.copy))
+            Icon(actionIcon(ActionGlyph.COPY), stringResource(Res.string.copy))
         }
     }
 }

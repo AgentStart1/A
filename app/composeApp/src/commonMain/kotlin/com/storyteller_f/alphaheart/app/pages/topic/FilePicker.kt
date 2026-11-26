@@ -16,11 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
@@ -61,6 +56,10 @@ import com.storyteller_f.alphaheart.app.utils.RecordingState
 import com.storyteller_f.alphaheart.client.compose_core.common.PagingViewModel
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.isPermissionGranted
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.paging.bottomAppending
 import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
 import com.storyteller_f.alphaheart.client.compose_core.paging.topPrepend
@@ -122,8 +121,8 @@ fun FilePicker(
 private fun FilePickerTabs(pagerState: PagerState, support: List<String>, actions: @Composable () -> Unit) {
     val tabs =
         listOf(
-            Icons.Default.Cloud to stringResource(Res.string.files),
-            Icons.Default.Mic to stringResource(Res.string.audio_recorder),
+            actionIcon(ActionGlyph.CLOUD) to stringResource(Res.string.files),
+            actionIcon(ActionGlyph.MIC) to stringResource(Res.string.audio_recorder),
         )
     val scope = rememberCoroutineScope()
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -208,7 +207,7 @@ private fun RecorderButton(
             onClick = recordAction,
             modifier = Modifier.appiumSemantics(text = label, onClick = recordAction),
         ) {
-            Icon(if (isRecording) Icons.Default.Stop else Icons.Default.Mic, null)
+            Icon(if (isRecording) actionIcon(ActionGlyph.SQUARE) else actionIcon(ActionGlyph.MIC), null)
             Text(
                 label,
                 Modifier.padding(start = 8.dp),
@@ -287,5 +286,5 @@ private fun FilePickerUploadButton(
     val controller = LocalGlobalDialog.current
     OutlinedButton({
         scope.launch { controller.selectFileAndUpload(mediaTarget, onClickItem, imageOnly) }
-    }) { Icon(Icons.Default.CloudUpload, stringResource(Res.string.upload_file)) }
+    }) { Icon(navigationIcon(NavigationGlyph.CLOUD_UPLOAD), stringResource(Res.string.upload_file)) }
 }

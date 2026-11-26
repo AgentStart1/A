@@ -96,6 +96,8 @@
 - 将编码或扫描项目时学到的规则知识保存到本文件。
 - Android KMP 设备测试覆盖共享 Compose 测试时必须包含 `commonTest`，在 `src/androidDeviceTest/AndroidManifest.xml` 声明仅供测试的宿主 Activity。UI 测试保持设备唤醒，释放租约前恢复临时电源设置。
 
+- Compose 图标使用共享的 Lucide 映射。清理图标依赖时核对传递依赖与打包资源，裁剪使用 Krop Core，预览和工具栏由应用提供。
+
 ## 排障速查
 
 - 网络错误：检查 `client/core/*Request.kt` 的 `serviceCatching` 日志，以及 `AdminApi`/`CustomApi` 路由。

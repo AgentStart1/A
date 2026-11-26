@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
@@ -87,7 +85,7 @@ fun TaskRecordsPage(type: TaskRecordType? = null) {
                 title = { Text(stringResource(Res.string.worker_records)) },
                 navigationIcon = {
                     IconButton({ panelNav.open() }) {
-                        Icon(Icons.Default.Menu, stringResource(Res.string.menu))
+                        Icon(actionIcon(ActionGlyph.MENU), stringResource(Res.string.menu))
                     }
                 },
             )
@@ -123,7 +121,7 @@ private fun TaskRecordDetailContent(type: TaskRecordType) {
                 title = { Text(stringResource(Res.string.review_task_detail_title, type.name)) },
                 navigationIcon = {
                     IconButton({ panelNav.open() }) {
-                        Icon(Icons.Default.Menu, stringResource(Res.string.menu))
+                        Icon(actionIcon(ActionGlyph.MENU), stringResource(Res.string.menu))
                     }
                 },
             )

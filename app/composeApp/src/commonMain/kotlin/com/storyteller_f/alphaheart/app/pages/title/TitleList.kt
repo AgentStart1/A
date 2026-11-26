@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -40,6 +38,8 @@ import com.storyteller_f.alphaheart.app.title_valid
 import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.rememberCommonDialogController
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.paging.bottomAppending
 import com.storyteller_f.alphaheart.client.compose_core.paging.topPrepend
 import com.storyteller_f.alphaheart.client.compose_core.theme.LayoutDefaults
@@ -96,7 +96,7 @@ fun TitleItem(titleInfo: TitleDetail) {
     ) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Icon(Icons.Default.Verified, null, tint = MaterialTheme.colorScheme.primary)
+                Icon(actionIcon(ActionGlyph.BADGE_CHECK), null, tint = MaterialTheme.colorScheme.primary)
                 Column(Modifier.weight(1f)) {
                     Text(titleInfo.name, style = MaterialTheme.typography.titleMedium)
                     titleInfo.expiresAt?.let {

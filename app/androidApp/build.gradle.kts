@@ -121,7 +121,6 @@ dependencies {
     screenshotTestImplementation(libs.screenshot.validation.api)
     screenshotTestImplementation(libs.androidx.ui.tooling)
     screenshotTestImplementation(libs.jetbrains.navigation3.ui)
-    screenshotTestImplementation(libs.material.icons.extended)
 }
 
 easylauncher {

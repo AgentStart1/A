@@ -19,17 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DragIndicator
-import androidx.compose.material.icons.filled.FormatBold
-import androidx.compose.material.icons.filled.FormatItalic
-import androidx.compose.material.icons.filled.FormatListNumbered
-import androidx.compose.material.icons.filled.FormatStrikethrough
-import androidx.compose.material.icons.filled.FormatUnderlined
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -94,6 +83,8 @@ import com.storyteller_f.alphaheart.app.block_editor_underline
 import com.storyteller_f.alphaheart.app.block_editor_unordered_list
 import com.storyteller_f.alphaheart.app.topic.editor.getBlockText
 import com.storyteller_f.alphaheart.app.topic.editor.normalizeParagraphMarkdown
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.markdown.ContentBlock
 import com.storyteller_f.alphaheart.client.compose_core.theme.LocalTopicContentFonts
 import org.jetbrains.compose.resources.stringResource
@@ -135,7 +126,7 @@ fun EditableBlock(
                     modifier = Modifier.size(44.dp),
                 ) {
                     Icon(
-                        Icons.Default.Add,
+                        actionIcon(ActionGlyph.PLUS),
                         stringResource(Res.string.block_editor_add_before),
                         modifier = Modifier.size(16.dp),
                     )
@@ -143,7 +134,7 @@ fun EditableBlock(
 
                 // 拖拽图标
                 Icon(
-                    Icons.Default.DragIndicator,
+                    actionIcon(ActionGlyph.GRIP_VERTICAL),
                     stringResource(Res.string.block_editor_handle),
                     modifier = Modifier.size(20.dp),
                 )
@@ -153,7 +144,7 @@ fun EditableBlock(
                 // 删除按钮
                 IconButton(onClick = { showTypeMenu = true }) {
                     Icon(
-                        Icons.Default.Delete,
+                        actionIcon(ActionGlyph.TRASH_2),
                         stringResource(Res.string.block_editor_menu),
                         modifier = Modifier.size(16.dp),
                     )
@@ -422,39 +413,39 @@ private fun ParagraphRichTextToolbar(state: RichTextState, applyFormat: (() -> U
         IconToggleButton(currentSpanStyle.fontWeight == FontWeight.Bold, {
             applyFormat { state.toggleSpanStyle(SpanStyle(fontWeight = FontWeight.Bold)) }
         }) {
-            Icon(Icons.Default.FormatBold, stringResource(Res.string.block_editor_bold))
+            Icon(actionIcon(ActionGlyph.BOLD), stringResource(Res.string.block_editor_bold))
         }
         IconToggleButton(currentSpanStyle.fontStyle == FontStyle.Italic, {
             applyFormat { state.toggleSpanStyle(SpanStyle(fontStyle = FontStyle.Italic)) }
         }) {
-            Icon(Icons.Default.FormatItalic, stringResource(Res.string.block_editor_italic))
+            Icon(actionIcon(ActionGlyph.ITALIC), stringResource(Res.string.block_editor_italic))
         }
         IconToggleButton(currentSpanStyle.textDecoration == TextDecoration.Underline, {
             applyFormat { state.toggleSpanStyle(SpanStyle(textDecoration = TextDecoration.Underline)) }
         }) {
-            Icon(Icons.Default.FormatUnderlined, stringResource(Res.string.block_editor_underline))
+            Icon(actionIcon(ActionGlyph.UNDERLINE), stringResource(Res.string.block_editor_underline))
         }
         IconToggleButton(currentSpanStyle.textDecoration == TextDecoration.LineThrough, {
             applyFormat { state.toggleSpanStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) }
         }) {
-            Icon(Icons.Default.FormatStrikethrough, stringResource(Res.string.block_editor_strikethrough))
+            Icon(actionIcon(ActionGlyph.STRIKETHROUGH), stringResource(Res.string.block_editor_strikethrough))
         }
         VerticalDivider(modifier = Modifier.height(20.dp).align(Alignment.CenterVertically))
         IconToggleButton(state.isOrderedList, {
             applyFormat { state.toggleOrderedList() }
         }) {
-            Icon(Icons.Default.FormatListNumbered, stringResource(Res.string.block_editor_ordered_list))
+            Icon(actionIcon(ActionGlyph.LIST_ORDERED), stringResource(Res.string.block_editor_ordered_list))
         }
         IconToggleButton(state.isUnorderedList, {
             applyFormat { state.toggleUnorderedList() }
         }) {
-            Icon(Icons.AutoMirrored.Filled.FormatListBulleted, stringResource(Res.string.block_editor_unordered_list))
+            Icon(actionIcon(ActionGlyph.LIST_RTL), stringResource(Res.string.block_editor_unordered_list))
         }
         VerticalDivider(modifier = Modifier.height(20.dp).align(Alignment.CenterVertically))
         IconToggleButton(state.isCodeSpan, {
             applyFormat { state.toggleCodeSpan() }
         }) {
-            Icon(Icons.Default.Code, stringResource(Res.string.block_editor_code_span))
+            Icon(actionIcon(ActionGlyph.CODE), stringResource(Res.string.block_editor_code_span))
         }
     }
 }

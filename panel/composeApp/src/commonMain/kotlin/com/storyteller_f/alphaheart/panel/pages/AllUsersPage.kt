@@ -13,10 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -124,12 +120,12 @@ fun AllUsersPageInternal(viewModel: AllUsersViewModel) {
                     modifier = Modifier.appiumSemantics(text = stringResource(Res.string.all_users)),
                 )
             }, navigationIcon = {
-                IconButton({ panelNav.open() }) { Icon(Icons.Default.Menu, stringResource(Res.string.menu)) }
+                IconButton({ panelNav.open() }) { Icon(actionIcon(ActionGlyph.MENU), stringResource(Res.string.menu)) }
             }, actions = {
                 IconButton({
                     showDialog = true
                 }) {
-                    Icon(Icons.Default.Add, stringResource(Res.string.add_user))
+                    Icon(actionIcon(ActionGlyph.PLUS), stringResource(Res.string.add_user))
                 }
             })
             AddUserDialog(showDialog) {
@@ -380,7 +376,7 @@ private fun AddressField(address: String?, gotoPrivateKey: () -> Unit) {
                 modifier = Modifier.weight(1f),
             )
             IconButton(gotoPrivateKey) {
-                Icon(Icons.Default.Edit, stringResource(Res.string.edit_private_key))
+                Icon(actionIcon(ActionGlyph.PEN_LINE), stringResource(Res.string.edit_private_key))
             }
         }
     }

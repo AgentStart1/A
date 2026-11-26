@@ -7,8 +7,6 @@ package com.storyteller_f.alphaheart.client.compose_core.components
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.TapAndPlay
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -29,6 +27,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.MediaItem
 import androidx.media3.session.MediaController
 import coil3.compose.AsyncImage
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.media.CustomVideoSize
 import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlayListHandlerProvider
 import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPlaySession
@@ -126,7 +126,7 @@ fun BoxScope.PlayerOccupy(localMediaPlaySession: LocalMediaPlaySession) {
             mediaPlayerService.switch(localMediaPlaySession)
         }
     }, modifier = Modifier.align(Alignment.Center)) {
-        Icon(Icons.Default.TapAndPlay, "return")
+        Icon(actionIcon(ActionGlyph.CAST), "return")
     }
 }
 

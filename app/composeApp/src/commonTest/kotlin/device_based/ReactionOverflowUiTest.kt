@@ -10,10 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Comment
-import androidx.compose.material.icons.outlined.AddReaction
-import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
@@ -30,6 +26,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.components.EmojiRow
 import com.storyteller_f.alphaheart.app.components.Pill
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.utils.readingTypography
 import com.storyteller_f.shared.model.ReactionInfo
 import kotlin.test.Test
@@ -109,16 +107,16 @@ private fun ReactionOverflowFixture(
                             overflow = { shown ->
                                 if (shown < data.size) Pill("+${data.size - shown}") { onOverflow() }
                                 Pill(
-                                    icon = Icons.Outlined.AddReaction,
+                                    icon = actionIcon(ActionGlyph.SMILE_PLUS),
                                     description = "Add reaction",
                                 ) { onAdd() }
-                                Pill(icon = Icons.Outlined.MoreHoriz, description = "More") { onMore() }
+                                Pill(icon = actionIcon(ActionGlyph.ELLIPSIS), description = "More") { onMore() }
                             },
                             content = { index, showEmoji ->
                                 if (index == 0) {
                                     Pill(
                                         "0",
-                                        icon = Icons.AutoMirrored.Outlined.Comment,
+                                        icon = actionIcon(ActionGlyph.MESSAGE_SQUARE_RTL),
                                         description = "Comments",
                                     ) {}
                                 }

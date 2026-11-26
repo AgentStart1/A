@@ -8,8 +8,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -28,7 +26,9 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.mikepenz.markdown.model.ImageData
 import com.storyteller_f.alphaheart.client.compose_core.common.LocalClient
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.icons.IconRes
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import io.github.aakira.napier.Napier
 
 @Composable
@@ -54,7 +54,7 @@ fun CommonImage(
 
 @Composable
 fun ImageError() {
-    CustomIcon(IconRes.Vector(Icons.Default.Error))
+    CustomIcon(IconRes.Vector(actionIcon(ActionGlyph.CIRCLE_ALERT)))
 }
 
 @Composable

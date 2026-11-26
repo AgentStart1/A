@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Public
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
@@ -36,6 +34,8 @@ import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingInteractions
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -50,7 +50,7 @@ class DetailNavigationUiTest {
 
     private fun verifyNavigation(width: Dp) =
         runComposeUiTest {
-            val routes = List(3) { NavRoute("/section-$it", Icons.Default.Public, "Tab $it") }
+            val routes = List(3) { NavRoute("/section-$it", navigationIcon(NavigationGlyph.EARTH), "Tab $it") }
             setContent {
                 MaterialTheme {
                     ReadingInteractions {

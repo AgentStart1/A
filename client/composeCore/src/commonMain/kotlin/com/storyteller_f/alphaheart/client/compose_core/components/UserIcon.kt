@@ -4,7 +4,6 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,8 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,13 +46,14 @@ fun UserIcon(setClickEvent: Boolean, avatarUrl: String?, size: Dp = 40.dp, onCli
             contentScale = ContentScale.Crop,
         )
     } else {
-        Image(
-            Icons.Default.AccountCircle,
+        val colors = MaterialTheme.colorScheme
+        Icon(
+            actionIcon(ActionGlyph.USER_ROUND),
             contentDescription = if (setClickEvent) "avatar" else null,
             modifier =
             Modifier.size(size)
                 .clip(shape)
-                .background(MaterialTheme.colorScheme.surfaceVariant, shape)
+                .background(colors.secondaryContainer)
                 .let {
                     if (setClickEvent) {
                         it.clickable(onClick = onClick)
@@ -62,8 +61,8 @@ fun UserIcon(setClickEvent: Boolean, avatarUrl: String?, size: Dp = 40.dp, onCli
                         it
                     }
                 }
-                .border(1.dp, MaterialTheme.colorScheme.primary, shape)
                 .padding(size / 5),
+            tint = colors.onSecondaryContainer,
         )
     }
 }

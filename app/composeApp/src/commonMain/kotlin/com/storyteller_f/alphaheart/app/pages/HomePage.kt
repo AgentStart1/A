@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Code
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -62,7 +60,9 @@ import com.storyteller_f.alphaheart.app.utils.LocalAppPreferences
 import com.storyteller_f.alphaheart.app.world
 import com.storyteller_f.alphaheart.client.compose_core.components.ButtonNav
 import com.storyteller_f.alphaheart.client.compose_core.components.CenterBox
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
@@ -204,13 +204,13 @@ private fun ProjectDialogInternal(dismiss: () -> Unit) {
             val appNavFactory = LocalAppNavFactory.current
             Column {
                 ButtonNav(
-                    Icons.Default.Code,
+                    actionIcon(ActionGlyph.CODE),
                     stringResource(Res.string.source_repository),
                 ) {
                     uriHandler.openUri("https://github.com/storytellerF/A")
                 }
                 ButtonNav(
-                    Icons.Default.Code,
+                    actionIcon(ActionGlyph.CODE),
                     stringResource(Res.string.open_source_libraries),
                 ) {
                     dismiss()

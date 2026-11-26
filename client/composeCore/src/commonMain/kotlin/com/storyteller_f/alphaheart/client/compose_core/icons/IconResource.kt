@@ -10,7 +10,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed interface IconRes {
     data class Vector(val vector: ImageVector, val description: String = "") : IconRes
-    data class Font(val char: Char, val description: String = "") : IconRes
     data object Loading : IconRes
 }
 

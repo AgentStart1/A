@@ -6,12 +6,6 @@
 
 import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.BOOLEAN
 import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING
-import org.gradle.api.DefaultTask
-import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.Property
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.TaskAction
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.KotlinDependencyHandler
@@ -19,27 +13,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.FileInputStream
 import java.net.URI
 import java.util.Properties
-
-abstract class DownloadFont : DefaultTask() {
-    @get:Input
-    abstract val sourceUrl: Property<String>
-
-    @get:OutputFile
-    abstract val outputFile: RegularFileProperty
-
-    @TaskAction
-    fun download() {
-        val destination = outputFile.get().asFile
-        if (destination.isFile) return
-
-        destination.parentFile.mkdirs()
-        URI(sourceUrl.get()).toURL().openStream().buffered().use { input ->
-            destination.outputStream().buffered().use { output ->
-                input.copyTo(output)
-            }
-        }
-    }
-}
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -167,7 +140,6 @@ kotlin {
             implementation(libs.foundation)
             implementation(libs.material)
             implementation(libs.material3)
-            implementation(libs.material.icons.extended)
             implementation(libs.ui)
             implementation(libs.ui.backhandler)
             implementation(libs.components.resources)
@@ -206,9 +178,8 @@ kotlin {
             implementation(libs.aboutlibraries.core)
             implementation(libs.aboutlibraries.compose.m3)
             implementation(libs.zoomimage.compose.coil3)
-            implementation(libs.fonticons.core)
             implementation(libs.qrose)
-            implementation(libs.krop.ui)
+            implementation(libs.krop.core)
             implementation(libs.androidx.datastore.preferences.core)
 
             implementation(libs.kmpnotifier.local)
@@ -437,22 +408,6 @@ private fun KotlinDependencyHandler.implementation(
     configure: ExternalModuleDependency.() -> Unit,
 ) {
     implementation(dependencyNotation.get().toString(), configure)
-}
-
-// Should be run at least once before running the app
-val downloadFonts =
-    tasks.register<DownloadFont>("downloadFonts") {
-        sourceUrl.set(
-            "https://github.com/google/material-design-icons/raw/master/variablefont/" +
-                "MaterialSymbolsOutlined%5BFILL%2CGRAD%2Copsz%2Cwght%5D.ttf",
-        )
-        outputFile.set(
-            layout.projectDirectory.file("src/commonMain/composeResources/font/material_symbols_outlined.ttf"),
-        )
-    }
-
-tasks.named("copyNonXmlValueResourcesForCommonMain") {
-    dependsOn(downloadFonts)
 }
 
 tasks.withType<Test>().configureEach {

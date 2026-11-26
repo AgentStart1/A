@@ -9,7 +9,6 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.v2.runComposeUiTest
-import com.storyteller_f.alphaheart.app.ProvideFontIcon
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.import_action
 import com.storyteller_f.alphaheart.app.translate_model
@@ -27,7 +26,7 @@ internal class BrowserTranslationPreferenceTest {
             val unavailable = getString(Res.string.translation_platform_unavailable)
             val importAction = getString(Res.string.import_action)
             val tryAction = getString(Res.string.try_button)
-            setContent { MaterialTheme { ProvideFontIcon { TranslateModelPreferenceItem() } } }
+            setContent { MaterialTheme { TranslateModelPreferenceItem() } }
             onNodeWithText(title).assertIsDisplayed()
             onNodeWithText(unavailable).assertIsDisplayed()
             onNodeWithText(importAction).assertDoesNotExist()

@@ -6,8 +6,6 @@ package com.storyteller_f.alphaheart.client.compose_core.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Public
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
@@ -16,6 +14,8 @@ import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.components.CustomBottomNav
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
 import java.util.Locale
 import kotlin.test.AfterTest
@@ -41,7 +41,10 @@ internal class CompactNavigationUiTest {
     @Test
     fun `compact navigation matches the intrinsic stacked design in every selected state`() =
         runComposeUiTest {
-            val routes = listOf("World", "Group", "Rooms").map { NavRoute("/$it", Icons.Default.Public, it) }
+            val routes =
+                listOf("World", "Group", "Rooms").map {
+                    NavRoute("/$it", navigationIcon(NavigationGlyph.EARTH), it)
+                }
             val path = mutableStateOf(routes.first().path)
             setContent {
                 MaterialTheme {
@@ -83,8 +86,8 @@ internal class CompactNavigationUiTest {
         runComposeUiTest {
             val routes =
                 listOf(
-                    NavRoute("/world", Icons.Default.Public, "World"),
-                    NavRoute("/rooms", Icons.Default.Public, "Rooms"),
+                    NavRoute("/world", navigationIcon(NavigationGlyph.EARTH), "World"),
+                    NavRoute("/rooms", navigationIcon(NavigationGlyph.EARTH), "Rooms"),
                 )
             val unread = mutableStateOf(0L)
             setContent {

@@ -20,7 +20,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.storyteller_f.alphaheart.app.ProvideFontIcon
 import com.storyteller_f.alphaheart.app.navigation.HOME_START_DESTINATION_COMMUNITIES
 import com.storyteller_f.alphaheart.app.navigation.HOME_START_DESTINATION_PREFERENCE_KEY
 import com.storyteller_f.alphaheart.app.navigation.HOME_START_DESTINATION_ROOMS
@@ -89,9 +88,7 @@ internal class HomeStartupPreferenceUiTest {
                 setContent {
                     MaterialTheme {
                         ReadingInteractions {
-                            ProvideFontIcon {
-                                ProvideAppPreferences(store) { HomeStartDestinationPreferenceItem() }
-                            }
+                            ProvideAppPreferences(store) { HomeStartDestinationPreferenceItem() }
                         }
                     }
                 }

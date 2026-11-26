@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.SwitchAccount
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -368,7 +366,7 @@ fun AccountSwitchButton(dismiss: () -> Unit, overviewHandler: LoadingHandler<Use
         }
     }
     ButtonNav(
-        if (isLoading) IconRes.Loading else IconRes.Vector(Icons.Default.SwitchAccount),
+        if (isLoading) IconRes.Loading else IconRes.Vector(actionIcon(ActionGlyph.CONTACT_ROUND)),
         stringResource(Res.string.switch_account),
         {
             ButtonBadgeSuffix(

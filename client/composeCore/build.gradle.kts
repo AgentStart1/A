@@ -89,7 +89,6 @@ kotlin {
             implementation(libs.foundation)
             implementation(libs.material)
             implementation(libs.material3)
-            implementation(libs.material.icons.extended)
             implementation(libs.icons.lucide)
             implementation(libs.ui)
             implementation(libs.components.resources)
@@ -120,7 +119,6 @@ kotlin {
             implementation(libs.aboutlibraries.core)
             implementation(libs.aboutlibraries.compose.m3)
             implementation(libs.zoomimage.compose.coil3)
-            implementation(libs.fonticons.core)
 
             implementation(libs.haze)
             implementation(libs.haze.materials)

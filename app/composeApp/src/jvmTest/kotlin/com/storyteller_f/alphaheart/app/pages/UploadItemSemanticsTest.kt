@@ -6,8 +6,6 @@ package com.storyteller_f.alphaheart.app.pages
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
@@ -23,6 +21,8 @@ import com.storyteller_f.alphaheart.app.video_content_description
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingInteractions
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.storage.UploadInfo
 import com.storyteller_f.storage.UploadStatus
 import nl.jacobras.humanreadable.HumanReadable
@@ -64,7 +64,7 @@ internal class UploadItemSemanticsTest {
                             files.forEach { file ->
                                 UploadItemRow(file, "Uploading", { opened += file.id }, { longPressed += file.id }) {
                                     ReadingIconButton({ transport += file.id }, Modifier.testTag("pause-${file.id}")) {
-                                        ReadingIcon(Icons.Default.Pause, "Pause")
+                                        ReadingIcon(actionIcon(ActionGlyph.PAUSE), "Pause")
                                     }
                                 }
                             }

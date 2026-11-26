@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.*
 import androidx.compose.ui.unit.dp
-import com.storyteller_f.alphaheart.app.ProvideFontIcon
 import com.storyteller_f.alphaheart.app.fonts.FontLoadStatus
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingInteractions
 import kotlin.test.Test
@@ -32,14 +31,12 @@ internal class FontStatusGeometryTest {
                 setContent {
                     MaterialTheme {
                         ReadingInteractions {
-                            ProvideFontIcon {
-                                Column(Modifier.width(width.dp)) {
-                                    FontStatusRow("a-long-community-content-font-filename.otf", state) {
-                                        retries++
-                                        state = FontLoadStatus.LOADING
-                                    }
-                                    Text("Following menu action", Modifier.testTag("following-action"))
+                            Column(Modifier.width(width.dp)) {
+                                FontStatusRow("a-long-community-content-font-filename.otf", state) {
+                                    retries++
+                                    state = FontLoadStatus.LOADING
                                 }
+                                Text("Following menu action", Modifier.testTag("following-action"))
                             }
                         }
                     }

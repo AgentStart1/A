@@ -15,11 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -60,6 +55,10 @@ import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlin
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingOutlinedTextField
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTab
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.NavigationGlyph
+import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
 import com.storyteller_f.shared.model.CommunityInfo
 import com.storyteller_f.shared.model.RoomInfo
@@ -73,7 +72,7 @@ import kotlinx.datetime.LocalDateTime
 fun ButtonNavScreenshot() {
     ScreenshotAppTheme {
         PaddedPreview {
-            ButtonNav(Icons.Default.Settings, "Settings")
+            ButtonNav(actionIcon(ActionGlyph.SETTINGS), "Settings")
         }
     }
 }
@@ -85,7 +84,7 @@ fun PillScreenshot() {
     ScreenshotAppTheme {
         PaddedPreview {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Pill(text = "Selected", icon = Icons.Default.Lock, selected = true) {}
+                Pill(text = "Selected", icon = actionIcon(ActionGlyph.LOCK), selected = true) {}
                 Pill(text = "Emoji", emoji = "A", selected = false) {}
             }
         }
@@ -141,8 +140,8 @@ fun SheetContainerScreenshot() {
     ScreenshotAppTheme {
         PaddedPreview {
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                ButtonNav(Icons.Default.Edit, "Edit profile")
-                ButtonNav(Icons.Default.Lock, "Security")
+                ButtonNav(actionIcon(ActionGlyph.PEN_LINE), "Edit profile")
+                ButtonNav(actionIcon(ActionGlyph.LOCK), "Security")
             }
         }
     }
@@ -267,7 +266,7 @@ fun WideRoomRowScreenshot() {
             CommunityInfo.EMPTY.copy(name = "Design community"),
             true,
             Modifier.padding(20.dp),
-            { Icon(Icons.Default.Groups, null, Modifier.size(60.dp)) },
+            { Icon(navigationIcon(NavigationGlyph.USERS), null, Modifier.size(60.dp)) },
         )
     }
 }
@@ -327,7 +326,7 @@ fun HomeNavigationScreenshot() {
                 "World",
                 "Communities",
                 "Rooms",
-            ).map { NavRoute("/${it.lowercase()}", Icons.Default.Groups, it) }
+            ).map { NavRoute("/${it.lowercase()}", navigationIcon(NavigationGlyph.USERS), it) }
         AdaptiveSectionScaffold(rememberPagerState { 3 }, routes, true, search = { page, compact ->
             Text(
                 routes[page].label,
@@ -350,7 +349,7 @@ fun CommunityGridScreenshot() {
             items(12) { index ->
                 Surface(color = MaterialTheme.colorScheme.secondaryContainer) {
                     Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Default.Groups, null, Modifier.size(50.dp))
+                        Icon(navigationIcon(NavigationGlyph.USERS), null, Modifier.size(50.dp))
                         Text("Community ${index + 1}", style = MaterialTheme.typography.labelSmall)
                     }
                 }
@@ -372,7 +371,7 @@ fun LargeTextRoomRowScreenshot() {
             null,
             true,
             Modifier.padding(20.dp),
-            { Icon(Icons.Default.Groups, null, Modifier.size(60.dp)) },
+            { Icon(navigationIcon(NavigationGlyph.USERS), null, Modifier.size(60.dp)) },
         )
     }
 }
@@ -408,7 +407,7 @@ fun ActivityRoomRowScreenshot() {
                 null,
                 maxWidth >= 760.dp,
                 Modifier.padding(20.dp),
-                { Icon(Icons.Default.Groups, null, Modifier.size(60.dp)) },
+                { Icon(navigationIcon(NavigationGlyph.USERS), null, Modifier.size(60.dp)) },
                 RoomActivityPreview(
                     room,
                     42,
@@ -527,10 +526,10 @@ fun ReadingIconMenuScreenshot() {
     ScreenshotAppTheme {
         PaddedPreview {
             com.storyteller_f.alphaheart.client.compose_core.components.IconActionMenu {
-                ButtonNav(Icons.Default.Edit, "Edit")
-                ButtonNav(Icons.Default.Groups, "Members")
-                ButtonNav(Icons.Default.Settings, "Settings")
-                ButtonNav(Icons.Default.Lock, "Privacy")
+                ButtonNav(actionIcon(ActionGlyph.PEN_LINE), "Edit")
+                ButtonNav(navigationIcon(NavigationGlyph.USERS), "Members")
+                ButtonNav(actionIcon(ActionGlyph.SETTINGS), "Settings")
+                ButtonNav(actionIcon(ActionGlyph.LOCK), "Privacy")
             }
         }
     }
