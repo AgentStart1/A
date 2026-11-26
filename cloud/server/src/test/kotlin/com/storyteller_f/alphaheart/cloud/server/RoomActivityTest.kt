@@ -238,6 +238,31 @@ class RoomActivityTest {
         }
 
     @Test
+    fun `invited readers count room messages without joining`() =
+        test {
+            val owner = preparePrivateActivity()
+            val recipient = attachSession()
+            loginSession(owner) {
+                val invitation = NewTitle("join", TitleType.JOIN, recipient.uid, owner.custom, ObjectType.ROOM, "")
+                createTitle(invitation).getOrThrow()
+            }
+            loginSession(recipient) {
+                val activity = getOnlyRoomActivity(owner.custom)
+                assertFalse(activity.room.isJoined)
+                assertEquals(1L, activity.unreadMessageCount)
+                assertEquals(1L, getUnreadMessageCount().getOrThrow().unreadMessageCount)
+                assertEquals(1, hasUnreadRooms().getOrThrow().unreadCount)
+                val unread = getUnreadRoomActivities(PaginationQuery()).getOrThrow().data.single()
+                assertEquals(owner.custom, unread.room.id)
+
+                addReadLog(UpdateUserRead(activity.room.tuple(), requireNotNull(activity.latestMessageId))).getOrThrow()
+                assertEquals(0L, getOnlyRoomActivity(owner.custom).unreadMessageCount)
+                assertEquals(0L, getUnreadMessageCount().getOrThrow().unreadMessageCount)
+                assertFalse(hasUnreadRooms().getOrThrow().hasUnread)
+            }
+        }
+
+    @Test
     fun `late member cannot decrypt private history`() =
         test {
             withLatePrivateMember { roomId ->

@@ -27,7 +27,7 @@ data class RoomActivityListResponse(
     override val pagination: Pagination<String>? = null,
 ) : ListResponse<RoomActivityInfo>
 
-/** Total direct unread messages across all joined rooms, independent of list pagination. */
+/** Total direct unread messages across joined and invited rooms, independent of list pagination. */
 @Serializable
 data class UnreadMessageCountResponse(val unreadMessageCount: Long)
 

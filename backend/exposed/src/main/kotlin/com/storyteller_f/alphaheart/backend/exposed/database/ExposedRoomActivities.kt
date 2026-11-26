@@ -40,6 +40,10 @@ import org.jetbrains.exposed.v1.r2dbc.select
 private val latestMessageColumn = Topics.id.max()
 private val unreadMessageColumn = Topics.id.countDistinct()
 
+private val readableRoomMembership =
+    Members.status eq MemberStatus.INVITED or
+        (Members.status eq MemberStatus.JOINED and Members.joinedTime.isNotNull())
+
 internal suspend fun ExposedContainerDatabase.queryRoomActivityRecords(uid: PrimaryKey, roomIds: List<PrimaryKey>) =
     captureFailure(DatabaseError::from) {
         if (roomIds.isEmpty()) return@captureFailure emptyList()
@@ -50,8 +54,7 @@ internal suspend fun ExposedContainerDatabase.queryRoomActivityRecords(uid: Prim
                         .join(Topics, JoinType.LEFT, Rooms.id, Topics.parentId) { Topics.parentType eq ObjectType.ROOM }
                         .select(Members.objectId, latestMessageColumn).where {
                             Members.uid eq uid and (Members.objectType eq ObjectType.ROOM) and
-                                (Members.status eq MemberStatus.JOINED) and Members.joinedTime.isNotNull() and
-                                (Members.objectId inList roomIds)
+                                readableRoomMembership and (Members.objectId inList roomIds)
                         }.groupBy(Members.objectId)
                 }
                 map { it[Members.objectId] to it[latestMessageColumn] }
@@ -98,7 +101,7 @@ internal suspend fun ExposedContainerDatabase.countUnreadRoomActivities(uid: Pri
         count()
     }
 
-/** Filter the complete joined-room set before grouping and pagination, never a loaded room page. */
+/** Filter the complete readable membership set before grouping and pagination, never a loaded room page. */
 private fun unreadRoomActivityQuery(uid: PrimaryKey): Query = unreadRoomMessageQuery(uid).groupBy(Members.objectId)
 
 internal suspend fun ExposedContainerDatabase.countUnreadRoomMessages(uid: PrimaryKey) =
@@ -122,6 +125,5 @@ private fun unreadRoomMessageQuery(uid: PrimaryKey, aggregate: Boolean = false):
             },
         ).where {
             Members.uid eq uid and (Members.objectType eq ObjectType.ROOM) and
-                (Members.status eq MemberStatus.JOINED) and Members.joinedTime.isNotNull() and
-                (UserTopicReads.topicId.isNull() or (UserTopicReads.topicId less Topics.id))
+                readableRoomMembership and (UserTopicReads.topicId.isNull() or (UserTopicReads.topicId less Topics.id))
         }
