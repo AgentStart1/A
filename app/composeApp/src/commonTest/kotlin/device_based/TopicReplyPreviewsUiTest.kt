@@ -75,6 +75,8 @@ class TopicReplyPreviewsUiTest {
                 val first = onNodeWithTag("topic-reply-1").getUnclippedBoundsInRoot()
                 val second = onNodeWithTag("topic-reply-2").getUnclippedBoundsInRoot()
                 assertEquals(first.bottom, second.top)
+                val lastSummary = onNodeWithTag("topic-reply-summary-2").getUnclippedBoundsInRoot()
+                assertEquals(if (chatMode) 24.dp else 0.dp, panel.bottom - lastSummary.bottom)
                 for (id in listOf(1, 2)) {
                     val avatar = onNodeWithTag("avatar-$id").getUnclippedBoundsInRoot()
                     val summary = onNodeWithTag("topic-reply-summary-$id").getUnclippedBoundsInRoot()

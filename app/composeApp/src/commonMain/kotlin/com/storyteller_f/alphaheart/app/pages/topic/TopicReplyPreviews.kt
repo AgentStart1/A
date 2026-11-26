@@ -58,7 +58,7 @@ fun TopicReplyPreviews(
                         }
                     },
                 ) {
-                    ReplyPreviewRow(reply, chat, avatar)
+                    ReplyPreviewRow(reply, chat, index == replies.lastIndex, avatar)
                 }
             }
         }
@@ -66,9 +66,14 @@ fun TopicReplyPreviews(
 }
 
 @Composable
-private fun ReplyPreviewRow(reply: TopicReplyPreview, chat: Boolean, avatar: @Composable (TopicReplyPreview) -> Unit) {
+private fun ReplyPreviewRow(
+    reply: TopicReplyPreview,
+    chat: Boolean,
+    last: Boolean,
+    avatar: @Composable (TopicReplyPreview) -> Unit,
+) {
     Row(
-        Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 16.dp),
+        Modifier.fillMaxWidth().padding(top = 8.dp, bottom = if (chat || !last) 16.dp else 0.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.Top,
     ) {

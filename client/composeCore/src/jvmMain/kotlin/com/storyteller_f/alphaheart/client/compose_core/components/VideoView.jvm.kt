@@ -69,12 +69,13 @@ internal fun DesktopMedia(
     modifier: Modifier,
     video: Boolean,
     layout: MediaSurfaceLayout = MediaSurfaceLayout.Bounded,
+    startPlaying: Boolean = video,
 ) {
     val scope = rememberCoroutineScope()
     var retryGeneration by remember(item.url, video) { mutableIntStateOf(0) }
-    val autoPlay = video || retryGeneration > 0
+    val autoPlay = startPlaying || retryGeneration > 0
     val host =
-        remember(item.url, video, scope, retryGeneration) {
+        remember(item.url, video, scope, retryGeneration, autoPlay) {
             DesktopVideoHost(item.url, scope, desktopVideoCoordination, Dispatchers.IO) {
                 VlcMediaPlayer(autoPlay = autoPlay)
             }
