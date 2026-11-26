@@ -94,7 +94,7 @@ internal actual fun RtcJoinButton(video: Boolean, enabled: Boolean, onJoin: () -
 
 @OptIn(ExperimentalForeignApi::class)
 @Composable
-internal actual fun RtcVideoView(video: RtcVideo, modifier: Modifier, local: Boolean) {
+internal actual fun RtcVideoView(video: RtcVideo, modifier: Modifier, local: Boolean, aspect: (Float) -> Unit) {
     val track = video as IosRtcVideo
     UIKitView(
         factory = {

@@ -23,6 +23,22 @@ import org.intellij.markdown.flavours.gfm.GFMTokenTypes
 import org.intellij.markdown.parser.CancellationToken
 import org.intellij.markdown.parser.MarkdownParser
 
+fun extractMarkdownReferencePreview(markdownText: String): String {
+    val source = normalizeMarkdownLineEndings(markdownText)
+    val blocks = astNode(source).children
+    val first = blocks.firstOrNull { it.getTextInNode(source).isNotBlank() } ?: return ""
+    val heading =
+        first.type.name.startsWith("ATX_") ||
+            first.type == MarkdownElementTypes.SETEXT_1 || first.type == MarkdownElementTypes.SETEXT_2
+    if (!heading) return extractMarkdownHeadline(source)
+    val headingLine = first.getTextInNode(source).lineSequence().first()
+    val title = headingLine.trim().trim('#').trim().take(80)
+    val excerpt =
+        blocks.firstOrNull { it.type == MarkdownElementTypes.PARAGRAPH }
+            ?.getTextInNode(source)?.trim()?.take(180)?.toString().orEmpty()
+    return listOf(title, excerpt).filter(String::isNotBlank).joinToString("\n")
+}
+
 fun extractMarkdownHeadline(markdownText: String): String {
     val source = normalizeMarkdownLineEndings(markdownText)
     val parsedTree = astNode(source)

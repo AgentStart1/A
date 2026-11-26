@@ -40,6 +40,8 @@ internal data class RtcParticipant(
     val audioMuted: Boolean = false,
     val videoMuted: Boolean = false,
     val connection: RtcConnectionState = RtcConnectionState.Connecting,
+    val audioLevel: Int = 0,
+    val localAudioLevel: Int = 0,
 )
 
 internal sealed interface RtcCallState {
@@ -287,6 +289,13 @@ internal class RtcCallHost(
                                 updateParticipant(
                                     uid,
                                 ) { it.copy(video = video) }
+                            }
+                        }
+                    },
+                    audioLevel = { local, remote ->
+                        scope.launch {
+                            if (current == generation && peerIdentities[uid] === identity) {
+                                updateParticipant(uid) { it.copy(audioLevel = remote, localAudioLevel = local) }
                             }
                         }
                     },

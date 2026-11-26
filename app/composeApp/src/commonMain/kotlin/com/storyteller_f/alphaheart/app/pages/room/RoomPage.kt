@@ -174,7 +174,7 @@ private fun RoomPageInternal(room: IdRoomViewModel, needShowDialog: Boolean, roo
                 }
             }
             val lazyListState = rememberLazyListState()
-            StateView(room.handler, Modifier.weight(1f)) {
+            StateView(room.handler, Modifier.weight(1f).fillMaxWidth()) {
                 val roomId = it.id
                 val viewModel = createRoomTopicsViewModel(roomId)
                 val items = viewModel.flow.collectAsLazyPagingItems()
@@ -521,11 +521,11 @@ fun RoomDialogInternal(roomInfo: RoomInfo, dismiss: () -> Unit, onCommunityIcon:
                 appNavFactory.newAppNav().gotoRoom(roomInfo.id, false)
             },
             Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
         ) {
             val commonDialogController = rememberCommonDialogController()
             RoomIcon(roomInfo, 48.dp, false, 4.dp, commonDialogController::update)
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f).padding(top = 2.dp)) {
                 Text(roomInfo.name, fontSize = 18.sp, fontWeight = FontWeight.Medium)
                 Text(CoreStrings.aid(roomInfo.aid), fontSize = 12.sp)
             }
@@ -534,7 +534,7 @@ fun RoomDialogInternal(roomInfo: RoomInfo, dismiss: () -> Unit, onCommunityIcon:
         roomInfo.communityId?.let { communityId ->
             Text(
                 stringResource(Res.string.belongs_to_community),
-                modifier = Modifier.padding(top = 18.dp, bottom = 8.dp),
+                modifier = Modifier.padding(top = 12.dp, bottom = 6.dp),
                 fontSize = 12.sp,
             )
             CommunityMenuRefCell(communityId, onClickIcon = onCommunityIcon) {

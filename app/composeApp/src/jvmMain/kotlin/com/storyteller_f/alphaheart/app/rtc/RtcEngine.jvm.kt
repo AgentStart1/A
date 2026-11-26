@@ -51,7 +51,12 @@ internal class DesktopRtcVideo(private val track: VideoTrack) : RtcVideo {
 
 internal actual fun createRtcEngine(): RtcEngine =
     KtorRtcEngine(Dispatchers.IO.limitedParallelism(1)) {
-        val devices = JvmMediaDevices()
+        val devices =
+            try {
+                JvmMediaDevices()
+            } catch (failure: Error) {
+                throw desktopAudioInitializationFailure(failure)
+            }
         try {
             val audioModule = devices.audioModule
             MediaDevices.getDefaultAudioRenderDevice()?.let(audioModule::setPlayoutDevice)
@@ -65,12 +70,16 @@ internal actual fun createRtcEngine(): RtcEngine =
             )
         } catch (failure: Throwable) {
             runCatching { closeDesktopDevices(devices) }.exceptionOrNull()?.let(failure::addSuppressed)
-            // WebRTC JNI reports device failures as plain Error instances.
-            if (failure.javaClass == Error::class.java) {
-                throw IllegalStateException("Failed to initialize desktop audio devices", failure)
-            }
-            throw failure
+            throw desktopAudioInitializationFailure(failure)
         }
+    }
+
+private fun desktopAudioInitializationFailure(failure: Throwable): Throwable =
+    // WebRTC JNI reports device failures as plain Error instances.
+    if (failure.javaClass == Error::class.java) {
+        IllegalStateException("Failed to initialize desktop audio devices", failure)
+    } else {
+        failure
     }
 
 private class DesktopRtcTrackFactory(private val devices: JvmMediaDevices) : MediaTrackFactory {

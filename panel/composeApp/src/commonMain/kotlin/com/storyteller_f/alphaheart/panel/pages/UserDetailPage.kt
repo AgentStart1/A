@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.components.CommunityIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.FileIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTabRow
@@ -189,7 +190,7 @@ private fun UserJoinedCommunitiesSection(uid: PrimaryKey) {
                             CommunityIcon(info, 40.dp, false) {}
                         },
                         headlineContent = { Text(info.name) },
-                        overlineContent = { Text(info.aid) },
+                        supportingContent = { Text(CoreStrings.aid(info.aid)) },
                         modifier = Modifier.clickable { panelNav.gotoCommunityDetail(info.id) },
                     )
                     if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
@@ -216,10 +217,7 @@ private fun UserJoinedRoomsSection(uid: PrimaryKey) {
                             RoomIcon(info, 40.dp, false) {}
                         },
                         headlineContent = { Text(info.name) },
-                        supportingContent = {
-                            val creator = info.creator.toString()
-                            Text(listOf(creator).filter { it.isNotEmpty() }.joinToString(" • "))
-                        },
+                        supportingContent = { Text(CoreStrings.aid(info.aid)) },
                         modifier = Modifier.clickable { panelNav.gotoRoomDetail(info.id) },
                     )
                     if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))

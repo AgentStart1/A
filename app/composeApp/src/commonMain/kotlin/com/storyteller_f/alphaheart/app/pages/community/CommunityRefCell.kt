@@ -71,8 +71,8 @@ fun CommunityMenuRefCell(
     onClick: (CommunityInfo) -> Unit,
 ) {
     val handler = LocalRefCellHandlerProvider.current.communityHandler(id)
-    RefCellStateView(handler, Modifier.fillMaxWidth().heightIn(min = 52.dp)) { info ->
-        ActionMenuReference(info.name, { onClick(info) }) {
+    RefCellStateView(handler, Modifier.fillMaxWidth().heightIn(min = 40.dp)) { info ->
+        ActionMenuReference(info.name, info.aid, { onClick(info) }) {
             CommunityIcon(info, 36.dp, onClickIcon != null) { onClickIcon?.invoke(info) }
         }
     }

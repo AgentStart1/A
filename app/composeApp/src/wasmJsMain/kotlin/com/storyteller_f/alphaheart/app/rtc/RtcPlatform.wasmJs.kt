@@ -59,7 +59,7 @@ internal actual fun RtcJoinButton(video: Boolean, enabled: Boolean, onJoin: () -
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-internal actual fun RtcVideoView(video: RtcVideo, modifier: Modifier, local: Boolean) {
+internal actual fun RtcVideoView(video: RtcVideo, modifier: Modifier, local: Boolean, aspect: (Float) -> Unit) {
     val track = (video as BrowserRtcVideo).track
     val stream = remember(track) { MediaStream().apply { addTrack(track.getNative()) } }
     HtmlElementView(
@@ -72,6 +72,11 @@ internal actual fun RtcVideoView(video: RtcVideo, modifier: Modifier, local: Boo
                 style.height = "100%"
                 style.objectFit = "contain"
                 if (local) style.transform = "scaleX(-1)"
+                fun updateSize() {
+                    if (videoWidth > 0 && videoHeight > 0) aspect(videoWidth.toFloat() / videoHeight)
+                }
+                addEventListener("loadedmetadata", { updateSize() })
+                addEventListener("resize", { updateSize() })
                 srcObject = stream as MediaProvider
             }
         },

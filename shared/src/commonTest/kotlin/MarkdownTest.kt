@@ -8,6 +8,7 @@ import com.storyteller_f.shared.utils.astNode
 import com.storyteller_f.shared.utils.extractHeadParagraph
 import com.storyteller_f.shared.utils.extractMarkdownHeadline
 import com.storyteller_f.shared.utils.extractMarkdownMediaLink
+import com.storyteller_f.shared.utils.extractMarkdownReferencePreview
 import com.storyteller_f.shared.utils.readInlineMath
 import com.storyteller_f.shared.utils.trimMarkdownUnusedContent
 import org.intellij.markdown.ast.ASTNode
@@ -19,6 +20,16 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class MarkdownTest {
+    @Test
+    fun referencePreviewIncludesBodyAfterHeading() {
+        assertEquals("Heading\nFirst paragraph.", extractMarkdownReferencePreview("## Heading\n\nFirst paragraph."))
+        assertEquals(
+            "Heading\nFirst paragraph.",
+            extractMarkdownReferencePreview(listOf("Heading", "=======", "", "First paragraph.").joinToString("\n")),
+        )
+        assertEquals("First paragraph.", extractMarkdownReferencePreview("First paragraph."))
+    }
+
     @Test
     fun preservesUnicodeDocumentLength() {
         val text = "正文 🌍 **加粗**"

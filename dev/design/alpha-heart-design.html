@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Alpha Heart · 从容阅读</title>
+<title>Alpha Heart · 统一设计稿</title>
 <script defer src="vendor/lucide-1.17.0.min.js"></script>
 </head>
 <body>
@@ -543,13 +543,6 @@
 
 /* END BLOCK STYLE */
 #ah-unified-combinations .product:not(.panel-mode) .home-room-directory>:is(.page-heading,.existing-list){box-sizing:border-box;width:100%;max-width:var(--ah-reading-width,740px);margin-inline:auto} /* home-room-width */
-#ah-unified-combinations .product .community-icon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,176px));gap:16px;align-items:start} /* community-grid */
-#ah-unified-combinations .product .community-icon-grid>.existing-row{box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:flex-start!important;gap:12px;min-width:0;min-height:132px;padding:20px 12px!important;border:0!important;text-align:center} /* community-grid */
-#ah-unified-combinations .product .community-icon-grid>.existing-row>.community-icon{width:48px;height:48px;flex:none} /* community-grid */
-#ah-unified-combinations .product .community-icon-grid>.existing-row>span:not(.community-icon){width:100%;min-width:0;overflow-wrap:anywhere;text-align:center} /* community-grid */
-#ah-unified-combinations .product .community-icon-grid>.existing-row>svg:last-child{display:none} /* community-grid */
-#ah-unified-combinations .product .community-icon-grid>:not(.existing-row){grid-column:1/-1} /* community-grid */
-@container readingStage (max-width:600px){#ah-unified-combinations .product .community-icon-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:368px;gap:16px}} /* community-grid */
 @container readingStage (width > 600px){#ah-unified-combinations .product>.workspace:has(>.rail){grid-template-columns:170px minmax(0,1fr)}#ah-unified-combinations .product>.workspace>.rail{box-sizing:border-box;width:170px;min-width:170px;flex-shrink:0}#ah-unified-combinations .profile-shell{grid-template-columns:135px minmax(0,1fr)}#ah-unified-combinations .profile-navigation{box-sizing:border-box;min-width:135px}} /* fixed-nav-width */
 #ah-unified-combinations .product :is(.rail,.bottom-nav,.profile-navigation,.object-navigation) button{flex-shrink:0;white-space:nowrap;word-break:normal;overflow-wrap:normal} /* fixed-nav-width */
 #ah-unified-combinations .product :is(.rail,.bottom-nav,.profile-navigation,.object-navigation) button>span,#ah-unified-combinations .product :is(.rail,.bottom-nav,.profile-navigation,.object-navigation) button>svg{flex-shrink:0;white-space:nowrap;overflow-wrap:normal;word-break:normal} /* fixed-nav-width */
@@ -717,12 +710,12 @@
 
 /* Empty/loading/error placeholders occupy the full data region, not its first card columns. */
 #ah-unified-combinations .product .review-state-display{box-sizing:border-box;min-width:0;max-width:100%}
-#ah-unified-combinations .product :is(.third-poster-grid,.community-icon-grid,.member-grid,.third-overview,.third-worker-config,.settings-grid,.feed):has(>.review-state-display){grid-template-columns:minmax(0,1fr)}
-#ah-unified-combinations .product :is(.third-poster-grid,.community-icon-grid):has(>.review-state-display){width:100%;max-width:none;box-sizing:border-box}
+#ah-unified-combinations .product :is(.third-poster-grid,.member-grid,.third-overview,.third-worker-config,.settings-grid,.feed):has(>.review-state-display){grid-template-columns:minmax(0,1fr)}
+#ah-unified-combinations .product .third-poster-grid:has(>.review-state-display){width:100%;max-width:none;box-sizing:border-box}
 
-#ah-unified-combinations .product .main:has(>:is(.third-poster-grid,.community-icon-grid)>.review-state-display){display:flex;flex-direction:column}
-#ah-unified-combinations .product .main>:is(.third-poster-grid,.community-icon-grid):has(>.review-state-display){flex:1;align-items:stretch}
-#ah-unified-combinations .product :is(.third-poster-grid,.community-icon-grid)>.review-state-display{align-self:stretch}
+#ah-unified-combinations .product .main:has(>.third-poster-grid>.review-state-display){display:flex;flex-direction:column}
+#ah-unified-combinations .product .main>.third-poster-grid:has(>.review-state-display){flex:1;align-items:stretch}
+#ah-unified-combinations .product .third-poster-grid>.review-state-display{align-self:stretch}
 
 #ah-unified-combinations .product .chat-messages:has(>.review-state-display){padding:0;overflow:visible;scrollbar-gutter:auto;align-items:stretch}
 
@@ -883,7 +876,7 @@
 #ah-unified-combinations .stable-refresh-content{display:flow-root;box-sizing:border-box;min-width:0}
 
 
-#ah-unified-combinations .stable-data-refresh-host>.stable-refresh-line{left:var(--refresh-edge-left,0px);right:var(--refresh-edge-right,0px)}
+#ah-unified-combinations .product .stable-data-refresh-host>.stable-refresh-line{grid-column:auto;left:var(--refresh-edge-left,0px);right:var(--refresh-edge-right,0px)}
 
 #ah-unified-combinations .directory>.stable-refresh-content{padding-top:12px}
 #ah-unified-combinations .product .panel-user-directory>.directory-title{padding-bottom:30px}
@@ -903,11 +896,10 @@
 #ah-unified-combinations .embed-reference-open>span{min-width:0;flex:1}
 #ah-unified-combinations .embed-reference-open strong{display:block;font-weight:500;line-height:1.6;overflow-wrap:anywhere}
 #ah-unified-combinations .embed-reference-open small{display:block;color:var(--ah-muted);font-size:12px;margin-top:2px}
-#ah-unified-combinations .embed-reference-status{min-height:96px}
-#ah-unified-combinations .embed-reference{height:112px}
 #ah-unified-combinations .embed-reference-status .embed-status{padding:8px 0;min-height:40px;box-sizing:border-box}
 #ah-unified-combinations .embed-reference-open strong{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 #ah-unified-combinations .embed-reference-user .embed-reference-open strong{-webkit-line-clamp:1}
+#ah-unified-combinations .embed-reference-excerpt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font-size:13px;color:var(--ah-muted);margin-top:3px}
 #ah-unified-combinations .embed-status{display:flex;align-items:center;justify-content:center;gap:10px;padding:24px 12px;color:var(--ah-muted);font-size:13px;min-width:0}
 #ah-unified-combinations .embed-status .third-spinner{width:18px;height:18px}
 #ah-unified-combinations .embed-image{margin:0;min-width:0;max-width:360px}
@@ -1032,6 +1024,53 @@
 #ah-unified-combinations .panel-user-row>.avatar{grid-column:1;grid-row:1}
 #ah-unified-combinations .panel-user-row>.panel-user-copy{grid-column:2;grid-row:1;display:grid;gap:2px;min-width:0;line-height:1.25;overflow-wrap:anywhere}
 #ah-unified-combinations .panel-user-copy:not(:has(small)){align-self:center}
+
+#ah-unified-combinations .group-call{container-type:inline-size;display:grid;gap:16px}
+#ah-unified-combinations .group-call-tiles{display:grid;gap:10px;grid-template-columns:repeat(var(--call-cols,3),minmax(0,1fr))}
+#ah-unified-combinations .group-call-tiles[data-count="2"],#ah-unified-combinations .group-call-tiles[data-count="3"],#ah-unified-combinations .group-call-tiles[data-count="4"]{--call-cols:2}
+#ah-unified-combinations .group-call-tile{box-sizing:border-box;width:100%;position:relative;display:grid;place-items:center;align-content:center;min-width:0;min-height:0;aspect-ratio:4/3;border-radius:12px;background:#17291f;color:#edf5ef;overflow:hidden}
+#ah-unified-combinations .group-call-tile>video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+#ah-unified-combinations .group-call-tile:has(>video) footer{padding:4px 6px;border-radius:6px;background:#000a}
+#ah-unified-combinations .group-call-ratio{position:absolute;left:8px;top:8px;padding:3px 6px;border-radius:5px;background:#000a;color:white;font-size:11px}
+#ah-unified-combinations .group-call-tile[data-self="true"]{background:#25332b}
+#ah-unified-combinations .group-call-tile .avatar{width:48px;height:48px;background:#dceadf;color:#254634}
+#ah-unified-combinations .group-call-tile footer{position:absolute;inset:auto 10px 8px;display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:13px}
+#ah-unified-combinations .group-call-person{display:flex;align-items:center;gap:6px;min-width:0}
+#ah-unified-combinations .group-call-device-status{display:flex;align-items:center;gap:8px;flex:none;color:#edf5ef}
+#ah-unified-combinations .group-call-device-status>span{display:flex;align-items:center;justify-content:center;width:15px;height:15px;flex:none}
+#ah-unified-combinations .group-call-mic{position:relative;display:inline-flex;align-items:center;color:#edf5ef;--mic-fill:0%}
+#ah-unified-combinations .group-call-mic[data-level="1"]{--mic-fill:33%}
+#ah-unified-combinations .group-call-mic[data-level="2"]{--mic-fill:66%}
+#ah-unified-combinations .group-call-mic[data-level="3"]{--mic-fill:100%}
+#ah-unified-combinations .group-call-mic-fill{position:absolute;inset:0;display:flex;color:#53eca1;clip-path:inset(calc(100% - var(--mic-fill)) 0 0);pointer-events:none}
+#ah-unified-combinations .group-call-person strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ah-unified-combinations .group-call-tile svg{width:15px;height:15px;flex:none}
+#ah-unified-combinations .group-call:has(>[data-layout="focus"]){height:100%;grid-template-rows:minmax(0,1fr) auto;container-type:size}
+#ah-unified-combinations .group-call:has(>[data-layout="focus"])>.third-call-controls{box-sizing:border-box;height:44px;padding-top:0}
+#ah-unified-combinations .group-call-tiles[data-layout="focus"]{display:grid;grid-template-columns:minmax(0,1fr);place-items:center;min-height:0}
+#ah-unified-combinations .group-call-tiles[data-layout="focus"]>.group-call-tile{--call-ratio:calc(4 / 3);width:min(100%,calc((100cqh - 60px) * var(--call-ratio)));aspect-ratio:var(--call-ratio)}
+#ah-unified-combinations .group-call-tiles[data-layout="focus"]>.group-call-tile[data-video-ratio="16:9"]{--call-ratio:calc(16 / 9)}
+#ah-unified-combinations .group-call-tiles[data-layout="focus"]>.group-call-tile[data-video-ratio="9:16"]{--call-ratio:calc(9 / 16)}
+#ah-unified-combinations .group-call .third-call-controls{margin:0;gap:10px;justify-content:center}
+#ah-unified-combinations .group-call .third-call-controls button:last-child{color:#a43232}
+#ah-unified-combinations .group-call-tile .group-call-pin{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:38px;height:38px;padding:0;border:0;border-radius:8px;color:#edf5ef;background:#0004}
+#ah-unified-combinations .group-call-tile .group-call-pin:hover,#ah-unified-combinations .group-call-tile .group-call-pin:focus-visible{background:#0008}
+#ah-unified-combinations .group-call-pin svg{width:18px;height:18px}
+@container (max-width:500px){
+ #ah-unified-combinations .group-call-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #ah-unified-combinations .group-call-tile .avatar{width:36px;height:36px;margin-bottom:12px}
+}
+
+#ah-unified-combinations .product .preview-group-identity,#ah-unified-combinations .product .topic-origin-group .preview-group-identity{align-items:flex-start}
+#ah-unified-combinations .product .preview-group-identity > .embed-reference-open{padding-block:0}
+#ah-unified-combinations .product .preview-group-identity > svg{align-self:center}
+#ah-unified-combinations .product .preview-group-name{display:block;line-height:1.4}
+#ah-unified-combinations .product .identity-dialog :is(.confirmed-identity-heading,.identity-heading) .identity-heading-copy>strong{margin-block-start:2px}
+#ah-unified-combinations .product :is(.existing-row,.directory-row,.embed-reference-row,.room-community-ref,.topic-menu-origin,.poster .row,.community-poster .row,.third-poster-tile .row):has(>:is(.avatar,.community-icon,.room-identity-icon)) :is(strong,b,.preview-group-name),#ah-unified-combinations .product .author b{font-weight:400}
+#ah-unified-combinations .product :is(.confirmed-identity-heading,.identity-heading,.community-dialog-identity,.dialog-object-heading,.topic-origin-group *) :is(.preview-group-name,.identity-heading-copy>strong){line-height:1.2;text-box:trim-start cap alphabetic}
+#ah-unified-combinations .product .topic-origin-group>p{margin:0 0 6px}
+#ah-unified-combinations .product .topic-origin-group :is(.room-community-ref,.topic-menu-origin,.existing-row){margin-top:0;padding-block:0!important}
+#ah-unified-combinations .preview-group-aid{display:block;color:var(--ah-muted);font-size:12px;margin-top:2px}
 </style>
 <div class="demo-controls"><label>预览端 <select id="ah-demo-app" aria-label="选择预览端"><option value="user">用户端</option><option value="panel">管理端</option></select></label><label>页面 <select id="ah-demo-page" aria-label="选择预览页面"></select></label><label>屏幕 <select id="ah-demo-screen" aria-label="选择屏幕宽度"><option value="wide">宽屏 · 跟随窗口</option><option value="narrow">窄屏 · 390px</option></select></label><label>菜单预览 <select id="ah-demo-menu" aria-label="选择菜单预览"><option value="none">关闭菜单</option><option value="self">当前账号头像</option><option value="self-address">当前账号 · 无 Aid</option><option value="user">其他用户头像</option><option value="room">房间图标</option><option value="community">社区图标</option></select></label><label>状态 <select id="review-data-state" aria-label="选择页面状态"></select></label><span class="review-topic-controls"><label>话题来源 <select id="review-topic-source" aria-label="选择话题来源"><option value="community">社区</option><option value="room">聊天室</option><option value="user">用户</option></select></label><label>作者 <select id="review-topic-author" aria-label="选择当前话题作者"><option value="other">其他用户</option><option value="self">自己</option></select></label></span></div>
 <div class="demo-controls all-combinations"><label>全部组合 <select id="review-combination" aria-label="选择全部预览组合"></select></label><span id="review-combination-count" role="status" aria-live="polite"></span></div><div class="stage"><div class="product reading" id="ah-design-reading" aria-label="从容阅读产品预览"></div></div>
@@ -1323,7 +1362,7 @@ function settingsPage(){
 }
 function settingDialog(){const item=secondState.settingEdit;const isName=['name','community-name','room-name'].includes(item);return `<div class="community-overlay" role="dialog" aria-modal="true" aria-label="${isName?'编辑名称':'设置选项'}"><section class="community-dialog"><div class="spread"><h2>${isName?'编辑名称':'设置选项'}</h2>${btn(icons('x'),'setting-close','quiet')}</div>${isName?`<label class="setting-input-label"><input aria-label="${item==='name'?'昵称':'名称'}" data-setting-name value="${escapeText(item==='name'?secondState.name:item==='community-name'?secondState.communityName:secondState.roomName)}"></label><div class="row setting-dialog-footer">${btn('取消','setting-close')}${btn('确定','setting-confirm','primary')}</div>`:item==='twofactor'?'<p class="setting-dialog-copy">双因素验证的现有启用、验证码与恢复码流程将单独展开。</p>':'<p class="setting-dialog-copy">此入口保留原有的文件选择与裁剪流程。</p>'}</section></div>`}
 const entityFields={community:[['ID','7526833426750504960'],['名称','Programming'],['Aid','code'],['所有者','1'],['创建时间','2026-11-13 10:28'],['成员数','3'],['加入策略','开放加入'],['图标','null'],['海报','null'],['最新话题','null'],['已设置海报','否'],['字体设置','null'],['只读','否']],room:[['ID','7526833436871360512'],['名称','Rust Language'],['Aid','RustLanguage'],['创建者','1'],['创建时间','2026-11-13 10:28'],['成员数','5'],['图标','null'],['加入时间','2026-11-13 10:29'],['社区 ID','7526833426750504960'],['最新话题','null'],['私密房间','否'],['已加入','是'],['有未读消息','是'],['只读','否']]};
-function panelEntity(){const type=state.page==='panel-community'?'community':'room';const roomEntity=type==='room';const name=roomEntity?'Rust Language':'Programming';const tabs=roomEntity?[['basic','基本信息'],['members','成员'],['files','文件']]:[['basic','基本信息'],['members','成员']];let body='';if(secondState.entitySection==='logs')body='<div class="empty-page">暂无内容</div>';else if(secondState.entityTab==='members')body=`<div class="existing-list">${[['U1','User1'],['U2','User2']].map(([initial,n])=>`<button class="existing-row" data-action="detail"><span class="avatar">${initial}</span><span><strong>${n}</strong><small>已加入 · 正常</small></span>${icons('chevron-right')}</button>`).join('')}</div>`;else if(secondState.entityTab==='files')body='<div class="existing-list"><div class="existing-row">sample1.flac <span class="muted small">audio/x-flac</span></div></div>';else body=`<div class="fields">${entityFields[type].map(([label,value])=>field(label,value)).join('')}</div><div class="state-action">${btn('设为只读','confirm-readonly')}</div>`;return `<div class="master-detail has-detail"><section class="directory"><div class="directory-title"><h2>${roomEntity?'公开房间':'所有社区'}</h2></div>${(roomEntity?['Rust Language','AI Tech Exchange']:['Programming','Physics']).map(n=>`<button type="button" class="directory-row ${n===name?'selected':''}" data-action="${state.page}"><span class="${roomEntity?'room-identity-icon':'community-icon'}">${n[0]}</span><span>${n}</span></button>`).join('')}</section><section class="detail-pane"><div class="detail-title panel-object-detail-title">${panelObjectTitle(roomEntity?'房间详情':'社区详情',name)}</div>${secondState.entitySection==='info'?`<div class="tabs object-tabs" aria-label="${roomEntity?'房间':'社区'}信息分区">${tabs.map(([id,label])=>btn(label,'entity-tab-'+id,secondState.entityTab===id?'selected':'')).join('')}</div>`:''}<div class="detail-body">${body}</div><nav class="object-navigation" aria-label="${roomEntity?'房间':'社区'}详情导航">${btn(icons(roomEntity?'messages-square':'users')+'信息','entity-section-info',secondState.entitySection==='info'?'selected':'')}${btn(icons('file-text')+'日志','entity-section-logs',secondState.entitySection==='logs'?'selected':'')}</nav></section></div>`}
+function panelEntity(){const type=state.page==='panel-community'?'community':'room';const roomEntity=type==='room';const name=roomEntity?'Rust Language':'Programming';const tabs=roomEntity?[['basic','基本信息'],['members','成员'],['files','文件']]:[['basic','基本信息'],['members','成员']];let body='';if(secondState.entitySection==='logs')body='<div class="empty-page">暂无内容</div>';else if(secondState.entityTab==='members')body=`<div class="existing-list">${[['U1','User1'],['U2','User2']].map(([initial,n])=>`<button class="existing-row" data-action="detail"><span class="avatar">${initial}</span><span><strong>${n}</strong><small>已加入 · 正常</small></span>${icons('chevron-right')}</button>`).join('')}</div>`;else if(secondState.entityTab==='files')body='<div class="existing-list"><div class="existing-row">sample1.flac <span class="muted small">audio/x-flac</span></div></div>';else body=`<div class="fields">${entityFields[type].map(([label,value])=>field(label,value)).join('')}</div><div class="state-action">${btn('设为只读','confirm-readonly')}</div>`;return `<div class="master-detail has-detail">${thirdAdminDirectory(roomEntity?'public-rooms':'communities',name,state.page)}<section class="detail-pane"><div class="detail-title panel-object-detail-title">${panelObjectTitle(roomEntity?'房间详情':'社区详情',name)}</div>${secondState.entitySection==='info'?`<div class="tabs object-tabs" aria-label="${roomEntity?'房间':'社区'}信息分区">${tabs.map(([id,label])=>btn(label,'entity-tab-'+id,secondState.entityTab===id?'selected':'')).join('')}</div>`:''}<div class="detail-body">${body}</div><nav class="object-navigation" aria-label="${roomEntity?'房间':'社区'}详情导航">${btn(icons(roomEntity?'messages-square':'users')+'信息','entity-section-info',secondState.entitySection==='info'?'selected':'')}${btn(icons('file-text')+'日志','entity-section-logs',secondState.entitySection==='logs'?'selected':'')}</nav></section></div>`}
 function secondHandle(action,product,button){
  const communityRoutes={'成员':'community-members','设置':'community-settings'};
  const identityRoutes={'identity-profile':'profile','identity-community':'community','identity-option-设置':state.activeMenu==='room'?'room-settings':'user-settings','identity-option-成员':'room-members'};
@@ -1639,7 +1678,59 @@ function transformCropPreview(frame,action){
 function thirdExpiry(p){return thirdDialog(p,`${thirdField('日期','','date')}${thirdField('时间（UTC）','','time')}<label class="third-check"><input type="checkbox" aria-label="永久有效" checked>永久有效</label><div class="third-form-actions">${thirdButton('取消','third-close')}${thirdButton('确定','third-preview','check',true)}</div>`)}
 function thirdCreateMenu(p){const community=p.id==='community-create-menu';return thirdIconMenu(p,community?[['创建话题','file-plus','editor-community'],['添加房间','message-square-plus','new-community-room'],['添加头衔','badge-plus','community-title']]:[['创建社区','square-plus','new-community'],['创建房间','message-square-plus','new-room'],['创建头衔','badge-plus','new-title']])}
 function thirdFontGate(p){const permission=p.fontState==='permission';const loading=p.fontState==='loading';return `<section class="third-auth"><h1>选择字体</h1><p class="muted">${permission?'本地字体权限尚未就绪':loading?'正在加载字体…':'选择启动时使用的字体'}</p><div class="third-auth-choices">${thirdButton(permission?'重试':'使用本地字体','third-preview','type')}${thirdButton('使用下载字体','third-preview','download',true)}</div></section>`}
-function thirdRtc(p){const joining=p.id==='rtc-joining';const failed=p.id==='rtc-failed';const mediaFail=p.id==='rtc-media-failed';const ready=p.kind==='rtc-ready';return `<section class="third-rtc">${ready||failed?`<div class="third-rtc-ready"><span class="room-identity-icon">R</span><p>${failed?'未能加入通话，请检查连接。':'准备就绪'}</p><div class="row">${thirdIconButton('加入音频','third-join-audio','mic')}${thirdIconButton('加入视频','third-join-video','video')}</div></div>`:`<div class="third-rtc-grid">${[['你','U1'],['User2','U2']].map(([name,initial])=>`<div class="third-participant"><span class="avatar">${initial}</span><strong>${name}</strong><small>${joining?'连接中':'已连接'}${thirdState.muted?' · 已静音':''}</small><span class="third-camera-label">${thirdState.camera?'视频画面区域':'摄像头已关闭'}</span>${mediaFail&&name==='你'?'<button type="button" class="rtc-media-error" data-action="source-rtc-error-details" aria-label="媒体异常，查看详细错误信息">'+icons('circle-alert')+'<span>媒体异常</span>'+icons('chevron-right')+'</button>':''}</div>`).join('')}</div>`}<div class="third-call-controls">${thirdIconButton(thirdState.muted?'取消静音':'静音','third-mic',thirdState.muted?'mic-off':'mic')}${thirdIconButton(thirdState.camera?'关闭摄像头':'开启摄像头','third-camera',thirdState.camera?'video':'video-off')}${p.id==='rtc-switchable'?thirdIconButton('切换摄像头','third-preview','switch-camera'):''}${thirdIconButton('离开','third-back','phone-off')}</div></section>`}
+
+const groupCallPreview={pinned:null,count:6,speaker:1,level:2,muted:false,camera:false};
+const groupCallNames=['你','User2','Mika','Lin','Alex','Nova','Sam','Robin','Kai'];
+// Procedurally generated screensaver loops for testing video fit.
+const groupCallVideos={1:['4-3','4:3'],2:['16-9','16:9'],3:['9-16','9:16']};
+function groupCallParticipant(index){
+ const demo=groupCallPreview,name=groupCallNames[index],speaking=index===demo.speaker,muted=index===0?demo.muted:index%3===2;
+ const sample=groupCallVideos[index];
+ const camera=Boolean(sample)||(index===0&&demo.camera);
+ const avatar=`<span class="avatar" aria-hidden="true">${index<2?'U'+(index+1):name[0]}</span>`;
+ const label=`<span class="group-call-person"><strong>${name}</strong></span>`;
+ const level=muted||!speaking?0:demo.level;
+ const micLabel=muted?'麦克风已关闭':`麦克风已开启，${['无明显声音','低音量','中音量','高音量'][level]}`;
+ const status=`<span class="group-call-device-status">
+ <span class="group-call-mic" role="img" aria-label="${micLabel}" data-level="${level}">${icons(muted?'mic-off':'mic')}${muted?'':`<span class="group-call-mic-fill" aria-hidden="true">${icons('mic')}</span>`}</span>
+ <span role="img" aria-label="${camera?'摄像头已开启':'摄像头已关闭'}">${icons(camera?'video':'video-off')}</span>
+ </span>`;
+ const pinned=index===demo.pinned;
+ const action=pinned?'返回平铺':'放大 '+name+' 的画面';
+ return `<div class="group-call-tile" data-self="${index===0}" data-participant="${index}" ${sample?`data-video-ratio="${sample[1]}"`:""}>
+ ${sample?`<video src="media/call-${sample[0]}.webm" autoplay muted loop playsinline aria-label="${sample[1]} 示例视频"></video><span class="group-call-ratio">${sample[1]}</span>`:avatar}<button type="button" class="group-call-pin" data-call-pin="${index}" title="${action}" aria-label="${action}">${icons(pinned?'minimize':'maximize')}</button><footer>${label}${status}</footer></div>`;
+}
+function groupCallScene(){
+ const demo=groupCallPreview;
+ const people=Array.from({length:demo.count},(_,i)=>i);
+ const layout=demo.pinned===null?'gallery':'focus';
+ const tiles=layout==='gallery'?people.map(groupCallParticipant).join(''):groupCallParticipant(demo.pinned);
+ const control=(key,label,icon,pressed)=>`<button type="button" class="quiet" data-call-control="${key}" aria-label="${label}" title="${label}" ${pressed===undefined?'':`aria-pressed="${pressed}"`}>${icons(icon)}</button>`;
+ return `<div class="group-call-tiles" data-layout="${layout}" data-count="${demo.count}">${tiles}</div>
+ <div class="third-call-controls">${control('muted',demo.muted?'解除静音':'静音',demo.muted?'mic-off':'mic',demo.muted)}${control('camera',demo.camera?'关闭摄像头':'开启摄像头',demo.camera?'video':'video-off',demo.camera)}${thirdIconButton('离开','third-back','phone-off')}</div>`;
+}
+root.addEventListener('click',event=>{
+ const pin=event.target.closest('[data-call-pin]');
+ if(pin){
+  const index=Number(pin.dataset.callPin);
+  groupCallPreview.pinned=groupCallPreview.pinned===index?null:index;
+  updateGroupCallPreview(pin,`[data-call-pin="${index}"]`);
+  return;
+ }
+ const button=event.target.closest('[data-call-control]');
+ if(!button)return;
+ const key=button.dataset.callControl;
+ groupCallPreview[key]=!groupCallPreview[key];
+ updateGroupCallPreview(button,`[data-call-control="${key}"]`);
+});
+function updateGroupCallPreview(control,selector){
+ const panel=control.closest('.group-call');
+ panel.innerHTML=groupCallScene();
+ window.lucide?.createIcons();
+ panel.querySelector(selector)?.focus({preventScroll:true});
+}
+
+function thirdRtc(p){if(p.id==='rtc')return `<section class="group-call">${groupCallScene()}</section>`;const joining=p.id==='rtc-joining';const failed=p.id==='rtc-failed';const mediaFail=p.id==='rtc-media-failed';const ready=p.kind==='rtc-ready';return `<section class="third-rtc">${ready||failed?`<div class="third-rtc-ready"><span class="room-identity-icon">R</span><p>${failed?'未能加入通话，请检查连接。':'准备就绪'}</p><div class="row">${thirdIconButton('加入音频','third-join-audio','mic')}${thirdIconButton('加入视频','third-join-video','video')}</div></div>`:`<div class="third-rtc-grid">${[['你','U1'],['User2','U2']].map(([name,initial])=>`<div class="third-participant"><span class="avatar">${initial}</span><strong>${name}</strong><small>${joining?'连接中':'已连接'}${thirdState.muted?' · 已静音':''}</small><span class="third-camera-label">${thirdState.camera?'视频画面区域':'摄像头已关闭'}</span>${mediaFail&&name==='你'?'<button type="button" class="rtc-media-error" data-action="source-rtc-error-details" aria-label="媒体异常，查看详细错误信息">'+icons('circle-alert')+'<span>媒体异常</span>'+icons('chevron-right')+'</button>':''}</div>`).join('')}</div>`}<div class="third-call-controls">${thirdIconButton(thirdState.muted?'取消静音':'静音','third-mic',thirdState.muted?'mic-off':'mic')}${thirdIconButton(thirdState.camera?'关闭摄像头':'开启摄像头','third-camera',thirdState.camera?'video':'video-off')}${p.id==='rtc-switchable'?thirdIconButton('切换摄像头','third-preview','switch-camera'):''}${thirdIconButton('离开','third-back','phone-off')}</div></section>`}
 function thirdAbout(){return `<section><div class="page-heading"><h1>开源许可</h1></div>${thirdList([['Kotlin','查看许可','code','third-preview'],['Compose Multiplatform','查看许可','panels-top-left','third-preview'],['Ktor','查看许可','network','third-preview']])}</section>`}
 function thirdConnection(p){return thirdDialog(p,thirdInfo([['通知权限','未授予'],['连接状态','未连接']])+'<div class="third-form-actions">'+thirdButton('授予通知权限','third-preview','bell-ring')+'</div>')}
 
@@ -1649,7 +1740,7 @@ function thirdOverview(){return `<div class="page-heading"><h1>总览</h1></div>
 function panelFileDirectoryRows(files,className='third-list'){
  return `<div class="${className}">${files.map(file=>`<button class="${className==='third-list'?'existing-row':'directory-row'}" type="button" data-action="admin-files-detail" data-panel-file="${file.id}"><span class="third-file-icon">${icons(file.icon)}</span><span class="third-list-copy"><strong>${file.name}</strong><small>${file.meta}</small></span>${className==='third-list'?icons('chevron-right'):''}</button>`).join('')}</div>`;
 }
-function thirdAdminDirectory(entity){const data=thirdEntities[entity];if(entity==='files')return `<section class="directory"><div class="directory-title"><h2>文件</h2></div>${panelFileDirectoryRows(panelPreviewFiles,'panel-file-directory')}</section>`;return `<section class="directory"><div class="directory-title spread"><h2>${data.title}${entity==='users'?thirdButton('','admin-add-user','plus'):''}</h2></div>${data.rows.map(([name,meta])=>entity==='users'?panelUserDirectoryRow(name,name[0],'admin-users-detail'):`<button class="directory-row" type="button" data-action="admin-${entity}-detail"><span class="${data.icon==='community'?'community-icon':data.icon==='room'?'room-identity-icon':'third-file-icon'}">${['community','room'].includes(data.icon)?name[0]:icons(data.icon)}</span><span class="third-list-copy"><strong>${name}</strong><small>${meta}</small></span></button>`).join('')}</section>`}
+function thirdAdminDirectory(entity,selected=null,action=null){const data=thirdEntities[entity];if(entity==='files')return `<section class="directory"><div class="directory-title"><h2>文件</h2></div>${panelFileDirectoryRows(panelPreviewFiles,'panel-file-directory')}</section>`;return `<section class="directory"><div class="directory-title spread"><h2>${data.title}${entity==='users'?thirdButton('','admin-add-user','plus'):''}</h2></div>${data.rows.map(([name,meta])=>entity==='users'?panelUserDirectoryRow(name,name[0],'admin-users-detail'):`<button class="directory-row${name===selected?' selected':''}" type="button" data-action="${action||'admin-'+entity+'-detail'}"><span class="${data.icon==='community'?'community-icon':data.icon==='room'?'room-identity-icon':'third-file-icon'}">${['community','room'].includes(data.icon)?name[0]:icons(data.icon)}</span><span class="third-list-copy"><strong>${name}</strong><small>${meta}</small></span></button>`).join('')}</section>`}
 function thirdAdminList(p){if(p.entity==='users')return panelUserShell(false);return `<div class="master-detail">${thirdAdminDirectory(p.entity)}<section class="detail-pane"><div class="empty-page">请选择一个条目查看详情</div></section></div>`}
 function thirdRelatedBody(p){const r=p.related;
  if(p.entity==='private-rooms'&&r==='members')return thirdList([['User1','已加入 · 正常','user','admin-users-detail'],['User2','已加入 · 正常','user','admin-users-detail']]);
@@ -2034,7 +2125,6 @@ function normalizeReadingPresentation(product){
  }
  if(state.app==='user'&&['communities','community-posters'].includes(state.page)){
   const posters=state.page==='community-posters';
-  if(!posters)product.querySelector('.main>.existing-list')?.classList.add('community-icon-grid');
   for(const button of product.querySelectorAll('.tabs>button')){
    const selected=posters?button.dataset.action==='community-posters':['communities','community-all'].includes(button.dataset.action);
    button.classList.toggle('selected',selected);
@@ -2918,14 +3008,14 @@ function normalizeStableRefresh(product){
  const sourceLabel=state.page==='search'?(state.searchOrigin==='world'?'搜索 · '+(state.searchType==='users'?'用户':'话题'):'搜索 · 当前范围'):state.page==='communities'?'社区 · 全部':state.page==='community-posters'?'社区 · 海报':(host.closest('.third-section-shell,.profile-shell')?.querySelector('.profile-navigation button.selected')?.textContent||host.closest('.detail-pane')?.querySelector('.object-tabs button.selected')?.textContent||reviewMeta()?.label||'当前内容').trim();
  host.dataset.refreshSource=reviewDataSourceKey();host.dataset.refreshLabel=sourceLabel;
  host.classList.add('stable-refresh-host','stable-data-refresh-host');
- const scopedNavigation=!!host.closest('.third-section-shell,.profile-shell,.detail-pane')||!!host.closest('.workspace')?.querySelector(':scope>.rail');
+ const refreshRegion=previewHeader||host.closest('.attachment-files-panel,.third-dialog-body,.community-dialog,.detail-body,.detail-pane,.directory,.profile-content,.third-section-content,.main')||scope;
  const preceding=host.previousElementSibling;
  const candidates=[previewHeader,preceding,...scope.querySelectorAll('header.detail-toolbar,header.topbar,.detail-title,.page-heading,.directory-title,.third-toolbar,.attachment-picker-bar')].filter(Boolean);
  const pickerTitle=(host.matches('.attachment-files-panel')&&!scope.querySelector('.attachment-kind-tabs')||host.matches('.third-dialog-body:has(>.third-list)'))?scope.querySelector('.community-dialog>.spread'):null;
  const findBoundary=()=>{if(previewHeader)return previewHeader;if(pickerTitle)return pickerTitle;if(host.matches('.third-picker-results'))return scope.querySelector('.third-dialog-body>.tabs')||null;const rect=host.getBoundingClientRect();return candidates.filter(el=>{const r=el.getBoundingClientRect();return el!==host&&!host.contains(el)&&r.height>0&&r.bottom<=rect.top+1&&rect.top-r.bottom<=64&&r.right>rect.left&&r.left<rect.right;}).sort((a,b)=>b.getBoundingClientRect().bottom-a.getBoundingClientRect().bottom)[0];};
- const alignRefreshEdge=()=>{const rect=host.getBoundingClientRect(),boundary=findBoundary();let edge=boundary?.getBoundingClientRect().bottom;if(boundary&&boundary===pickerTitle)edge+=12;if(host.matches('.attachment-files-panel')&&boundary?.matches('.attachment-picker-bar'))edge-=Number.parseFloat(getComputedStyle(boundary).borderBottomWidth)||0;const headingBoundary=boundary?.matches('.page-heading,.detail-title,.directory-title,.third-toolbar')&&Number.parseFloat(getComputedStyle(boundary).borderBottomWidth)===0;if(headingBoundary){const content=[...host.querySelectorAll('.author,.avatar,.community-icon,.room-identity-icon,.third-list-copy,.room-copy,.directory-row strong,.existing-row strong,.third-overview-cell>span,.field label,.third-field>span,h1,h2,h3,p,img,video')].filter(el=>!el.closest('.stable-refresh-caption')&&el.getBoundingClientRect().height>0);const first=content.length?Math.min(...content.map(el=>el.getBoundingClientRect().top)):rect.top;const headingElements=[...boundary.querySelectorAll('h1,h2,h3,button')].filter(el=>el.getBoundingClientRect().height>0);const floor=state.app==='panel'&&headingElements.length?Math.max(...headingElements.map(el=>el.getBoundingClientRect().bottom)):edge;if(first>floor+8)edge=floor+(first-floor-2)/2;}host.style.setProperty('--refresh-edge-top',(edge===undefined?0:edge-rect.top)+'px');const localNav=host.closest('.third-section-shell,.profile-shell,.detail-pane,.workspace')?.querySelector('.profile-navigation,.rail,.object-tabs'),bottomNavigation=localNav&&localNav.getBoundingClientRect().top>=rect.bottom-1;const fullHeader=previewHeader||(!scopedNavigation||bottomNavigation)&&boundary?.matches('header.detail-toolbar,header.topbar'),bounds=fullHeader?boundary.getBoundingClientRect():null;host.style.setProperty('--refresh-edge-left',(bounds?bounds.left-rect.left:0)+'px');host.style.setProperty('--refresh-edge-right',(bounds?rect.right-bounds.right:0)+'px');host.dataset.refreshBoundary=headingBoundary?'heading':boundary?'divider':'content';};
+ const alignRefreshEdge=()=>{const rect=host.getBoundingClientRect(),boundary=findBoundary();let edge=boundary?.getBoundingClientRect().bottom;if(boundary&&boundary===pickerTitle)edge+=12;if(host.matches('.attachment-files-panel')&&boundary?.matches('.attachment-picker-bar'))edge-=Number.parseFloat(getComputedStyle(boundary).borderBottomWidth)||0;const headingBoundary=boundary?.matches('.page-heading,.detail-title,.directory-title,.third-toolbar')&&Number.parseFloat(getComputedStyle(boundary).borderBottomWidth)===0;if(headingBoundary){const content=[...host.querySelectorAll('.author,.avatar,.community-icon,.room-identity-icon,.third-list-copy,.room-copy,.directory-row strong,.existing-row strong,.third-overview-cell>span,.field label,.third-field>span,h1,h2,h3,p,img,video')].filter(el=>!el.closest('.stable-refresh-caption')&&el.getBoundingClientRect().height>0);const first=content.length?Math.min(...content.map(el=>el.getBoundingClientRect().top)):rect.top;const headingElements=[...boundary.querySelectorAll('h1,h2,h3,button')].filter(el=>el.getBoundingClientRect().height>0);const floor=state.app==='panel'&&headingElements.length?Math.max(...headingElements.map(el=>el.getBoundingClientRect().bottom)):edge;if(first>floor+8)edge=floor+(first-floor-2)/2;}host.style.setProperty('--refresh-edge-top',(edge===undefined?0:edge-rect.top)+'px');const bounds=refreshRegion.getBoundingClientRect();host.style.setProperty('--refresh-edge-left',(bounds.left-rect.left)+'px');host.style.setProperty('--refresh-edge-right',(rect.right-bounds.right)+'px');host.dataset.refreshBoundary=headingBoundary?'heading':boundary?'divider':'content';};
  alignRefreshEdge();
- stableRefreshGeometryObserver=new ResizeObserver(alignRefreshEdge);stableRefreshGeometryObserver.observe(host);for(const candidate of candidates)stableRefreshGeometryObserver.observe(candidate);
+ stableRefreshGeometryObserver=new ResizeObserver(alignRefreshEdge);stableRefreshGeometryObserver.observe(host);stableRefreshGeometryObserver.observe(refreshRegion);for(const candidate of candidates)stableRefreshGeometryObserver.observe(candidate);
 
  host.querySelectorAll(':scope>.stable-refresh-line,:scope>.stable-refresh-caption').forEach(x=>x.remove());
  if(mode==='refresh-error'){
@@ -3063,7 +3153,7 @@ function csaReference(kind){
  const iconClass=kind==='room'?'room-identity-icon':kind==='community'?'community-icon':'avatar';
  const icon=kind==='room'?'R':kind==='community'?'P':'U2';
  const iconAction=kind==='community'?'data-embed-action="community-menu"':'data-action="'+(kind==='room'?'room-menu':'user-menu')+'"';
- return '<section class="embed-reference embed-reference-'+kind+'"><div class="embed-kicker">'+labels[kind]+'</div><div class="embed-reference-row"><button type="button" class="'+iconClass+' embed-reference-icon" '+iconAction+' aria-label="打开'+(kind==='topic'?'作者':names[kind])+'菜单">'+icon+'</button><button type="button" class="quiet embed-reference-open" data-action="'+mediaDestinations[kind]+'" aria-label="查看'+names[kind]+'"><span><strong data-tooltip="'+names[kind]+'">'+names[kind]+'</strong>'+(kind==='user'?'<small>Aid: user2</small>':'')+'</span>'+icons('chevron-right')+'</button></div></section>';
+ return '<section class="embed-reference embed-reference-'+kind+'"><div class="embed-kicker">'+labels[kind]+'</div><div class="embed-reference-row"><button type="button" class="'+iconClass+' embed-reference-icon" '+iconAction+' aria-label="打开'+(kind==='topic'?'作者':names[kind])+'菜单">'+icon+'</button><button type="button" class="quiet embed-reference-open" data-action="'+mediaDestinations[kind]+'" aria-label="查看'+names[kind]+'"><span><strong data-tooltip="'+names[kind]+'">'+names[kind]+'</strong>'+(kind==='user'?'<small>Aid: user2</small>':kind==='topic'?'<span class="embed-reference-excerpt">在处理 Markdown 文档时，我们会解析文档并生成抽象语法树，再提取标题、段落和代码块。</span>':'')+'</span>'+icons('chevron-right')+'</button></div></section>';
 }
 function embeddedImage(){return '<figure class="embed-image">'+(mediaReview.phase==='normal'?'<button type="button" class="quiet embed-image-open" data-action="file-image" aria-label="查看 kimono.avif 图片"><img src="'+mediaImageData+'" alt="kimono.avif 图片预览"></button>':mediaPhaseMarkup(mediaReview.phase==='loading'?'正在加载图片…':'图片加载失败'))+'<figcaption>'+icons('image')+'<span>kimono.avif</span></figcaption></figure>'}
 function embeddedFile(){return '<button type="button" class="quiet embed-file" data-action="file-pdf" aria-label="预览 community-guide.pdf"><span class="embed-file-symbol">'+icons('file-text')+'</span><span class="embed-file-copy"><strong>community-guide.pdf</strong><small>PDF</small></span>'+icons('arrow-up-right')+'</button>'}
@@ -3402,7 +3492,7 @@ function confirmedIdentityName(node, kind) {
 }
 function confirmedIdentityDialog() {
   const { kind, name, initial, role } = confirmedIdentity;
-  const aid = kind === 'room' ? ({'Rust Language':'RustLanguage','Casual Chat':'chat'}[name] || '') : kind === 'user' ? previewUserAid(name) : '';
+  const aid = kind === 'user' ? previewUserAid(name) : previewGroupAids[name];
   const meta = aid ? '<small>Aid: '+aid+'</small>' : '';
   const identity = `<button type="button" class="quiet confirmed-identity-heading" data-confirmed-identity-detail="${kind}"><span class="${kind === 'room' ? 'room-identity-icon' : kind === 'community' ? 'community-icon' : 'avatar'}">${initial}</span><span class="identity-heading-copy"><strong>${name}</strong>${meta}</span></button>`;
   const wrap = body => `<div class="community-overlay" role="dialog" aria-modal="true" aria-label="${kind === 'user' ? '用户菜单' : kind === 'community' ? '社区操作' : '房间操作'}"><section class="community-dialog identity-dialog"><div class="spread">${identity}${sourceIcon('关闭','x','source-dismiss')}</div>${kind === 'user' ? previewAddressLine(name) : ''}${body}</section></div>`;
@@ -3410,7 +3500,7 @@ function confirmedIdentityDialog() {
   if (kind === 'user') return wrap('<div class="community-menu-actions two-actions">' + sourceIcon('收藏', 'heart') + sourceIcon('订阅', 'bell') + '</div>');
   const t = sourceDom(sourceMenu(kind, role));
   const community = name==='Notification' ? null : t.content.querySelector('.room-community-ref');
-  return wrap((community ? '<p class="muted small">所属社区</p>'+community.outerHTML : '') + t.content.querySelector('.community-menu-actions').outerHTML);
+  return wrap((community ? '<section class="topic-origin-group room-community-group" aria-label="所属社区"><p class="muted small">所属社区</p>'+community.outerHTML+'</section>' : '') + t.content.querySelector('.community-menu-actions').outerHTML);
 }
 function confirmedIdentityAtCurrentPage(kind, name) {
   if (kind === 'community') return state.page === 'community' && name === 'Programming';
@@ -3470,6 +3560,44 @@ function confirmedIdentityControl(node, kind) {
   if (kind === 'room') { control.classList.remove('avatar'); control.classList.add('room-identity-icon'); }
   control.dataset.confirmedName = confirmedIdentityName(control, kind);
   control.setAttribute('aria-label', `${control.dataset.confirmedName}，打开${kind === 'user' ? '用户' : kind === 'community' ? '社区' : '房间'}菜单`);
+}
+const previewGroupAids={Programming:'code',Physics:'physics','Rust Language':'RustLanguage','AI Tech Exchange':'AITech','Casual Chat':'chat',Notification:'user1_notification'};
+function syncPreviewGroupAids(product) {
+  const selectors='.existing-row,.directory-row,.embed-reference-row,.search-context-identity,.room-community-ref,.topic-menu-origin,.title-scope-value,.dialog-object-heading,.community-dialog-identity,.identity-heading,.confirmed-identity-heading,.poster .row,.community-poster .row,.third-poster-tile .row';
+  for (const row of product.querySelectorAll(selectors)) {
+    if (row.closest('header')) continue;
+    if (state.app==='user' && ['rooms','community','community-rooms','community-member','community-visitor'].includes(state.page) &&
+        row.matches('.room-directory-row') && !row.closest('.community-overlay')) continue;
+    if (!row.querySelector('.community-icon:not(.room-title-community),.room-identity-icon')) continue;
+    const labels=[...row.querySelectorAll('strong,b,span')];
+    if ([...row.querySelectorAll('small')].some(el=>/^aid:/i.test(el.textContent.trim()))) {
+      row.classList.add('preview-group-identity');
+      continue;
+    }
+    let name=labels.find(label=>label.children.length===0 && Object.hasOwn(previewGroupAids,label.textContent.trim()));
+    if (!name) {
+      const text=[...row.childNodes].find(node=>node.nodeType===Node.TEXT_NODE && Object.hasOwn(previewGroupAids,node.textContent.trim()));
+      if (!text) continue;
+      name=document.createElement('span');
+      name.textContent=text.textContent.trim();
+      text.replaceWith(name);
+    }
+    const aid=document.createElement('small');
+    aid.className='preview-group-aid';
+    aid.textContent='Aid: '+previewGroupAids[name.textContent.trim()];
+    row.classList.add('preview-group-identity');
+    name.classList.add('preview-group-name');
+    const roomTitle=name.closest('.room-row-title');
+    if (roomTitle) {
+      roomTitle.after(aid);
+    } else if (name.parentElement===row) {
+      const copy=document.createElement('span');
+      name.replaceWith(copy);
+      copy.append(name,aid);
+    } else {
+      name.after(aid);
+    }
+  }
 }
 function syncPreviewIdentityLabels(product) {
   const rows = product.querySelectorAll('.author,.existing-row,.directory-row,.embed-reference-row,.third-profile-identity');
@@ -3568,11 +3696,12 @@ root.addEventListener('keydown', event => {
   }
 }, true);
 const renderBeforeConfirmedIdentities = render;
-render = function () { renderBeforeConfirmedIdentities(); syncConfirmedIdentityInteractions(); };
+render = function () { renderBeforeConfirmedIdentities(); syncConfirmedIdentityInteractions(); root.querySelectorAll('.product').forEach(syncPreviewGroupAids); };
 const confirmedIdentityStyle = document.createElement('style');
 confirmedIdentityStyle.textContent = `#ah-unified-combinations .confirmed-identity-row{position:relative}#ah-unified-combinations .confirmed-row-action{position:absolute;inset:0;width:100%;height:100%;background:transparent;border:0}#ah-unified-combinations [data-confirmed-entity]{position:relative;z-index:1}#ah-unified-combinations .confirmed-identity-heading{display:flex;align-items:center;gap:12px;width:100%;text-align:start}#ah-unified-combinations .product button[data-confirmed-identity-detail]{justify-content:flex-start;padding-inline:0;text-align:start}#ah-unified-combinations .product button[data-confirmed-identity-detail]>:is(div,.identity-heading-copy){min-width:0;text-align:start;align-items:flex-start}`;
 root.append(confirmedIdentityStyle);
 syncConfirmedIdentityInteractions();
+root.querySelectorAll('.product').forEach(syncPreviewGroupAids);
 
 // User section navigation shares the home geometry; table and editor tabs remain local tabs.
 function syncConfirmedNavigationAndFab() {
@@ -3907,6 +4036,29 @@ for (const [value,label] of [['user','用户端'],['panel','管理端']]) {
 }
 root.prepend(freeAppSwitch,freeFacetPanel);
 let freeFacetSelection = {};
+const previewViewport = {width:'default', height:'820'};
+function applyPreviewViewport() {
+  const stage = root.querySelector('.stage');
+  stage.dataset.previewWidth = previewViewport.width;
+  stage.style.setProperty('--preview-height',previewViewport.height+'px');
+}
+function appendPreviewViewportControls() {
+  const narrow = freeFacetSelection.screen === 'narrow';
+  for (const [field,title,options] of [
+    ['width','预览宽度',narrow?[['default','390 px'],['alternate','480 px']]:[['default','1120 px'],['alternate','1440 px']]],
+    ['height','预览高度',[['640','640 px'],['820','820 px'],['1040','1040 px']]],
+  ]) {
+    const label = document.createElement('label');
+    label.textContent = title;
+    const select = document.createElement('select');
+    select.dataset.previewViewport = field;
+    for (const [value,name] of options) select.add(new Option(name,value));
+    select.value = previewViewport[field];
+    label.append(select);
+    freeFacetControls.append(label);
+  }
+  applyPreviewViewport();
+}
 function renderFreeFacets(focusField) {
   const fields = document.createDocumentFragment();
   let node = freeFacetTree;
@@ -3941,12 +4093,36 @@ function renderFreeFacets(focusField) {
   freeFacetSelection = selected;
   const reactionControl = freeFacetControls.querySelector('[data-reaction-preview]');
   freeFacetControls.replaceChildren(fields);
+  appendPreviewViewportControls();
   syncFreeAidControl();
   if (reactionControl) freeFacetControls.append(reactionControl);
   if (focusField) freeFacetControls.querySelector('[data-free-facet="'+focusField+'"]')?.focus();
   return match;
 }
+function syncFreeCallControls() {
+  freeFacetControls.querySelectorAll('[data-free-call-wrap]').forEach(label=>label.remove());
+  if (!root.querySelector('.product .group-call')) return;
+  const demo = groupCallPreview;
+  const speakers = groupCallNames.slice(0,demo.count)
+    .map((name,index)=>[index,name]).filter(([index])=>index!==0 && index%3!==2);
+  for (const [field,title,options] of [
+    ['count','参与人数',[2,3,4,6,9].map(count=>[count,count+' 人'])],
+    ['speaker','音量预览对象',speakers],
+    ['level','模拟说话音量',[[0,'无明显声音'],[1,'低'],[2,'中'],[3,'高']]],
+  ]) {
+    const label = document.createElement('label');
+    label.dataset.freeCallWrap = '';
+    label.textContent = title;
+    const select = document.createElement('select');
+    select.dataset.callPreview = field;
+    for (const [value,name] of options) select.add(new Option(name,value));
+    select.value = demo[field];
+    label.append(select);
+    freeFacetControls.append(label);
+  }
+}
 function syncFreeAidControl() {
+  syncFreeCallControls();
   const preview = root.querySelector('.product');
   const visible = preview && [...preview.querySelectorAll('[data-confirmed-name="User2"], .identity-heading-copy strong')]
     .some(element => !element.closest('[hidden]') && (element.dataset.confirmedName === 'User2' || element.textContent === 'User2'));
@@ -3976,6 +4152,23 @@ freeAppSwitch.addEventListener('click', event => {
 });
 freeFacetControls.addEventListener('change', event => {
   event.stopPropagation();
+  const viewportField = event.target.dataset.previewViewport;
+  if (viewportField) {
+    previewViewport[viewportField] = event.target.value;
+    applyPreviewViewport();
+    positionPreviewSurfaces();
+    return;
+  }
+  const callField = event.target.dataset.callPreview;
+  if (callField) {
+    const demo = groupCallPreview;
+    demo[callField] = Number(event.target.value);
+    if (demo.pinned >= demo.count) demo.pinned = null;
+    if (demo.speaker >= demo.count) demo.speaker = 1;
+    render();
+    freeFacetControls.querySelector(`[data-call-preview="${callField}"]`)?.focus();
+    return;
+  }
   if (event.target.matches('[data-free-aid]')) {
     previewUserWithoutAid = event.target.value === 'absent';
     render();
@@ -3989,6 +4182,20 @@ freeFacetControls.addEventListener('change', event => {
 });
 const freeFacetStyle = document.createElement('style');
 freeFacetStyle.textContent = `
+#ah-unified-combinations .stage[data-preview-width]{max-width:1120px}
+#ah-unified-combinations .stage[data-preview-width="alternate"]{max-width:1440px}
+#ah-unified-combinations .stage.narrow-stage[data-preview-width]{max-width:390px}
+#ah-unified-combinations .stage.narrow-stage[data-preview-width="alternate"]{max-width:480px}
+#ah-unified-combinations .stage[data-preview-width] .product{box-sizing:border-box;display:flex;flex-direction:column;height:var(--preview-height);min-height:0;max-height:var(--preview-height)}
+#ah-unified-combinations .stage[data-preview-width] .product> :is(header,.bottom-nav){flex-shrink:0}
+#ah-unified-combinations .stage[data-preview-width] .product>.workspace{flex:1 1 0;min-height:0;grid-template-rows:minmax(0,1fr)}
+#ah-unified-combinations .stage[data-preview-width] .product>.workspace>:is(.main,.rail){min-height:0;max-height:100%;box-sizing:border-box;overflow:auto;overscroll-behavior:contain}
+#ah-unified-combinations .stage[data-preview-width] .product>.workspace>.main{height:100%}
+#ah-unified-combinations .stage[data-preview-width] .product>.workspace>.main>.chat-room{display:flex;flex-direction:column;height:100%;min-height:0}
+#ah-unified-combinations .stage[data-preview-width] .product .chat-room>.chat-messages{flex:1 1 0;min-height:0;overflow:auto;overscroll-behavior:contain}
+#ah-unified-combinations .stage[data-preview-width] .product .chat-room>.composer{flex-shrink:0}
+#ah-unified-combinations .stage[data-preview-width] .product .auth-frame{height:auto;min-height:100%}
+
 #ah-unified-combinations .free-app-switch{display:flex;gap:8px;margin-bottom:12px}
 #ah-unified-combinations .free-app-switch button{padding:8px 16px;border:1px solid var(--ah-line);border-radius:8px;background:var(--ah-paper);color:var(--ah-text)}
 #ah-unified-combinations .free-app-switch button[aria-pressed="true"]{background:var(--ah-accent);color:var(--ah-on);border-color:var(--ah-accent)}

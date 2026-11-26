@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.storyteller_f.alphaheart.app.LocalAppNavFactory
 import com.storyteller_f.alphaheart.app.LocalRefCellHandlerProvider
@@ -24,7 +25,7 @@ import com.storyteller_f.alphaheart.client.core.LoadingHandler
 import com.storyteller_f.shared.model.TopicContent
 import com.storyteller_f.shared.model.TopicDetail
 import com.storyteller_f.shared.type.PrimaryKey
-import com.storyteller_f.shared.utils.extractMarkdownHeadline
+import com.storyteller_f.shared.utils.extractMarkdownReferencePreview
 
 @Composable
 fun TopicRefCell(topicId: PrimaryKey) {
@@ -48,13 +49,12 @@ fun TopicRefCellInternal(handler: LoadingHandler<TopicDetail>) {
         modifier =
         Modifier
             .fillMaxWidth()
-            .heightIn(min = 120.dp)
             .background(MaterialTheme.colorScheme.surfaceContainer, shape)
             .clip(shape)
             .clickable {
                 topicInfo?.let { it1 -> appNavFactory.newAppNav().gotoTopic(it1.id) }
             }
-            .padding(16.dp),
+            .padding(10.dp),
     ) {
         TopicRefCellContent(it)
     }
@@ -67,11 +67,16 @@ fun TopicRefCellContent(topicInfo: TopicDetail) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         UserIconWithDialog(authorInfo)
-        val text = (topicInfo.content as? TopicContent.Plain)?.plain.orEmpty()
+        val text =
+            when (val content = topicInfo.content) {
+                is TopicContent.Plain -> content.plain
+                is TopicContent.Extracted -> content.origin.ifBlank { content.plain }
+                else -> ""
+            }
         val plain =
             remember(text) {
-                extractMarkdownHeadline(text)
+                extractMarkdownReferencePreview(text)
             }
-        Text(plain, color = MaterialTheme.colorScheme.onSurface, maxLines = 4)
+        Text(plain, color = MaterialTheme.colorScheme.onSurface, maxLines = 4, overflow = TextOverflow.Ellipsis)
     }
 }

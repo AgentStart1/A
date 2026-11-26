@@ -6,6 +6,7 @@ package com.storyteller_f.alphaheart.app.rtc
 
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -32,7 +33,7 @@ internal actual fun RtcJoinButton(video: Boolean, enabled: Boolean, onJoin: () -
 }
 
 @Composable
-internal actual fun RtcVideoView(video: RtcVideo, modifier: Modifier, local: Boolean) {
+internal actual fun RtcVideoView(video: RtcVideo, modifier: Modifier, local: Boolean, aspect: (Float) -> Unit) {
     val track = video as DesktopRtcVideo
     val frames =
         remember(track) {
@@ -63,6 +64,8 @@ internal actual fun RtcVideoView(video: RtcVideo, modifier: Modifier, local: Boo
         }
     val frame by frames.collectAsState(null)
     frame?.let { (image, rotation) ->
+        val ratio = image.width.toFloat() / image.height
+        SideEffect { aspect(if (rotation % 180 == 0) ratio else 1f / ratio) }
         Image(
             image,
             contentDescription = null,

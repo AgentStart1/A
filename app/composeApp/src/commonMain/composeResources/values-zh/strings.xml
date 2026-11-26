@@ -316,4 +316,6 @@
     <string name="crop_reset">重置裁剪</string>
     <string name="unread_rooms">未读房间</string>
     <string name="unread_messages">未读消息</string>
+    <string name="rtc_focus_participant">放大参与者画面</string>
+    <string name="rtc_return_to_grid">返回平铺</string>
 </resources>

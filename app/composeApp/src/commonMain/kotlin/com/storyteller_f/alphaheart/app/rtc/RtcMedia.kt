@@ -35,6 +35,7 @@ internal data class RtcPeerEvents(
     val candidate: (CustomCandidate) -> Unit,
     val video: (RtcVideo) -> Unit,
     val connection: (RtcConnectionState) -> Unit,
+    val audioLevel: (local: Int, remote: Int) -> Unit = { _, _ -> },
 )
 
 /** Media adapters own native resources
@@ -47,7 +48,7 @@ internal interface RtcEngine {
 internal expect fun createRtcEngine(): RtcEngine
 
 @Composable
-internal expect fun RtcVideoView(video: RtcVideo, modifier: Modifier, local: Boolean)
+internal expect fun RtcVideoView(video: RtcVideo, modifier: Modifier, local: Boolean, aspect: (Float) -> Unit)
 
 @Composable
 internal expect fun RtcJoinButton(video: Boolean, enabled: Boolean, onJoin: () -> Unit)

@@ -73,7 +73,7 @@ fun OverviewPageInternal(viewModel: OverviewViewModel) {
             },
         )
     }) { padding ->
-        Box(Modifier.padding(padding).padding(horizontal = 20.dp).fillMaxSize()) {
+        Box(Modifier.padding(padding).fillMaxSize()) {
             StateView(viewModel.handler, Modifier.fillMaxSize()) { OverviewFlow(it) }
         }
     }
@@ -81,7 +81,7 @@ fun OverviewPageInternal(viewModel: OverviewViewModel) {
 
 @Composable
 private fun OverviewFlow(overview: PanelOverview) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         val compact = maxWidth < 600.dp
         LazyVerticalGrid(
             columns = GridCells.Fixed(if (compact) 2 else 3),

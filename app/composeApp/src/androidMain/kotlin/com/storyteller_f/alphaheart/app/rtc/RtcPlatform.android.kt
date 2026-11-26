@@ -138,7 +138,7 @@ internal actual fun RtcJoinButton(video: Boolean, enabled: Boolean, onJoin: () -
 }
 
 @Composable
-internal actual fun RtcVideoView(video: RtcVideo, modifier: Modifier, local: Boolean) {
+internal actual fun RtcVideoView(video: RtcVideo, modifier: Modifier, local: Boolean, aspect: (Float) -> Unit) {
     val context = LocalContext.current
     val track = video as AndroidRtcVideo
     val renderer = remember { SurfaceViewRenderer(context) }

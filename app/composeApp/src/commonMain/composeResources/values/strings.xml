@@ -336,4 +336,6 @@
     <string name="crop_reset">Reset crop</string>
     <string name="unread_rooms">Unread rooms</string>
     <string name="unread_messages">Unread messages</string>
+    <string name="rtc_focus_participant">Enlarge participant</string>
+    <string name="rtc_return_to_grid">Return to grid</string>
 </resources>

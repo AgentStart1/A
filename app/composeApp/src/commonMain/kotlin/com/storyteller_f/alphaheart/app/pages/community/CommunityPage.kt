@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -59,6 +60,7 @@ import com.storyteller_f.alphaheart.app.search.SearchScope
 import com.storyteller_f.alphaheart.app.settings_title
 import com.storyteller_f.alphaheart.app.topic.TopicComposeData
 import com.storyteller_f.alphaheart.app.topics
+import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.components.ButtonNav
 import com.storyteller_f.alphaheart.client.compose_core.components.CommunityIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.FavoriteButton
@@ -124,7 +126,7 @@ private fun CommunityPageInternal(communityId: PrimaryKey, needShowDialog: Boole
         if (page == 0) {
             TopicList(createCommunityTopicsViewModel(communityId))
         } else {
-            RoomList(createCommunityRoomsViewModel(communityId))
+            RoomList(createCommunityRoomsViewModel(communityId), showAid = false)
         }
     }
 }
@@ -179,7 +181,7 @@ fun CommunityDialogInternal(communityInfo: CommunityInfo, dismiss: () -> Unit) {
                 appNavFactory.newAppNav().gotoCommunity(communityId, false)
             },
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
         ) {
             CommunityIconWithDialog(
                 communityInfo,
@@ -187,8 +189,9 @@ fun CommunityDialogInternal(communityInfo: CommunityInfo, dismiss: () -> Unit) {
                 40.dp,
                 setClickEvent = false,
             ) {}
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f).padding(top = 2.dp)) {
                 Text(communityInfo.name, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                if (communityInfo.aid.isNotBlank()) Text(CoreStrings.aid(communityInfo.aid), fontSize = 12.sp)
             }
         }
     }) {

@@ -53,7 +53,7 @@ fun UserCellInternal(modifier: Modifier, userInfo: UserInfo?, iconSize: Dp) {
         UserIconWithDialog(userInfo, setClickEvent = true, size = iconSize)
         if (userInfo != null) {
             Column {
-                Text(userInfo.nickname, style = MaterialTheme.typography.titleMedium)
+                Text(userInfo.nickname, style = MaterialTheme.typography.bodyLarge)
                 val aid = userInfo.aid
                 if (aid != null) {
                     Text(CoreStrings.aid(aid), style = MaterialTheme.typography.labelSmall)

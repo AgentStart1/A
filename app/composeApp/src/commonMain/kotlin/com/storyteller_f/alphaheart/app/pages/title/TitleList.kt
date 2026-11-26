@@ -37,6 +37,7 @@ import com.storyteller_f.alphaheart.app.title_permanent
 import com.storyteller_f.alphaheart.app.title_received_by
 import com.storyteller_f.alphaheart.app.title_scope
 import com.storyteller_f.alphaheart.app.title_valid
+import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.rememberCommonDialogController
 import com.storyteller_f.alphaheart.client.compose_core.paging.bottomAppending
@@ -175,12 +176,26 @@ private fun TitleScope(titleInfo: TitleDetail) {
                         dialog.shown.value,
                         onClickIcon = dialog::update,
                     )
-                    Text(titleInfo.communityInfo?.name.orEmpty())
+                    titleInfo.communityInfo?.let {
+                        Column {
+                            Text(it.name)
+                            if (it.aid.isNotBlank()) {
+                                Text(CoreStrings.aid(it.aid), style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
                 }
 
                 ObjectType.ROOM -> {
                     RoomIconWithDialog(titleInfo.roomInfo, dialog.shown.value, updateDialog = dialog::update)
-                    Text(titleInfo.roomInfo?.name.orEmpty())
+                    titleInfo.roomInfo?.let {
+                        Column {
+                            Text(it.name)
+                            if (it.aid.isNotBlank()) {
+                                Text(CoreStrings.aid(it.aid), style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
                 }
 
                 ObjectType.USER -> UserIconWithDialog(titleInfo.receiverInfo)

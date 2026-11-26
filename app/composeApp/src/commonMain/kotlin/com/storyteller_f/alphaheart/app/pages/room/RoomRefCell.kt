@@ -74,8 +74,8 @@ private fun RoomRefCellInternal(handler: LoadingHandler<RoomInfo>, onClick: ((Ro
 @Composable
 fun RoomMenuRefCell(id: PrimaryKey, onClickIcon: ((RoomInfo) -> Unit)? = null, onClick: (RoomInfo) -> Unit) {
     val handler = LocalRefCellHandlerProvider.current.roomHandler(id)
-    RefCellStateView(handler, Modifier.fillMaxWidth().heightIn(min = 52.dp)) { info ->
-        ActionMenuReference(info.name, { onClick(info) }) {
+    RefCellStateView(handler, Modifier.fillMaxWidth().heightIn(min = 40.dp)) { info ->
+        ActionMenuReference(info.name, info.aid, { onClick(info) }) {
             RoomIcon(info, 48.dp, onClickIcon != null, 4.dp) { onClickIcon?.invoke(info) }
         }
     }

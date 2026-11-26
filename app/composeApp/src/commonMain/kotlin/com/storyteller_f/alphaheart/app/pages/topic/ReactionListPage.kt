@@ -43,7 +43,7 @@ fun ReactionListPage(topicId: PrimaryKey) {
     val viewModel = createReactionsViewModel(topicId)
     Scaffold(topBar = { ReadingPageToolbar(stringResource(Res.string.reactions_title)) }) { paddingValues ->
         Box(Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.TopCenter) {
-            StateView(viewModel, modifier = Modifier.widthIn(max = 740.dp).fillMaxSize()) { items ->
+            StateView(viewModel, modifier = Modifier.fillMaxSize()) { items ->
                 ReactionAggregatePagingList(items)
             }
         }

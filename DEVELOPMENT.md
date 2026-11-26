@@ -34,13 +34,13 @@ Windows 上，如果编译或构建、Detekt、截图及宿主 UI 运行共用 A
 
 产品的交互和视觉约定见 [DESIGN.md](DESIGN.md)。
 
-设计稿的唯一源文件是 [dev/design/reading-unified-combinations.html](dev/design/reading-unified-combinations.html)。从项目根目录运行：
+设计稿的唯一源文件是 [dev/design/alpha-heart-design.html](dev/design/alpha-heart-design.html)。从项目根目录运行：
 
 ```sh
 python -m http.server 8087 --bind 127.0.0.1 --directory dev/design
 ```
 
-打开 `http://127.0.0.1:8087/reading-unified-combinations.html`，用「自由查看」切换页面、状态和屏幕宽度。修改设计时编辑源文件，浏览器刷新即可。预览使用仓库内的 Lucide 1.17.0 图标脚本与许可证，可以离线打开。
+打开 `http://127.0.0.1:8087/alpha-heart-design.html`，用「自由查看」切换页面、状态和屏幕宽度。修改设计时编辑源文件，浏览器刷新即可。预览使用仓库内的 Lucide 1.17.0 图标脚本与许可证，可以离线打开。
 
 ## Compose 源码归属
 

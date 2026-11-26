@@ -13,23 +13,26 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 
 @Composable
-internal fun ActionMenuReference(name: String, onClick: () -> Unit, icon: @Composable () -> Unit) {
+internal fun ActionMenuReference(name: String, aid: String, onClick: () -> Unit, icon: @Composable () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick)
-            .appiumSemantics(description = name, text = name, onClick = onClick).padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .appiumSemantics(description = name, text = name, onClick = onClick).padding(vertical = 2.dp),
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         icon()
-        Text(name, Modifier.weight(1f), fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
-        ReadingIcon(Icons.Default.ChevronRight, null, Modifier.size(17.dp))
+        Column(Modifier.weight(1f)) {
+            Text(name, style = MaterialTheme.typography.bodyMedium)
+            if (aid.isNotBlank()) Text(CoreStrings.aid(aid), style = MaterialTheme.typography.bodySmall)
+        }
+        ReadingIcon(Icons.Default.ChevronRight, null, Modifier.align(Alignment.CenterVertically).size(17.dp))
     }
 }
 

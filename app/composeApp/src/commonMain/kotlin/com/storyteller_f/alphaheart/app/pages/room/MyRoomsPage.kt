@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -57,6 +58,7 @@ import com.storyteller_f.alphaheart.app.room_status
 import com.storyteller_f.alphaheart.app.room_unread
 import com.storyteller_f.alphaheart.app.rooms
 import com.storyteller_f.alphaheart.app.semantics.roomCellSemantics
+import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.components.CommunityIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.RoomIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
@@ -73,27 +75,27 @@ import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBadge 
 
 @Composable
 fun MyRoomsPage() {
-    RoomList(createJoinedRoomsViewModel())
+    RoomList(createJoinedRoomsViewModel(), showAid = false)
 }
 
 @Composable
-fun RoomList(roomsViewModel: RoomListViewModel, onClick: ((RoomInfo) -> Unit)? = null) {
+fun RoomList(roomsViewModel: RoomListViewModel, onClick: ((RoomInfo) -> Unit)? = null, showAid: Boolean = true) {
     val activities by roomsViewModel.previews.rows.collectAsStateWithLifecycle()
     val events = LocalGlobalDialog.current.context.events
     val refreshEvents = remember(events) { events.filter { it.changesRoomActivity() } }
     val refreshBadge = RememberUnreadBadgeRefresh()
     val listState = rememberLazyListState()
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-        BoxWithConstraints(Modifier.widthIn(max = 740.dp).fillMaxSize()) {
-            val wide = maxWidth >= 760.dp
-            Column(Modifier.fillMaxSize()) {
-                if (wide) RoomTableHeader()
-                StateView(
-                    roomsViewModel,
-                    Modifier.weight(1f).fillMaxWidth(),
-                    onRefresh = refreshBadge,
-                    refreshEvents = refreshEvents,
-                ) { items ->
+        StateView(
+            roomsViewModel,
+            Modifier.fillMaxSize(),
+            onRefresh = refreshBadge,
+            refreshEvents = refreshEvents,
+        ) { items ->
+            BoxWithConstraints(Modifier.widthIn(max = 740.dp).fillMaxSize()) {
+                val wide = maxWidth >= 760.dp
+                Column(Modifier.fillMaxSize()) {
+                    if (wide) RoomTableHeader()
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
@@ -104,7 +106,7 @@ fun RoomList(roomsViewModel: RoomListViewModel, onClick: ((RoomInfo) -> Unit)? =
                         pagingItems(items, { it.id }) { index ->
                             val room = items[index]
                             Column {
-                                PrimaryRoomCell(room, onClick, wide, activities[room?.id])
+                                PrimaryRoomCell(room, onClick, wide, activities[room?.id], showAid)
                                 if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(horizontal = 20.dp))
                             }
                         }
@@ -123,6 +125,7 @@ fun PrimaryRoomCell(
     onClick: ((RoomInfo) -> Unit)? = null,
     wide: Boolean = false,
     activity: RoomActivityPreview? = null,
+    showAid: Boolean = true,
 ) {
     val appNavFactory = LocalAppNavFactory.current
     val currentRoom = activity?.room ?: roomInfo
@@ -146,6 +149,7 @@ fun PrimaryRoomCell(
             ),
         wide,
         activity,
+        showAid,
     )
 }
 
@@ -162,6 +166,7 @@ private fun RoomCellInternal(
     modifier: Modifier = Modifier,
     wide: Boolean = false,
     activity: RoomActivityPreview? = null,
+    showAid: Boolean = true,
 ) {
     val communityInfo =
         roomInfo?.communityId?.let { communityId ->
@@ -182,7 +187,7 @@ private fun RoomCellInternal(
                 showDialog = roomShown,
                 updateDialog = roomDialog::update,
             )
-        }, activity, communityIcon = {
+        }, activity, showAid, communityIcon = {
             CommunityIconWithDialog(communityInfo, communityShown, 22.dp, onClickIcon = communityDialog::update)
         })
     }
@@ -197,6 +202,7 @@ fun RoomRowContent(
     modifier: Modifier = Modifier,
     roomIcon: @Composable () -> Unit,
     activity: RoomActivityPreview? = null,
+    showAid: Boolean = false,
     communityIcon: (@Composable () -> Unit)? = null,
 ) {
     Row(
@@ -213,6 +219,7 @@ fun RoomRowContent(
                     roomInfo?.name.orEmpty(),
                     Modifier.weight(1f, fill = false).appiumSemantics(text = roomInfo?.name),
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    fontWeight = FontWeight.Normal,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -223,6 +230,9 @@ fun RoomRowContent(
                         CommunityIcon(communityInfo, 22.dp, false) {}
                     }
                 }
+            }
+            if (showAid && roomInfo != null && roomInfo.aid.isNotBlank()) {
+                Text(CoreStrings.aid(roomInfo.aid), style = MaterialTheme.typography.bodySmall)
             }
             if (activity?.message != null) ActivityMessageContent(activity.message)
         }

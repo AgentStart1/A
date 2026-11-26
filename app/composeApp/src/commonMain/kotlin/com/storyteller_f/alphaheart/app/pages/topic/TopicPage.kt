@@ -221,7 +221,7 @@ private fun ColumnScope.TopicPageContent(
             subTopics.refresh()
         }
     }
-    StateView(viewModel.handler, modifier = Modifier.weight(1f)) { topicInfo ->
+    StateView(viewModel.handler, modifier = Modifier.weight(1f).fillMaxWidth()) { topicInfo ->
         val roomTopic = topicInfo.rootType == ObjectType.ROOM
         LazyColumn(
             modifier = Modifier.weight(1f).widthIn(max = 740.dp).fillMaxWidth(),

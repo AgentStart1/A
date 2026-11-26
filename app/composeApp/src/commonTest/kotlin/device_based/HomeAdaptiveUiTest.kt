@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.captureToImage
@@ -673,22 +674,34 @@ class HomeAdaptiveUiTest {
             val width = mutableStateOf(390.dp)
             setContent {
                 MaterialTheme {
-                    Box(Modifier.requiredSize(width.value, 600.dp)) {
+                    Box(Modifier.requiredSize(width.value, 600.dp).testTag("refresh-region")) {
                         Text("Existing content", Modifier.padding(top = 24.dp).testTag("existing-content"))
                         com.storyteller_f.alphaheart.client.compose_core.components.CachedRefreshIndicator(state.value)
                     }
                 }
+            }
+            val progress = onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo))
+            val region = onNodeWithTag("refresh-region")
+            fun assertRefreshEdges() {
+                val expected = region.getUnclippedBoundsInRoot()
+                val actual = progress.getUnclippedBoundsInRoot()
+                assertEquals(expected.left, actual.left)
+                assertEquals(expected.right, actual.right)
             }
             val initial = onNodeWithTag("existing-content").getUnclippedBoundsInRoot()
             listOf(LoadingState.Loading, LoadingState.Error(IllegalStateException("offline")), LoadingState.Done)
                 .forEach { next ->
                     runOnIdle { state.value = next }
                     assertEquals(initial, onNodeWithTag("existing-content").getUnclippedBoundsInRoot())
+                    if (next is LoadingState.Loading) {
+                        assertRefreshEdges()
+                    }
                 }
             runOnIdle { width.value = 1000.dp }
             val wide = onNodeWithTag("existing-content").getUnclippedBoundsInRoot()
             runOnIdle { state.value = LoadingState.Loading }
             assertEquals(wide, onNodeWithTag("existing-content").getUnclippedBoundsInRoot())
+            assertRefreshEdges()
             runOnIdle { state.value = LoadingState.Error(IllegalStateException("offline")) }
             assertEquals(wide, onNodeWithTag("existing-content").getUnclippedBoundsInRoot())
         }

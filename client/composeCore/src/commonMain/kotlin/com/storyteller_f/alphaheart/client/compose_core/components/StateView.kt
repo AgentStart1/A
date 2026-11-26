@@ -120,6 +120,7 @@ fun <T : Any> StateView(
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
                 if (pagingItems.itemCount > 0) {
                     content(pagingItems)
+                    StateViewTopIndicator(pagingItems, pullRefreshing, refresh)
                 } else {
                     CenterBox {
                         when (val state = pagingItems.loadState.refresh.toLoadingState()) {
@@ -137,7 +138,6 @@ fun <T : Any> StateView(
                 }
             }
         }
-        if (pagingItems.itemCount > 0) StateViewTopIndicator(pagingItems, pullRefreshing, refresh)
         if (showRefresh) {
             Box(Modifier.align(Alignment.TopEnd)) {
                 PagingRefreshAction(refreshLoadState !is LoadState.Loading, refresh)

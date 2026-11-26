@@ -20,10 +20,13 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -207,7 +210,7 @@ private class KtorRtcMedia(
 private class KtorRtcPeer(
     private val connection: WebRtcPeerConnection,
     private val media: KtorRtcMedia,
-    events: RtcPeerEvents,
+    private val events: RtcPeerEvents,
     scope: CoroutineScope,
     private val worker: CoroutineDispatcher,
 ) : RtcPeer {
@@ -255,6 +258,27 @@ private class KtorRtcPeer(
 
     suspend fun attachTracks() {
         senders = media.attach(connection)
+        observers.launch { observeAudioLevels() }
+    }
+
+    private suspend fun observeAudioLevels() {
+        var previous = 0 to 0
+        while (currentCoroutineContext().isActive) {
+            delay(180)
+            val stats =
+                try {
+                    connection.getStatistics()
+                } catch (failure: CancellationException) {
+                    throw failure
+                } catch (_: Exception) {
+                    emptyList()
+                }
+            val levels = audioLevel(stats, "media-source") to audioLevel(stats, "inbound-rtp")
+            if (levels != previous) {
+                previous = levels
+                events.audioLevel(levels.first, levels.second)
+            }
+        }
     }
 
     override suspend fun createOffer(): String {
@@ -291,4 +315,18 @@ private class KtorRtcPeer(
             connection.close()
             releaseRtcConnection(connection)
         }
+}
+
+private fun audioLevel(stats: List<WebRtc.Stats>, type: String): Int {
+    val level =
+        stats.asSequence()
+            .filter { it.type == type }
+            .mapNotNull { (it.props["audioLevel"] as? Number)?.toDouble() }
+            .maxOrNull() ?: 0.0
+    return when {
+        level >= 0.12 -> 3
+        level >= 0.035 -> 2
+        level >= 0.008 -> 1
+        else -> 0
+    }
 }

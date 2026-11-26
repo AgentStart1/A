@@ -66,7 +66,7 @@ fun UserCell(userInfo: UserInfo?, selected: Boolean = false, onClick: (() -> Uni
 @Composable
 private fun UserIdentityText(info: UserInfo) {
     Column {
-        Text(info.nickname, style = MaterialTheme.typography.titleMedium)
+        Text(info.nickname, style = MaterialTheme.typography.bodyLarge)
         info.aid?.let { Text(CoreStrings.aid(it), style = MaterialTheme.typography.labelSmall) }
     }
 }

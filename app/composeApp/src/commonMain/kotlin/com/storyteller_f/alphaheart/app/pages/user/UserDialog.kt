@@ -315,7 +315,7 @@ private fun UnboundSimpleUserCell(userInfo: UserInfo?) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Top,
     ) {
         UserIcon(
             setClickEvent = false,
@@ -323,7 +323,7 @@ private fun UnboundSimpleUserCell(userInfo: UserInfo?) {
             40.dp,
         ) {}
         if (userInfo != null) {
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f).padding(top = 2.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         userInfo.nickname,
