@@ -47,6 +47,7 @@ import com.storyteller_f.alphaheart.app.pages.user.UserIconWithDialog
 import com.storyteller_f.alphaheart.app.pin
 import com.storyteller_f.alphaheart.app.previews.TopicPreviewProvider
 import com.storyteller_f.alphaheart.app.topic.TopicActionsPresentation
+import com.storyteller_f.alphaheart.app.topic.asFeedPreview
 import com.storyteller_f.alphaheart.app.topic.pinOrUnpinTopic
 import com.storyteller_f.alphaheart.app.topic_menu
 import com.storyteller_f.alphaheart.app.ui.MaterialSymbolsOutlined
@@ -163,7 +164,13 @@ private fun TopicContentAndInteraction(
     Column(
         Modifier.padding(horizontal = 8.dp).padding(bottom = 8.dp),
     ) {
-        AppTopicContentView(topicInfo, true)
+        val displayedTopic =
+            if (presentation == TopicActionsPresentation.FEED) {
+                remember(topicInfo) { topicInfo.asFeedPreview() }
+            } else {
+                topicInfo
+            }
+        AppTopicContentView(displayedTopic, true)
         InteractionRow(topicInfo, startAddReaction, presentation = presentation) {
             appNavFactory.newAppNav().gotoTopic(topicId)
         }

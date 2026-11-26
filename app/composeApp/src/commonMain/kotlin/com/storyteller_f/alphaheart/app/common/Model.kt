@@ -20,6 +20,7 @@ import com.storyteller_f.alphaheart.api.PaginationQuery
 import com.storyteller_f.alphaheart.api.SearchQuery
 import com.storyteller_f.alphaheart.app.UIViewModel
 import com.storyteller_f.alphaheart.app.error.FormError
+import com.storyteller_f.alphaheart.app.topic.asFeedPreview
 import com.storyteller_f.alphaheart.client.compose_core.common.CachedLoadingHandler
 import com.storyteller_f.alphaheart.client.compose_core.common.CompatPagingSource
 import com.storyteller_f.alphaheart.client.compose_core.common.IntKeyConverter
@@ -104,7 +105,6 @@ import com.storyteller_f.shared.obj.ObjectTuple
 import com.storyteller_f.shared.type.JoinStatusSearch
 import com.storyteller_f.shared.type.ObjectType
 import com.storyteller_f.shared.type.PrimaryKey
-import com.storyteller_f.shared.utils.extractMarkdownHeadline
 import com.storyteller_f.shared.utils.extractMarkdownMediaLink
 import com.storyteller_f.shared.utils.normalizeMarkdownLineEndings
 import com.storyteller_f.storage.ChildAccountStorage
@@ -284,7 +284,7 @@ class WorldViewModel(val sessionManager: UserSessionManager, modelStorage: Model
             ),
         ).flow.map { pagingData ->
             pagingData.map {
-                extractHeadlineIfPlain(it)
+                it.asFeedPreview()
             }
         }.cachedIn(viewModelScope)
 }
@@ -332,20 +332,10 @@ class TopicsViewModel(
                 CompatPagingSource(modelStorage.topic.observeData(modelCollection), IntKeyConverter),
             ) { topicInfos ->
                 processEncryptedTopic(topicInfos, sessionManager).map { topicInfo ->
-                    extractHeadlineIfPlain(topicInfo)
+                    topicInfo.asFeedPreview()
                 }
             }
         }.flow.cachedIn(viewModelScope)
-}
-
-private fun extractHeadlineIfPlain(topic: TopicDetail): TopicDetail {
-    val content = topic.content
-    return if (content is TopicContent.Plain) {
-        val preview = TopicContent.Extracted(extractMarkdownHeadline(content.plain), content.fileInfos, content.plain)
-        topic.copy(topicInfo = topic.topicInfo.copy(content = preview))
-    } else {
-        topic
-    }
 }
 
 abstract class RoomViewModel : SimpleViewModel<RoomInfo>() {

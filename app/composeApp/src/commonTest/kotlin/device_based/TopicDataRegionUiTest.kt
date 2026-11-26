@@ -10,23 +10,29 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasProgressBarRangeInfo
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.LoadStates
 import androidx.paging.PagingData
+import com.storyteller_f.alphaheart.app.pages.ReadingRecordList
 import com.storyteller_f.alphaheart.app.pages.topic.CommonTopicList
 import com.storyteller_f.alphaheart.client.compose_core.common.PagingViewModel
+import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.shared.model.TopicDetail
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.test.Test
@@ -34,6 +40,56 @@ import kotlin.test.assertEquals
 
 @OptIn(ExperimentalTestApi::class)
 class TopicDataRegionUiTest {
+    @Test
+    fun recordRefreshDistinguishesAutomaticAndPullIndicators() =
+        runAppComposeUiTest {
+            val model = TopicRegionModel()
+            val width = mutableStateOf(1000.dp)
+            setContent {
+                MaterialTheme {
+                    Box(Modifier.requiredSize(width.value, 600.dp)) {
+                        key(width.value) {
+                            StateView(model, Modifier.testTag("record-pane"), onRefresh = {
+                                model.refresh(LoadState.Loading)
+                            }) {
+                                ReadingRecordList {
+                                    item { Text("Existing record", Modifier.testTag("record-row")) }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            val progress = hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)
+            for (viewport in listOf(1000.dp, 390.dp)) {
+                runOnIdle { width.value = viewport }
+                awaitExternalCondition { onAllNodesWithTag("record-row").fetchSemanticsNodes().isNotEmpty() }
+                val row = onNodeWithTag("record-row").getUnclippedBoundsInRoot()
+                val pane = onNodeWithTag("record-pane").getUnclippedBoundsInRoot()
+                runOnIdle { model.refresh(LoadState.Loading) }
+                awaitExternalCondition { onAllNodes(progress).fetchSemanticsNodes().isNotEmpty() }
+
+                onAllNodes(progress).assertCountEquals(1)
+                val line = onNodeWithTag("cached-refresh-indicator").getUnclippedBoundsInRoot()
+                assertEquals(pane.left, line.left)
+                assertEquals(pane.right, line.right)
+                assertEquals(pane.top, line.top)
+                assertEquals(2.dp, line.bottom - line.top)
+                assertEquals(row, onNodeWithTag("record-row").getUnclippedBoundsInRoot())
+
+                runOnIdle { model.refresh(LoadState.NotLoading(false)) }
+                awaitExternalCondition { onAllNodes(progress).fetchSemanticsNodes().isEmpty() }
+
+                onNodeWithTag("personal-record-list").performTouchInput { swipeDown() }
+                awaitExternalCondition { onAllNodes(progress).fetchSemanticsNodes().size == 1 }
+                val circle = onNode(progress).getUnclippedBoundsInRoot()
+                assertEquals(circle.right - circle.left, circle.bottom - circle.top)
+                assertEquals(row, onNodeWithTag("record-row").getUnclippedBoundsInRoot())
+
+                runOnIdle { model.refresh(LoadState.NotLoading(false)) }
+            }
+        }
+
     @Test
     fun cachedSourceRefreshUsesPaneWidthAndPreservesReadingBounds() =
         runAppComposeUiTest {

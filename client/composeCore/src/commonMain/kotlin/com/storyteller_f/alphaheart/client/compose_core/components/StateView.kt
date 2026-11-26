@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -238,9 +239,16 @@ fun CachedRefreshIndicator(
     @PreviewParameter(LoadingStatePreviewProvider::class) loadingState: LoadingState?,
     refresh: () -> Unit = {},
 ) {
-    Box(Modifier.fillMaxWidth().zIndex(1f), contentAlignment = Alignment.TopCenter) {
+    Box(
+        Modifier.fillMaxWidth().zIndex(1f).testTag("cached-refresh-indicator"),
+        contentAlignment = Alignment.TopCenter,
+    ) {
         when (loadingState) {
-            is LoadingState.Loading -> LinearProgressIndicator(Modifier.fillMaxWidth().height(2.dp))
+            is LoadingState.Loading ->
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth().height(2.dp),
+                    gapSize = 0.dp,
+                )
 
             is LoadingState.Error -> {
                 ReadingRefreshFailure(refresh)

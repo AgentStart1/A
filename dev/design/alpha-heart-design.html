@@ -862,6 +862,20 @@
 #ah-unified-combinations .product .stable-refresh-caption:hover{background:var(--ah-soft)}
 #ah-unified-combinations .product .stable-refresh-caption:hover::before{background:var(--ah-soft)}
 #ah-unified-combinations .stable-retry-label{color:var(--ah-accent);text-decoration:underline;text-underline-offset:2px}
+#ah-unified-combinations .stable-pull-refresh{position:absolute;top:calc(var(--refresh-edge-top,0px) + 16px);left:var(--refresh-edge-left,0px);right:var(--refresh-edge-right,0px);display:flex;justify-content:center;pointer-events:none;z-index:1}
+#ah-unified-combinations .stable-pull-refresh>span{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#fff;color:#000;box-shadow:0 3px 5px -1px #0003,0 6px 10px #00000024,0 1px 18px #0000001f}
+#ah-unified-combinations .stable-pull-refresh svg{width:20px;height:20px;animation:ah-pull-base 1332ms linear infinite,ah-pull-cycle 6660ms steps(5,end) infinite}
+#ah-unified-combinations .stable-pull-refresh circle{transform-origin:center;animation:ah-pull-arc 1332ms cubic-bezier(.4,0,.2,1) infinite}
+@keyframes ah-pull-base{to{transform:rotate(286deg)}}
+@keyframes ah-pull-cycle{to{rotate:1080deg}}
+@keyframes ah-pull-arc{
+  0%{transform:rotate(-90deg);stroke-dasharray:.1 360}
+  50%{transform:rotate(-90deg);stroke-dasharray:290 360}
+  100%{transform:rotate(200deg);stroke-dasharray:.1 360}
+}
+@media(prefers-reduced-motion:reduce){
+  #ah-unified-combinations .stable-pull-refresh svg,#ah-unified-combinations .stable-pull-refresh circle{animation:none}
+}
 #ah-unified-combinations .stable-refresh-line{position:absolute;left:0;right:0;bottom:-1px;height:2px;overflow:hidden;background:var(--ah-soft);pointer-events:none;z-index:1}
 #ah-unified-combinations .stable-refresh-line>span{display:block;width:30%;height:100%;background:var(--ah-accent);animation:ah-stable-refresh 1.8s ease-in-out infinite}
 #ah-unified-combinations .search-heading{min-height:44px;align-items:center}
@@ -2497,8 +2511,9 @@ function reviewDataSourceKey(){
  if(typeof isTopicReview==='function'&&isTopicReview())key+=':'+topicReview.source+':'+topicReview.node;
  return key;
 }
-const reviewMode=()=>reviewState.pages[reviewDataSourceKey()]||'normal';
-function setReviewMode(mode){if(state.page==='search'){if(mode==='search-joined-filter'&&!['rooms','communities'].includes(state.searchOrigin)){state.searchOrigin='rooms';thirdState.searchFrom=null;state.searchQuery='Rust'}if(mode==='search-blank')state.searchQuery='';else if(['loading','error','empty','refreshing','refresh-error','appending','append-error','search-no-results','search-guest','search-joined-filter'].includes(mode)&&!state.searchQuery.trim())state.searchQuery='Markdown'}reviewState.pages[reviewDataSourceKey()]=mode;}
+const selectedReviewMode=()=>reviewState.pages[reviewDataSourceKey()]||'normal';
+const reviewMode=()=>selectedReviewMode()==='pull-refreshing'?'refreshing':selectedReviewMode();
+function setReviewMode(mode){if(state.page==='search'){if(mode==='search-joined-filter'&&!['rooms','communities'].includes(state.searchOrigin)){state.searchOrigin='rooms';thirdState.searchFrom=null;state.searchQuery='Rust'}if(mode==='search-blank')state.searchQuery='';else if(['loading','error','empty','refreshing','pull-refreshing','refresh-error','appending','append-error','search-no-results','search-guest','search-joined-filter'].includes(mode)&&!state.searchQuery.trim())state.searchQuery='Markdown'}reviewState.pages[reviewDataSourceKey()]=mode;}
 function reviewSearchBody(body,mode){
  const t=document.createElement('template');t.innerHTML=body;
  const page=t.content.querySelector('.search-page');if(!page)return body;
@@ -2746,7 +2761,7 @@ function sourceSpecificBody(body,key){const t=sourceDom(body);const target=sourc
  if(key==='admin-user-key-ready'){sourceNote(t,'地址：已从所选私钥读取');return t.innerHTML;}
  return body;
 }
-function reviewBody(){const mode=reviewMode();if(state.page==='admin-login'&&mode==='submit-success')return thirdOverview();if(authPages.has(state.page))return authPreview(mode);if(['twofactor','twofactor-enabled'].includes(state.page))return thirdTwoFactor(thirdPage(),mode);if(state.page==='preferences')return thirdPreferences();if(['signout','admin-signout'].includes(state.page))return thirdSignout(thirdPage(),mode);const canonicalRtc={'rtc-ready':'rtc-ready','rtc-joining':'rtc-joining','rtc-failed':'rtc-failed','rtc-media-failed':'rtc-media-failed','rtc-switchable':'rtc-switch-camera'}[state.page];if(canonicalRtc&&mode==='normal')return sourceSpecificBody('',canonicalRtc);const scene=sourcePageScenes().find(s=>s.variant===mode);if(scene){setReviewMode('normal');if(['editor-raw','editor-block','editor-preview'].includes(mode))secondState.editorMode=mode.slice(7);if(mode.startsWith('worker-')){thirdState.workerStatus=mode==='worker-success-filter'?'success':['worker-failure-filter','worker-type-filter'].includes(mode)?'failure':'all';thirdState.failureType=mode==='worker-type-filter'?'MODEL_RESPONSE':'';}const body=priorReviewBody();setReviewMode(mode);return sourceSpecificBody(body,mode)}if(mode==='refreshing'||mode==='refresh-error'){setReviewMode('normal');const t=sourceDom(priorReviewBody());setReviewMode(mode);return t.innerHTML}return priorReviewBody()}
+function reviewBody(){const mode=reviewMode();if(state.page==='admin-login'&&mode==='submit-success')return thirdOverview();if(authPages.has(state.page))return authPreview(mode);if(['twofactor','twofactor-enabled'].includes(state.page))return thirdTwoFactor(thirdPage(),mode);if(state.page==='preferences')return thirdPreferences();if(['signout','admin-signout'].includes(state.page))return thirdSignout(thirdPage(),mode);const canonicalRtc={'rtc-ready':'rtc-ready','rtc-joining':'rtc-joining','rtc-failed':'rtc-failed','rtc-media-failed':'rtc-media-failed','rtc-switchable':'rtc-switch-camera'}[state.page];if(canonicalRtc&&mode==='normal')return sourceSpecificBody('',canonicalRtc);const scene=sourcePageScenes().find(s=>s.variant===mode);if(scene){setReviewMode('normal');if(['editor-raw','editor-block','editor-preview'].includes(mode))secondState.editorMode=mode.slice(7);if(mode.startsWith('worker-')){thirdState.workerStatus=mode==='worker-success-filter'?'success':['worker-failure-filter','worker-type-filter'].includes(mode)?'failure':'all';thirdState.failureType=mode==='worker-type-filter'?'MODEL_RESPONSE':'';}const body=priorReviewBody();setReviewMode(mode);return sourceSpecificBody(body,mode)}if(mode==='refreshing'||mode==='refresh-error'){const selected=selectedReviewMode();setReviewMode('normal');const t=sourceDom(priorReviewBody());setReviewMode(selected);return t.innerHTML}return priorReviewBody()}
 function syncReviewControls(){priorSyncReviewControls();const meta=reviewMeta();const states=['normal'];if(meta?.states.includes('loading'))states.push('loading','error','refreshing','refresh-error');if(meta?.states.includes('empty'))states.push('empty');if(meta?.states.includes('appending'))states.push('appending');if(meta?.states.includes('submitting'))states.push('submitting','submit-error');const searchLabels=state.page==='search'?{normal:'搜索结果／待搜索',loading:'搜索中',error:'搜索失败',empty:'暂无搜索结果'}:{};const options=states.map(k=>`<option value="${k}">${k==='refreshing'?'已有内容刷新中':k==='refresh-error'?'已有内容刷新失败':(searchLabels[k]||reviewStateLabels[k])}</option>`).concat(sourcePageScenes().map(s=>`<option value="${s.variant}">${s.variant==='search-guest'?'未登录搜索 · '+({'rooms':'房间','communities':'社区','world':'世界','community':'社区内','room':'房间内','profile':'用户主页','community-members':'社区成员','room-members':'房间成员'}[state.searchOrigin]||'当前范围'):s.label}</option>`));const picker=root.querySelector('#review-data-state');picker.innerHTML=options.join('');picker.value=reviewMode();picker.disabled=options.length<2;}
 function reviewHandle(action,p,b){if(action==='admin-add-user'&&b.closest('.directory-title')){rememberThirdModalContext(remainingCatalog.find(page=>page.id===action));thirdState.back.push(state.page);state.page='admin-add-user';sourceState.active=null;setReviewMode('normal');updatePages();return true}if(action==='source-twofactor-retry'){setReviewMode('loading');render();return true}if(action==='attachment-tab-files'||action==='attachment-tab-record'){sourceState.attachmentTab=action==='attachment-tab-record'?'record':'files';setReviewMode(sourceState.attachmentTab==='record'?'recorder-idle':'normal');render();return true}if(action==='attachment-recorder-grant'){setReviewMode('recorder-idle');render();return true}if(action==='attachment-record-toggle'){setReviewMode(reviewMode()==='recorder-recording'?'recorder-uploading':'recorder-recording');render();return true}if(action==='third-translate'&&state.page==='topic-translate'){setReviewMode('translate-working');render();startPreviewTranslation();return true}if(action==='source-worker-load-retry'){const key=root.querySelector('#review-combination')?.value;if(key){const parts=key.split('|');parts[2]='loading';applyCombination(parts.join('|'),true)}else{sourceState.active=null;setReviewMode('loading');render()}return true}if(action==='source-rtc-error-details'||action==='source-close-rtc-error'){sourceState.rtcErrorOpen=action==='source-rtc-error-details';render();return true}if(action==='source-retry-keys'){const key=root.querySelector('#review-combination')?.value;if(key&&key.split('|')[2]==='keys-error'){const parts=key.split('|');parts[2]='keys-loading';applyCombination(parts.join('|'),true)}else{setReviewMode('keys-loading');render();persistFirstPass()}return true}if(action==='search'&&state.page==='community-posters'){state.searchOrigin='communities';thirdState.searchFrom=null;state.searchQuery='';state.searchType='topics';state.page='search';setReviewMode('normal');updatePages();return true}if(action==='source-search-join-joined'||action==='source-search-join-all'){sourceState.searchJoinFilters??={};sourceState.searchJoinFilters[state.searchOrigin]=action==='source-search-join-joined'?'JOINED':'UNSPECIFIED';const input=p.querySelector('.search-form input');if(input)state.searchQuery=input.value;render();persistFirstPass();return true}if(action==='source-retry-font'){setReviewMode('font-loading');render();return true}if(action==='source-native-picker'){const notice=p.querySelector('.notice');if(notice)notice.textContent='此入口使用系统文件选择器，设计预览不选择本机文件。';return true}if(['setting-avatar','setting-community-icon','setting-room-icon','setting-poster'].includes(action)){setReviewMode(action==='setting-poster'?'poster-select':'setting-icon-select');render();return true}if(action==='setting-reset-avatar'||action==='setting-reset-room-icon'||action==='setting-reset-community-icon'){setReviewMode('setting-reset');render();return true}if(action==='setting-reset-content-font'||action==='setting-reset-code-font'){setReviewMode('font-reset');render();return true}if(action==='source-dismiss'){setReviewMode('normal');render();return true}if(action==='source-noop')return true;return priorReviewHandle(action,p,b)}
 function persistFirstPass(){window.openai?.setWidgetState({modelContent:{design:'从容阅读源码状态',app:state.app,page:state.page,screen:state.screen,status:reviewMode(),source:topicReview.source,topic:topicReview.node,topicHistory:topicReview.history,topicEntryPage:topicReview.entryPage,searchOrigin:state.searchOrigin,searchQuery:state.searchQuery,searchType:state.searchType,searchJoinFilters:sourceState.searchJoinFilters||{}},privateContent:null}).catch(()=>{})}
@@ -3017,7 +3032,7 @@ function normalizeStableRefresh(product){
  alignRefreshEdge();
  stableRefreshGeometryObserver=new ResizeObserver(alignRefreshEdge);stableRefreshGeometryObserver.observe(host);stableRefreshGeometryObserver.observe(refreshRegion);for(const candidate of candidates)stableRefreshGeometryObserver.observe(candidate);
 
- host.querySelectorAll(':scope>.stable-refresh-line,:scope>.stable-refresh-caption').forEach(x=>x.remove());
+ host.querySelectorAll(':scope>.stable-refresh-line,:scope>.stable-refresh-caption,:scope>.stable-pull-refresh').forEach(x=>x.remove());
  if(mode==='refresh-error'){
   const bubble=document.createElement('button');bubble.type='button';bubble.className='stable-refresh-caption is-visible';
   bubble.innerHTML=icons('circle-alert')+'<span>刷新失败</span><span aria-hidden="true">·</span><span class="stable-retry-label">重试</span>';
@@ -3032,7 +3047,14 @@ function normalizeStableRefresh(product){
   };
   host.append(bubble);
  }
- if(mode==='refreshing'){
+ if(selectedReviewMode()==='pull-refreshing'){
+  const indicator=document.createElement('div');
+  indicator.className='stable-pull-refresh';
+  indicator.setAttribute('role','status');
+  indicator.setAttribute('aria-label',sourceLabel+'下拉刷新中');
+  indicator.innerHTML='<span aria-hidden="true"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="8.75" pathLength="360" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-dasharray="90 360"/></svg></span>';
+  host.append(indicator);
+ }else if(mode==='refreshing'){
   const line=document.createElement('div');line.className='stable-refresh-line';line.setAttribute('role','status');line.setAttribute('aria-label',sourceLabel+'正在刷新，已有内容可继续浏览');line.innerHTML='<span aria-hidden="true"></span>';host.append(line);
  }
 }
@@ -3046,6 +3068,11 @@ appSelect.addEventListener('change',()=>{state.app=appSelect.value;state.page=ap
 if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:render});tweak.addSlider(state,'radius',{label:'内容面板圆角',min:0,max:24,unit:'px'});tweak.addSlider(state,'bodyWidth',{label:'阅读宽度',min:540,max:820,step:20,unit:'px'})}
 reviewPageMatrix.find(page=>page.id==='preferences').states.push('translation-unsupported');
 reviewStateLabels['translation-unsupported']='平台不支持翻译';
+reviewStateLabels['pull-refreshing']='下拉刷新中';
+for(const page of reviewPageMatrix){
+ const isModal=remainingCatalog.some(item=>item.app===page.app&&item.id===page.id&&item.modal);
+ if(!isModal&&page.states.includes('refreshing'))page.states.splice(page.states.indexOf('refreshing')+1,0,'pull-refreshing');
+}
 const combinationSelect=root.querySelector('#review-combination');
 const combinationCount=root.querySelector('#review-combination-count');
 const combinationEntries=new Map();
@@ -3086,7 +3113,7 @@ function combinationStateSection(mode,menu,page){
  if(mode.id==='normal'&&remainingCatalog.find(p=>p.id===page.id)?.modal)return '弹窗与操作';
  if(menu.id!=='none'||/menu|picker|crop|dialog/.test(mode.id))return '弹窗与操作';
  if(mode.id==='normal')return '基础内容';
- if(['loading','error','empty','refreshing','refresh-error','appending','append-error'].includes(mode.id))return '加载与刷新';
+ if(['loading','error','empty','refreshing','pull-refreshing','refresh-error','appending','append-error'].includes(mode.id))return '加载与刷新';
  if(/submit|sending|send-error|input-empty|setting-|key-|editor-/.test(mode.id))return '编辑与提交';
  if(/guest|readonly|invited|member|owner|join-|auth|signin|signup|login/.test(mode.id))return '身份与权限';
  if(/rtc-|socket-|media-|video-|recorder-|keys-/.test(mode.id))return '连接与媒体';
