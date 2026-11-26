@@ -792,7 +792,7 @@ object CustomApi {
         object ReactionRecords {
             val get =
                 safeEndpointWithQueryBuilder("users/reaction-records") {
-                    resp(ReactionRecordInfoListResponse::class)
+                    resp(UserReactionRecordsResponse::class)
                     query(PaginationQuery::class)
                 }
         }

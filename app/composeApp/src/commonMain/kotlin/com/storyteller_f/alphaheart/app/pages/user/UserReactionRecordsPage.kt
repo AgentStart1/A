@@ -23,7 +23,6 @@ import com.storyteller_f.alphaheart.app.LocalRefCellHandlerProvider
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.common.UserReactionRecordsViewModel
 import com.storyteller_f.alphaheart.app.common.getUserReactionRecordsViewModel
-import com.storyteller_f.alphaheart.app.components.RefCellStateView
 import com.storyteller_f.alphaheart.app.my_reactions
 import com.storyteller_f.alphaheart.app.navigation.recordListFooter
 import com.storyteller_f.alphaheart.app.pages.ReadingPageToolbar
@@ -39,8 +38,8 @@ import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.paging.pagingItems
 import com.storyteller_f.alphaheart.client.compose_core.theme.safeArea
 import com.storyteller_f.shared.model.ReactionRecordInfo
+import com.storyteller_f.shared.model.TopicDetail
 import com.storyteller_f.shared.type.ObjectType
-import com.storyteller_f.shared.type.PrimaryKey
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -60,12 +59,14 @@ fun UserReactionRecordsPageInternal(viewModel: UserReactionRecordsViewModel) {
             loadingText = stringResource(Res.string.record_reactions_loading),
             failureText = stringResource(Res.string.record_reactions_failure),
         ) { items ->
+            val topics by viewModel.topicPreviews.collectAsStateWithLifecycle()
             val endLabel = stringResource(Res.string.record_reactions_end)
             ReadingRecordList {
                 pagingItems(items, {
                     it.id
                 }) {
-                    UserReactionRecordCell(items[it])
+                    val record = items[it]
+                    UserReactionRecordCell(record, record?.let { item -> topics[item.objectId] })
                     if (it < items.itemCount - 1) HorizontalDivider()
                 }
                 recordListFooter(items, endLabel)
@@ -75,10 +76,14 @@ fun UserReactionRecordsPageInternal(viewModel: UserReactionRecordsViewModel) {
 }
 
 @Composable
-fun UserReactionRecordCell(reactionRecordInfo: ReactionRecordInfo?) {
+private fun UserReactionRecordCell(reactionRecordInfo: ReactionRecordInfo?, topic: TopicDetail?) {
     val record = reactionRecordInfo ?: return
     if (record.objectType == ObjectType.TOPIC) {
-        ReactionRecordTopic(record.objectId)
+        if (topic == null) {
+            Text(stringResource(Res.string.reference_content_unavailable), Modifier.padding(vertical = 20.dp))
+        } else {
+            TopicCell(topic)
+        }
         return
     }
     val nav = LocalAppNavFactory.current
@@ -107,14 +112,6 @@ fun UserReactionRecordCell(reactionRecordInfo: ReactionRecordInfo?) {
                 null,
             )
         }
-    }
-}
-
-@Composable
-private fun ReactionRecordTopic(topicId: PrimaryKey) {
-    val handler = LocalRefCellHandlerProvider.current.topicHandler(topicId)
-    RefCellStateView(handler, Modifier.fillMaxWidth()) { topic ->
-        TopicCell(topic)
     }
 }
 

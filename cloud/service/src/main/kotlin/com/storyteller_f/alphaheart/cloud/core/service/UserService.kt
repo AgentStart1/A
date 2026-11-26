@@ -8,6 +8,7 @@ import com.perraco.utils.SnowflakeFactory
 import com.storyteller_f.alphaheart.api.CustomApi.Accounts.ChildAccounts.AddChildAccountRequest
 import com.storyteller_f.alphaheart.api.NewDevice
 import com.storyteller_f.alphaheart.api.NewUser
+import com.storyteller_f.alphaheart.api.UserReactionRecordsResponse
 import com.storyteller_f.alphaheart.backend.core.AID_LENGTH
 import com.storyteller_f.alphaheart.backend.core.Backend
 import com.storyteller_f.alphaheart.backend.core.CustomBadRequestException
@@ -605,6 +606,28 @@ suspend fun Backend.getUserReactions(uid: PrimaryKey, fetch: PrimaryKeyFetch) =
                 )
             },
         )
+    }
+
+suspend fun Backend.fillReactionRecordTopics(
+    uid: PrimaryKey,
+    page: UserReactionRecordsResponse,
+): CustomResult<UserReactionRecordsResponse, UserError> =
+    captureFailure(UserError::from) {
+        val ids =
+            page.data.filter { it.objectType == ObjectType.TOPIC }.map { it.objectId }.distinct()
+        if (ids.isEmpty()) {
+            page
+        } else {
+            val readableTopics =
+                database.topic.getTopicListByIds(ids).getOrThrow()
+                    .groupBy { it.rootType to it.rootId }
+                    .flatMap { (root, topics) ->
+                        val permission = checkRootReadPermission(root.first, root.second, uid).getOrThrow()
+                        topics.takeIf { permission?.hasRead == true }.orEmpty()
+                    }
+            val topics = database.processTopicToRawTopic(uid, readableTopics).getOrThrow()
+            page.copy(topics = processTopicActivities(topics, uid).getOrThrow().orEmpty())
+        }
     }
 
 suspend fun Backend.getUserCommentedTopics(uid: PrimaryKey, fetch: PrimaryKeyFetch) =

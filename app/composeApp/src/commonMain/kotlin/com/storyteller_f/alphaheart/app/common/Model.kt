@@ -37,6 +37,7 @@ import com.storyteller_f.alphaheart.client.core.LoadingHandler
 import com.storyteller_f.alphaheart.client.core.LoadingState
 import com.storyteller_f.alphaheart.client.core.SimpleLoadingHandler
 import com.storyteller_f.alphaheart.client.core.UserSessionManager
+import com.storyteller_f.alphaheart.client.core.decryptTopicActivities
 import com.storyteller_f.alphaheart.client.core.getChildAccounts
 import com.storyteller_f.alphaheart.client.core.getComments
 import com.storyteller_f.alphaheart.client.core.getCommunityInfo
@@ -140,6 +141,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 
@@ -780,7 +782,10 @@ class SubscriptionsViewModel(sessionManager: UserSessionManager, modelStorage: M
 
 class UserReactionRecordsViewModel(sessionManager: UserSessionManager, modelStorage: ModelStorage) :
     PagingViewModel<ReactionRecordInfo>() {
-    val collection = UserReactionRecordCollection.UserReactionRecords(0)
+    private val uid = sessionManager.model.uid
+    private val collection = UserReactionRecordCollection.UserReactionRecords(uid ?: 0)
+    private val loadedTopics = MutableStateFlow<Map<PrimaryKey, TopicDetail>>(emptyMap())
+    val topicPreviews: StateFlow<Map<PrimaryKey, TopicDetail>> = loadedTopics
 
     @OptIn(ExperimentalPagingApi::class)
     override val flow: Flow<PagingData<ReactionRecordInfo>> =
@@ -788,10 +793,19 @@ class UserReactionRecordsViewModel(sessionManager: UserSessionManager, modelStor
             collection,
             modelStorage.remoteKey.wrap(collection.getName()),
             modelStorage.userReactionRecord,
-            RegularPagingSource { key, size ->
-                sessionManager.getReactionRecords(PaginationQuery(key, size = size))
-            },
-        ).flow.cachedIn(viewModelScope)
+        ) { key, size ->
+            sessionManager.getReactionRecords(PaginationQuery(key, size = size)).andThen(FormError::fromError) { page ->
+                captureFailure(FormError::from) {
+                    check(uid != null && sessionManager.model.uid == uid && page.data.all { it.uid == uid })
+                    val topicIds = page.data.filter { it.objectType == ObjectType.TOPIC }.map { it.objectId }.toSet()
+                    val topics = decryptTopicActivities(page.topics.filter { it.id in topicIds }, sessionManager)
+                    check(sessionManager.model.uid == uid)
+                    val pagePreviews = topics.associate { it.id to it.withCachedReplies(null).asFeedPreview() }
+                    loadedTopics.update { previews -> previews - topicIds + pagePreviews }
+                    page
+                }
+            }
+        }.flow.cachedIn(viewModelScope)
 }
 
 class UserCommentsViewModel(sessionManager: UserSessionManager, modelStorage: ModelStorage) :

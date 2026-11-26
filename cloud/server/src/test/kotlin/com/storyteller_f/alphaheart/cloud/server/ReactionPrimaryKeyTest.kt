@@ -5,6 +5,7 @@
 package com.storyteller_f.alphaheart.cloud.server
 
 import com.storyteller_f.alphaheart.api.NewCommunity
+import com.storyteller_f.alphaheart.api.PaginationQuery
 import com.storyteller_f.alphaheart.backend.core.types.ReactionRecord
 import com.storyteller_f.alphaheart.backend.exposed.ExposedDatabase
 import com.storyteller_f.alphaheart.backend.exposed.tables.Reactions
@@ -12,6 +13,7 @@ import com.storyteller_f.alphaheart.client.core.addReaction
 import com.storyteller_f.alphaheart.client.core.createCommunity
 import com.storyteller_f.alphaheart.client.core.createTopic
 import com.storyteller_f.alphaheart.client.core.deleteReaction
+import com.storyteller_f.alphaheart.client.core.getReactionRecords
 import com.storyteller_f.alphaheart.client.core.getReactions
 import com.storyteller_f.alphaheart.client.core.joinCommunity
 import com.storyteller_f.result.getOrThrow
@@ -31,6 +33,23 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 internal class ReactionPrimaryKeyTest {
+    @Test
+    fun `reaction records include each readable topic once per page`() =
+        test {
+            attachSession {
+                val community = createCommunity(NewCommunity("Reaction previews", "reaction-previews")).getOrThrow()
+                val topic = createTopic(ObjectType.COMMUNITY, community.id, "First paragraph.\n\nSecond.").getOrThrow()
+                addReaction(topic.id, "👍").getOrThrow()
+                addReaction(topic.id, "😀").getOrThrow()
+
+                val response = getReactionRecords(PaginationQuery(size = 2)).getOrThrow()
+                assertEquals(2, response.data.size)
+                assertEquals(listOf(topic.id), response.topics.map { it.id })
+                val reactions = response.topics.single().reactions
+                assertEquals(setOf("👍", "😀"), reactions.map { it.emoji }.toSet())
+            }
+        }
+
     @Test
     fun `same emoji on two topics has independent counts and deletion`() =
         test {

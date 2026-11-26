@@ -12,6 +12,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.storyteller_f.alphaheart.app.IAccountInstance
 import com.storyteller_f.alphaheart.app.LocalUiViewModel
+import com.storyteller_f.alphaheart.app.LocalUserInfo
 import com.storyteller_f.alphaheart.app.search.SearchScope
 import com.storyteller_f.alphaheart.client.core.SimpleUserSessionManager
 import com.storyteller_f.alphaheart.client.core.UserSessionManager
@@ -421,7 +422,7 @@ fun getSubscriptionViewModel(): SubscriptionsViewModel =
 @Composable
 fun getUserReactionRecordsViewModel() =
     customViewModel(
-        listOf("user-reaction-records"),
+        listOf("user-reaction-records", LocalUserInfo.current?.id),
     ) { sessionManager, modelStorage ->
         UserReactionRecordsViewModel(sessionManager, modelStorage)
     }

@@ -8,7 +8,6 @@ import com.storyteller_f.alphaheart.api.CommunityMembershipListResponse
 import com.storyteller_f.alphaheart.api.CustomApi
 import com.storyteller_f.alphaheart.api.NewFavorite
 import com.storyteller_f.alphaheart.api.NewSubscription
-import com.storyteller_f.alphaheart.api.ReactionRecordInfoListResponse
 import com.storyteller_f.alphaheart.api.RoomActivityListResponse
 import com.storyteller_f.alphaheart.api.RoomInfoListResponse
 import com.storyteller_f.alphaheart.api.TitleInfoListResponse
@@ -17,6 +16,7 @@ import com.storyteller_f.alphaheart.api.TopicInfoListResponse
 import com.storyteller_f.alphaheart.api.TotpCodeBody
 import com.storyteller_f.alphaheart.api.UserFavoriteInfoListResponse
 import com.storyteller_f.alphaheart.api.UserInfoListResponse
+import com.storyteller_f.alphaheart.api.UserReactionRecordsResponse
 import com.storyteller_f.alphaheart.api.UserSubscriptionInfoListResponse
 import com.storyteller_f.alphaheart.backend.core.Backend
 import com.storyteller_f.alphaheart.backend.core.ObjectFetch
@@ -27,6 +27,7 @@ import com.storyteller_f.alphaheart.cloud.core.service.addSubscription
 import com.storyteller_f.alphaheart.cloud.core.service.deleteFavoriteByObject
 import com.storyteller_f.alphaheart.cloud.core.service.disableTwoFactor
 import com.storyteller_f.alphaheart.cloud.core.service.enableTotp
+import com.storyteller_f.alphaheart.cloud.core.service.fillReactionRecordTopics
 import com.storyteller_f.alphaheart.cloud.core.service.fillRoomActivities
 import com.storyteller_f.alphaheart.cloud.core.service.generateRecoveryCodes
 import com.storyteller_f.alphaheart.cloud.core.service.getAllUsers
@@ -62,7 +63,9 @@ import com.storyteller_f.alphaheart.cloud.server.common.pagination
 import com.storyteller_f.alphaheart.cloud.server.common.pagingGenerator
 import com.storyteller_f.endpoint4k.ktor.server.receiveBody
 import com.storyteller_f.result.andThen
+import com.storyteller_f.result.andThenPresent
 import com.storyteller_f.result.map
+import com.storyteller_f.shared.model.ReactionRecordInfo
 import com.storyteller_f.shared.model.RoomInfo
 import com.storyteller_f.shared.type.ObjectType
 import io.ktor.server.routing.Route
@@ -134,11 +137,11 @@ private fun Route.bindProtectedUserActivityRoute(backend: Backend) {
     }
     CustomApi.Users.ReactionRecords.get(handleResult(backend)) { q ->
         usePrincipal { uid ->
-            q.pagination(IdentifiablePagingGenerator, { l, p ->
-                ReactionRecordInfoListResponse(l, p)
+            q.pagination(IdentifiablePagingGenerator, { l: ImmutableList<ReactionRecordInfo>, p ->
+                UserReactionRecordsResponse(l, p)
             }) { fetch ->
                 backend.getUserReactions(uid, fetch)
-            }
+            }.andThenPresent(ServerError::fromError) { backend.fillReactionRecordTopics(uid, it) }
         }
     }
     CustomApi.Users.Comments.get(handleResult(backend)) { q ->
