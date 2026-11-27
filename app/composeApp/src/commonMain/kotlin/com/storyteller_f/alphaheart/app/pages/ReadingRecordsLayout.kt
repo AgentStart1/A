@@ -15,16 +15,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /** Personal records retain one reading column across viewport changes. */
 @Composable
-internal fun ReadingRecordList(content: LazyListScope.() -> Unit) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+internal fun ReadingRecordList(
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(20.dp),
+    itemSpacing: Dp = 20.dp,
+    content: LazyListScope.() -> Unit,
+) {
+    Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         LazyColumn(
             modifier = Modifier.widthIn(max = 740.dp).fillMaxSize().testTag("personal-record-list"),
-            contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+            contentPadding = contentPadding,
+            verticalArrangement = Arrangement.spacedBy(itemSpacing),
             content = content,
         )
     }

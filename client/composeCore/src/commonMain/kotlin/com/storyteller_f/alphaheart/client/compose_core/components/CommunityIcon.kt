@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.shared.model.CommunityInfo
 import com.storyteller_f.shared.utils.safeFirstUnicode
@@ -36,7 +37,7 @@ fun CommunityIcon(communityInfo: CommunityInfo?, iconSize: Dp, setClickEvent: Bo
         }
     val compact = iconSize <= 22.dp
     val label = if (compact) communityInfo?.name else firstCharacter
-    val shape = RoundedCornerShape(if (compact) 5.dp else 8.dp)
+    val shape = RoundedCornerShape(if (compact) 5.dp else 10.dp)
     if (model != null) {
         CommonImage(
             model,
@@ -48,6 +49,7 @@ fun CommunityIcon(communityInfo: CommunityInfo?, iconSize: Dp, setClickEvent: Bo
                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
         )
     } else {
+        val outline = if (compact) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape) else Modifier
         Box(
             modifier =
             Modifier.background(MaterialTheme.colorScheme.tertiaryContainer, shape)
@@ -56,12 +58,19 @@ fun CommunityIcon(communityInfo: CommunityInfo?, iconSize: Dp, setClickEvent: Bo
                 .semantics { communityInfo?.name?.let { contentDescription = it } }
                 .appiumSemantics(description = label, text = label, onClick = openDialog)
                 .clickable(setClickEvent) { onClickIcon(true) }
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
+                .then(outline),
             contentAlignment = Alignment.Center,
         ) {
-            if (compact) {
-                ProvideTextStyle(MaterialTheme.typography.labelSmall) { CharSequenceText(firstCharacter.orEmpty()) }
-            } else {
+            val labelStyle =
+                if (compact) {
+                    MaterialTheme.typography.labelSmall
+                } else {
+                    MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = (iconSize.value / 2).sp,
+                    )
+                }
+            ProvideTextStyle(labelStyle) {
                 CharSequenceText(firstCharacter.orEmpty())
             }
         }

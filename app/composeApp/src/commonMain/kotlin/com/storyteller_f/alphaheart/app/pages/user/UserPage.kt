@@ -19,7 +19,7 @@ import com.storyteller_f.alphaheart.app.common.createUserTopicsViewModel
 import com.storyteller_f.alphaheart.app.common.createUserViewModel
 import com.storyteller_f.alphaheart.app.communities_title
 import com.storyteller_f.alphaheart.app.pages.AdaptiveSectionScaffold
-import com.storyteller_f.alphaheart.app.pages.community.CommunityList
+import com.storyteller_f.alphaheart.app.pages.community.CommunityRows
 import com.storyteller_f.alphaheart.app.pages.search.detailSearchBar
 import com.storyteller_f.alphaheart.app.pages.title.TitleList
 import com.storyteller_f.alphaheart.app.pages.topic.UserTopicList
@@ -70,7 +70,7 @@ private fun UserPageInternal(uid: PrimaryKey, userViewModel: IdUserViewModel) {
     ) { page ->
         when (page) {
             0 -> UserTopicList(createUserTopicsViewModel(uid))
-            1 -> CommunityList(createTargetUserJoinedCommunitiesViewModel(uid))
+            1 -> CommunityRows(createTargetUserJoinedCommunitiesViewModel(uid), insetTop = true)
             else -> TitleList(createUserTitlesViewModel(uid, TitleSearchType.RECEIVER))
         }
     }

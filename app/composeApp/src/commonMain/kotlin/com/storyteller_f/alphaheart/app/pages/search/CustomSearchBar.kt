@@ -54,7 +54,7 @@ import com.storyteller_f.alphaheart.app.common.createTopicSearchInRoomViewModel
 import com.storyteller_f.alphaheart.app.common.createTopicSearchInUserViewModel
 import com.storyteller_f.alphaheart.app.common.createUserTitlesViewModel
 import com.storyteller_f.alphaheart.app.common.getUserOverviewViewModel
-import com.storyteller_f.alphaheart.app.pages.community.CommunityList
+import com.storyteller_f.alphaheart.app.pages.community.CommunityRows
 import com.storyteller_f.alphaheart.app.pages.file.FileCell
 import com.storyteller_f.alphaheart.app.pages.room.RoomList
 import com.storyteller_f.alphaheart.app.pages.title.ComposeMenu
@@ -195,7 +195,7 @@ fun UserReceivedTitleSearchContent(current: String, scope: SearchScope.UserRecei
 fun UserCommunitySearchContent(current: String, scope: SearchScope.UserCommunities) {
     if (current.isNotBlank()) {
         val communitiesViewModel = createTargetUserJoinedCommunitiesViewModel(scope.userId, current)
-        CommunityList(communitiesViewModel)
+        CommunityRows(communitiesViewModel)
     }
 }
 
@@ -352,7 +352,7 @@ private fun MyCommunitySearchContent(query: String) {
         }
         if (query.isNotBlank()) {
             val viewModel = createSearchCommunitiesViewModel(finalOption, query)
-            CommunityList(viewModel)
+            CommunityRows(viewModel)
         }
     }
 }

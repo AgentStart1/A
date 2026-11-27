@@ -4,16 +4,18 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
@@ -25,6 +27,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
@@ -304,7 +307,7 @@ private fun MediaPosition(
             enabled = enabled && state.showTime && duration > 0,
             valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
             modifier =
-            Modifier.weight(1f).height(32.dp)
+            Modifier.weight(1f)
                 .appiumSemantics(testTag = "media-position", description = label)
                 .semantics { contentDescription = label },
         )
@@ -552,31 +555,27 @@ private fun MediaSlider(
         value = value,
         valueRange = valueRange,
         onValueChange = onValueChange,
-        modifier = modifier,
+        modifier = modifier.height(32.dp),
         enabled = enabled,
         onValueChangeFinished = onValueChangeFinished,
-        thumb = {
-            Box(
-                Modifier.size(10.dp).background(
-                    if (enabled) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface.copy(
-                            alpha = 0.38f,
-                        )
-                    },
-                    CircleShape,
-                ),
-            )
-        },
-        track = { slider ->
-            SliderDefaults.Track(
-                sliderState = slider,
-                enabled = enabled,
-                modifier = Modifier.height(3.dp),
-                thumbTrackGapSize = 0.dp,
-                drawStopIndicator = null,
-            )
+        thumb = { Spacer(Modifier.size(10.dp)) },
+        track = {
+            val colors = MaterialTheme.colorScheme
+            val inactive = if (enabled) colors.secondaryContainer else colors.onSurface.copy(alpha = 0.12f)
+            val active = if (enabled) colors.primary else colors.onSurface.copy(alpha = 0.38f)
+            val fraction =
+                ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
+            Canvas(Modifier.fillMaxWidth().height(10.dp)) {
+                val rtl = layoutDirection == LayoutDirection.Rtl
+                val start = Offset(if (rtl) size.width else 0f, center.y)
+                val end = Offset(if (rtl) 0f else size.width, center.y)
+                val stroke = 3.dp.toPx()
+                drawLine(inactive, start, end, stroke, StrokeCap.Round)
+                val position = Offset(start.x + (end.x - start.x) * fraction, center.y)
+                if (fraction > 0f) drawLine(active, start, position, stroke, StrokeCap.Round)
+                // Keep the marker and track on the same drawing axis.
+                drawCircle(active, radius = 5.dp.toPx(), center = position)
+            }
         },
     )
 }

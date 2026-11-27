@@ -20,10 +20,16 @@ import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 
 @Composable
-internal fun ActionMenuReference(name: String, aid: String, onClick: () -> Unit, icon: @Composable () -> Unit) {
+internal fun ActionMenuReference(
+    name: String,
+    aid: String,
+    onClick: () -> Unit,
+    contentPadding: PaddingValues = PaddingValues(vertical = 2.dp),
+    icon: @Composable () -> Unit,
+) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick)
-            .appiumSemantics(description = name, text = name, onClick = onClick).padding(vertical = 2.dp),
+            .appiumSemantics(description = name, text = name, onClick = onClick).padding(contentPadding),
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {

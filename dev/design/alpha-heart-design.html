@@ -333,7 +333,7 @@
 #ah-unified-combinations .third-player-stage{background:light-dark(#17211c,#101813);color:light-dark(#edf2ed,#edf2ed);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;min-height:490px}
 #ah-unified-combinations .third-player-stage svg{width:40px;height:40px}
 #ah-unified-combinations .third-player-controls{display:flex;align-items:center;gap:12px}
-#ah-unified-combinations .third-player-controls progress{flex:1;min-width:35px}
+#ah-unified-combinations .third-player-controls .file-preview-seek{flex:1;min-width:35px;height:32px}
 #ah-unified-combinations .third-image-preview{height:600px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;background:var(--ah-soft);color:var(--ah-accent);border-radius:10px}
 #ah-unified-combinations .third-image-preview svg{height:50px;width:50px}
 #ah-unified-combinations .third-document{background:var(--ah-paper);padding:55px 45px;margin:0;min-height:610px;border:1px solid var(--ah-line);line-height:1.9}
@@ -432,7 +432,6 @@
  #ah-unified-combinations .third-rtc-grid{grid-template-columns:minmax(0,1fr)}
  #ah-unified-combinations .third-participant{min-height:235px}
  #ah-unified-combinations .third-player-controls{flex-wrap:wrap;gap:8px}
- #ah-unified-combinations .third-player-controls progress{flex-basis:100%;order:4}
  #ah-unified-combinations .third-document{padding:30px 20px}
  #ah-unified-combinations .third-keyboard span{padding:8px 3px;min-width:17px}
  #ah-unified-combinations .third-worker-item>.spread{align-items:flex-start;gap:8px}
@@ -941,15 +940,20 @@
 #ah-unified-combinations .embed-controls{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;column-gap:8px;min-width:0}
 #ah-unified-combinations .embed-clock{font-size:12px;color:var(--ah-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 #ah-unified-combinations .embed-control-end{display:flex;gap:2px;align-items:center;margin-left:auto}
-#ah-unified-combinations .embed-seek{display:block;width:100%;min-width:0;box-sizing:border-box;margin:0;padding:0;border:0;height:24px;accent-color:var(--ah-accent)}
-#ah-unified-combinations .embed-seek:disabled{opacity:.45}
+#ah-unified-combinations .embed-seek{display:block;width:100%;min-width:0;height:32px}
+#ah-unified-combinations .media-slider{appearance:none;box-sizing:border-box;margin:0;padding:0;border:0;background:transparent;--slider-active:var(--ah-accent);--slider-inactive:var(--ah-soft);--slider-thumb:var(--ah-accent);--slider-track:linear-gradient(to right,var(--slider-active) var(--slider-position),var(--slider-inactive) var(--slider-position));cursor:pointer}
+#ah-unified-combinations .media-slider:disabled{--slider-active:color-mix(in srgb,var(--ah-text) 38%,transparent);--slider-inactive:color-mix(in srgb,var(--ah-text) 12%,transparent);--slider-thumb:var(--slider-active);cursor:default}
+#ah-unified-combinations .media-slider::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:var(--slider-track)}
+#ah-unified-combinations .media-slider::-webkit-slider-thumb{appearance:none;width:10px;height:10px;margin-top:-3.5px;border:0;border-radius:50%;background:var(--slider-thumb)}
+#ah-unified-combinations .media-slider::-moz-range-track{height:3px;border-radius:2px;background:var(--slider-track)}
+#ah-unified-combinations .media-slider::-moz-range-thumb{width:10px;height:10px;border:0;border-radius:50%;background:var(--slider-thumb)}
 #ah-unified-combinations .embed-video-stage{aspect-ratio:16/9;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--ah-soft);color:var(--ah-muted);gap:10px}
 #ah-unified-combinations .embed-video-stage>svg{width:40px;height:40px;opacity:.6}
 #ah-unified-combinations .embed-video-stage .embed-status{padding:0}
 #ah-unified-combinations .embed-audio-status{padding:6px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 #ah-unified-combinations .embed-audio-status .embed-status{padding:8px 0;justify-content:flex-start}
 #ah-unified-combinations .embed-volume{display:flex;align-items:center;gap:10px;padding:8px 0 0;border-top:1px solid var(--ah-line);margin-top:8px}
-#ah-unified-combinations .embed-volume input{min-width:0;flex:1;accent-color:var(--ah-accent)}
+#ah-unified-combinations .embed-volume .media-slider{min-width:0;flex:1;height:32px}
 #ah-unified-combinations .product .embed-expanded{width:min(900px,calc(100% - 32px));max-width:calc(100% - 32px);box-sizing:border-box}
 #ah-unified-combinations .embed-expanded>.embed-player{margin-top:18px}
 #ah-unified-combinations .review-chat-current{max-width:92%;width:580px}
@@ -1422,7 +1426,7 @@ remainingCatalog.push(
  ...panelPreviewFiles.slice(1).map(p=>({...p,kind:'preview',admin:true,immersive:true,route:['PanelFilePreviewScreen']})),
 );
 apps.panel.push(...[...panelPrivateRoomTabs,...panelPreviewFiles.slice(1)].map(p=>[p.id,p.label]));
-const thirdState={back:[],algorithm:'P256',workerStatus:'all',failureType:'',playing:false,muted:false,camera:true,translation:false,selectedEmoji:'👍',fileOrigin:'uploaded'};
+const thirdState={seekPosition:0,back:[],algorithm:'P256',workerStatus:'all',failureType:'',playing:false,muted:false,camera:true,translation:false,selectedEmoji:'👍',fileOrigin:'uploaded'};
 const thirdPage=()=>remainingCatalog.find(p=>p.id===state.page);
 let thirdModalContext=null;
 const titleObjectSelections=new Map();
@@ -1506,7 +1510,7 @@ function thirdReferences(p){
  const topic=recordTopicCard(topicNodes.root,{expanded:true});
  return `<section class="third-list file-reference-list" aria-label="文件引用">${community}${room}${topic}${user}</section>${recordTopicMenu(p)}`;
 }
-function thirdMedia(p){const media=p.media||'audio';const title=p.name||(media==='audio'?'sample1.flac':media==='video'?'sample-video.mp4':media==='pdf'?'community-guide.pdf':media==='image'?'kimono.avif':'archive.bin');const tools=media==='pdf'?thirdButton('上一页','third-prev-page','chevron-left')+'<span>1 / 8</span>'+thirdButton('下一页','third-next-page','chevron-right')+thirdButton('缩小','third-zoom-out','zoom-out')+thirdButton('放大','third-zoom-in','zoom-in'):media==='image'?thirdButton('适合窗口','third-zoom-fit','scan')+thirdButton('原始尺寸','third-zoom-original','scaling')+thirdButton('缩小','third-zoom-out','zoom-out')+thirdButton('放大','third-zoom-in','zoom-in'):'';let content='';if(media==='image')content='<div class="third-image-preview" role="img" aria-label="图片预览区域"><i data-lucide="image" aria-hidden="true"></i><span>kimono.avif</span></div>';else if(media==='pdf')content='<article class="third-document"><h2>关于数学表达式的渲染</h2><p>为了能够清晰地传达数学表达式，Markdown 支持行内与独立公式。</p><div class="formula">∑ aₖbₖ ≤ √(∑ aₖ²) √(∑ bₖ²)</div><p>在处理 Markdown 文档时，我们会解析文档并生成抽象语法树，再提取需要的内容。</p><footer>1 / 8</footer></article>';else if(media==='audio'||media==='video')content=`<div class="third-player ${media}"><div class="third-player-stage">${icons(media==='video'?'video':'music')}<span>${title}</span></div><div class="third-player-controls">${thirdButton(thirdState.playing?'暂停':'播放','third-play',thirdState.playing?'pause':'play')}<span class="small" ${thirdState.playing?'':'style="visibility:hidden" aria-hidden="true"'}>0:00 / 2:02</span><progress value="0" max="100" aria-label="播放进度"></progress>${thirdButton('','third-volume','volume-2')}${media==='video'?thirdIconButton('全屏','third-fullscreen','maximize'):''}</div></div>`;else content='<div class="empty-page">无法在应用内预览此文件</div>';return `<section class="third-media-page"><div class="page-heading"><h1>${title}</h1><div class="file-preview-actions">${thirdButton('复制资源地址','third-copy-resource','copy')}${thirdButton('下载文件','third-download','download')}</div></div>${tools?'<div class="third-toolbar">'+tools+'</div>':''}${content}</section>`}
+function thirdMedia(p){const media=p.media||'audio';const title=p.name||(media==='audio'?'sample1.flac':media==='video'?'sample-video.mp4':media==='pdf'?'community-guide.pdf':media==='image'?'kimono.avif':'archive.bin');const tools=media==='pdf'?thirdButton('上一页','third-prev-page','chevron-left')+'<span>1 / 8</span>'+thirdButton('下一页','third-next-page','chevron-right')+thirdButton('缩小','third-zoom-out','zoom-out')+thirdButton('放大','third-zoom-in','zoom-in'):media==='image'?thirdButton('适合窗口','third-zoom-fit','scan')+thirdButton('原始尺寸','third-zoom-original','scaling')+thirdButton('缩小','third-zoom-out','zoom-out')+thirdButton('放大','third-zoom-in','zoom-in'):'';let content='';if(media==='image')content='<div class="third-image-preview" role="img" aria-label="图片预览区域"><i data-lucide="image" aria-hidden="true"></i><span>kimono.avif</span></div>';else if(media==='pdf')content='<article class="third-document"><h2>关于数学表达式的渲染</h2><p>为了能够清晰地传达数学表达式，Markdown 支持行内与独立公式。</p><div class="formula">∑ aₖbₖ ≤ √(∑ aₖ²) √(∑ bₖ²)</div><p>在处理 Markdown 文档时，我们会解析文档并生成抽象语法树，再提取需要的内容。</p><footer>1 / 8</footer></article>';else if(media==='audio'||media==='video')content=`<div class="third-player ${media}"><div class="third-player-stage">${icons(media==='video'?'video':'music')}<span>${title}</span></div><div class="third-player-controls">${thirdButton(thirdState.playing?'暂停':'播放','third-play',thirdState.playing?'pause':'play')}<input type="range" class="file-preview-seek media-slider" style="--slider-position:${thirdState.seekPosition/122*100}%" min="0" max="122" value="${thirdState.seekPosition}" aria-label="播放进度" ${thirdState.playing?'':'disabled'}>${thirdState.playing?`<span class="embed-clock">${Math.floor(thirdState.seekPosition/60)}:${String(thirdState.seekPosition%60).padStart(2,'0')} / 2:02</span>`:''}${thirdButton('','third-volume','volume-2')}${media==='video'?thirdIconButton('全屏','third-fullscreen','maximize'):''}</div></div>`;else content='<div class="empty-page">无法在应用内预览此文件</div>';return `<section class="third-media-page"><div class="page-heading"><h1>${title}</h1><div class="file-preview-actions">${thirdButton('复制资源地址','third-copy-resource','copy')}${thirdButton('下载文件','third-download','download')}</div></div>${tools?'<div class="third-toolbar">'+tools+'</div>':''}${content}</section>`}
 function recordTopicCard(node,{expanded=false,relationship,reaction}={}){
  const content=expanded?`<h2>${node.title}</h2>${topicContent(node)}`:`<p>${node.text}</p>`;
  return `<article class="topic">${author(node.author,'')}${content}${actions('saved-topic-more',relationship?undefined:node,reaction)}</article>`;
@@ -3196,9 +3200,9 @@ function embeddedPlayer(kind,expanded=false){
  const action=failed?['播放失败，重试','rotate-cw','retry']:busy?[phase==='loading'?'正在加载':'正在缓冲','loader-circle','play']:phase==='ended'?['重播','rotate-ccw','play']:mediaReview.playing?['暂停','pause','play']:['播放','play','play'];
  const heading=expanded?'':'<div class="embed-player-heading"><span class="embed-player-title"><strong>'+mediaCaption(kind)+'</strong></span>'+mediaIconButton('媒体选项','ellipsis','options')+'</div>';
  const stage=kind==='video'?'<div class="embed-video-stage">'+icons('video')+'</div>':'';
- const timeline='<input type="range" class="embed-seek" min="0" max="122" value="'+position+'" aria-label="播放进度" '+(!started||busy||failed||unknown?'disabled':'')+'><span class="embed-clock">'+(started&&!failed?time(position)+' / '+(unknown?'--:--':'2:02'):'')+'</span>';
+ const timeline='<input type="range" class="embed-seek media-slider" style="--slider-position:'+(position/122*100)+'%" min="0" max="122" value="'+position+'" aria-label="播放进度" '+(!started||busy||failed||unknown?'disabled':'')+'><span class="embed-clock">'+(started&&!failed?time(position)+' / '+(unknown?'--:--':'2:02'):'')+'</span>';
  const controls=mediaIconButton(...action,busy?'disabled':'')+timeline+'<div class="embed-control-end">'+mediaIconButton(mediaReview.muted?'音量：已静音':'音量',mediaReview.muted?'volume-x':'volume-2','volume')+(phase==='playlist'?mediaIconButton('播放列表','list-video','playlist'):'')+(kind==='video'&&!expanded?mediaIconButton('展开播放器','maximize-2','expand'):'')+'</div>';
- const volume=mediaReview.volumeOpen?'<div class="embed-volume" role="group" aria-label="音量设置"><input type="range" min="0" max="100" value="'+mediaReview.volume+'" aria-label="音量大小">'+mediaIconButton(mediaReview.muted?'取消静音':'静音',mediaReview.muted?'volume-x':'volume-2','mute')+'</div>':'';
+ const volume=mediaReview.volumeOpen?'<div class="embed-volume" role="group" aria-label="音量设置"><input type="range" class="media-slider" style="--slider-position:'+mediaReview.volume+'%" min="0" max="100" value="'+mediaReview.volume+'" aria-label="音量大小">'+mediaIconButton(mediaReview.muted?'取消静音':'静音',mediaReview.muted?'volume-x':'volume-2','mute')+'</div>':'';
  return '<section class="embed-player '+kind+'">'+heading+stage+'<div class="embed-player-bottom"><div class="embed-controls">'+controls+'</div>'+volume+'</div></section>';
 }
 function mediaEmbedMarkup(type=mediaReview.type){
@@ -3295,7 +3299,8 @@ root.addEventListener('click',event=>{
  if(action.startsWith('track-')){mediaReview.track=Number(action.slice(6));mediaReview.menu=null;mediaReview.position=0;mediaReview.playing=false}
  render();persistMediaSelection();
 });
-root.addEventListener('change',event=>{const input=event.target;if(input.classList.contains('embed-seek'))mediaReview.position=Number(input.value);else if(input.closest('.embed-volume')&&input.type==='range')mediaReview.volume=Number(input.value);else return;render();persistMediaSelection()});
+root.addEventListener('input',event=>{const slider=event.target;if(slider.classList.contains('media-slider'))slider.style.setProperty('--slider-position',(slider.valueAsNumber/Number(slider.max)*100)+'%')});
+root.addEventListener('change',event=>{const input=event.target;if(input.classList.contains('file-preview-seek')){thirdState.seekPosition=input.valueAsNumber;render();return}if(input.classList.contains('embed-seek'))mediaReview.position=Number(input.value);else if(input.closest('.embed-volume')&&input.type==='range')mediaReview.volume=Number(input.value);else return;render();persistMediaSelection()});
 root.querySelector('#ah-demo-screen').addEventListener('change',persistMediaSelection);
 
 let unifiedEditorSnapshot=null;

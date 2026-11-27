@@ -6,7 +6,6 @@ package com.storyteller_f.alphaheart.panel.pages
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -80,11 +79,10 @@ fun AllCommunitiesPageInternal(viewModel: AllCommunitiesViewModel) {
                                 headlineContent = { Text(info.name) },
                                 supportingContent = { Text(CoreStrings.aid(info.aid)) },
                             )
-                            if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                         } else {
                             ListItem(headlineContent = { Text("") })
-                            if (index < items.itemCount - 1) HorizontalDivider(Modifier.padding(vertical = 16.dp))
                         }
+                        if (index < items.itemCount - 1) HorizontalDivider()
                     }
                 }
             }

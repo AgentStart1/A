@@ -4,7 +4,6 @@
 
 package com.storyteller_f.alphaheart.app.pages.community
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,7 +43,6 @@ import com.storyteller_f.alphaheart.app.common.hasRouteFlow
 import com.storyteller_f.alphaheart.app.community_view_all
 import com.storyteller_f.alphaheart.app.community_view_poster
 import com.storyteller_f.alphaheart.app.components.CommunityPoster
-import com.storyteller_f.alphaheart.app.pages.AdaptiveItemGrid
 import com.storyteller_f.alphaheart.client.compose_core.CoreStrings
 import com.storyteller_f.alphaheart.client.compose_core.common.PagingViewModel
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
@@ -101,18 +99,33 @@ fun MyCommunitiesPage() {
 
 @Composable
 fun CommunityCellList(onClick: ((CommunityInfo) -> Unit)? = null) {
-    val cellViewModel = createJoinedCommunitiesViewModel()
+    CommunityRows(createJoinedCommunitiesViewModel(), onClick)
+}
+
+@Composable
+fun CommunityRows(
+    viewModel: PagingViewModel<CommunityInfo>,
+    onClick: ((CommunityInfo) -> Unit)? = null,
+    insetTop: Boolean = false,
+) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val horizontalPadding = if (maxWidth <= 600.dp) 14.dp else 30.dp
-        StateView(cellViewModel, Modifier.fillMaxSize()) { items ->
+        val compact = maxWidth <= 600.dp
+        val horizontalPadding = if (compact) 14.dp else 30.dp
+        val sectionTopPadding = if (compact) 20.dp else 30.dp
+        StateView(viewModel, Modifier.fillMaxSize()) { items ->
             LazyColumn(
                 Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = horizontalPadding),
+                contentPadding =
+                PaddingValues(
+                    start = horizontalPadding,
+                    top = if (insetTop) sectionTopPadding else 0.dp,
+                    end = horizontalPadding,
+                ),
             ) {
                 topPrepend(items.loadState, items::retry)
                 pagingItems(items, { it.id }) { index ->
                     Column {
-                        CommunityCell(items[index], onClick = onClick, plain = true)
+                        CommunityCell(items[index], onClick = onClick)
                         if (index < items.itemCount - 1) HorizontalDivider()
                     }
                 }
@@ -147,17 +160,6 @@ fun CommunityPosterGrid(onClick: ((CommunityInfo) -> Unit)? = null) {
                 }
                 bottomAppending(items.loadState, items::retry)
             }
-        }
-    }
-}
-
-@Composable
-fun CommunityList(communitiesViewModel: PagingViewModel<CommunityInfo>, onClick: ((CommunityInfo) -> Unit)? = null) {
-    StateView(communitiesViewModel, modifier = Modifier.fillMaxSize()) { items ->
-        AdaptiveItemGrid {
-            topPrepend(items.loadState, items::retry)
-            pagingItems(items, { it.id }) { index -> CommunityCell(items[index], false, onClick) }
-            bottomAppending(items.loadState, items::retry)
         }
     }
 }
@@ -218,7 +220,6 @@ fun CommunityCell(
     communityInfo: CommunityInfo?,
     customBackground: Boolean = false,
     onClick: ((CommunityInfo) -> Unit)? = null,
-    plain: Boolean = false,
 ) {
     val appNavFactory = LocalAppNavFactory.current
     val isCommunityPage =
@@ -245,18 +246,18 @@ fun CommunityCell(
             val shape = RoundedCornerShape(10.dp)
             Modifier
                 .fillMaxWidth()
-                .then(if (plain) Modifier else Modifier.background(MaterialTheme.colorScheme.secondaryContainer, shape))
                 .clip(shape)
                 .clickable(openCommunity != null && (!isCommunityPage || onClick != null)) {
                     openCommunity?.invoke()
                 }
-                .padding(horizontal = if (plain) 20.dp else 10.dp, vertical = if (plain) 16.dp else 10.dp)
+                .padding(20.dp)
                 .appiumSemantics(
                     text = communityInfo?.name,
                     onClick = openCommunity.takeUnless { isCommunityPage && onClick == null },
                 )
         },
         horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         val commonDialogController = rememberCommonDialogController()
         val shown by commonDialogController.shown
@@ -270,7 +271,11 @@ fun CommunityCell(
                 fontWeight = FontWeight.Normal,
             )
             communityInfo?.aid?.takeIf { it.isNotBlank() }?.let {
-                Text(CoreStrings.aid(it), style = MaterialTheme.typography.bodySmall)
+                Text(
+                    CoreStrings.aid(it),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

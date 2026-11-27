@@ -62,7 +62,7 @@ import com.storyteller_f.alphaheart.app.invalid_date_time
 import com.storyteller_f.alphaheart.app.name
 import com.storyteller_f.alphaheart.app.pages.CreateFormLayout
 import com.storyteller_f.alphaheart.app.pages.ReadingPageToolbar
-import com.storyteller_f.alphaheart.app.pages.community.CommunityList
+import com.storyteller_f.alphaheart.app.pages.community.CommunityRows
 import com.storyteller_f.alphaheart.app.pages.room.RoomList
 import com.storyteller_f.alphaheart.app.pages.user.InputDialog
 import com.storyteller_f.alphaheart.app.pages.user.MemberList
@@ -585,7 +585,7 @@ fun ObjectList(
         when (currentType) {
             ObjectType.COMMUNITY -> {
                 val communitiesViewModel = createSearchCommunitiesViewModel(JoinStatusSearch.JOINED, input)
-                CommunityList(communitiesViewModel, onClickCommunity)
+                CommunityRows(communitiesViewModel, onClickCommunity)
             }
 
             ObjectType.ROOM -> {
