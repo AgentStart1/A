@@ -6,17 +6,20 @@ package com.storyteller_f.alphaheart.client.compose_core.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,11 +32,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import com.mikepenz.markdown.compose.components.MarkdownComponentModel
 import com.storyteller_f.alphaheart.client.asciidoc_parser.buildAsciidocPreviewHtml
 import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
-import com.storyteller_f.alphaheart.client.compose_core.icons.navigationIcon
 import com.storyteller_f.alphaheart.client.compose_core.notifications.LocalToaster
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.alphaheart.client.compose_core.utils.copyText
@@ -41,7 +44,7 @@ import com.storyteller_f.shared.utils.readCodeFence
 import dev.nucleusframework.webview.web.WebView
 import dev.nucleusframework.webview.web.rememberWebViewStateWithHTMLData
 import kotlinx.coroutines.launch
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingBasicAlertDialog as BasicAlertDialog
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingDialog as Dialog
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
@@ -82,33 +85,32 @@ private fun AsciidocPreviewCard(source: String, openPreview: () -> Unit) {
         modifier =
         Modifier
             .fillMaxWidth()
-            .appiumSemantics(
-                description = "asciidoc",
-                text = "AsciiDoc preview",
-                onClick = openPreview,
-            )
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceContainer, shape)
-            .clickable { openPreview() }
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest, shape)
             .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(actionIcon(ActionGlyph.FILE_TEXT_RTL), "asciidoc")
+        Row(
+            modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 44.dp)
+                .appiumSemantics(description = "asciidoc", text = "AsciiDoc preview", onClick = openPreview)
+                .clickable(onClick = openPreview),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(actionIcon(ActionGlyph.FILE_TEXT_RTL), null, Modifier.size(16.dp))
             Text(
                 text = "AsciiDoc preview",
                 maxLines = 1,
                 overflow = TextOverflow.MiddleEllipsis,
-                modifier = Modifier.weight(1f).padding(horizontal = 12.dp),
+                modifier = Modifier.weight(1f),
             )
             IconButton(
                 onClick = openPreview,
-                modifier =
-                Modifier.appiumSemantics(
-                    description = "open",
-                    onClick = openPreview,
-                ),
+                modifier = Modifier.appiumSemantics(description = "open", onClick = openPreview),
             ) {
-                Icon(actionIcon(ActionGlyph.EYE), "open")
+                Icon(actionIcon(ActionGlyph.EYE), "open", Modifier.size(16.dp))
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -118,7 +120,7 @@ private fun AsciidocPreviewCard(source: String, openPreview: () -> Unit) {
                     clipboardManager.copyText(source, toasterState)
                 }
             }) {
-                Icon(actionIcon(ActionGlyph.COPY), "copy source")
+                Icon(actionIcon(ActionGlyph.COPY), "copy source", Modifier.size(16.dp))
             }
             Text(
                 source.lineSequence().firstOrNull().orEmpty(),
@@ -131,14 +133,17 @@ private fun AsciidocPreviewCard(source: String, openPreview: () -> Unit) {
     }
 }
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun AsciidocPreviewDialog(html: String, previewTitle: String, onDismissRequest: () -> Unit) {
     val state = rememberWebViewStateWithHTMLData(data = html, mimeType = "text/html")
     state.webSettings.isJavaScriptEnabled = true
     state.webSettings.desktopWebSettings.incognito = true
-    BasicAlertDialog(onDismissRequest = onDismissRequest) {
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
         Surface(
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
             modifier =
             Modifier.fillMaxWidth().fillMaxSize().appiumSemantics(
                 description = "asciidoc-preview",
@@ -147,14 +152,19 @@ private fun AsciidocPreviewDialog(html: String, previewTitle: String, onDismissR
         ) {
             Scaffold(
                 topBar = {
-                    TopAppBar(
-                        title = { Text("AsciiDoc preview") },
-                        navigationIcon = {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
                             IconButton(onClick = onDismissRequest) {
-                                Icon(actionIcon(ActionGlyph.ARROW_LEFT_RTL), "close preview")
+                                Icon(actionIcon(ActionGlyph.ARROW_LEFT_RTL), "close preview", Modifier.size(16.dp))
                             }
-                        },
-                    )
+                            Text("AsciiDoc preview")
+                        }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    }
                 },
             ) { paddingValues ->
                 WebView(

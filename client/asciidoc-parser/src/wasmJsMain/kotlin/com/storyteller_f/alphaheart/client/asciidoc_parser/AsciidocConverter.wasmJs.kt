@@ -20,8 +20,8 @@ private external interface Asciidoctor {
 
 private external interface AsciidoctorOptions
 
-actual suspend fun convertAsciidoc(source: String): String =
-    AsciidoctorModule.create().convert(source, asciidoctorOptions())
+internal actual suspend fun buildPlatformAsciidocPreview(source: String): String =
+    wrapAsciidocPreview(AsciidoctorModule.create().convert(source, asciidoctorOptions()))
 
 @OptIn(ExperimentalWasmJsInterop::class)
 private fun asciidoctorOptions(): AsciidoctorOptions =

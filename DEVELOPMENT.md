@@ -417,7 +417,7 @@ Panel 抽屉将账户操作放在可滚动导航列表下方，在紧凑窗口�
 
 ### 本地 Android 测试初始化
 
-宿主测试基类必须为抽象类。访问 ICU 或 Compose 资源的 Android 宿主测试通过 Robolectric 运行；资源测试初始化 Compose AndroidContextProvider。AsciiDoc 预览测试位于 headlessTest，在 Android 宿主、JVM 和 Wasm 上运行；Javet parser 测试及 npm 夹具位于 jvmAndroidTest，因为其原生 Java API 不支持 Wasm。Gradle 通过 npm ci 准备夹具依赖（npm 必须位于 PATH），缺少依赖则测试失败。Robolectric 在宿主运行时 classpath 解析 Javet JVM loader，Android 生产仍使用 Android loader。
+宿主测试基类必须为抽象类。访问 ICU 或 Compose 资源的 Android 宿主测试通过 Robolectric 运行；资源测试初始化 Compose AndroidContextProvider。AsciiDoc 在 Android 和 JVM 的 WebView 里使用随应用打包的 Asciidoctor 脚本转换，Wasm 继续使用 npm 模块。原生宿主测试验证离线 HTML、脚本限制和源文转义，Wasm 测试验证转换输出。实际 WebView 则由 AsciiDoc 预览端到端用例覆盖。
 
 ### Android Appium 夹具生命周期
 
