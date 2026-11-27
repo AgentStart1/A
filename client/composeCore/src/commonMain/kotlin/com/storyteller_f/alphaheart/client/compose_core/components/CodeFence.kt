@@ -110,14 +110,15 @@ private fun FileObjectBlock(
 @Composable
 private fun UploadedFileAction(info: FileInfo, onClick: (FileInfo) -> Unit) {
     val pdf = info.contentType == FileInfo.PDF_CONTENT_TYPE
-    val type = when (info.contentType) {
-        "application/octet-stream" -> stringResource(Res.string.binary_file)
-        else -> info.contentType
-    }
+    val type =
+        when (info.contentType) {
+            "application/octet-stream" -> stringResource(Res.string.binary_file)
+            else -> info.contentType
+        }
     val open = { onClick(info) }
     DocumentMarker(
         title = info.name,
-        details = if (pdf) "PDF" else "${type} · ${HumanReadable.fileSize(info.size)}",
+        details = if (pdf) "PDF" else "$type · ${HumanReadable.fileSize(info.size)}",
         glyph = if (pdf) ActionGlyph.FILE_TEXT_RTL else ActionGlyph.FILE,
         modifier = if (pdf) Modifier.appiumSemantics(testTag = "uploaded-pdf-attachment") else Modifier,
         onOpen = open,
