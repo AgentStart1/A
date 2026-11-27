@@ -4,17 +4,13 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -28,9 +24,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.mikepenz.markdown.compose.components.MarkdownComponentModel
@@ -80,57 +74,24 @@ fun AsciidocPreviewBlock(modal: MarkdownComponentModel) {
 private fun AsciidocPreviewCard(source: String, openPreview: () -> Unit) {
     val scope = rememberCoroutineScope()
     val toasterState = LocalToaster.current
-    val shape = RoundedCornerShape(20.dp)
-    Column(
-        modifier =
-        Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest, shape)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-    ) {
-        Row(
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 44.dp)
-                .appiumSemantics(description = "asciidoc", text = "AsciiDoc preview", onClick = openPreview)
-                .clickable(onClick = openPreview),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(actionIcon(ActionGlyph.FILE_TEXT_RTL), null, Modifier.size(16.dp))
-            Text(
-                text = "AsciiDoc preview",
-                maxLines = 1,
-                overflow = TextOverflow.MiddleEllipsis,
-                modifier = Modifier.weight(1f),
-            )
-            IconButton(
-                onClick = openPreview,
-                modifier = Modifier.appiumSemantics(description = "open", onClick = openPreview),
-            ) {
-                Icon(actionIcon(ActionGlyph.EYE), "open", Modifier.size(16.dp))
-            }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            val clipboardManager = LocalClipboard.current
+    val clipboard = LocalClipboard.current
+    val firstLine = source.lineSequence().firstOrNull().orEmpty()
+    val title = firstLine.takeIf { it.startsWith("= ") }?.removePrefix("= ")
+    DocumentMarker(
+        title = title ?: "AsciiDoc",
+        details = firstLine,
+        glyph = ActionGlyph.FILE_TEXT_RTL,
+        modifier = Modifier.appiumSemantics(description = "asciidoc", text = "AsciiDoc preview", onClick = openPreview),
+        onOpen = openPreview,
+        openDescription = "open",
+        trailing = {
             IconButton({
-                scope.launch {
-                    clipboardManager.copyText(source, toasterState)
-                }
+                scope.launch { clipboard.copyText(source, toasterState) }
             }) {
                 Icon(actionIcon(ActionGlyph.COPY), "copy source", Modifier.size(16.dp))
             }
-            Text(
-                source.lineSequence().firstOrNull().orEmpty(),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
+        },
+    )
 }
 
 @Composable

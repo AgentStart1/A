@@ -80,4 +80,5 @@
     <string name="address_not_set">未设置</string>
     <string name="image_fit_window">适合窗口</string>
     <string name="image_original_size">原始尺寸</string>
+    <string name="binary_file">二进制文件</string>
 </resources>

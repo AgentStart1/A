@@ -4,7 +4,6 @@
 
 package com.storyteller_f.alphaheart.client.compose_core.components
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
@@ -16,21 +15,22 @@ import com.mikepenz.markdown.compose.components.MarkdownComponentModel
 import com.mikepenz.markdown.compose.elements.highlightedCodeFence
 import com.storyteller.alphaheart.client.composecore.markdown.MermaidBlock
 import com.storyteller_f.alphaheart.client.compose_core.Res
+import com.storyteller_f.alphaheart.client.compose_core.binary_file
+import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.markdown.CodeFenceKind
 import com.storyteller_f.alphaheart.client.compose_core.markdown.codeFenceKind
 import com.storyteller_f.alphaheart.client.compose_core.media.LocalMediaPreviewAction
 import com.storyteller_f.alphaheart.client.compose_core.media.LocalResourceDownloadFile
 import com.storyteller_f.alphaheart.client.compose_core.media.RemoteMediaItem
-import com.storyteller_f.alphaheart.client.compose_core.preview
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.shared.commonJson
 import com.storyteller_f.shared.model.FileInfo
 import com.storyteller_f.shared.utils.MarkdownObject
 import com.storyteller_f.shared.utils.getLang
 import com.storyteller_f.shared.utils.readCodeFence
+import nl.jacobras.humanreadable.HumanReadable
 import org.jetbrains.compose.resources.stringResource
 import kotlin.collections.get
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingTextButton as TextButton
 
 @Composable
 fun CustomCodeFence(
@@ -81,10 +81,6 @@ private fun FileObjectBlock(
         HighlightCodeBlock(modal)
         return
     }
-    if (contentType == FileInfo.PDF_CONTENT_TYPE) {
-        PdfViewBlock(mediaInfo, onClick)
-        return
-    }
     if (!contentType.startsWith("audio") && !contentType.startsWith("video/")) {
         UploadedFileAction(mediaInfo, onClick)
         return
@@ -113,10 +109,20 @@ private fun FileObjectBlock(
 
 @Composable
 private fun UploadedFileAction(info: FileInfo, onClick: (FileInfo) -> Unit) {
-    val open = { onClick(info) }
-    TextButton(open, Modifier.appiumSemantics(description = "open file ${info.name}", onClick = open)) {
-        Text("${stringResource(Res.string.preview)}: ${info.name}")
+    val pdf = info.contentType == FileInfo.PDF_CONTENT_TYPE
+    val type = when (info.contentType) {
+        "application/octet-stream" -> stringResource(Res.string.binary_file)
+        else -> info.contentType
     }
+    val open = { onClick(info) }
+    DocumentMarker(
+        title = info.name,
+        details = if (pdf) "PDF" else "${type} · ${HumanReadable.fileSize(info.size)}",
+        glyph = if (pdf) ActionGlyph.FILE_TEXT_RTL else ActionGlyph.FILE,
+        modifier = if (pdf) Modifier.appiumSemantics(testTag = "uploaded-pdf-attachment") else Modifier,
+        onOpen = open,
+        openDescription = "open file ${info.name}",
+    )
 }
 
 @Composable
