@@ -2241,6 +2241,7 @@ function wrapBlock(type,text,language='kotlin'){
 function syncBlockDesignDraft(){secondState.draft=editorBlocks().map(b=>{b.text=wrapBlock(b.type,b.body||'',b.language);return b.text}).join('\n\n');const preview=root.querySelector('.rendered-draft');if(preview)preview.innerHTML=editorPreviewHtml()}
 function editorPreviewHtml(){return editorBlocks().map(b=>{
  if(b.type.startsWith('标题')){const level=b.type==='标题'?1:Number(b.type.slice(2));return '<h'+level+'>'+blockInlineHtml(b.body)+'</h'+level+'>'}
+ if(b.type==='代码'&&b.language==='asciidoc')return asciidocCard(b.body);
  if(b.type==='代码')return '<pre class="code">'+escapeText(b.body)+'</pre>';
  if(b.type==='分割线')return '<hr>';
  if(['列表','有序列表'].includes(b.type)){const tag=b.type==='列表'?'ul':'ol';return '<'+tag+'>'+b.body.split('\n').map(line=>'<li>'+blockInlineHtml(line)+'</li>').join('')+'</'+tag+'>'}
@@ -3194,7 +3195,7 @@ const mediaSnapshotKey=(media,screen)=>[media.type,media.phase,media.context,scr
 function persistMediaSelection(){persistUnifiedMedia()}
 const mediaPlaylistTitles=['关于数学表达式的渲染','Markdown 文档'];
 const mediaCaption=kind=>mediaReview.phase==='playlist'?mediaPlaylistTitles[mediaReview.track]:mediaNames[kind];
-const mediaTypes=[['image','图片'],['audio','音频'],['video','视频'],['file','文件'],['csa-user','CSA · 用户'],['csa-community','CSA · 社区'],['csa-room','CSA · 房间'],['csa-topic','CSA · 话题'],['csa-all','CSA · 四类引用']];
+const mediaTypes=[['image','图片'],['audio','音频'],['video','视频'],['file','文件'],['asciidoc','AsciiDoc'],['csa-user','CSA · 用户'],['csa-community','CSA · 社区'],['csa-room','CSA · 房间'],['csa-topic','CSA · 话题'],['csa-all','CSA · 四类引用']];
 let embeddedMediaPreviewOrigin=null;
 const mediaNames={image:'kimono.avif',audio:'sample1.flac',video:'sample-video.mp4',file:'community-guide.pdf'};
 const mediaDestinations={user:'profile-other',community:'community',room:'room',topic:'review-topic-go-reply-b'};
@@ -3225,7 +3226,25 @@ function embeddedPlayer(kind,expanded=false){
  const volume=mediaReview.volumeOpen?'<div class="embed-volume" role="group" aria-label="音量设置"><input type="range" class="media-slider" style="--slider-position:'+mediaReview.volume+'%" min="0" max="100" value="'+mediaReview.volume+'" aria-label="音量大小">'+mediaIconButton(mediaReview.muted?'取消静音':'静音',mediaReview.muted?'volume-x':'volume-2','mute')+'</div>':'';
  return '<section class="embed-player '+kind+'">'+heading+stage+'<div class="embed-player-bottom"><div class="embed-controls">'+controls+'</div>'+volume+'</div></section>';
 }
+const asciidocFixture=['= 社区指南','','在 Programming 社区，你可以按主题找到聊天室。','','== 开始参与','','. 打开社区的房间列表。','. 进入 Rust Language 聊天室。','. 阅读置顶话题后参与讨论。','','NOTE: 发送消息前请阅读房间规则。'].join('\n');
+function asciidocCard(source=asciidocFixture){
+ return '<section class="asciidoc-card"><button type="button" class="quiet asciidoc-open" data-embed-action="asciidoc-open" data-asciidoc-source="'+escapeText(source)+'">'+icons('file-text')+'<span>AsciiDoc 预览</span>'+icons('eye')+'</button><div class="asciidoc-source">'+mediaIconButton('复制 AsciiDoc 源文','copy','asciidoc-copy','data-asciidoc-source="'+escapeText(source)+'"')+'<span>'+escapeText(source.split('\n')[0])+'</span></div></section>';
+}
+let selectedAsciidocSource=null;
+function asciidocPreview(){
+ const source=selectedAsciidocSource??asciidocFixture;
+ const text=line=>escapeText(line);
+ const body=source.split('\n\n').map(block=>{
+  if(block.startsWith('= '))return '<h1>'+text(block.slice(2))+'</h1>';
+  if(block.startsWith('== '))return '<h2>'+text(block.slice(3))+'</h2>';
+  if(block.startsWith('. '))return '<ol>'+block.split('\n').map(line=>'<li>'+text(line.replace(/^\. /,''))+'</li>').join('')+'</ol>';
+  if(block.startsWith('NOTE: '))return '<aside><strong>注意</strong><p>'+text(block.slice(6))+'</p></aside>';
+  return '<p>'+text(block)+'</p>';
+ }).join('');
+ return '<section class="asciidoc-fullscreen" role="dialog" aria-modal="true" aria-label="AsciiDoc 预览"><div class="asciidoc-toolbar">'+mediaIconButton('返回','arrow-left','asciidoc-close')+'<span>AsciiDoc 预览</span></div><article>'+body+'</article></section>';
+}
 function mediaEmbedMarkup(type=mediaReview.type){
+ if(type==='asciidoc')return asciidocCard();
  if(type==='csa-all')return '<div class="embed-reference-stack">'+['user','community','room','topic'].map(csaReference).join('')+'</div>';
  if(type.startsWith('csa-'))return csaReference(type.slice(4));
  if(type==='image')return embeddedImage();
@@ -3241,14 +3260,15 @@ normalizeBlockEditorDesign=function(product){
  const blocks=editorBlocks();
  for(const section of product.querySelectorAll('[data-design-block]')){
   const block=blocks[Number(section.dataset.designBlock)];if(!block)continue;
-  const special=block.language==='object'||block.language==='csa'||block.type==='图片';if(!special)continue;
-  const plain=section.querySelector('textarea');if(plain){plain.style.display='none';plain.disabled=true}
-  const choice=section.querySelector('select option:checked');if(choice)choice.textContent=block.language==='csa'?'CSA 引用':block.type==='图片'?'图片':'多媒体';
-  section.querySelector('.embed-block-preview')?.remove();const preview=document.createElement('div');preview.className='embed-block-preview';preview.innerHTML=block.language==='csa'?csaReference(block.body.match(/^\/(user|community|room|topic)\//)?.[1]||'topic'):mediaEmbedMarkup();section.append(preview);
+  const special=block.language==='asciidoc'||block.language==='object'||block.language==='csa'||block.type==='图片';if(!special)continue;
+  const plain=section.querySelector('textarea');if(plain&&block.language!=='asciidoc'){plain.style.display='none';plain.disabled=true}
+  const choice=section.querySelector('select option:checked');if(choice)choice.textContent=block.language==='asciidoc'?'AsciiDoc':block.language==='csa'?'CSA 引用':block.type==='图片'?'图片':'多媒体';
+  section.querySelector('.embed-block-preview')?.remove();const preview=document.createElement('div');preview.className='embed-block-preview';preview.innerHTML=block.language==='asciidoc'?asciidocCard(block.body):block.language==='csa'?csaReference(block.body.match(/^\/(user|community|room|topic)\//)?.[1]||'topic'):mediaEmbedMarkup();section.append(preview);
  }
 };
-function mediaPhaseOptions(){return mediaReview.type==='audio'||mediaReview.type==='video'?[['normal','尚未播放'],['loading','首次加载'],['playing','播放中'],['paused','已暂停'],['buffering','缓冲中'],['error','播放失败'],['ended','播放结束'],['unknown','播放中 · 总时长未知'],['player-options','媒体选项'],['player-volume','音量设置'],...(mediaReview.type==='video'?[['player-expanded','展开播放器'],['playlist','播放列表']]:[])]:mediaReview.type==='csa-all'?[['normal','正常']]:[['normal','正常'],['loading','加载中'],['error','加载失败']]}
+function mediaPhaseOptions(){return mediaReview.type==='asciidoc'?[['normal','正文卡片'],['asciidoc-open','全屏预览']]:mediaReview.type==='audio'||mediaReview.type==='video'?[['normal','尚未播放'],['loading','首次加载'],['playing','播放中'],['paused','已暂停'],['buffering','缓冲中'],['error','播放失败'],['ended','播放结束'],['unknown','播放中 · 总时长未知'],['player-options','媒体选项'],['player-volume','音量设置'],...(mediaReview.type==='video'?[['player-expanded','展开播放器'],['playlist','播放列表']]:[])]:mediaReview.type==='csa-all'?[['normal','正常']]:[['normal','正常'],['loading','加载中'],['error','加载失败']]}
 function mediaFixtureDraft(){
+ if(mediaReview.type==='asciidoc')return '```asciidoc\n'+asciidocFixture+'\n```';
  if(mediaReview.type==='csa-all')return '# 关于数学表达式的渲染\n\n'+['/user/a/user2','/community/a/code','/room/a/RustLanguage','/topic/1'].map(path=>'```csa\n'+path+'\n```').join('\n\n');
  if(mediaReview.type.startsWith('csa-')){const kind=mediaReview.type==='csa-all'?'community':mediaReview.type.slice(4),path={user:'/user/a/user2',community:'/community/a/code',room:'/room/a/RustLanguage',topic:'/topic/1'}[kind];return '# 关于数学表达式的渲染\n\n```csa\n'+path+'\n```'}
  if(mediaReview.type==='image')return '# 关于数学表达式的渲染\n\n![kimono.avif](kimono.avif)';
@@ -3272,6 +3292,7 @@ mediaContextSelect.addEventListener('change',()=>{mediaReview.context=mediaConte
 const renderBeforeMediaReview=render;
 render=function(){
  renderBeforeMediaReview();syncUnifiedControls();if(!unifiedMediaActive)return;const product=root.querySelector('#ah-design-reading');let overlay='';
+ if(mediaReview.type==='asciidoc'&&mediaReview.phase==='asciidoc-open')overlay=asciidocPreview();
  if(mediaReview.expanded)overlay='<div class="community-overlay" role="dialog" aria-modal="true" aria-label="展开播放器"><section class="community-dialog embed-expanded"><div class="spread"><h2>'+mediaCaption(mediaReview.type)+'</h2><div class="embed-control-end">'+mediaIconButton('媒体选项','ellipsis','options')+mediaIconButton('关闭展开播放器','x','collapse')+'</div></div>'+embeddedPlayer(mediaReview.type,true)+'</section></div>';
  if(mediaReview.menu==='community')overlay=communityMenu();
  if(mediaReview.menu==='options')overlay=sourceModal('媒体选项','<div class="community-menu-actions two-actions">'+sourceIcon('预览文件','external-link','file-'+mediaReview.type)+sourceIcon('下载文件','download','third-download')+'</div>');
@@ -3307,6 +3328,17 @@ root.addEventListener('click',event=>{
  }
  const button=event.target.closest('[data-embed-action]');if(!button)return;
  const action=button.dataset.embedAction;
+ if(action==='asciidoc-copy'){
+  navigator.clipboard?.writeText(button.dataset.asciidocSource).then(()=>showDesignToast(root.querySelector('#ah-design-reading'),'已复制源文'),()=>showDesignToast(root.querySelector('#ah-design-reading'),'复制失败','error'));
+  return;
+ }
+ if(action==='asciidoc-open'||action==='asciidoc-close'){
+  selectedAsciidocSource=button.dataset.asciidocSource??null;
+  mediaReview.phase=action==='asciidoc-open'?'asciidoc-open':'normal';
+  render();persistMediaSelection();syncFreeFacetSelection();
+  root.querySelector(action==='asciidoc-open'?'.asciidoc-fullscreen button':'.asciidoc-open')?.focus();
+  return;
+ }
  if(['player-options','player-volume','player-expanded'].includes(mediaReview.phase)&&['close-menu','collapse','volume','play'].includes(action)){mediaReview.phase='normal';syncMediaControls()}
  if(action==='play'){if(mediaReview.phase==='ended'){mediaReview.phase='normal';mediaReview.position=0;syncMediaControls()}mediaReview.playing=!mediaReview.playing;mediaReview.started=true}
  if(action==='retry'){mediaReview.phase='normal';mediaReview.position=0;mediaReview.started=true;mediaReview.playing=true;syncMediaControls()}
@@ -3349,6 +3381,7 @@ applyCombination=function(key,save=false){
  const entry=combinationEntries.get(key);if(!entry)return;
  if(!save&&unifiedCurrentKey===key)return;
  embeddedMediaPreviewOrigin=null;
+ selectedAsciidocSource=null;
  if(entry.media&&!unifiedMediaActive)unifiedEditorSnapshot={draft:secondState.draft,blockDraft:secondState.blockDraft,editorMode:secondState.editorMode};
  if(!entry.media&&unifiedMediaActive)restoreUnifiedEditor();
  unifiedMediaActive=!!entry.media;
@@ -3985,7 +4018,7 @@ if (!restorePreviewHash() && !restoreConfirmedPreview(window.openai?.widgetState
 
 // Every free-view choice is derived from the same canonical entries as the scenario catalogue.
 const freeFacetNames = {
-  page:'页面', variant:'场景', type:'媒体或引用类型', context:'展示场景',
+  page:'页面', variant:'场景', type:'内容类型', context:'展示场景',
   source:'范围', topic:'话题层级', author:'作者', status:'状态', menu:'打开的菜单',
   algorithm:'算法', editor:'编辑方式', screen:'屏幕',
 };
@@ -4952,6 +4985,20 @@ window.addEventListener('DOMContentLoaded', () => {
   background:currentColor;
   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21a8 8 0 0 0-16 0'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E") center / contain no-repeat;
 }
+
+#ah-unified-combinations .asciidoc-card{background:var(--ah-soft);border-radius:20px;padding:8px 16px;min-width:0}
+#ah-unified-combinations .product .asciidoc-open,#ah-unified-combinations .asciidoc-source{display:flex;align-items:center;gap:8px;min-width:0}
+#ah-unified-combinations .product .asciidoc-open{width:100%;text-align:start;padding:0;min-height:44px;background:transparent;border:0}
+#ah-unified-combinations .asciidoc-open span{flex:1}
+#ah-unified-combinations .asciidoc-source{color:var(--ah-muted);font-size:.875em}
+#ah-unified-combinations .asciidoc-source span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ah-unified-combinations .asciidoc-source button{flex:none}
+#ah-unified-combinations .asciidoc-fullscreen{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;background:var(--ah-paper);color:var(--ah-text)}
+#ah-unified-combinations .asciidoc-toolbar{display:flex;align-items:center;gap:12px;padding:8px 16px;border-bottom:1px solid var(--ah-line);flex:none}
+#ah-unified-combinations .asciidoc-fullscreen article{margin:0 auto;width:100%;max-width:760px;box-sizing:border-box;padding:clamp(20px,5%,48px);overflow:auto;overflow-wrap:anywhere;line-height:1.65}
+#ah-unified-combinations .asciidoc-fullscreen h1,#ah-unified-combinations .asciidoc-fullscreen h2{margin:0 0 .65em}
+#ah-unified-combinations .asciidoc-fullscreen aside{margin-top:24px;border-inline-start:3px solid var(--ah-accent);padding:8px 14px;background:var(--ah-bg)}
+#ah-unified-combinations .asciidoc-fullscreen aside p{margin:0}
 </style>
 </body>
 </html>
