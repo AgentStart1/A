@@ -4939,6 +4939,7 @@ window.addEventListener('DOMContentLoaded', () => {
 </script>
 <style>
 #ah-unified-combinations .product :is(.avatar,.preview-toast-avatar):not(:has(img,svg)) {
+  position:relative;
   background:var(--ah-soft);
   color:var(--ah-accent);
   border-color:transparent;
@@ -4946,9 +4947,8 @@ window.addEventListener('DOMContentLoaded', () => {
 }
 #ah-unified-combinations .product :is(.avatar,.preview-toast-avatar):not(:has(img,svg))::before {
   content:"";
-  display:block;
-  width:60%;
-  aspect-ratio:1;
+  position:absolute;
+  inset:20%;
   background:currentColor;
   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21a8 8 0 0 0-16 0'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E") center / contain no-repeat;
 }
