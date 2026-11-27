@@ -67,14 +67,15 @@ data class TopicCreated(override val topicInfo: TopicInfo, override val authorIn
 fun TopicCreated.toInitialDetail(): TopicDetail =
     TopicDetail(topicInfo, authorInfo, persistentListOf(), persistentListOf(), null)
 
-/** Activity queries load reactions and the room, but never fetch reply previews. */
+/** Activity queries may include reply previews for topic card lists. */
 @Serializable
 data class TopicActivity(
     override val topicInfo: TopicInfo,
     override val authorInfo: UserInfo?,
     val reactions: CustomImmutableList<ReactionInfo>,
     val roomInfo: RoomInfo?,
+    val subTopics: CustomImmutableList<TopicReplyPreview>? = null,
 ) : TopicProjection {
     fun withCachedReplies(cached: TopicDetail?): TopicDetail =
-        TopicDetail(topicInfo, authorInfo, cached?.subTopics ?: persistentListOf(), reactions, roomInfo)
+        TopicDetail(topicInfo, authorInfo, subTopics ?: cached?.subTopics ?: persistentListOf(), reactions, roomInfo)
 }

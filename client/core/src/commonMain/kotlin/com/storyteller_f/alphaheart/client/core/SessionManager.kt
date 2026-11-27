@@ -331,8 +331,18 @@ suspend fun processEncryptedTopic(topics: List<TopicDetail>, manager: UserSessio
     }
 }
 
-suspend fun decryptTopicActivities(topics: List<TopicActivity>, manager: UserSessionManager): List<TopicActivity> =
-    topics.zip(decryptTopicBodies(topics.map { it.topicInfo }, manager)) { topic, body -> topic.copy(topicInfo = body) }
+suspend fun decryptTopicActivities(topics: List<TopicActivity>, manager: UserSessionManager): List<TopicActivity> {
+    val bodies =
+        decryptTopicBodies(
+            topics.flatMap { topic -> listOf(topic.topicInfo) + topic.subTopics.orEmpty().map { it.topicInfo } },
+            manager,
+        ).iterator()
+    return topics.map { topic ->
+        val body = bodies.next()
+        val replies = topic.subTopics?.map { it.copy(topicInfo = bodies.next()) }?.toImmutableList()
+        topic.copy(topicInfo = body, subTopics = replies)
+    }
+}
 
 suspend fun decryptCreatedTopic(topic: TopicCreated, manager: UserSessionManager): TopicCreated =
     topic.copy(topicInfo = decryptTopicBodies(listOf(topic.topicInfo), manager).single())

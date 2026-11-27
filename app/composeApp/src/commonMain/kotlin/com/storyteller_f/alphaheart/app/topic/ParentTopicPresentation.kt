@@ -11,13 +11,6 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.unit.dp
-import com.mohamedrejeb.richeditor.annotation.ExperimentalRichTextApi
-import com.mohamedrejeb.richeditor.model.RichTextState
-import com.storyteller_f.shared.utils.normalizeMarkdownLineEndings
-
-@OptIn(ExperimentalRichTextApi::class)
-internal fun parentReferenceSummary(markdown: String): String =
-    RichTextState().setMarkdown(normalizeMarkdownLineEndings(markdown)).annotatedString.text.trim()
 
 // Lucide 1.17.0 ArrowUpLeft, the exact icon version used by the approved preview (bundled ISC license).
 internal val parentReferenceArrow by lazy {

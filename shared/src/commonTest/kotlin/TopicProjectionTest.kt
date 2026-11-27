@@ -52,6 +52,19 @@ class TopicProjectionTest {
     }
 
     @Test
+    fun activityUsesExplicitRepliesAndPreservesCompatibilityWithOlderResponses() {
+        val reply = TopicReplyPreview(TopicInfo.EMPTY.copy(id = 2), UserInfo.EMPTY)
+        val activity = TopicActivity(TopicInfo.EMPTY, UserInfo.EMPTY, persistentListOf(), null)
+        val cached = activity.withCachedReplies(null).copy(subTopics = persistentListOf(reply))
+        assertEquals(cached.subTopics, activity.withCachedReplies(cached).subTopics)
+
+        val fresh = activity.copy(subTopics = persistentListOf(reply))
+        val decoded = commonJson.decodeFromString<TopicActivity>(commonJson.encodeToString(fresh))
+        assertEquals(fresh.subTopics, decoded.withCachedReplies(null).subTopics)
+        assertEquals(emptyList(), fresh.copy(subTopics = persistentListOf()).withCachedReplies(cached).subTopics)
+    }
+
+    @Test
     fun newTopicFrameRoundTripsCreatedProjection() {
         val frame: RoomFrame = RoomFrame.NewTopicInfo(TopicCreated(TopicInfo.EMPTY, UserInfo.EMPTY))
         assertEquals(frame, commonJson.decodeFromString<RoomFrame>(commonJson.encodeToString(frame)))

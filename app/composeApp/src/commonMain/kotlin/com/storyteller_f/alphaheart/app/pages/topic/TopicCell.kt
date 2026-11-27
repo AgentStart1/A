@@ -5,7 +5,6 @@
 package com.storyteller_f.alphaheart.app.pages.topic
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,7 +38,6 @@ import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.add_reaction
 import com.storyteller_f.alphaheart.app.components.AppTopicContentView
 import com.storyteller_f.alphaheart.app.components.InteractionRow
-import com.storyteller_f.alphaheart.app.invalid_content
 import com.storyteller_f.alphaheart.app.is_pinned
 import com.storyteller_f.alphaheart.app.pages.user.UserCell
 import com.storyteller_f.alphaheart.app.pages.user.UserIconWithDialog
@@ -57,7 +54,6 @@ import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.icons.IconRes
 import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
 import com.storyteller_f.result.onSuccess
-import com.storyteller_f.shared.model.TopicContent
 import com.storyteller_f.shared.model.TopicDetail
 import com.storyteller_f.shared.type.PrimaryKey
 import kotlinx.coroutines.launch
@@ -173,16 +169,9 @@ private fun TopicContentAndInteraction(
         InteractionRow(topicInfo, startAddReaction, presentation = presentation) {
             appNavFactory.newAppNav().gotoTopic(topicId)
         }
-        if (topicInfo.subTopics.isNotEmpty()) {
-            androidx.compose.foundation.layout.Spacer(
-                Modifier.size(if (presentation == TopicActionsPresentation.FEED) 12.dp else 8.dp),
-            )
-            if (presentation == TopicActionsPresentation.FEED) {
-                TopicReplyPreviews(topicInfo.subTopics) { reply ->
-                    UserIconWithDialog(reply.authorInfo, size = 24.dp)
-                }
-            } else {
-                SubTopics(topicInfo)
+        if (topicInfo.commentCount > 0 && topicInfo.subTopics.isNotEmpty()) {
+            TopicReplyPreviews(topicInfo.subTopics) { reply ->
+                UserIconWithDialog(reply.authorInfo, size = 24.dp)
             }
         }
     }
@@ -270,7 +259,7 @@ fun RoomTopicCellInternal(
                     ) {
                         appNavFactory.newAppNav().gotoTopic(topicId)
                     }
-                    if (topicInfo.subTopics.isNotEmpty()) {
+                    if (topicInfo.commentCount > 0 && topicInfo.subTopics.isNotEmpty()) {
                         TopicReplyPreviews(topicInfo.subTopics, chat = true) { reply ->
                             UserIconWithDialog(reply.authorInfo, size = 24.dp)
                         }
@@ -282,44 +271,6 @@ fun RoomTopicCellInternal(
         }
         RoomTopicDropdownMenu(expanded, startAddReaction) {
             expanded = false
-        }
-    }
-}
-
-@Composable
-private fun SubTopics(topicInfo: TopicDetail) {
-    val topics = topicInfo.subTopics
-    if (topics.isNotEmpty()) {
-        Column(
-            modifier =
-            Modifier
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(10.dp))
-                .padding(horizontal = 8.dp),
-        ) {
-            repeat(topics.size) { index ->
-                val info = topics[index]
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val userInfo = info.authorInfo
-                    UserIconWithDialog(userInfo, size = 20.dp)
-                    when (val content = info.content) {
-                        is TopicContent.Extracted -> {
-                            Text(content.plain, maxLines = 1)
-                        }
-
-                        is TopicContent.Plain -> {
-                            Text(content.plain, maxLines = 1)
-                        }
-
-                        else -> {
-                            Text(stringResource(Res.string.invalid_content))
-                        }
-                    }
-                }
-            }
         }
     }
 }

@@ -19,6 +19,7 @@ import com.storyteller_f.alphaheart.backend.core.UserDatabase
 import com.storyteller_f.alphaheart.backend.core.error.DatabaseError
 import com.storyteller_f.alphaheart.backend.core.getLatestRawTopics
 import com.storyteller_f.alphaheart.backend.core.service.ObjectStorageService
+import com.storyteller_f.alphaheart.backend.core.types.RawTopic
 import com.storyteller_f.alphaheart.backend.core.types.Topic
 import com.storyteller_f.alphaheart.backend.core.types.UserSubscription
 import com.storyteller_f.alphaheart.cloud.core.service.error.UserSubscriptionError
@@ -60,6 +61,20 @@ class SubscriptionProjectionTest {
             assertEquals(listOf(listOf(22L, 11L)), fixture.parentBatches)
             assertEquals(2, fixture.contentBatches.size)
             assertEquals(listOf(111L, 112L, 221L, 222L), fixture.contentBatches.last())
+        }
+
+    @Test
+    fun cardActivitiesIncludeOnlyDirectReplyPreviews() =
+        runBlocking {
+            val fixture = SubscriptionProjectionFixture()
+            val compact = fixture.activity(includeReplies = false).getOrThrow().orEmpty().single()
+            assertEquals(null, compact.subTopics)
+            assertEquals(emptyList(), fixture.latestParents)
+
+            val card = fixture.activity(includeReplies = true).getOrThrow().orEmpty().single()
+            assertEquals(listOf(221L, 222L), card.subTopics?.map { it.id })
+            assertEquals(listOf(22L, 22L), card.subTopics?.map { it.parentId })
+            assertEquals(listOf(22L), fixture.latestParents)
         }
 
     @Test
@@ -165,6 +180,13 @@ private class SubscriptionProjectionFixture(
     private val backend = createBackend()
 
     suspend fun project(rows: List<UserSubscription>) = backend.buildSubscriptionItems(1, rows)
+
+    suspend fun activity(includeReplies: Boolean) =
+        backend.processTopicActivities(
+            listOf(RawTopic(projectionTopic(22, 10), TopicContent.Plain("parent"), commentCount = 2)),
+            1,
+            if (includeReplies) listOf(22) else null,
+        )
 
     suspend fun latest(parents: List<Long>) = database.getLatestRawTopics(1, parents)
 

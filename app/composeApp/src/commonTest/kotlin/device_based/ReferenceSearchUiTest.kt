@@ -37,7 +37,9 @@ class ReferenceSearchUiTest {
                             unbounded = true,
                         ).requiredSize(width.value, 400.dp),
                     ) {
-                        ParentTopicReferenceContent("Writer", "A plain parent summary") { visits++ }
+                        ParentTopicReferenceContent("Writer", onClick = { visits++ }) {
+                            Text("A plain parent summary")
+                        }
                     }
                 }
             }

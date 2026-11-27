@@ -626,18 +626,19 @@ suspend fun Backend.fillReactionRecordTopics(
                         topics.takeIf { permission?.hasRead == true }.orEmpty()
                     }
             val topics = database.processTopicToRawTopic(uid, readableTopics).getOrThrow()
-            page.copy(topics = processTopicActivities(topics, uid).getOrThrow().orEmpty())
+            val previews = processTopicActivities(topics, uid, readableTopics.map { it.id }).getOrThrow().orEmpty()
+            page.copy(topics = previews)
         }
     }
 
 suspend fun Backend.getUserCommentedTopics(uid: PrimaryKey, fetch: PrimaryKeyFetch) =
     database.topic.getUserCommentedTopicsPaginationResult(uid, fetch).andThen(UserError::fromError) { (list, total) ->
-        processTopicActivities(
-            list.map { topic ->
-                database.processTopicToRawTopic(uid, listOf(topic)).getOrThrow().first()
-            },
-            uid,
-        ).paging(total)
+        val replyParents =
+            list.groupBy { it.rootType to it.rootId }.flatMap { (root, topics) ->
+                val permission = checkRootReadPermission(root.first, root.second, uid).getOrThrow()
+                if (permission?.hasRead == true) topics.map { it.id } else emptyList()
+            }
+        processTopicActivities(database.processTopicToRawTopic(uid, list).getOrThrow(), uid, replyParents).paging(total)
     }
 
 suspend fun Backend.hasUnreadRooms(uid: PrimaryKey): CustomResult<UnreadRoomsResponse, UserError> {

@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.storyteller_f.alphaheart.app.Res
 import com.storyteller_f.alphaheart.app.invalid_content
+import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
 import com.storyteller_f.shared.model.TopicContent
 import com.storyteller_f.shared.model.TopicReplyPreview
 import org.jetbrains.compose.resources.stringResource
@@ -93,7 +94,8 @@ private fun ReplyPreviewRow(
             }
         Text(
             summary,
-            Modifier.weight(1f, fill = !chat).then(bubble).testTag("topic-reply-summary-${reply.id}"),
+            Modifier.weight(1f, fill = !chat).then(bubble)
+                .appiumSemantics(testTag = "topic-reply-summary-${reply.id}", text = summary),
             color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 24.sp),
             maxLines = 2,

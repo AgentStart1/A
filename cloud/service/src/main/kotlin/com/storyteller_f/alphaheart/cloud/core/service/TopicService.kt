@@ -547,24 +547,35 @@ suspend fun Backend.uncheckGetTopicsByParentId(
     }
 
 suspend fun Backend.processTopicDetails(topics: List<RawTopic>, uid: PrimaryKey?) =
-    processTopicProjection(topics, uid, true)
+    processTopicProjection(topics, uid, topics.map { it.topic.id })
 
-suspend fun Backend.processTopicActivities(topics: List<RawTopic>, uid: PrimaryKey?) =
-    processTopicProjection(topics, uid, false).mapPresent { details ->
-        details.map { TopicActivity(it.topicInfo, it.authorInfo, it.reactions, it.roomInfo) }
+suspend fun Backend.processTopicActivities(
+    topics: List<RawTopic>,
+    uid: PrimaryKey?,
+    replyParents: List<PrimaryKey>? = null,
+) = processTopicProjection(topics, uid, replyParents.orEmpty()).mapPresent { details ->
+    details.map { detail ->
+        TopicActivity(
+            detail.topicInfo,
+            detail.authorInfo,
+            detail.reactions,
+            detail.roomInfo,
+            if (replyParents != null) detail.subTopics else null,
+        )
     }
+}
 
 private suspend fun Backend.processTopicProjection(
     topics: List<RawTopic>,
     uid: PrimaryKey?,
-    addLatestSubTopic: Boolean,
+    replyParents: List<PrimaryKey>,
 ): CustomResult<List<TopicDetail>?, TopicError> {
     if (topics.isEmpty()) return CustomResult.success(emptyList())
     return captureFailure(TopicError::from) {
         val rooms = getRoomMapByTopics(topics)
         val subTopicsMap =
-            if (addLatestSubTopic) {
-                database.getLatestRawTopics(uid, topics.map { it.topic.id }).getOrThrow().groupBy {
+            if (replyParents.isNotEmpty()) {
+                database.getLatestRawTopics(uid, replyParents).getOrThrow().groupBy {
                     it.topic.parentId
                 }
             } else {
