@@ -98,8 +98,6 @@ import com.storyteller_f.alphaheart.client.compose_core.components.FavoriteButto
 import com.storyteller_f.alphaheart.client.compose_core.components.IconActionMenu
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingActionMenuSurface
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingAdaptiveOverlay
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 import com.storyteller_f.alphaheart.client.compose_core.components.RoomIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.SubscriptionButton
@@ -139,6 +137,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
 @Composable
 fun RoomPage(roomId: PrimaryKey, needShowDialog: Boolean) {

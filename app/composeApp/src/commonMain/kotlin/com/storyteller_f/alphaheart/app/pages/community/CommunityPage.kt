@@ -68,7 +68,6 @@ import com.storyteller_f.alphaheart.client.compose_core.components.FavoriteButto
 import com.storyteller_f.alphaheart.client.compose_core.components.IconActionMenu
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingActionMenuSurface
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingAdaptiveOverlay
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 import com.storyteller_f.alphaheart.client.compose_core.components.SubscriptionButton
 import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.icons.IconRes
@@ -91,6 +90,7 @@ import com.storyteller_f.shared.type.PrimaryKey
 import com.storyteller_f.shared.type.UserStatus
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 
 @Composable
 fun CommunityPage(communityId: PrimaryKey, showDialog: Boolean) {
