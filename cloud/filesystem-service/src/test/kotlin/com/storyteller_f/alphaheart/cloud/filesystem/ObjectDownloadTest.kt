@@ -19,6 +19,8 @@ import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class ObjectDownloadTest {
@@ -40,6 +42,49 @@ class ObjectDownloadTest {
             assertEquals("*", partial.headers[HttpHeaders.AccessControlAllowOrigin])
             assertEquals(HttpStatusCode.NotFound, client.get("/rpc").status)
             assertEquals(HttpStatusCode.NotFound, client.get("/objects/custom/missing.txt").status)
+        }
+
+    @Test
+    fun `image validators support conditional downloads and same size overwrites`() =
+        withObjectDownloads { storage, directory ->
+            val source = Files.writeString(directory.resolve("upload.png"), "abcdef").toFile()
+            val url = "/objects/custom/test.png"
+            storage.upload("custom", listOf(UploadPack(source, "test.png"))).getOrThrow()
+
+            val first = client.get(url)
+            val tag = assertNotNull(first.headers[HttpHeaders.ETag])
+            val modified = assertNotNull(first.headers[HttpHeaders.LastModified])
+            assertEquals("public, max-age=300", first.headers[HttpHeaders.CacheControl])
+            assertEquals("abcdef", first.bodyAsText())
+
+            val unchanged = client.get(url) { header(HttpHeaders.IfNoneMatch, tag) }
+            assertEquals(HttpStatusCode.NotModified, unchanged.status)
+            assertEquals(tag, unchanged.headers[HttpHeaders.ETag])
+            assertEquals("public, max-age=300", unchanged.headers[HttpHeaders.CacheControl])
+            assertEquals("", unchanged.bodyAsText())
+            assertEquals(
+                HttpStatusCode.NotModified,
+                client.get(url) { header(HttpHeaders.IfModifiedSince, modified) }.status,
+            )
+
+            val head = client.head(url)
+            assertEquals(HttpStatusCode.OK, head.status)
+            assertEquals(tag, head.headers[HttpHeaders.ETag])
+            assertEquals(modified, head.headers[HttpHeaders.LastModified])
+            assertEquals("6", head.headers[HttpHeaders.ContentLength])
+            assertEquals("", head.bodyAsText())
+            val partial = client.get(url) { header(HttpHeaders.Range, "bytes=1-3") }
+            assertEquals(HttpStatusCode.PartialContent, partial.status)
+            assertEquals(tag, partial.headers[HttpHeaders.ETag])
+            assertEquals("bytes 1-3/6", partial.headers[HttpHeaders.ContentRange])
+            assertEquals("bcd", partial.bodyAsText())
+
+            Files.writeString(source.toPath(), "uvwxyz")
+            storage.upload("custom", listOf(UploadPack(source, "test.png"))).getOrThrow()
+            val replaced = client.get(url) { header(HttpHeaders.IfNoneMatch, tag) }
+            assertEquals(HttpStatusCode.OK, replaced.status)
+            assertNotEquals(tag, assertNotNull(replaced.headers[HttpHeaders.ETag]))
+            assertEquals("uvwxyz", replaced.bodyAsText())
         }
 
     @Test

@@ -159,6 +159,7 @@
     <string name="my_subscriptions">我的订阅</string>
     <string name="content_blocks">内容块</string>
     <string name="compose_topic">编辑话题</string>
+    <string name="created_at">创建于 %1$s</string>
     <string name="published_at">发布时间：%1$s</string>
     <string name="belongs_to_community">所属社区</string>
     <string name="translate_action">翻译</string>

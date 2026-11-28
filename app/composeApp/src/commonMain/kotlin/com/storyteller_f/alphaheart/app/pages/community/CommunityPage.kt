@@ -47,6 +47,7 @@ import com.storyteller_f.alphaheart.app.components.FontView
 import com.storyteller_f.alphaheart.app.compose_topic
 import com.storyteller_f.alphaheart.app.create_room_action
 import com.storyteller_f.alphaheart.app.create_title_action
+import com.storyteller_f.alphaheart.app.created_at
 import com.storyteller_f.alphaheart.app.exit_community
 import com.storyteller_f.alphaheart.app.files_title
 import com.storyteller_f.alphaheart.app.join_community
@@ -67,6 +68,7 @@ import com.storyteller_f.alphaheart.client.compose_core.components.FavoriteButto
 import com.storyteller_f.alphaheart.client.compose_core.components.IconActionMenu
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingActionMenuSurface
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingAdaptiveOverlay
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 import com.storyteller_f.alphaheart.client.compose_core.components.SubscriptionButton
 import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.icons.IconRes
@@ -77,6 +79,7 @@ import com.storyteller_f.alphaheart.client.compose_core.navigation.NavRoute
 import com.storyteller_f.alphaheart.client.compose_core.tasks.emitEvent
 import com.storyteller_f.alphaheart.client.compose_core.tasks.request
 import com.storyteller_f.alphaheart.client.compose_core.utils.ReadingOverlaySize
+import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.alphaheart.client.core.exitCommunity
 import com.storyteller_f.alphaheart.client.core.joinCommunity
 import com.storyteller_f.result.onSuccess
@@ -88,7 +91,6 @@ import com.storyteller_f.shared.type.PrimaryKey
 import com.storyteller_f.shared.type.UserStatus
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
 
 @Composable
 fun CommunityPage(communityId: PrimaryKey, showDialog: Boolean) {
@@ -195,6 +197,11 @@ fun CommunityDialogInternal(communityInfo: CommunityInfo, dismiss: () -> Unit) {
             }
         }
     }) {
+        Text(
+            stringResource(Res.string.created_at, communityInfo.createdTime.formatDisplayTime()),
+            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+            fontSize = 12.sp,
+        )
         communityInfo.fontSettings?.contentFont?.let {
             FontView(it)
         }

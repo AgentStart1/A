@@ -29,6 +29,7 @@ import com.storyteller_f.alphaheart.client.compose_core.common.LocalClient
 import com.storyteller_f.alphaheart.client.compose_core.icons.ActionGlyph
 import com.storyteller_f.alphaheart.client.compose_core.icons.IconRes
 import com.storyteller_f.alphaheart.client.compose_core.icons.actionIcon
+import com.storyteller_f.alphaheart.client.compose_core.utils.publicAvatarFetcher
 import io.github.aakira.napier.Napier
 
 @Composable
@@ -37,9 +38,10 @@ fun CommonImage(
     contentDescription: String?,
     modifier: Modifier,
     contentScale: ContentScale = ContentScale.Fit,
+    publicAvatar: Boolean = false,
 ) {
     SubcomposeAsyncImage(
-        globalLoader(model),
+        globalLoader(model, publicAvatar),
         contentDescription = contentDescription,
         modifier,
         loading = {
@@ -68,12 +70,12 @@ fun ImageLoading() {
 
 @OptIn(ExperimentalCoilApi::class)
 @Composable
-fun globalLoader(url: String): ImageRequest {
+fun globalLoader(url: String, publicAvatar: Boolean = false): ImageRequest {
     val client = LocalClient.current
     val platformContext = LocalPlatformContext.current
-    return remember(url) {
+    return remember(url, client, platformContext, publicAvatar) {
         ImageRequest.Builder(platformContext).data(url).crossfade(true).fetcherFactory(
-            KtorNetworkFetcherFactory(client),
+            if (publicAvatar) publicAvatarFetcher else KtorNetworkFetcherFactory(client),
         ).build()
     }
 }

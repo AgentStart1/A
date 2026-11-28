@@ -31,6 +31,7 @@ dependencies {
     implementation(libs.ktor.server.websockets)
     implementation(libs.ktor.server.partial.content)
     implementation(libs.ktor.server.auto.head.response)
+    implementation(libs.ktor.server.conditional.headers)
     implementation(libs.kotlinx.rpc.krpc.server)
     implementation(libs.kotlinx.rpc.krpc.ktor.server)
     implementation(libs.kotlinx.rpc.krpc.serialization.json)

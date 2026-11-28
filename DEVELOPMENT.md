@@ -286,6 +286,8 @@ Compose 将 `deploy/docker-compose/app-wasm.nginx.conf` 只读挂载到两个 Wa
 
 Docker 构建用 SHA256 内容前缀重命名各 Wasm 入口脚本，并更新 index 引用。另一份内容摘要通过 `configureWebResources` 为 Compose 资源 URL 加版本，使翻译字符串与生成字节偏移同步。HTML 和可变资源 URL 必须接受缓存验证（`Cache-Control: no-cache`），否则浏览器可能跨部署保留旧入口脚本，加载与新 HTTP 探测不同的客户端。升级验收时，核对浏览器实际加载的 Wasm 文件名与部署镜像。
 
+Filesystem 的公开对象下载对图片响应提供 5 分钟浏览器缓存，并用 ETag 和 Last-Modified 支持条件请求。同一路径可能被覆盖，因此不得将这些 URL 标记为 immutable。验证需覆盖未修改的 304、覆盖后的 200、HEAD 与 Range 206。
+
 ## Adminer 反向代理
 
 Bunker Adminer 站点使用正则 location `~ ^/`，而非普通 `/`。Bunker 会给普通根 location 添加 `X-Forwarded-Prefix: /`，导致 Adminer 创建 `Path=//` 的会话 Cookie，无法在 `/` 登录。正则路由保留请求 URI，不添加此前缀。检查部署时，必须通过 HTTPS 域名实际登录 PostgreSQL，不能只检查登录页响应，同时确认会话 Cookie 为 `Path=/`。

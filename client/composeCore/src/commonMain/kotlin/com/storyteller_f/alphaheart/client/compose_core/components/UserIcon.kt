@@ -44,6 +44,7 @@ fun UserIcon(setClickEvent: Boolean, avatarUrl: String?, size: Dp = 40.dp, onCli
                 }
             }.border(1.dp, MaterialTheme.colorScheme.primary, shape),
             contentScale = ContentScale.Crop,
+            publicAvatar = true,
         )
     } else {
         val colors = MaterialTheme.colorScheme

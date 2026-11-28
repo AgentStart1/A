@@ -225,6 +225,7 @@
     <string name="my_subscriptions">My subscriptions</string>
     <string name="content_blocks">Content blocks</string>
     <string name="compose_topic">Compose topic</string>
+    <string name="created_at">Created at %1$s</string>
     <string name="published_at">Published: %1$s</string>
     <string name="belongs_to_community">Community</string>
     <string name="translate_action">Translate</string>

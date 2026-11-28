@@ -10,26 +10,35 @@ import com.storyteller_f.services.filesystem.api.FilesystemRpc
 import com.storyteller_f.services.filesystem.api.ObjectStorageRecord
 import com.storyteller_f.services.filesystem.api.ObjectStorageWriteRecord
 import com.storyteller_f.services.filesystem.api.RpcUploadPack
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.EntityTagVersion
+import io.ktor.http.content.LastModifiedVersion
+import io.ktor.http.content.versions
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.install
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
+import io.ktor.server.http.content.LocalFileContent
 import io.ktor.server.plugins.autohead.AutoHeadResponse
+import io.ktor.server.plugins.conditionalheaders.ConditionalHeaders
 import io.ktor.server.plugins.partialcontent.PartialContent
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
-import io.ktor.server.response.respondFile
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.options
+import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
+import io.ktor.util.date.GMTDate
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.job
+import kotlinx.coroutines.withContext
 import kotlinx.rpc.krpc.ktor.server.Krpc
 import kotlinx.rpc.krpc.ktor.server.rpc
 import kotlinx.rpc.krpc.serialization.json.json
@@ -38,6 +47,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
+import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 
 private const val MAX_CHUNK_SIZE = 256 * 1024
@@ -187,18 +197,43 @@ internal fun Application.configureObjectDownloads(storage: LocalFileSystemObject
                 call.respond(HttpStatusCode.NoContent)
             }
         }
-        get("/objects/{path...}") {
-            call.configureDownloadCors()
-            val path = call.parameters.getAll("path").orEmpty()
-            val file = storage.getPathResponse(path)
-            if (file == null) {
-                call.respondText("not found", status = HttpStatusCode.NotFound)
-            } else {
-                call.respondFile(file.toFile())
+        route("/objects/{path...}") {
+            install(ConditionalHeaders)
+            get {
+                call.configureDownloadCors()
+                val path = call.parameters.getAll("path").orEmpty()
+                val file = storage.getPathResponse(path)
+                if (file == null) {
+                    call.respondText("not found", status = HttpStatusCode.NotFound)
+                } else {
+                    val content = LocalFileContent(file.toFile())
+                    if (content.contentType.match(ContentType.Image.Any)) {
+                        content.versions = imageDownloadVersions(file)
+                        call.response.header(HttpHeaders.CacheControl, "public, max-age=300")
+                    }
+                    call.respond(content)
+                }
             }
         }
     }
 }
+
+private suspend fun imageDownloadVersions(path: Path) =
+    withContext(Dispatchers.IO) {
+        val digest = MessageDigest.getInstance("SHA-256")
+        Files.newInputStream(path).buffered().use { input ->
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            var count = input.read(buffer)
+            while (count != -1) {
+                digest.update(buffer, 0, count)
+                count = input.read(buffer)
+            }
+        }
+        listOf(
+            EntityTagVersion(digest.digest().toHexString()),
+            LastModifiedVersion(GMTDate(Files.getLastModifiedTime(path).toMillis())),
+        )
+    }
 
 private fun ApplicationCall.configureDownloadCors() {
     response.header(HttpHeaders.AccessControlAllowOrigin, "*")

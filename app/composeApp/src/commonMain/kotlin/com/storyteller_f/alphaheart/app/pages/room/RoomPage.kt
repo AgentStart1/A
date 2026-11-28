@@ -60,6 +60,7 @@ import com.storyteller_f.alphaheart.app.common.createRoomKeysViewModel
 import com.storyteller_f.alphaheart.app.common.createRoomTopicsViewModel
 import com.storyteller_f.alphaheart.app.common.createRoomViewModel
 import com.storyteller_f.alphaheart.app.common.hasRouteFlow
+import com.storyteller_f.alphaheart.app.created_at
 import com.storyteller_f.alphaheart.app.error
 import com.storyteller_f.alphaheart.app.exit_room
 import com.storyteller_f.alphaheart.app.files_title
@@ -97,6 +98,8 @@ import com.storyteller_f.alphaheart.client.compose_core.components.FavoriteButto
 import com.storyteller_f.alphaheart.client.compose_core.components.IconActionMenu
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingActionMenuSurface
 import com.storyteller_f.alphaheart.client.compose_core.components.ReadingAdaptiveOverlay
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
+import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 import com.storyteller_f.alphaheart.client.compose_core.components.RoomIcon
 import com.storyteller_f.alphaheart.client.compose_core.components.StateView
 import com.storyteller_f.alphaheart.client.compose_core.components.SubscriptionButton
@@ -112,6 +115,7 @@ import com.storyteller_f.alphaheart.client.compose_core.tasks.CustomAlertDialogC
 import com.storyteller_f.alphaheart.client.compose_core.theme.horizontalSafeArea
 import com.storyteller_f.alphaheart.client.compose_core.utils.ReadingOverlaySize
 import com.storyteller_f.alphaheart.client.compose_core.utils.appiumSemantics
+import com.storyteller_f.alphaheart.client.compose_core.utils.formatDisplayTime
 import com.storyteller_f.alphaheart.client.compose_core.utils.getRemoteImageBitmap
 import com.storyteller_f.alphaheart.client.core.LoadingState
 import com.storyteller_f.alphaheart.client.core.WebSocketClient
@@ -135,8 +139,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIcon as Icon
-import com.storyteller_f.alphaheart.client.compose_core.components.ReadingIconButton as IconButton
 
 @Composable
 fun RoomPage(roomId: PrimaryKey, needShowDialog: Boolean) {
@@ -527,6 +529,11 @@ fun RoomDialogInternal(roomInfo: RoomInfo, dismiss: () -> Unit, onCommunityIcon:
             }
         }
     }) {
+        Text(
+            stringResource(Res.string.created_at, roomInfo.createdTime.formatDisplayTime()),
+            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+            fontSize = 12.sp,
+        )
         roomInfo.communityId?.let { communityId ->
             Text(
                 stringResource(Res.string.belongs_to_community),
